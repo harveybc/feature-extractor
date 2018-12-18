@@ -1,25 +1,17 @@
-# agent_DQN: Trains a Deep Convolutional Network given a CSV file containing
-#            multi-feaure timeseries data, with a window of time per feature
-#            with consecutive ticks per feature and reward data per action.
-#            The reward data is the training signal and multiple training
-#            (ml model, optimization methods) models are used, performs ARIMA
+# svm_pretrainer: Trains a svm for each action, exports predicted results as csv,
+#                 prints nmse and exports svm pre-trained models to be used in a 
+#                 q-agent.
 
 
-from gym.envs.registration import register
-import gym
-import sys
-import neat
-import os
+from sklearn import svm
 
-## \class QAgent
-## \brief Q-Learning agent that uses an OpenAI gym environment for fx trading 
-##  This agent has separate networks (Pre-trained DeepConvNets) for estimating 
-##  each action per step of the simulation environment.
-class QAgent():
+
+## \class QPretrainer
+## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
+class QPretrainer():
     
     ## init method
-    ## Loads the training and validation datasets, loads the pre-trained models
-    #  initialize forex environment.
+    ## Loads the training and validation datasets
     def __init__(self, key):
         # First argument is the training dataset
         ts_f = sys.argv[1]
@@ -33,6 +25,9 @@ class QAgent():
         # 2 = No Open Buy
         # 3 = No Open Sell
         model_prefix = sys.argv[2]
+        # output model 
+        model_prefix = sys.argv[2]
+        
         
         
 

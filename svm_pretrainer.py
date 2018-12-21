@@ -42,18 +42,18 @@ class QPretrainer():
 
     ## Load  training and validation datasets, initialize number of features and training signals
     def load_datasets(self):
-        ts = genfromtxt(ts_f, delimiter=',')
-        vs = genfromtxt(vs_f, delimiter=',')
+        ts = genfromtxt(self.ts_f, delimiter=',')
+        vs = genfromtxt(self.vs_f, delimiter=',')
         # split training and validation sets into features and training signal for regression
-        num_f = ts.shape[1] - 4
-        num_s = 4
+        self.num_f = ts.shape[1] - 4
+        self.num_s = 4
     
     ## Train SVMs with the training dataset using cross-validation error estimation
     ## Returns best parameters
     def train_models(self):
         test=0
-        x = ts[...,0:num_f-1]
-        y = ts[...,num_f:num_f + 3]
+        x = ts[...,0:self.num_f-1]
+        y = ts[...,self.num_f:self.num_f + 3]
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
         Cs = [0.001, 0.01, 0.1, 1, 10]
         gammas = [0.001, 0.01, 0.1, 1]

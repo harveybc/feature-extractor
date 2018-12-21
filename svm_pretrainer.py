@@ -2,8 +2,8 @@
 #                 prints nmse and exports svm pre-trained models to be used in a 
 #                 q-agent.
 
-from sklearn import svm, GridSearchCV
-print(sklearn.__version__)
+from sklearn import svm
+from sklearn.model_selection import GridSearchCV
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
 class QPretrainer():

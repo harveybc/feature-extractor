@@ -7,6 +7,7 @@ from sklearn import svm
 from sklearn.model_selection import GridSearchCV
 from numpy import genfromtxt
 from numpy import shape
+import numpy as np
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
 class QPretrainer():
@@ -52,6 +53,8 @@ class QPretrainer():
     ## Returns best parameters
     def train_models(self):
         test=0
+        #converts to nparray
+        self.ts = np.array(self.ts)
         x = self.ts[...,0:self.num_f-1]
         y = self.ts[...,self.num_f:self.num_f + 3]
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)

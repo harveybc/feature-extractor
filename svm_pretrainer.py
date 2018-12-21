@@ -71,6 +71,7 @@ class QPretrainer():
     def evaluate_validation(self):
         #print the parameters found by the gridsearch
         a= self.train_models()
+        print('best_parapms_ = ',a)
         test=0       
         
     ## Export the trained models and the predicted validation set predictions, print statistics 

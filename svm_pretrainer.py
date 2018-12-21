@@ -52,8 +52,8 @@ class QPretrainer():
     ## Returns best parameters
     def train_models(self):
         test=0
-        x = ts[...,0:self.num_f-1]
-        y = ts[...,self.num_f:self.num_f + 3]
+        x = self.ts[...,0:self.num_f-1]
+        y = self.ts[...,self.num_f:self.num_f + 3]
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
         Cs = [0.001, 0.01, 0.1, 1, 10]
         gammas = [0.001, 0.01, 0.1, 1]

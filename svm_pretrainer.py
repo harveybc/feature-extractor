@@ -5,6 +5,8 @@
 import sys
 from sklearn import svm
 from sklearn.model_selection import GridSearchCV
+from numpy import genfromtxt
+from numpy import shape
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
 class QPretrainer():

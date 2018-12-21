@@ -46,7 +46,7 @@ class QPretrainer():
         self.ts = genfromtxt(self.ts_f, delimiter=',')
         self.vs = genfromtxt(self.vs_f, delimiter=',')
         # split training and validation sets into features and training signal for regression
-        self.num_f = ts.shape[1] - 4
+        self.num_f = self.ts.shape[1] - 4
         self.num_s = 4
     
     ## Train SVMs with the training dataset using cross-validation error estimation

@@ -63,7 +63,7 @@ class QPretrainer():
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation(self):
         #print the parameters found by the gridsearch
-        print self.train_models()
+        a= self.train_models()
         test=0       
         
     ## Export the trained models and the predicted validation set predictions, print statistics 

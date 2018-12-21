@@ -3,7 +3,7 @@
 #                 q-agent.
 
 from sklearn import svm, GridSearchCV
-
+print(sklearn.__version__)
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
 class QPretrainer():
@@ -72,4 +72,5 @@ class QPretrainer():
         
 # main function 
 if __name__ == '__main__':
+    
     evaluate()

@@ -43,8 +43,8 @@ class QPretrainer():
 
     ## Load  training and validation datasets, initialize number of features and training signals
     def load_datasets(self):
-        ts = genfromtxt(self.ts_f, delimiter=',')
-        vs = genfromtxt(self.vs_f, delimiter=',')
+        self.ts = genfromtxt(self.ts_f, delimiter=',')
+        self.vs = genfromtxt(self.vs_f, delimiter=',')
         # split training and validation sets into features and training signal for regression
         self.num_f = ts.shape[1] - 4
         self.num_s = 4
@@ -57,7 +57,7 @@ class QPretrainer():
         self.ts = np.array(self.ts)
         x = self.ts[...,0:self.num_f-1]
         # TEST, remve 1 and replace by self.num_f
-        y = self.ts[...,1]
+        y = self.ts[...,self.num_f]
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
         Cs = [0.001, 0.01, 0.1, 1, 10]
         gammas = [0.001, 0.01, 0.1, 1]

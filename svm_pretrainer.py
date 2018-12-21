@@ -56,7 +56,8 @@ class QPretrainer():
         #converts to nparray
         self.ts = np.array(self.ts)
         x = self.ts[...,0:self.num_f-1]
-        y = self.ts[...,self.num_f]
+        # TEST, remve 1 and replace by self.num_f
+        y = self.ts[...,1]
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
         Cs = [0.001, 0.01, 0.1, 1, 10]
         gammas = [0.001, 0.01, 0.1, 1]

@@ -2,6 +2,7 @@
 #                 prints nmse and exports svm pre-trained models to be used in a 
 #                 q-agent.
 
+import sys
 from sklearn import svm
 from sklearn.model_selection import GridSearchCV
 ## \class QPretrainer

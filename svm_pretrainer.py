@@ -72,5 +72,7 @@ class QPretrainer():
         
 # main function 
 if __name__ == '__main__':
-    
-    evaluate()
+    pt = QPretrainer(3)
+    pt.load_datasets()
+    pt.train_models()
+    pt.evaluate_validation()

@@ -52,7 +52,7 @@ class QPretrainer():
     ## Train SVMs with the training dataset using cross-validation error estimation
     ## Returns best parameters
     def train_models(self):
-        test=0
+        # TODO: CONVERTIR 
         #converts to nparray
         self.ts = np.array(self.ts)
         x = self.ts[1:,0:self.num_f-1]
@@ -65,15 +65,13 @@ class QPretrainer():
         grid_search = GridSearchCV(svm.SVR(kernel='rbf'), param_grid, cv=self.nfolds)
         grid_search.fit(x, y)
         return grid_search.best_params_
-
     
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation(self):
-        #print the parameters found by the gridsearch
-        a= self.train_models()
-        print('best_parapms_ = ',a)
-        test=0       
-        
+        # print the parameters found by the gridsearch
+        a = self.train_models()
+        print('best_parapms_0 = ',a)
+ 
     ## Export the trained models and the predicted validation set predictions, print statistics 
     def export_models(self):
         test=0

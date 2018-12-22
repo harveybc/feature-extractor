@@ -8,6 +8,8 @@ from sklearn.model_selection import GridSearchCV
 from numpy import genfromtxt
 from numpy import shape
 import numpy as np
+import matplotlib.pyplot as plt
+
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
 class QPretrainer():
@@ -55,22 +57,33 @@ class QPretrainer():
         # TODO: CONVERTIR 
         #converts to nparray
         self.ts = np.array(self.ts)
-        x = self.ts[1:,0:self.num_f-1]
+        self.x = self.ts[1:,0:self.num_f-1]
         # TEST, remve 1 and replace by self.num_f
-        y = self.ts[1:,self.num_f]
+        self.y = self.ts[1:,self.num_f]
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
         Cs = [0.001, 0.01, 0.1, 1, 10]
         gammas = [0.001, 0.01, 0.1, 1]
         param_grid = {'C': Cs, 'gamma' : gammas}
         grid_search = GridSearchCV(svm.SVR(kernel='rbf'), param_grid, cv=self.nfolds)
-        grid_search.fit(x, y)
+        grid_search.fit(self.x, self.y)
         return grid_search.best_params_
     
     ## Evaluate the trained models in the validation set to obtain the error
-    def evaluate_validation(self):
-        # print the parameters found by the gridsearch
-        a = self.train_models()
-        print('best_parapms_0 = ',a)
+    def evaluate_validation(self,params):
+        # create SVM model with RBF kernel with existing parameters
+        svr_rbf = SVR(kernel='rbf', C=params.C, gamma=params.gamma)
+        print('best_params_0 = ',a)
+        # Fit the SVM modelto the data and evaluate SVM model on x
+        y_rbf = svr_rbf.fit(self.x, self.y).predict(self.x)
+        # plot original and predicted data
+        lw = 2
+        plt.scatter(self.x, self.y, color='darkorange', label='data')
+        plt.plot(self.x, y_rbf, color='navy', lw=lw, label='RBF model')
+        plt.xlabel('data')
+        plt.ylabel('target')
+        plt.title('Support Vector Regression')
+        plt.legend()
+        plt.show()
  
     ## Export the trained models and the predicted validation set predictions, print statistics 
     def export_models(self):
@@ -80,5 +93,6 @@ class QPretrainer():
 if __name__ == '__main__':
     pt = QPretrainer(3)
     pt.load_datasets()
-    pt.train_models()
-    pt.evaluate_validation()
+    params = pt.train_models()
+    pt.evaluate_validation(params)
+    

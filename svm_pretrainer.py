@@ -72,7 +72,6 @@ class QPretrainer():
     def evaluate_validation(self,params):
         # create SVM model with RBF kernel with existing parameters
         svr_rbf = svm.SVR(kernel='rbf', C=params["C"], gamma=params["gamma"])
-        print('best_params_0 = ',a)
         # Fit the SVM modelto the data and evaluate SVM model on x
         y_rbf = svr_rbf.fit(self.x, self.y).predict(self.x)
         # plot original and predicted data
@@ -94,5 +93,6 @@ if __name__ == '__main__':
     pt = QPretrainer(3)
     pt.load_datasets()
     params = pt.train_models()
+    print('best_params_0 = ',params)
     pt.evaluate_validation(params)
     

@@ -71,7 +71,7 @@ class QPretrainer():
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation(self,params):
         # create SVM model with RBF kernel with existing parameters
-        svr_rbf = SVR(kernel='rbf', C=params.C, gamma=params.gamma)
+        svr_rbf = svm.SVR(kernel='rbf', C=params.C, gamma=params.gamma)
         print('best_params_0 = ',a)
         # Fit the SVM modelto the data and evaluate SVM model on x
         y_rbf = svr_rbf.fit(self.x, self.y).predict(self.x)

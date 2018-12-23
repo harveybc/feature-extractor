@@ -76,8 +76,9 @@ class QPretrainer():
         y_rbf = svr_rbf.fit(self.x, self.y).predict(self.x)
         # plot original and predicted data
         lw = 2
-        plt.scatter(self.x, self.y, color='darkorange', label='data')
-        plt.plot(self.x, y_rbf, color='navy', lw=lw, label='RBF model')
+        x_seq = list(range(0, self.ts.shape[0]))
+        plt.scatter(x_seq, self.y, color='darkorange', label='data')
+        plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
         plt.xlabel('data')
         plt.ylabel('target')
         plt.title('Support Vector Regression')

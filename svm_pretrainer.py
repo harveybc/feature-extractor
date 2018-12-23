@@ -56,7 +56,6 @@ class QPretrainer():
     ## Train SVMs with the training dataset using cross-validation error estimation
     ## Returns best parameters
     def train_models(self):
-        # TODO: CONVERTIR 
         #converts to nparray
         self.ts = np.array(self.ts)
         self.x = self.ts[1:,0:self.num_f-1]
@@ -72,6 +71,10 @@ class QPretrainer():
     
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation(self,params):
+        self.vs = np.array(self.vs)
+        self.x = self.vs[1:,0:self.num_f-1]
+        # TEST, remve 1 and replace by self.num_f
+        self.y = self.vs[1:,self.num_f]
         # create SVM model with RBF kernel with existing parameters
         svr_rbf = svm.SVR(kernel='rbf', C=params["C"], gamma=params["gamma"])
         # Fit the SVM modelto the data and evaluate SVM model on x

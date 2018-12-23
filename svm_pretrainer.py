@@ -72,18 +72,18 @@ class QPretrainer():
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation(self,params):
         self.vs = np.array(self.vs)
-        self.x = self.vs[1:,0:self.num_f-1]
+        self.x_v = self.vs[1:,0:self.num_f-1]
         # TEST, remve 1 and replace by self.num_f
-        self.y = self.vs[1:,self.num_f]
+        self.y_v = self.vs[1:,self.num_f]
         # create SVM model with RBF kernel with existing parameters
         svr_rbf = svm.SVR(kernel='rbf', C=params["C"], gamma=params["gamma"])
-        # Fit the SVM modelto the data and evaluate SVM model on x
-        y_rbf = svr_rbf.fit(self.x, self.y).predict(self.x)
-        # plot original and predicted data
+        # Fit the SVM modelto the data and evaluate SVM model on validation x
+        y_rbf = svr_rbf.fit(self.x, self.y).predict(self.x_v)
+        # plot original and predicted data of the validation dataset
         lw = 2
-        x_seq = list(range(0, self.ts.shape[0]-1))
-        print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y) )
-        plt.plot(x_seq, self.y, color='darkorange', label='data')
+        x_seq = list(range(0, self.vs.shape[0]-1))
+        print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
+        plt.plot(x_seq, self.y_v, color='darkorange', label='data')
         plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
         plt.xlabel('data')
         plt.ylabel('target')

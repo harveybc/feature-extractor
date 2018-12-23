@@ -76,7 +76,7 @@ class QPretrainer():
         y_rbf = svr_rbf.fit(self.x, self.y).predict(self.x)
         # plot original and predicted data
         lw = 2
-        x_seq = list(range(0, self.ts.shape[0]))
+        x_seq = list(range(0, self.ts.shape[0]-1))
         print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y) )
         plt.scatter(x_seq, self.y, color='darkorange', label='data')
         plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')

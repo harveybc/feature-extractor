@@ -77,6 +77,7 @@ class QPretrainer():
         # plot original and predicted data
         lw = 2
         x_seq = list(range(0, self.ts.shape[0]))
+        print("x_seq.len = ", len(x_seq) , "y.len = " ,len(y) )
         plt.scatter(x_seq, self.y, color='darkorange', label='data')
         plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
         plt.xlabel('data')

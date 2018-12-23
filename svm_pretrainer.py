@@ -50,6 +50,8 @@ class QPretrainer():
         # split training and validation sets into features and training signal for regression
         self.num_f = self.ts.shape[1] - 4
         self.num_s = 4
+        # split dataset into 75% training and 25% validation 
+        
     
     ## Train SVMs with the training dataset using cross-validation error estimation
     ## Returns best parameters
@@ -78,7 +80,7 @@ class QPretrainer():
         lw = 2
         x_seq = list(range(0, self.ts.shape[0]-1))
         print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y) )
-        plt.scatter(x_seq, self.y, color='darkorange', label='data')
+        plt.plot(x_seq, self.y, color='darkorange', label='data')
         plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
         plt.xlabel('data')
         plt.ylabel('target')

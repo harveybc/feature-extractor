@@ -10,6 +10,7 @@ from numpy import shape
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
+from joblib import dump, load
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
@@ -39,9 +40,9 @@ class QPretrainer():
         # 1 = Sell/CloseBuy/nopCloseSell
         # 2 = No Open Buy
         # 3 = No Open Sell
-        self.model_prefix = sys.argv[2]
-        # output models prefix
         self.model_prefix = sys.argv[3]
+        # svm model
+        self.svr_rbf = []
 
     ## Load  training and validation datasets, initialize number of features and training signals
     def load_datasets(self):
@@ -76,9 +77,9 @@ class QPretrainer():
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal]
         # create SVM model with RBF kernel with existing parameters
-        svr_rbf = svm.SVR(kernel='rbf', C=params["C"], gamma=params["gamma"])
+        self.svr_rbf = svm.SVR(kernel='rbf', C=params["C"], gamma=params["gamma"])
         # Fit the SVM modelto the data and evaluate SVM model on validation x
-        y_rbf = svr_rbf.fit(self.x, self.y).predict(self.x_v)
+        y_rbf = self.svr_rbf.fit(self.x, self.y).predict(self.x_v)
         # plot original and predicted data of the validation dataset
         lw = 2
         x_seq = list(range(0, self.vs.shape[0]-1))
@@ -95,15 +96,14 @@ class QPretrainer():
             plt.show()
         else:
             plt.show(block=False)
-       
-        
         return mean_squared_error(self.y_v, y_rbf)
         
 
  
     ## Export the trained models and the predicted validation set predictions, print statistics 
-    def export_models(self):
-        test=0
+    def export_model(self, signal):
+        dump(self.svr_rbf, self.model_prefix + str(signal)+'.svm') 
+
         
 # main function 
 if __name__ == '__main__':
@@ -115,6 +115,7 @@ if __name__ == '__main__':
         print('best_params_'+str(i)+' = ',params)
         mse = pt.evaluate_validation(params,i)
         print('mean_squared_error_'+str(i)+' = '+ str(mse))
+        pt.export_model(i)
         # 0 = Buy/CloseSell/nopCloseBuy
         # 1 = Sell/CloseBuy/nopCloseSell
         # 2 = No Open Buy

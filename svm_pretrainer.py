@@ -92,9 +92,9 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         if signal==3:
-            plt.show(block=False)
-        else:
             plt.show()
+        else:
+            plt.show(block=False)
        
         
         return mean_squared_error(self.y_v, y_rbf)

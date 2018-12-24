@@ -91,7 +91,11 @@ class QPretrainer():
         plt.ylabel('target')
         plt.title('Signal ' + str(signal))
         plt.legend()
-        plt.show(block=False)
+        if signal==3:
+            plt.show(block=False)
+        else:
+            plt.show()
+       
         
         return mean_squared_error(self.y_v, y_rbf)
         

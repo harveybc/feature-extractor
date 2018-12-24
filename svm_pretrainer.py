@@ -16,7 +16,7 @@ class QPretrainer():
     
     ## init method
     ## Loads the training and validation datasets
-    def __init__(self, key):
+    def __init__(self):
         # Training set
         self.ts = []
         # Validation set
@@ -41,7 +41,6 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # output models prefix
         self.model_prefix = sys.argv[3]
-        
 
     ## Load  training and validation datasets, initialize number of features and training signals
     def load_datasets(self):
@@ -55,12 +54,12 @@ class QPretrainer():
     
     ## Train SVMs with the training dataset using cross-validation error estimation
     ## Returns best parameters
-    def train_models(self):
+    def train_model(self, signal):
         #converts to nparray
         self.ts = np.array(self.ts)
         self.x = self.ts[1:,0:self.num_f-1]
         # TEST, remve 1 and replace by self.num_f
-        self.y = self.ts[1:,self.num_f]
+        self.y = self.ts[1:,self.num_f + signal]
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
         Cs = [0.001, 0.01, 0.1, 1, 10]
         gammas = [0.001, 0.01, 0.1, 1]
@@ -70,11 +69,11 @@ class QPretrainer():
         return grid_search.best_params_
     
     ## Evaluate the trained models in the validation set to obtain the error
-    def evaluate_validation(self,params):
+    def evaluate_validation(self, params, signal):
         self.vs = np.array(self.vs)
         self.x_v = self.vs[1:,0:self.num_f-1]
         # TEST, remve 1 and replace by self.num_f
-        self.y_v = self.vs[1:,self.num_f]
+        self.y_v = self.vs[1:,self.num_f + signal]
         # create SVM model with RBF kernel with existing parameters
         svr_rbf = svm.SVR(kernel='rbf', C=params["C"], gamma=params["gamma"])
         # Fit the SVM modelto the data and evaluate SVM model on validation x
@@ -82,14 +81,19 @@ class QPretrainer():
         # plot original and predicted data of the validation dataset
         lw = 2
         x_seq = list(range(0, self.vs.shape[0]-1))
+        # 0 = Buy/CloseSell/nopCloseBuy
         print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
+        plt.figure()
         plt.plot(x_seq, self.y_v, color='darkorange', label='data')
         plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
         plt.xlabel('data')
         plt.ylabel('target')
-        plt.title('Support Vector Regression')
+        plt.title('Signal ' + str(signal))
         plt.legend()
         plt.show()
+
+        
+
  
     ## Export the trained models and the predicted validation set predictions, print statistics 
     def export_models(self):
@@ -99,7 +103,12 @@ class QPretrainer():
 if __name__ == '__main__':
     pt = QPretrainer(3)
     pt.load_datasets()
-    params = pt.train_models()
-    print('best_params_0 = ',params)
-    pt.evaluate_validation(params)
-    
+    for i in range(0,4):
+        print('Training model '+str(i),params)
+        params = pt.train_model(i)
+        print('best_params_'+str(i)+' = ',params)
+        pt.evaluate_validation(params,i)
+        # 0 = Buy/CloseSell/nopCloseBuy
+        # 1 = Sell/CloseBuy/nopCloseSell
+        # 2 = No Open Buy
+        # 3 = No Open Sell

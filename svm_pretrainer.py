@@ -101,7 +101,7 @@ class QPretrainer():
         
 # main function 
 if __name__ == '__main__':
-    pt = QPretrainer(3)
+    pt = QPretrainer()
     pt.load_datasets()
     for i in range(0,4):
         print('Training model '+str(i),params)

@@ -9,6 +9,7 @@ from numpy import genfromtxt
 from numpy import shape
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
@@ -91,7 +92,8 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         plt.show()
-
+        
+        return mean_squared_error(self.y_v, y_rbf)
         
 
  
@@ -104,10 +106,11 @@ if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
     for i in range(0,4):
-        print('Training model '+str(i),params)
+        print('Training model '+str(i))
         params = pt.train_model(i)
         print('best_params_'+str(i)+' = ',params)
-        pt.evaluate_validation(params,i)
+        mse = pt.evaluate_validation(params,i)
+        print('mean_squared_error_'+str(i)+' = '+ str(mse))
         # 0 = Buy/CloseSell/nopCloseBuy
         # 1 = Sell/CloseBuy/nopCloseSell
         # 2 = No Open Buy

@@ -52,8 +52,7 @@ class QPretrainer():
         self.num_f = self.ts.shape[1] - 4
         self.num_s = 4
         # split dataset into 75% training and 25% validation 
-        
-    
+            
     ## Train SVMs with the training dataset using cross-validation error estimation
     ## Returns best parameters
     def train_model(self, signal):
@@ -97,8 +96,7 @@ class QPretrainer():
         else:
             plt.show(block=False)
         return mean_squared_error(self.y_v, y_rbf)
-        
-
+    
  
     ## Export the trained models and the predicted validation set predictions, print statistics 
     def export_model(self, signal):
@@ -112,9 +110,9 @@ if __name__ == '__main__':
     for i in range(0,4):
         print('Training model '+str(i))
         params = pt.train_model(i)
-        print('best_params_'+str(i)+' = ',params)
+        print('best_params_' + str(i) + ' = ',params)
         mse = pt.evaluate_validation(params,i)
-        print('mean_squared_error_'+str(i)+' = '+ str(mse))
+        print('mean_squared_error_' + str(i) + ' = ' + str(mse))
         pt.export_model(i)
         # 0 = Buy/CloseSell/nopCloseBuy
         # 1 = Sell/CloseBuy/nopCloseSell

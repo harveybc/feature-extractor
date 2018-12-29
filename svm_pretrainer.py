@@ -95,12 +95,10 @@ class QPretrainer():
         else:
             plt.show(block=False)
         return mean_squared_error(self.y_v, y_rbf)
-    
  
     ## Export the trained models and the predicted validation set predictions, print statistics 
     def export_model(self, signal):
         dump(self.svr_rbf, self.model_prefix + str(signal)+'.svm') 
-
         
 # main function 
 if __name__ == '__main__':

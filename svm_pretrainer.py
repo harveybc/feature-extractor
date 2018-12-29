@@ -14,8 +14,7 @@ from joblib import dump, load
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
-class QPretrainer():
-    
+class QPretrainer():    
     ## init method
     ## Loads the training and validation datasets
     def __init__(self):

@@ -57,7 +57,7 @@ class QPretrainer():
     def train_model(self, signal):
         #converts to nparray
         self.ts = np.array(self.ts)
-        self.x = self.ts[1:,0:self.num_f-1]
+        self.x = self.ts[1:,0:self.num_f]
         # TEST, remve 1 and replace by self.num_f
         self.y = self.ts[1:,self.num_f + signal]
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)

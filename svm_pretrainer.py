@@ -71,7 +71,7 @@ class QPretrainer():
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation(self, params, signal):
         self.vs = np.array(self.vs)
-        self.x_v = self.vs[1:,0:self.num_f-1]
+        self.x_v = self.vs[1:,0:self.num_f]
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal]
         # create SVM model with RBF kernel with existing parameters

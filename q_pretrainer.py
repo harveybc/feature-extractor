@@ -33,8 +33,6 @@ class QAgent():
         # 2 = No Open Buy
         # 3 = No Open Sell
         model_prefix = sys.argv[2]
-        
-        
 
     ## Load  pretrained models
     def load_action_models(self):

@@ -105,13 +105,12 @@ class QPretrainer():
 if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
-    i=1
-    #for i in range(0,4):
-    print('Training model '+str(i))
-    params = pt.train_model(i)
-    print('best_params_' + str(i) + ' = ',params)
-    mse = pt.evaluate_validation(params,i)
-    print('mean_squared_error_' + str(i) + ' = ' + str(mse))
-    pt.export_model(i)
+    for i in range(0,4):
+        print('Training model '+str(i))
+        params = pt.train_model(i)
+        print('best_params_' + str(i) + ' = ',params)
+        mse = pt.evaluate_validation(params,i)
+        print('mean_squared_error_' + str(i) + ' = ' + str(mse))
+        pt.export_model(i)
     
     

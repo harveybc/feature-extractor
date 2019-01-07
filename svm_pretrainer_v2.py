@@ -61,8 +61,10 @@ class QPretrainer():
         # TEST, remve 1 and replace by self.num_f
         self.y = self.ts[1:,self.num_f + signal]
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
-        Cs = [0.0001, 0.001,0.01, 0.1, 1, 10, 100]
-        gammas = [0.01, 0.1, 1, 10, 100, 1000]
+        #Cs = [ 0.001,0.01, 0.1, 1, 10, 100]
+        #gammas = [0.01, 0.1, 1, 10, 100]
+        Cs = [0.000001, 0.00001, 0.0001, 0.001,0.01, 0.1, 1]
+        gammas = [1,5, 10, 50,100]
         param_grid = {'C': Cs, 'gamma' : gammas}
         grid_search = GridSearchCV(svm.SVR(kernel='rbf'), param_grid, cv=self.nfolds)
         grid_search.fit(self.x, self.y)

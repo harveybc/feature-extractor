@@ -61,8 +61,8 @@ class QPretrainer():
         # TEST, remve 1 and replace by self.num_f
         self.y = self.ts[1:,self.num_f + signal]
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
-        Cs = [0.001, 0.01, 0.1, 1, 10]
-        gammas = [0.001, 0.01, 0.1, 1]
+        Cs = [0.01, 0.1, 1, 10, 100]
+        gammas = [0.01, 0.1, 1, 10]
         param_grid = {'C': Cs, 'gamma' : gammas}
         grid_search = GridSearchCV(svm.SVR(kernel='rbf'), param_grid, cv=self.nfolds)
         grid_search.fit(self.x, self.y)
@@ -105,14 +105,13 @@ class QPretrainer():
 if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
-    for i in range(0,4):
-        print('Training model '+str(i))
-        params = pt.train_model(i)
-        print('best_params_' + str(i) + ' = ',params)
-        mse = pt.evaluate_validation(params,i)
-        print('mean_squared_error_' + str(i) + ' = ' + str(mse))
-        pt.export_model(i)
-        # 0 = Buy/CloseSell/nopCloseBuy
-        # 1 = Sell/CloseBuy/nopCloseSell
-        # 2 = No Open Buy
-        # 3 = No Open Sell
+    i=1
+    #for i in range(0,4):
+    print('Training model '+str(i))
+    params = pt.train_model(i)
+    print('best_params_' + str(i) + ' = ',params)
+    mse = pt.evaluate_validation(params,i)
+    print('mean_squared_error_' + str(i) + ' = ' + str(mse))
+    pt.export_model(i)
+    
+    

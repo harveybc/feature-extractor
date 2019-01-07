@@ -66,7 +66,7 @@ class QPretrainer():
         Cs = [0.000001, 0.00001, 0.0001, 0.001,0.01, 0.1, 1]
         gammas = [1,5, 10, 50,100]
         param_grid = {'C': Cs, 'gamma' : gammas}
-        grid_search = GridSearchCV(svm.SVR(kernel='rbf'), param_grid, cv=self.nfolds)
+        grid_search = GridSearchCV(svm.SVR(kernel='poly'), param_grid, cv=self.nfolds)
         grid_search.fit(self.x, self.y)
         return grid_search.best_params_
     

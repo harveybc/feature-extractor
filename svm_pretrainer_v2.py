@@ -77,7 +77,7 @@ class QPretrainer():
         self.vs = np.array(self.vs)
         self.x_v = self.vs[1:,0:self.num_f]
         # TEST, remve 1 and replace by self.num_f
-        self.y_v = self.vs[1:,self.num_f + signal]
+        self.y_v = self.vs[1:,self.num_f + signal-1]
         # create SVM model with RBF kernel with existing parameters
         self.svr_rbf = svm.SVR(kernel='rbf', C=params["C"], gamma=params["gamma"])
         # Fit the SVM modelto the data and evaluate SVM model on validation x

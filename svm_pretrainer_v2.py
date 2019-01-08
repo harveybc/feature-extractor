@@ -50,7 +50,7 @@ class QPretrainer():
         self.vs_g = genfromtxt(self.vs_f, delimiter=',')
         # split training and validation sets into features and training signal for regression
         self.num_f = self.ts_g.shape[1] - self.num_s
-        self.num_ticks = self.ts.shape[0]
+        self.num_ticks = self.ts_g.shape[0]
         # split dataset into 75% training and 25% validation 
         self.ts_s = self.ts_g[0:(3*self.num_ticks)//4,:]
         self.ts = self.ts_s.copy()

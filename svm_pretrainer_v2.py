@@ -39,19 +39,23 @@ class QPretrainer():
         # 1 = SL
         # 2 = dInv
         # 3 = direction (1: buy, -1: sell)
+        self.num_ticks = 0
         self.model_prefix = sys.argv[3]
         # svm model
         self.svr_rbf = []
 
     ## Load  training and validation datasets, initialize number of features and training signals
     def load_datasets(self):
-        self.ts = genfromtxt(self.ts_f, delimiter=',')
-        self.vs = genfromtxt(self.vs_f, delimiter=',')
+        self.ts_g = genfromtxt(self.ts_f, delimiter=',')
+        self.vs_g = genfromtxt(self.vs_f, delimiter=',')
         # split training and validation sets into features and training signal for regression
-        self.num_f = self.ts.shape[1] - 4
-        self.num_s = 4
+        self.num_f = self.ts_g.shape[1] - self.num_s
+        self.num_ticks = self.ts.shape[0]
         # split dataset into 75% training and 25% validation 
-            
+        self.ts_s = self.ts_g[0:(3*self.num_ticks)//4,:]
+        self.ts = self.ts_s.copy()
+        self.vs_s = self.vs_g[(3*self.num_ticks)//4 : self.num_ticks,:]
+        self.vs = self.vs_s.copy() 
     ## Train SVMs with the training dataset using cross-validation error estimation
     ## Returns best parameters
     def train_model(self, signal):
@@ -110,7 +114,7 @@ if __name__ == '__main__':
         params = pt.train_model(i)
         print('best_params_' + str(i) + ' = ',params)
         mse = pt.evaluate_validation(params,i)
-        print('mean_squared_error_' + str(i) + ' = ' + str(mse))
+        print('mean_squared_error on validation set:' + str(i) + ' = ' + str(mse))
         pt.export_model(i)
     
     

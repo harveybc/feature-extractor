@@ -65,9 +65,9 @@ class QPretrainer():
         self.y = self.ts[1:,self.num_f + signal]                  
         #print("Training action (", signal, ") self.y = ", self.y)
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
-        Cs = [ 2e-5, 2e-3, 2e-1, 2e1, 2e3, 2e5, 2e7, 2e9, 2e11, 2e13, 2e15]
-        gammas = [2e-15, 2e-13, 2e-11, 2e-9, 2e-7, 2e-5, 2e-3, 2e-1, 2e1, 2e3]
-        epsilon = [2e-13, 2e-11, 2e-9, 2e-7, 2e-5, 2e-3, 2e-1, 2e1, 2e3]
+        Cs = [ 2e-6, 2e-3, 2e-0, 2e3, 2e6, 2e9, 2e12, 2e15]
+        gammas = [2e-15, 2e-12, 2e-9, 2e-6, 2e-3, 2e0, 2e3]
+        epsilon = [2e-12, 2e-9, 2e-6, 2e-3, 2e0, 2e3]
         param_grid = {'C': Cs, 'gamma' : gammas, 'epsilon': epsilon}
         grid_search = GridSearchCV(svm.SVR(), param_grid, cv=self.nfolds)
         grid_search.fit(self.x, self.y)

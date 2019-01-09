@@ -90,7 +90,8 @@ class QPretrainer():
         y_rbf = self.svr_rbf.fit(self.x, self.y).predict(self.x_v)
         # plot original and predicted data of the validation dataset
         lw = 2
-        x_seq = list(range(0, self.vs.shape[0]-1))
+        # TODO: NO ES TS SINO VS
+        x_seq = list(range(0, self.ts.shape[0]-1))
         # 0 = Buy/CloseSell/nopCloseBuy
         print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
         fig=plt.figure()

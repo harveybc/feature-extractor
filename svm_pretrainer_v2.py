@@ -28,10 +28,8 @@ class QPretrainer():
         self.num_s = 4
         # number of folds for cross validation during grid search svm parameter tunning
         self.nfolds=5
-        # First argument is the training dataset
+        # First argument is the training dataset, last 25% of it is used as validation set
         self.ts_f = sys.argv[1]
-        # Second is validation dataset 
-        self.vs_f = sys.argv[2]
         # Third argument is the prefix (including path) for the dcn pre-trained models 
         # for the actions, all modes are files with .model extention and the prefix is
         # concatenated with a number indicating the action:
@@ -40,21 +38,20 @@ class QPretrainer():
         # 2 = dInv
         # 3 = direction (1: buy, -1: sell)
         self.num_ticks = 0
-        self.model_prefix = sys.argv[3]
+        self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
 
     ## Load  training and validation datasets, initialize number of features and training signals
     def load_datasets(self):
         self.ts_g = genfromtxt(self.ts_f, delimiter=',')
-        self.vs_g = genfromtxt(self.vs_f, delimiter=',')
         # split training and validation sets into features and training signal for regression
         self.num_f = self.ts_g.shape[1] - self.num_s
         self.num_ticks = self.ts_g.shape[0]
         # split dataset into 75% training and 25% validation 
         self.ts_s = self.ts_g[1:(3*self.num_ticks)//4,:]
         self.ts = self.ts_s.copy()
-        self.vs_s = self.vs_g[(3*self.num_ticks)//4 : self.num_ticks,:]
+        self.vs_s = self.ts_g[(3*self.num_ticks)//4 : self.num_ticks,:]
         self.vs = self.vs_s.copy() 
     ## Train SVMs with the training dataset using cross-validation error estimation
     ## Returns best parameters

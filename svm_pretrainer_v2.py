@@ -65,11 +65,11 @@ class QPretrainer():
         self.y = self.ts[1:,self.num_f + signal]                  
         #print("Training action (", signal, ") self.y = ", self.y)
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
-        Cs = [ 0.001,0.01, 0.1, 1, 10, 100, 1000]
-        gammas = [0.01, 0.1, 1, 10, 100]
-        epsilon = [0.0001, 0.001, 0.01, 0.1, 1, 10]
+        Cs = [ 2e-5, 2e-3, 2e-1, 2e1, 2e3, 2e5, 2e7, 2e9, 2e11, 2e13, 2e15]
+        gammas = [2e-15, 2e-13, 2e-11, 2e-9, 2e-7, 2e-5, 2e-3, 2e-1, 2e1, 2e3]
+        epsilon = [2e-13, 2e-11, 2e-9, 2e-7, 2e-5, 2e-3, 2e-1, 2e1, 2e3]
         param_grid = {'C': Cs, 'gamma' : gammas, 'epsilon': epsilon}
-        grid_search = GridSearchCV(svm.SVR(kernel='rbf'), param_grid, cv=self.nfolds)
+        grid_search = GridSearchCV(svm.SVR(), param_grid, cv=self.nfolds)
         grid_search.fit(self.x, self.y)
         return grid_search.best_params_
     
@@ -81,7 +81,7 @@ class QPretrainer():
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal]
         # create SVM model with RBF kernel with existing parameters
-        self.svr_rbf = svm.SVR(kernel='rbf', C=params["C"], gamma=params["gamma"], epsilon=params["epsilon"])
+        self.svr_rbf = svm.SVR(C=params["C"], gamma=params["gamma"], epsilon=params["epsilon"])
         # Fit the SVM modelto the data and evaluate SVM model on validation x
         self.x = self.ts[1:,0:self.num_f]
         self.y = self.ts[1:,self.num_f + signal]

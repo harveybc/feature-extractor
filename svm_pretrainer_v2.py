@@ -75,9 +75,10 @@ class QPretrainer():
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation(self, params, signal):
         self.vs = np.array(self.vs)
-        self.x_v = self.vs[1:,0:self.num_f]
+        # TODO: NO ES TS SINO VS
+        self.x_v = self.ts[1:,0:self.num_f]
         # TEST, remve 1 and replace by self.num_f
-        self.y_v = self.vs[1:,self.num_f + signal]
+        self.y_v = self.ts[1:,self.num_f + signal]
         # create SVM model with RBF kernel with existing parameters
         self.svr_rbf = svm.SVR(kernel='rbf', C=params["C"], gamma=params["gamma"])
         # Fit the SVM modelto the data and evaluate SVM model on validation x
@@ -86,7 +87,7 @@ class QPretrainer():
         #if signal == 0:
         #    print("Validation set self.x_v = ",self.x_v)
         #TODO, NO ES PREDICT X SINO X_V
-        y_rbf = self.svr_rbf.fit(self.x, self.y).predict(self.x)
+        y_rbf = self.svr_rbf.fit(self.x, self.y).predict(self.x_v)
         # plot original and predicted data of the validation dataset
         lw = 2
         x_seq = list(range(0, self.vs.shape[0]-1))

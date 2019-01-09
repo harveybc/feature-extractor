@@ -84,10 +84,12 @@ class QPretrainer():
         # Fit the SVM modelto the data and evaluate SVM model on validation x
         self.x = self.ts[1:,0:self.num_f]
         self.y = self.ts[1:,self.num_f + signal]
-        #if signal == 0:
-        #    print("Validation set self.x_v = ",self.x_v)
+        if signal == 0:
+            print("Validation set self.x_v = ",self.x_v)
         #TODO, NO ES PREDICT X SINO X_V
         y_rbf = self.svr_rbf.fit(self.x, self.y).predict(self.x_v)
+        if signal == 0:
+            print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
         lw = 2
         # TODO: NO ES TS SINO VS

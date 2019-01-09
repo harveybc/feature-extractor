@@ -63,7 +63,7 @@ class QPretrainer():
         #    print("Training set self.x = ",self.x)
         # TEST, remve 1 and replace by self.num_f
         self.y = self.ts[1:,self.num_f + signal]                  
-        print("Training action (", signal, ") self.y = ", self.y)
+        #print("Training action (", signal, ") self.y = ", self.y)
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
         Cs = [ 0.001,0.01, 0.1, 1, 10, 100]
         gammas = [0.01, 0.1, 1, 10, 100]

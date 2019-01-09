@@ -76,9 +76,9 @@ class QPretrainer():
     def evaluate_validation(self, params, signal):
         self.vs = np.array(self.vs)
         # TODO: NO ES TS SINO VS
-        self.x_v = self.ts[1:,0:self.num_f]
+        self.x_v = self.vs[1:,0:self.num_f]
         # TEST, remve 1 and replace by self.num_f
-        self.y_v = self.ts[1:,self.num_f + signal]
+        self.y_v = self.vs[1:,self.num_f + signal]
         # create SVM model with RBF kernel with existing parameters
         self.svr_rbf = svm.SVR(kernel='rbf', C=params["C"], gamma=params["gamma"])
         # Fit the SVM modelto the data and evaluate SVM model on validation x
@@ -91,7 +91,7 @@ class QPretrainer():
         # plot original and predicted data of the validation dataset
         lw = 2
         # TODO: NO ES TS SINO VS
-        x_seq = list(range(0, self.ts.shape[0]-1))
+        x_seq = list(range(0, self.vs.shape[0]-1))
         # 0 = Buy/CloseSell/nopCloseBuy
         print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
         fig=plt.figure()

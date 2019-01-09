@@ -52,7 +52,7 @@ class QPretrainer():
         self.num_f = self.ts_g.shape[1] - self.num_s
         self.num_ticks = self.ts_g.shape[0]
         # split dataset into 75% training and 25% validation 
-        self.ts_s = self.ts_g[0:(3*self.num_ticks)//4,:]
+        self.ts_s = self.ts_g[1:(3*self.num_ticks)//4,:]
         self.ts = self.ts_s.copy()
         self.vs_s = self.vs_g[(3*self.num_ticks)//4 : self.num_ticks,:]
         self.vs = self.vs_s.copy() 
@@ -65,7 +65,7 @@ class QPretrainer():
         #if signal == 0:
         #    print("Training set self.x = ",self.x)
         # TEST, remve 1 and replace by self.num_f
-        self.y = self.ts[1:,self.num_f + signal]
+        self.y = self.ts[1:,self.num_f + signal]                  
         #print("Training action (", signal, ") self.y = ", self.x)
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
         Cs = [ 0.001,0.01, 0.1, 1, 10, 100]

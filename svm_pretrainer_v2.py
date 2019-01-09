@@ -62,8 +62,11 @@ class QPretrainer():
         #converts to nparray
         self.ts = np.array(self.ts)
         self.x = self.ts[1:,0:self.num_f]
+        #if signal == 0:
+        #    print("Training set self.x = ",self.x)
         # TEST, remve 1 and replace by self.num_f
         self.y = self.ts[1:,self.num_f + signal]
+        #print("Training action (", signal, ") self.y = ", self.x)
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
         Cs = [ 0.001,0.01, 0.1, 1, 10, 100]
         gammas = [0.01, 0.1, 1, 10, 100]
@@ -81,6 +84,8 @@ class QPretrainer():
         # create SVM model with RBF kernel with existing parameters
         self.svr_rbf = svm.SVR(kernel='rbf', C=params["C"], gamma=params["gamma"])
         # Fit the SVM modelto the data and evaluate SVM model on validation x
+        self.x = self.ts[1:,0:self.num_f]
+        self.y = self.ts[1:,self.num_f + signal]
         y_rbf = self.svr_rbf.fit(self.x, self.y).predict(self.x_v)
         # plot original and predicted data of the validation dataset
         lw = 2

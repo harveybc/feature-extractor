@@ -81,7 +81,7 @@ class QPretrainer():
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal]
         # create SVM model with RBF kernel with existing parameters
-        self.svr_rbf = svm.SVR(C=params["C"], epsilon=params["epsilon"])
+        self.svr_rbf = svm.SVR(gamma='auto', C=params["C"], epsilon=params["epsilon"])
         # Fit the SVM modelto the data and evaluate SVM model on validation x
         self.x = self.ts[1:,0:self.num_f]
         self.y = self.ts[1:,self.num_f + signal]

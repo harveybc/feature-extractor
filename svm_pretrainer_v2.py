@@ -27,7 +27,7 @@ class QPretrainer():
         # Number of training signals in dataset
         self.num_s = 4
         # number of folds for cross validation during grid search svm parameter tunning
-        self.nfolds=5
+        self.nfolds=3
         # First argument is the training dataset, last 25% of it is used as validation set
         self.ts_f = sys.argv[1]
         # Third argument is the prefix (including path) for the dcn pre-trained models 

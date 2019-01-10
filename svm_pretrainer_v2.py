@@ -70,7 +70,7 @@ class QPretrainer():
         epsilons = [1e-8,1e-4,1e-2,1e-1]
         Cs = [1,10,10,100,1000,1e4,1e6]
         gammas = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
-        param_grid = {'C': Cs, 'epsilon':epsilon}
+        param_grid = {'C': Cs, 'epsilon':epsilons}
         grid_search = GridSearchCV(svm.SVR(gamma="auto"),param_grid, cv=self.nfolds)
         grid_search.fit(self.x, self.y)
         return grid_search.best_params_

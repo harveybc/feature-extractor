@@ -94,7 +94,7 @@ class QPretrainer():
         y_rbf_o = self.svr_rbf.fit(self.x, self.y).predict(self.x_v)
         scaler = preprocessing.StandardScaler()
         # TODO: PRUEBA DE SCALER DE OUTPUT DE SVM
-        y_rbf = scaler.fit_transform(y_rbf_o)
+        y_rbf = scaler.fit_transform([y_rbf_o])
         if signal == 0:
             print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset

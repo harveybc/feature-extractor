@@ -105,7 +105,7 @@ class QPretrainer():
         print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
         fig=plt.figure()
         plt.plot(x_seq, self.y_v, color='darkorange', label='data')
-        plt.plot(x_seq, [y_rbf], color='navy', lw=lw, label='RBF model')
+        plt.plot(x_seq, y_rbf[0], color='navy', lw=lw, label='RBF model')
         plt.xlabel('data')
         plt.ylabel('target')
         plt.title('Signal ' + str(signal))

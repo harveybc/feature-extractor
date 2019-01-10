@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 from joblib import dump, load
+from sklearn import preprocessing
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.

@@ -11,6 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 from joblib import dump, load
+from sklearn import preprocessing
+
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
@@ -25,9 +27,9 @@ class QPretrainer():
         # Number of features in dataset
         self.num_f = 0        
         # Number of training signals in dataset
-        self.num_s = 4
+        self.num_s = 16
         # number of folds for cross validation during grid search svm parameter tunning
-        self.nfolds=5
+        self.nfolds=3
         # First argument is the training dataset, last 25% of it is used as validation set
         self.ts_f = sys.argv[1]
         # Third argument is the prefix (including path) for the dcn pre-trained models 
@@ -65,11 +67,13 @@ class QPretrainer():
         self.y = self.ts[1:,self.num_f + signal]                  
         #print("Training action (", signal, ") self.y = ", self.y)
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
-        Cs = [ 2e-12, 2e-8, 2e-4, 2e0, 2e4]
-        epsilon = [2e-2, 2e-1, 2e1]
-        gammas = [2e-20, 2e-15, 2e-10, 2e-5, 2e0, 2e5]
-        param_grid = {'C': Cs, 'gamma' : gammas, 'epsilon': epsilon}
-        grid_search = GridSearchCV(svm.SVR(), param_grid, cv=self.nfolds)
+        #Cs = [1e-4, 1e-3, 1e-2, 1e-1, 2e0, 2e1, 2e2, 2e4]
+        #gammas = [2e-20, 2e-10, 2e0, 2e10]
+        epsilons = [1e-2, 1e-1,2e-1,3e-1,5e-1,1,2,4]
+        Cs = [2e-5,2e-4,2e-3,2e-2, 2e-1,2e1,2e2,2e3,2e4]
+        #gammas = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 0.2,0.5, 0.9]
+        param_grid = {'C': Cs, 'epsilon':epsilons}
+        grid_search = GridSearchCV(svm.SVR(gamma="auto"),param_grid, cv=self.nfolds)
         grid_search.fit(self.x, self.y)
         return grid_search.best_params_
     
@@ -81,7 +85,7 @@ class QPretrainer():
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal]
         # create SVM model with RBF kernel with existing parameters
-        self.svr_rbf = svm.SVR(C=params["C"], gamma=params["gamma"], epsilon=params["epsilon"])
+        self.svr_rbf = svm.SVR(gamma="auto", C=params["C"], epsilon=params["epsilon"])
         # Fit the SVM modelto the data and evaluate SVM model on validation x
         self.x = self.ts[1:,0:self.num_f]
         self.y = self.ts[1:,self.num_f + signal]
@@ -89,6 +93,9 @@ class QPretrainer():
             print("Validation set self.x_v = ",self.x_v)
         #TODO, NO ES PREDICT X SINO X_V
         y_rbf = self.svr_rbf.fit(self.x, self.y).predict(self.x_v)
+        #scaler = preprocessing.StandardScaler()
+        # TODO: PRUEBA DE SCALER DE OUTPUT DE SVM
+        #y_rbf = scaler.fit_transform([y_rbf_o])
         if signal == 0:
             print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
@@ -105,7 +112,7 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==3:
+        if signal==15:
             plt.show()
         else:
             plt.show(block=False)
@@ -119,7 +126,7 @@ class QPretrainer():
 if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
-    for i in range(0,4):
+    for i in range(0,16):
         print('Training model '+str(i))
         params = pt.train_model(i)
         print('best_params_' + str(i) + ' = ',params)

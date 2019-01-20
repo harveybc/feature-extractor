@@ -13,6 +13,7 @@ from sklearn.metrics import mean_squared_error
 from joblib import dump, load
 from sklearn import preprocessing
 
+
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
 class QPretrainer():    
@@ -111,7 +112,7 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==15:
+        if signal==4:
             plt.show()
         else:
             plt.show(block=False)
@@ -125,7 +126,7 @@ class QPretrainer():
 if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
-    for i in range(6,16):
+    for i in range(0,4):
         print('Training model '+str(i))
         params = pt.train_model(i)
         print('best_params_' + str(i) + ' = ',params)

@@ -26,7 +26,7 @@ class QPretrainer():
         # Number of features in dataset
         self.num_f = 0        
         # Number of training signals in dataset
-        self.num_s = 10
+        self.num_s = 16
         # number of folds for cross validation during grid search svm parameter tunning
         self.nfolds=3
         # First argument is the training dataset, last 25% of it is used as validation set
@@ -111,7 +111,7 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==3:
+        if signal==16:
             plt.show()
         else:
             plt.show(block=False)
@@ -125,7 +125,7 @@ class QPretrainer():
 if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
-    for i in range(6,10):
+    for i in range(6,16):
         print('Training model '+str(i))
         params = pt.train_model(i)
         print('best_params_' + str(i) + ' = ',params)

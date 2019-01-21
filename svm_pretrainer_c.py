@@ -189,7 +189,8 @@ class QPretrainer():
 if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
-    for i in range(0,pt.num_s):
+    #for i in range(0,pt.num_s):
+    for i in range(16,19):
         print('Training model '+str(i))
         # verifies if the actions are for classification(the last 6 ones)
         if (i>=10):

@@ -127,7 +127,7 @@ class QPretrainer():
         #if signal == 0:
         #    print("Training set self.x = ",self.x)
         # TEST, remve 1 and replace by self.num_f
-        self.y = self.ts[1:,self.num_f + signal]                  
+        self.y = self.ts[1:,self.num_f + signal].astype(int)                  
         #print("Training action (", signal, ") self.y = ", self.y)
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
         #Cs = [1e-4, 1e-3, 1e-2, 1e-1, 2e0, 2e1, 2e2, 2e4]
@@ -146,7 +146,7 @@ class QPretrainer():
         # TODO: NO ES TS SINO VS
         self.x_v = self.vs[1:,0:self.num_f]
         # TEST, remve 1 and replace by self.num_f
-        self.y_v = self.vs[1:,self.num_f + signal]
+        self.y_v = self.vs[1:,self.num_f + signal].astype(int)
         # create SVM model with RBF kernel with existing parameters
         self.svr_rbf = svm.SVC(kernel="linear", C=params["C"], gamma=params["gamma"])
         # Fit the SVM modelto the data and evaluate SVM model on validation x

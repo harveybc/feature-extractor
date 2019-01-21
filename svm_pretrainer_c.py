@@ -134,9 +134,9 @@ class QPretrainer():
         #gammas = [2e-20, 2e-10, 2e0, 2e10]
         epsilons = [1e-2, 1e-1,2e-1,3e-1,5e-1,1,2,4]
         Cs = [2e-8,2e-5,2e-4,2e-3,2e-2,2e-1,1,2e1,2e2,2e3,2e4,2e6]
-        #gammas = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 0.2,0.5, 0.9]
-        param_grid = {'C': Cs}
-        grid_search = GridSearchCV(svm.SVC(kernel="linear", gamma="auto"),param_grid, cv=self.nfolds)
+        gammas = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 0.2,0.5, 0.9]
+        param_grid = {'C': Cs , 'gamma':gammas}
+        grid_search = GridSearchCV(svm.SVC(kernel="linear"),param_grid, cv=self.nfolds)
         grid_search.fit(self.x, self.y)
         return grid_search.best_params_
     
@@ -148,7 +148,7 @@ class QPretrainer():
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal]
         # create SVM model with RBF kernel with existing parameters
-        self.svr_rbf = svm.SVC(kernel="linear", gamma="auto", C=params["C"])
+        self.svr_rbf = svm.SVC(kernel="linear", C=params["C"], gamma=params["gamma"])
         # Fit the SVM modelto the data and evaluate SVM model on validation x
         self.x = self.ts[1:,0:self.num_f]
         self.y = self.ts[1:,self.num_f + signal]

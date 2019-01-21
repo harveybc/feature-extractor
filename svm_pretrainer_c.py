@@ -3,7 +3,7 @@
 #                 q-agent.
 
 import sys
-from sklearn import svm, svc
+from sklearn import svm
 from sklearn.model_selection import GridSearchCV
 from numpy import genfromtxt
 from numpy import shape

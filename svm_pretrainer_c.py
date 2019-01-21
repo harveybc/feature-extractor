@@ -3,7 +3,7 @@
 #                 q-agent.
 
 import sys
-from sklearn import svm
+from sklearn import svm, svc
 from sklearn.model_selection import GridSearchCV
 from numpy import genfromtxt
 from numpy import shape
@@ -27,7 +27,7 @@ class QPretrainer():
         # Number of features in dataset
         self.num_f = 0        
         # Number of training signals in dataset
-        self.num_s = 16
+        self.num_s = 19
         # number of folds for cross validation during grid search svm parameter tunning
         self.nfolds=3
         # First argument is the training dataset, last 25% of it is used as validation set
@@ -118,6 +118,69 @@ class QPretrainer():
             plt.show(block=False)
         return mean_squared_error(self.y_v, y_rbf)
  
+ ## Train SVMs with the training dataset using cross-validation error estimation
+    ## Returns best parameters
+    def train_model_c(self, signal):
+        #converts to nparray
+        self.ts = np.array(self.ts)
+        self.x = self.ts[1:,0:self.num_f]
+        #if signal == 0:
+        #    print("Training set self.x = ",self.x)
+        # TEST, remve 1 and replace by self.num_f
+        self.y = self.ts[1:,self.num_f + signal]                  
+        #print("Training action (", signal, ") self.y = ", self.y)
+        # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
+        #Cs = [1e-4, 1e-3, 1e-2, 1e-1, 2e0, 2e1, 2e2, 2e4]
+        #gammas = [2e-20, 2e-10, 2e0, 2e10]
+        epsilons = [1e-2, 1e-1,2e-1,3e-1,5e-1,1,2,4]
+        Cs = [2e-5,2e-4,2e-3,2e-2, 2e-1,2e1,2e2,2e3,2e4]
+        #gammas = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 0.2,0.5, 0.9]
+        param_grid = {'C': Cs, 'epsilon':epsilons}
+        grid_search = GridSearchCV(svm.SVR(gamma="auto"),param_grid, cv=self.nfolds)
+        grid_search.fit(self.x, self.y)
+        return grid_search.best_params_
+    
+    ## Evaluate the trained models in the validation set to obtain the error
+    def evaluate_validation_c(self, params, signal):
+        self.vs = np.array(self.vs)
+        # TODO: NO ES TS SINO VS
+        self.x_v = self.vs[1:,0:self.num_f]
+        # TEST, remve 1 and replace by self.num_f
+        self.y_v = self.vs[1:,self.num_f + signal]
+        # create SVM model with RBF kernel with existing parameters
+        self.svr_rbf = svm.SVR(gamma="auto", C=params["C"], epsilon=params["epsilon"])
+        # Fit the SVM modelto the data and evaluate SVM model on validation x
+        self.x = self.ts[1:,0:self.num_f]
+        self.y = self.ts[1:,self.num_f + signal]
+        if signal == 0:
+            print("Validation set self.x_v = ",self.x_v)
+        #TODO, NO ES PREDICT X SINO X_V
+        y_rbf = self.svr_rbf.fit(self.x, self.y).predict(self.x_v)
+        #scaler = preprocessing.StandardScaler()
+        # TODO: PRUEBA DE SCALER DE OUTPUT DE SVM
+        #y_rbf = scaler.fit_transform([y_rbf_o])
+        if signal == 0:
+            print("Validation set y_rbf = ",y_rbf)
+        # plot original and predicted data of the validation dataset
+        lw = 2
+        # TODO: NO ES TS SINO VS
+        x_seq = list(range(0, self.vs.shape[0]-1))
+        # 0 = Buy/CloseSell/nopCloseBuy
+        print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
+        fig=plt.figure()
+        plt.plot(x_seq, self.y_v, color='darkorange', label='data')
+        plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
+        plt.xlabel('data')
+        plt.ylabel('target')
+        plt.title('Signal ' + str(signal))
+        plt.legend()
+        fig.savefig('predict_' + str(signal) + '.png')
+        if signal==15:
+            plt.show()
+        else:
+            plt.show(block=False)
+        return mean_squared_error(self.y_v, y_rbf)
+ 
     ## Export the trained models and the predicted validation set predictions, print statistics 
     def export_model(self, signal):
         dump(self.svr_rbf, self.model_prefix + str(signal)+'.svm') 
@@ -126,12 +189,19 @@ class QPretrainer():
 if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
-    for i in range(0,16):
+    for i in range(0,pt.num_s):
         print('Training model '+str(i))
-        params = pt.train_model(i)
-        print('best_params_' + str(i) + ' = ',params)
-        mse = pt.evaluate_validation(params,i)
-        print('mean_squared_error on validation set:' + str(i) + ' = ' + str(mse))
+        # verifies if the actions are for classification(the last 6 ones)
+        if (i>=10):
+            params = pt.train_model_c(i)
+            print('best_params_' + str(i) + ' = ',params)
+            error = pt.evaluate_validation_c(params,i)
+            print('error on validation set:' + str(i) + ' = ' + str(error))
+        else:    
+            params = pt.train_model(i)
+            print('best_params_' + str(i) + ' = ',params)
+            mse = pt.evaluate_validation(params,i)
+            print('mean_squared_error on validation set:' + str(i) + ' = ' + str(mse))
         pt.export_model(i)
     
     

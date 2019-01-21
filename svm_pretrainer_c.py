@@ -69,7 +69,7 @@ class QPretrainer():
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
         #Cs = [1e-4, 1e-3, 1e-2, 1e-1, 2e0, 2e1, 2e2, 2e4]
         #gammas = [2e-20, 2e-10, 2e0, 2e10]
-        epsilons = [1e-2, 1e-1,2e-1,3e-1,5e-1,1,2,4]
+        epsilons = [1e-2, 1e-1,2e-1,3e-1,5e-1]
         Cs = [2e-5,2e-4,2e-3,2e-2, 2e-1,2e1,2e2,2e3,2e4]
         #Cs = [1, 10,100,1000]
         #gammas = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 0.2,0.5, 0.9]

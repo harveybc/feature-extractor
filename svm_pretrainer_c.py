@@ -131,10 +131,8 @@ class QPretrainer():
         self.y = self.ts[1:,self.num_f + signal].astype(int)                  
         #print("Training action (", signal, ") self.y = ", self.y)
         # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
-        #epsilons = [1e-2, 1e-1,2e-1,3e-1,5e-1,1,2,4]
         #Cs = [2e-8,2e-5,2e-4,2e-3,2e-2,2e-1,1,2e1,2e2,2e3,2e4,2e6]
-        epsilons = [1e-2, 1e-1,2e-1,3e-1,5e-1,1,2,4]
-        Cs = [1, 10,100,1000]
+        Cs = [1,10,100,1000]
         gammas = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 0.2,0.5, 0.9]
         param_grid = {'C': Cs}
         grid_search = GridSearchCV(svm.SVC(kernel="rbf", gamma="auto"),param_grid, cv=self.nfolds)
@@ -191,7 +189,7 @@ if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
     #for i in range(0,pt.num_s):
-    for i in range(0,19):
+    for i in range(16,19):
         print('Training model '+str(i))
         # verifies if the actions are for classification(the last 6 ones)
         if (i>=10):

@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 from joblib import dump, load
 from sklearn import preprocessing
-
+from sklearn.metrics import confusion_matrix
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
@@ -43,6 +43,35 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
+
+    def set_dcn_model(self):
+        # Deep Convolutional Neural Network for Regression
+        model = Sequential()
+        # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
+        # first set of CONV => RELU => POOL
+        model.add(Conv1D(512, 5,input_shape=(self.num_vectors,self.vector_size)))
+        model.add(Activation('relu'))
+        model.add(MaxPooling1D(pool_size=2, strides=2))
+        # second set of CONV => RELU => POOL
+        model.add(Conv1D(32, 5))
+        model.add(Activation('relu'))
+        model.add(MaxPooling1D(pool_size=2, strides=2))
+        # second set of CONV => RELU => POOL
+        model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+        model.add(Dense(64)) # valor óptimo:64 @400k
+        model.add(Activation('relu'))
+        # output layer
+        model.add(Dense(self.action_size))
+        model.add(Activation('softmax'))
+        # multi-GPU support
+        #model = to_multi_gpu(model)
+        #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)
+        # use SGD optimizer
+        #opt = Adam(lr=self.learning_rate)
+        opt = SGD(lr=self.learning_rate, momentum=0.9)
+        model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
+        #model.compile(loss="mse", optimizer=opt, metrics=["accuracy"])
+        return model 
 
     ## Load  training and validation datasets, initialize number of features and training signals
     def load_datasets(self):
@@ -117,7 +146,7 @@ class QPretrainer():
             plt.show()
         else:
             plt.show(block=False)
-        return mean_squared_error(self.y_v, y_rbf)
+        return confusion_matrix(self.y_v, y_rbf)
  
  ## Train SVMs with the training dataset using cross-validation error estimation
     ## Returns best parameters
@@ -125,39 +154,25 @@ class QPretrainer():
         #converts to nparray
         self.ts = np.array(self.ts)
         self.x = self.ts[1:,0:self.num_f]
-        #if signal == 0:
-        #    print("Training set self.x = ",self.x)
-        # TEST, remve 1 and replace by self.num_f
         self.y = self.ts[1:,self.num_f + signal].astype(int)                  
-        #print("Training action (", signal, ") self.y = ", self.y)
-        # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
-        #Cs = [2e-8,2e-5,2e-4,2e-3,2e-2,2e-1,1,2e1,2e2,2e3,2e4,2e6]
-        Cs = [1,2,4,7,10,100,1000]
-        gammas = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 0.2,0.5, 0.9]
-        param_grid = {'C': Cs}
-        grid_search = GridSearchCV(svm.SVC(kernel="rbf", gamma="auto"),param_grid, cv=self.nfolds)
-        grid_search.fit(self.x, self.y)
-        return grid_search.best_params_
+        # TODO: Cambiar var svr_rbf por p_model
+        # setup the DCN model
+        self.svr_rbf = set_dcn_model()
+        # train DCN model with the training data
+        self.svr_rbf.fit(self.x, self.y, batch_size=100, nb_epoch=100, verbose=1)
+        return self.svr_rbf 
     
     ## Evaluate the trained models in the validation set to obtain the error
-    def evaluate_validation_c(self, params, signal):
+    def evaluate_validation_c(self, model, signal):
         self.vs = np.array(self.vs)
         # TODO: NO ES TS SINO VS
         self.x_v = self.vs[1:,0:self.num_f]
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal].astype(int)
-        # create SVM model with RBF kernel with existing parameters
-        self.svr_rbf = svm.SVC(kernel="rbf", C=params["C"], gamma="auto")
-        # Fit the SVM modelto the data and evaluate SVM model on validation x
-        self.x = self.ts[1:,0:self.num_f]
-        self.y = self.ts[1:,self.num_f + signal]
         if signal == 0:
             print("Validation set self.x_v = ",self.x_v)
-        #TODO, NO ES PREDICT X SINO X_V
-        y_rbf = self.svr_rbf.fit(self.x, self.y).predict(self.x_v)
-        #scaler = preprocessing.StandardScaler()
-        # TODO: PRUEBA DE SCALER DE OUTPUT DE SVM
-        #y_rbf = scaler.fit_transform([y_rbf_o])
+        # predict the class of in the validation set
+        y_rbf = cnn.predict_classes(self.x_v)
         if signal == 0:
             print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset

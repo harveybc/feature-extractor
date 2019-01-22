@@ -158,7 +158,8 @@ class QPretrainer():
         obs_matrix = np.array([])
         obs = np.array([0.0] * self.num_features)
         # for each observation
-        for ob in data:
+        data_p = np.array(data)
+        for ob in data_p:
             # for each feature, add an array of window_size elements
             for j in range(0,self.num_features):
                 obs[j] = np.array(ob[j * self.window_size : (j+1) * self.window_size])

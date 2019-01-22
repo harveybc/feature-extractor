@@ -64,14 +64,17 @@ class QPretrainer():
         # second set of CONV => RELU => POOL
         
         model.add(Dropout(0.1))
-        model.add(Conv1D(128, 5))
+        model.add(Conv1D(512, 5))
         model.add(Activation('sigmoid'))
         
         model.add(Dropout(0.05))
-        model.add(Conv1D(64, 5))
+        model.add(Conv1D(128, 5))
         model.add(Activation('sigmoid'))
         
         model.add(Dropout(0.025))
+        model.add(Conv1D(64, 5))
+        model.add(Activation('sigmoid'))
+        
         model.add(Conv1D(32, 5))
         model.add(Activation('sigmoid'))
         

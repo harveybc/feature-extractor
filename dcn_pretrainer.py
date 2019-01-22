@@ -49,7 +49,7 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
-        self.learning_rate = 0.001
+        self.learning_rate = 0.01
 
     def set_dcn_model(self):
         # Deep Convolutional Neural Network for Regression
@@ -180,13 +180,13 @@ class QPretrainer():
         #converts to nparray
         self.ts = np.array(self.ts)
         self.x_pre = self.ts[1:,0:self.num_f]
-        self.x = self.dcn_input(self.x_pre)
+        self.x = np.array(self.dcn_input(self.x_pre))
         self.y = self.ts[1:,self.num_f + signal].astype(int)                  
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
         self.svr_rbf = self.set_dcn_model()
         # train DCN model with the training data
-        self.svr_rbf.fit(self.x, self.y, batch_size=100, nb_epoch=100, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=100, epochs=100, verbose=1)
         return self.svr_rbf 
 
         

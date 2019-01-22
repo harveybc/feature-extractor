@@ -162,6 +162,7 @@ class QPretrainer():
         for i, ob in enumerate(data):
             # for each feature, add an array of window_size elements
             for j in range(0,self.num_features):
+                print("obs=",obs)
                 print("data_p=",data_p[i, j * self.window_size : (j+1) * self.window_size])
                 obs[j] = data_p[i, j * self.window_size : (j+1) * self.window_size]
                 #obs[j] = ob[0]

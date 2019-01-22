@@ -13,6 +13,10 @@ from sklearn.metrics import mean_squared_error
 from joblib import dump, load
 from sklearn import preprocessing
 from sklearn.metrics import confusion_matrix
+from keras.models import Sequential
+from keras.layers import Conv2D,Conv1D, MaxPooling2D, MaxPooling1D
+from keras.layers import Activation, Dropout, Flatten, Dense
+from keras.optimizers import SGD
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.

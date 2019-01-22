@@ -155,14 +155,14 @@ class QPretrainer():
      
     ## Generate DCN  input matrix
     def dcn_input(self, data):
-        obs_matrix = np.array([])
+        obs_matrix = np.array([], dtype=object)
         obs = np.array([0.0] * self.num_features)
         # for each observation
         data_p = np.array(data)
         for ob in data_p:
             # for each feature, add an array of window_size elements
             for j in range(0,self.num_features):
-                obs[j] = np.array(ob[j * self.window_size : (j+1) * self.window_size])
+                obs[j] = ob[j * self.window_size : (j+1) * self.window_size]
             obs_matrix.append(obs.copy())
         return obs_matrix
  

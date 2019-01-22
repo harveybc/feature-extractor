@@ -163,7 +163,7 @@ class QPretrainer():
             # for each feature, add an array of window_size elements
             for j in range(0,self.num_features):
                 #obs[j] = ob[j * self.window_size : (j+1) * self.window_size]
-                obs[j] = ob[0 : 30]
+                obs[j] = ob[0]
             obs_matrix.append(obs.copy())
         return obs_matrix
  

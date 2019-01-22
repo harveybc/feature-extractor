@@ -170,7 +170,7 @@ class QPretrainer():
         #converts to nparray
         self.ts = np.array(self.ts)
         self.x_pre = self.ts[1:,0:self.num_f]
-        self.x = dcn_input(self.x_pre)
+        self.x = self.dcn_input(self.x_pre)
         self.y = self.ts[1:,self.num_f + signal].astype(int)                  
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
@@ -185,7 +185,7 @@ class QPretrainer():
         self.vs = np.array(self.vs)
         # TODO: NO ES TS SINO VS
         self.x_v_pre = self.vs[1:,0:self.num_f]
-        self.x_v = dcn_input(self.x_v_pre)
+        self.x_v = self.dcn_input(self.x_v_pre)
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal].astype(int)
         if signal == 0:

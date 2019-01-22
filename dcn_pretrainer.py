@@ -25,7 +25,9 @@ class QPretrainer():
         # Validation set
         self.vs = []
         # Number of features in dataset
-        self.num_f = 0        
+        self.num_f = 0   
+        self.num_features = 0
+        self.window_size = 30
         # Number of training signals in dataset
         self.num_s = 19
         # number of folds for cross validation during grid search svm parameter tunning
@@ -43,13 +45,14 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
+        self.learning_rate = 0.001
 
     def set_dcn_model(self):
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
-        model.add(Conv1D(512, 5,input_shape=(self.num_vectors,self.vector_size)))
+        model.add(Conv1D(512, 5,input_shape=(self.num_features,self.window_size)))
         model.add(Activation('relu'))
         model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
@@ -61,7 +64,7 @@ class QPretrainer():
         model.add(Dense(64)) # valor óptimo:64 @400k
         model.add(Activation('relu'))
         # output layer
-        model.add(Dense(self.action_size))
+        model.add(Dense(1, activation = 'sigmoid'))
         model.add(Activation('softmax'))
         # multi-GPU support
         #model = to_multi_gpu(model)
@@ -69,15 +72,16 @@ class QPretrainer():
         # use SGD optimizer
         #opt = Adam(lr=self.learning_rate)
         opt = SGD(lr=self.learning_rate, momentum=0.9)
-        model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
+        model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         #model.compile(loss="mse", optimizer=opt, metrics=["accuracy"])
         return model 
 
     ## Load  training and validation datasets, initialize number of features and training signals
     def load_datasets(self):
-        self.ts_g = genfromtxt(self.ts_f, delimiter=',')
+        self.ts_g = genfromtxt(self.ts_f, delimiter=',', skip_header = 1)
         # split training and validation sets into features and training signal for regression
         self.num_f = self.ts_g.shape[1] - self.num_s
+        self.num_features = self.num_f // self.window_size
         self.num_ticks = self.ts_g.shape[0]
         # split dataset into 75% training and 25% validation 
         self.ts_s = self.ts_g[1:(3*self.num_ticks)//4,:]
@@ -148,12 +152,25 @@ class QPretrainer():
             plt.show(block=False)
         return confusion_matrix(self.y_v, y_rbf)
  
+     
+    ## Generate DCN  input matrix
+    def dcn_input(self, data):
+        obs_matrix = np.array()
+        # for each observation
+        for ob in data:
+            # for each feature, add an array of window_size elements
+            for j in range(0,self.num_features):
+                obs[j] = ob[j * self.window_size : (j+1) * self.window_size]
+            obs_matrix.append(obs.copy())
+        return obs_matrix
+ 
  ## Train SVMs with the training dataset using cross-validation error estimation
     ## Returns best parameters
     def train_model_c(self, signal):
         #converts to nparray
         self.ts = np.array(self.ts)
-        self.x = self.ts[1:,0:self.num_f]
+        self.x_pre = self.ts[1:,0:self.num_f]
+        self.x = dcn_input(self.x_pre)
         self.y = self.ts[1:,self.num_f + signal].astype(int)                  
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
@@ -161,18 +178,20 @@ class QPretrainer():
         # train DCN model with the training data
         self.svr_rbf.fit(self.x, self.y, batch_size=100, nb_epoch=100, verbose=1)
         return self.svr_rbf 
-    
+
+        
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation_c(self, model, signal):
         self.vs = np.array(self.vs)
         # TODO: NO ES TS SINO VS
-        self.x_v = self.vs[1:,0:self.num_f]
+        self.x_v_pre = self.vs[1:,0:self.num_f]
+        self.x_v = dcn_input(self.x_v_pre)
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal].astype(int)
         if signal == 0:
             print("Validation set self.x_v = ",self.x_v)
         # predict the class of in the validation set
-        y_rbf = cnn.predict_classes(self.x_v)
+        y_rbf = svr_rbf.predict_classes(self.x_v)
         if signal == 0:
             print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset

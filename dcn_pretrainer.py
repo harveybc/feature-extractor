@@ -64,15 +64,15 @@ class QPretrainer():
         # second set of CONV => RELU => POOL
         
         model.add(Dropout(0.1))
-        model.add(Conv1D(512, 5))
-        model.add(Activation('sigmoid'))
-        
-        model.add(Dropout(0.05))
         model.add(Conv1D(128, 5))
         model.add(Activation('sigmoid'))
         
-        model.add(Dropout(0.025))
+        model.add(Dropout(0.05))
         model.add(Conv1D(64, 5))
+        model.add(Activation('sigmoid'))
+        
+        model.add(Dropout(0.025))
+        model.add(Conv1D(32, 5))
         model.add(Activation('sigmoid'))
         
         model.add(Conv1D(32, 5))
@@ -258,7 +258,7 @@ if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
     #for i in range(0,pt.num_s):
-    for i in range(10,19):
+    for i in range(16,19):
         print('Training model '+str(i))
         # verifies if the actions are for classification(the last 6 ones)
         if (i>=10):

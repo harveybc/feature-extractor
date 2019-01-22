@@ -50,19 +50,37 @@ class QPretrainer():
         # svm model
         self.svr_rbf = []
         self.learning_rate = 0.001
-        self.epochs = 200
+        self.epochs = 100
 
     def set_dcn_model(self):
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
-        model.add(Conv1D(512, 5,input_shape=(self.num_features,self.window_size)))
+        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
+        model.add(Conv1D(512, 5))
         model.add(Activation('sigmoid'))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
+        
+        model.add(Dropout(0.1))
+        model.add(Conv1D(128, 5))
+        model.add(Activation('sigmoid'))
+        
+        model.add(Dropout(0.05))
+        model.add(Conv1D(64, 5))
+        model.add(Activation('sigmoid'))
+        
+        model.add(Dropout(0.025))
         model.add(Conv1D(32, 5))
         model.add(Activation('sigmoid'))
+        
+        model.add(Conv1D(16, 5))
+        model.add(Activation('sigmoid'))
+        
+        model.add(Conv1D(8, 5))
+        model.add(Activation('sigmoid'))
+        
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors

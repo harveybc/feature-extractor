@@ -57,17 +57,18 @@ class QPretrainer():
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
-        model.add(Conv1D(512, 5,input_shape=(self.num_features,self.window_size)))
-        model.add(Activation('sigmoid'))
-        model.add(MaxPooling1D(pool_size=2, strides=2))
+       # model.add(Conv1D(512, 5,input_shape=(self.num_features,self.window_size)))
+       # model.add(Activation('sigmoid'))
+       # model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
-        model.add(Conv1D(32, 5))
-        model.add(Activation('sigmoid'))
-        model.add(MaxPooling1D(pool_size=2, strides=2))
+       # model.add(Conv1D(32, 5))
+       # model.add(Activation('sigmoid'))
+       # model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
-        model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(64)) # valor óptimo:64 @400k
-        model.add(Activation ('sigmoid'))
+       # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+        
+        model.add(Dense(64,input_shape=(self.num_features,self.window_size), activation='relu', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+       # model.add(Activation ('sigmoid'))
         # output layer
         model.add(Dense(1, activation = 'sigmoid'))
         # multi-GPU support
@@ -76,7 +77,8 @@ class QPretrainer():
         # use SGD optimizer
         #opt = Adam(lr=self.learning_rate)
         opt = SGD(lr=self.learning_rate, momentum=0.9)
-        model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+        #model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+        model.compile(loss="binary_crossentropy", optimizer='adam', metrics=["accuracy"])
         #model.compile(loss="mse", optimizer=opt, metrics=["accuracy"])
         return model 
 
@@ -186,7 +188,7 @@ class QPretrainer():
         # setup the DCN model
         self.svr_rbf = self.set_dcn_model()
         # train DCN model with the training data
-        self.svr_rbf.fit(self.x, self.y, batch_size=100, epochs=self.epochs, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=10, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
 
         

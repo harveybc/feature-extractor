@@ -71,7 +71,7 @@ class QPretrainer():
         model.add(Conv1D(64, 5))
         model.add(Activation('sigmoid'))
         
-        model.add(Dropout(0.025))
+        #model.add(Dropout(0.025))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         

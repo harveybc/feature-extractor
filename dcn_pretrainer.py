@@ -59,11 +59,11 @@ class QPretrainer():
         # first set of CONV => RELU => POOL
         model.add(Conv1D(512, 5,input_shape=(self.num_features,self.window_size)))
         model.add(Activation('sigmoid'))
-       # model.add(MaxPooling1D(pool_size=2, strides=2))
+        model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
-       # model.add(Conv1D(32, 5))
-       # model.add(Activation('sigmoid'))
-       # model.add(MaxPooling1D(pool_size=2, strides=2))
+        model.add(Conv1D(32, 5))
+        model.add(Activation('sigmoid'))
+        model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         

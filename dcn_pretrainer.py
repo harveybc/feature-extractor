@@ -16,7 +16,7 @@ from sklearn.metrics import confusion_matrix
 from keras.models import Sequential
 from keras.layers import Conv2D,Conv1D, MaxPooling2D, MaxPooling1D
 from keras.layers import Activation, Dropout, Flatten, Dense
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adamax
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
@@ -49,7 +49,7 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
-        self.learning_rate = 0.001
+        self.learning_rate = 0.01
         self.epochs = 150
 
     def set_dcn_model(self):
@@ -82,7 +82,7 @@ class QPretrainer():
         # second set of CONV => RELU => POOL
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         
-        model.add(Dense(64, activation='relu', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+        model.add(Dense(64, activation='relu', kernel_initializer='glorot_uniform', kernel_constraint=maxnorm(3))) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
@@ -91,10 +91,10 @@ class QPretrainer():
         #model = to_multi_gpu(model)
         #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)
         # use SGD optimizer
-        #opt = Adam(lr=self.learning_rate)
-        opt = SGD(lr=self.learning_rate, momentum=0.9)
-        #model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
-        model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
+        opt = Adamax(lr=self.learning_rate)
+        #opt = SGD(lr=self.learning_rate, momentum=0.9)
+        model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+        #model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
         #model.compile(loss="mse", optimizer=opt, metrics=["accuracy"])
         return model 
 

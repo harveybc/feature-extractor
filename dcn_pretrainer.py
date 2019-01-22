@@ -70,6 +70,7 @@ class QPretrainer():
         model.add(Dense(64,input_shape=(self.num_features,self.window_size), activation='relu', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         # output layer
+        model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         model.add(Dense(1, activation = 'sigmoid'))
         # multi-GPU support
         #model = to_multi_gpu(model)

@@ -79,7 +79,7 @@ class QPretrainer():
         #opt = Adam(lr=self.learning_rate)
         opt = SGD(lr=self.learning_rate, momentum=0.9)
         #model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
-        model.compile(loss="binary_crossentropy", optimizer='adam', metrics=["accuracy"])
+        model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         #model.compile(loss="mse", optimizer=opt, metrics=["accuracy"])
         return model 
 

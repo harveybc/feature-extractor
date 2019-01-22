@@ -227,7 +227,8 @@ class QPretrainer():
  
     ## Export the trained models and the predicted validation set predictions, print statistics 
     def export_model(self, signal):
-        dump(self.svr_rbf, self.model_prefix + str(signal)+'.svm') 
+        self.svr_rbf.save(self.model_prefix + str(signal)+'.dcn') 
+    
         
 # main function 
 if __name__ == '__main__':

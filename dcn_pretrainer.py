@@ -82,7 +82,7 @@ class QPretrainer():
         # second set of CONV => RELU => POOL
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         
-        model.add(Dense(64, activation='relu', kernel_initializer='glorot_uniform', kernel_constraint=maxnorm(3))) # valor óptimo:64 @400k
+        model.add(Dense(64, activation='relu', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors

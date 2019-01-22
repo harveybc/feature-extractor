@@ -180,7 +180,7 @@ class QPretrainer():
         self.y = self.ts[1:,self.num_f + signal].astype(int)                  
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
-        self.svr_rbf = set_dcn_model()
+        self.svr_rbf = self.set_dcn_model()
         # train DCN model with the training data
         self.svr_rbf.fit(self.x, self.y, batch_size=100, nb_epoch=100, verbose=1)
         return self.svr_rbf 

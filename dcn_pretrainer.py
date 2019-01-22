@@ -57,8 +57,8 @@ class QPretrainer():
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
-       # model.add(Conv1D(512, 5,input_shape=(self.num_features,self.window_size)))
-       # model.add(Activation('sigmoid'))
+        model.add(Conv1D(512, 5,input_shape=(self.num_features,self.window_size)))
+        model.add(Activation('sigmoid'))
        # model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
        # model.add(Conv1D(32, 5))
@@ -67,7 +67,7 @@ class QPretrainer():
         # second set of CONV => RELU => POOL
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         
-        model.add(Dense(64,input_shape=(self.num_features,self.window_size), activation='relu', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+        model.add(Dense(64, activation='relu', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors

@@ -58,19 +58,18 @@ class QPretrainer():
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
         model.add(Conv1D(512, 5,input_shape=(self.num_features,self.window_size)))
-        model.add(Activation('relu'))
+        model.add(Activation('sigmoid'))
         model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
         model.add(Conv1D(32, 5))
-        model.add(Activation('relu'))
+        model.add(Activation('sigmoid'))
         model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         model.add(Dense(64)) # valor óptimo:64 @400k
-        model.add(Activation('relu'))
+        model.add(Activation ('sigmoid'))
         # output layer
         model.add(Dense(1, activation = 'sigmoid'))
-        model.add(Activation('softmax'))
         # multi-GPU support
         #model = to_multi_gpu(model)
         #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)

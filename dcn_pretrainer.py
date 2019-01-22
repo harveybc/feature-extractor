@@ -50,7 +50,7 @@ class QPretrainer():
         # svm model
         self.svr_rbf = []
         self.learning_rate = 0.001
-        self.epochs = 100
+        self.epochs = 500
 
     def set_dcn_model(self):
         # Deep Convolutional Neural Network for Regression
@@ -219,7 +219,7 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==18:
+        if signal==17:
             plt.show()
         else:
             plt.show(block=False)

@@ -50,7 +50,7 @@ class QPretrainer():
         # svm model
         self.svr_rbf = []
         self.learning_rate = 0.001
-        self.epochs = 100
+        self.epochs = 150
 
     def set_dcn_model(self):
         # Deep Convolutional Neural Network for Regression

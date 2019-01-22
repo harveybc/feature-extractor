@@ -17,6 +17,7 @@ from keras.models import Sequential
 from keras.layers import Conv2D,Conv1D, MaxPooling2D, MaxPooling1D
 from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.optimizers import SGD, Adamax
+from keras.constraints import max_norm
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
@@ -58,31 +59,31 @@ class QPretrainer():
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
         model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(512, 3))
+        model.add(Conv1D(512, 3, kernel_constraint=max_norm(3.)))
         model.add(Activation('sigmoid'))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
         
         model.add(Dropout(0.1))
-        model.add(Conv1D(128, 3))
+        model.add(Conv1D(128, 3, kernel_constraint=max_norm(3.)))
         model.add(Activation('sigmoid'))
         
         model.add(Dropout(0.05))
-        model.add(Conv1D(64, 3))
+        model.add(Conv1D(64, 3, kernel_constraint=max_norm(3.)))
         model.add(Activation('sigmoid'))
         
         model.add(Dropout(0.025))
-        model.add(Conv1D(32, 3))
+        model.add(Conv1D(32, 3, kernel_constraint=max_norm(3.)))
         model.add(Activation('sigmoid'))
         
-        model.add(Conv1D(16, 3))
+        model.add(Conv1D(16, 3, kernel_constraint=max_norm(3.)))
         model.add(Activation('sigmoid'))
         
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         
-        model.add(Dense(64, activation='relu', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+        model.add(Dense(64, activation='relu', kernel_initializer='glorot_uniform', kernel_constraint=max_norm(3.))) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
@@ -236,7 +237,7 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==18:
+        if signal==17:
             plt.show()
         else:
             plt.show(block=False)
@@ -252,7 +253,7 @@ if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
     #for i in range(0,pt.num_s):
-    for i in range(16,19):
+    for i in range(17,18):
         print('Training model '+str(i))
         # verifies if the actions are for classification(the last 6 ones)
         if (i>=10):

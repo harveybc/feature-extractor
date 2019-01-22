@@ -51,39 +51,38 @@ class QPretrainer():
         # svm model
         self.svr_rbf = []
         self.learning_rate = 0.01
-        self.epochs = 200
+        self.epochs = 150
 
     def set_dcn_model(self):
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
-        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(512, 3, kernel_constraint=max_norm(3.)))
+        model.add(Dropout(0.1,input_shape=(self.num_features,self.window_size)))
+        model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
         
-        model.add(Dropout(0.1))
-        model.add(Conv1D(128, 3, kernel_constraint=max_norm(3.)))
-        model.add(Activation('sigmoid'))
-        
         model.add(Dropout(0.05))
-        model.add(Conv1D(64, 3, kernel_constraint=max_norm(3.)))
+        model.add(Conv1D(128, 3))
         model.add(Activation('sigmoid'))
         
         model.add(Dropout(0.025))
-        model.add(Conv1D(32, 3, kernel_constraint=max_norm(3.)))
+        model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         
-        model.add(Conv1D(16, 3, kernel_constraint=max_norm(3.)))
+        model.add(Conv1D(32, 3))
+        model.add(Activation('sigmoid'))
+        
+        model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
         
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         
-        model.add(Dense(64, activation='relu', kernel_initializer='glorot_uniform', kernel_constraint=max_norm(3.))) # valor óptimo:64 @400k
+        model.add(Dense(64, activation='relu', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors

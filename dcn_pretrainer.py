@@ -68,9 +68,9 @@ class QPretrainer():
         # 0.2,0.1,lr=0.002  400 ep: 0.23
         # 0.2,0.1,lr=0.0002 400 ep: 0.11
         # 0.2,lr=0.0002 400ep:0.16
-        # 0.2,0.1, 0.1, 0.1
+        # 0.2,0.1, 0.1, 0.1:0.14
         
-        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
+        model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
@@ -81,11 +81,11 @@ class QPretrainer():
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         
-        model.add(Dropout(0.1))
+        #model.add(Dropout(0.1))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         
-        model.add(Dropout(0.1))
+        #model.add(Dropout(0.1))
         model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
         

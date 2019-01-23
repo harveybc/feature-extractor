@@ -64,9 +64,9 @@ class QPretrainer():
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
         
-        model.add(Dropout(0.05))
-        model.add(Conv1D(128, 3))
-        model.add(Activation('sigmoid'))
+        #model.add(Dropout(0.05))
+        #model.add(Conv1D(128, 3))
+        #model.add(Activation('sigmoid'))
         
         # mejor config so far: D0.1-512,D0.05-128,64,32,16d64 error_vs=0.18
         model.add(Conv1D(64, 3))

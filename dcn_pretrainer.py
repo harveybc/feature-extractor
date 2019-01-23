@@ -60,18 +60,18 @@ class QPretrainer():
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
-        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(256, 3))
+        model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
+        model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
         
-        model.add(Dropout(0.1))
+        model.add(Dropout(0.2))
         # mejor config so far: D0.2-512,D0.1-64,d0.05-32,16d64 error_vs=0.13 con 300 epochs
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         
-        model.add(Dropout(0.05))
+        model.add(Dropout(0.1))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         

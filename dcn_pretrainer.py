@@ -53,8 +53,8 @@ class QPretrainer():
         # Best so far 0.0001 error = 0.106 en 200 epochs, 2nd best, 0.0002 en 400 epochs=0.104
         # 0.002 (Adamax default) = 0.137
         self.learning_rate = 0.0002 
-        #prev:300
-        self.epochs = 400
+        #prev:400 0.11 
+        self.epochs = 800
 
     def set_dcn_model(self):
         # Deep Convolutional Neural Network for Regression
@@ -70,7 +70,7 @@ class QPretrainer():
         # 0.2,lr=0.0002 400ep:0.16
         # 0.2,0.1, 0.1, 0.1:0.14
         
-        model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
+        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         #model.add(MaxPooling1D(pool_size=2, strides=2))

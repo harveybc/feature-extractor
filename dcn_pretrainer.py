@@ -59,7 +59,7 @@ class QPretrainer():
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
         model.add(Dropout(0.1,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(512, 3))
+        model.add(Conv1D(128, 3))
         model.add(Activation('sigmoid'))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL

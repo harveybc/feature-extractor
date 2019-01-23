@@ -52,7 +52,7 @@ class QPretrainer():
         self.svr_rbf = []
         # Best so far 0.0001 error = 0.106 en 200 epochs, 2nd best, 0.0002 en 400 epochs=0.104
         # 0.002 (Adamax default) = 0.137
-        self.learning_rate = 0.002 
+        self.learning_rate = 0.0002 
         #prev:300
         self.epochs = 400
 
@@ -65,7 +65,8 @@ class QPretrainer():
         # 0.1,0.5,0.025: 0.137
         # 0.3,0.15,0.08: 0.134
         # 0.4,0.1,0.05: 0.126 con 0.4,0.2,0.1 =0.142
-        # 0.2,0.1,lr=0.002: 
+        # 0.2,0.1,lr=0.002  400 ep: 0.23
+        # 0.2,0.1,lr=0.0002 400 ep:
         
         model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))

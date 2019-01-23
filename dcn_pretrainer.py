@@ -51,7 +51,7 @@ class QPretrainer():
         # svm model
         self.svr_rbf = []
         # Best so far 0.0001 error=0.106 en 200 epochs
-        self.learning_rate = 0.002 
+        self.learning_rate = 0.001 
         #prev:300
         self.epochs = 400
 

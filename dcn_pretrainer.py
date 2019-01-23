@@ -66,7 +66,9 @@ class QPretrainer():
         # 0.3,0.15,0.08: 0.134
         # 0.4,0.1,0.05: 0.126 con 0.4,0.2,0.1 =0.142
         # 0.2,0.1,lr=0.002  400 ep: 0.23
-        # 0.2,0.1,lr=0.0002 400 ep:
+        # 0.2,0.1,lr=0.0002 400 ep: 0.11
+        # 0.2,lr=0.0002 400ep:0.16
+        # 0.2,0.1, 0.1, 0.1
         
         model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
@@ -79,10 +81,11 @@ class QPretrainer():
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         
-        #model.add(Dropout(0.1))
+        model.add(Dropout(0.1))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         
+        model.add(Dropout(0.1))
         model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
         

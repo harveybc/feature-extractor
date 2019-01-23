@@ -66,7 +66,7 @@ class QPretrainer():
         # second set of CONV => RELU => POOL
         
         model.add(Dropout(0.1))
-        # mejor config so far: D0.1-512,D0.05-128,64,32,16d64 error_vs=0.18
+        # mejor config so far: D0.2-512,D0.1-64,d0.05-32,16d64 error_vs=0.13
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         

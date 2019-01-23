@@ -50,7 +50,7 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
-        self.learning_rate = 0.01
+        self.learning_rate = 0.002
         self.epochs = 200
 
     def set_dcn_model(self):
@@ -58,21 +58,21 @@ class QPretrainer():
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
-        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
+        model.add(Dropout(0.1,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
         
-        model.add(Dropout(0.1))
+        model.add(Dropout(0.05))
         model.add(Conv1D(128, 3))
         model.add(Activation('sigmoid'))
         
-        model.add(Dropout(0.05))
+        
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         
-        model.add(Dropout(0.025))
+        
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         

@@ -68,15 +68,26 @@ class QPretrainer():
         model.add(Conv1D(128, 3))
         model.add(Activation('sigmoid'))
         
-        
+        # mejor config so far: D0.1-512,D0.05-128,64,32,16d64 error_vs=0.18
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
-        
         
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         
+        model.add(Conv1D(24, 3))
+        model.add(Activation('sigmoid'))
+        
+        model.add(Conv1D(20, 3))
+        model.add(Activation('sigmoid'))
+        
         model.add(Conv1D(16, 3))
+        model.add(Activation('sigmoid'))
+        
+        model.add(Conv1D(12, 3))
+        model.add(Activation('sigmoid'))
+        
+        model.add(Conv1D(8, 3))
         model.add(Activation('sigmoid'))
         
         #model.add(MaxPooling1D(pool_size=2, strides=2))

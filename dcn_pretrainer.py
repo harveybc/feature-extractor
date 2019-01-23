@@ -237,7 +237,7 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==17:
+        if signal==16:
             plt.show()
         else:
             plt.show(block=False)
@@ -253,7 +253,7 @@ if __name__ == '__main__':
     pt = QPretrainer()
     pt.load_datasets()
     #for i in range(0,pt.num_s):
-    for i in range(17,18):
+    for i in range(16,17):
         print('Training model '+str(i))
         # verifies if the actions are for classification(the last 6 ones)
         if (i>=10):

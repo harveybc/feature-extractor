@@ -18,6 +18,7 @@ from keras.layers import Conv2D,Conv1D, MaxPooling2D, MaxPooling1D
 from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.optimizers import SGD, Adamax
 from keras.utils import multi_gpu_model
+import tensorflow as tf
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.

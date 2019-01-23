@@ -60,7 +60,7 @@ class QPretrainer():
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
-        # mejor result con dropout de 0.2
+        # mejor result con dropout de 0.4 en 400 epochs con learning rate 0.0002 en config  521,64,32,16, en h4 2018 con indicator_period=70
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))

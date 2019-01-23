@@ -63,19 +63,20 @@ class QPretrainer():
         # mejor result 0.1 con dropout de 0.4 en 400 epochs con learning rate 0.0002 en config  521,64,32,16, en h4 2018 con indicator_period=70
         # 0.1: 0.137
         # 0.3: 0.134
-        # 0.4: 
+        # 0.4: 0.126 con 0.4,0.2,0.1 =
+        
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
         
-        model.add(Dropout(0.1))
+        model.add(Dropout(0.2))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         
-        model.add(Dropout(0.05))
+        model.add(Dropout(0.1))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         

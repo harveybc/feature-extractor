@@ -75,19 +75,7 @@ class QPretrainer():
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         
-        model.add(Conv1D(24, 3))
-        model.add(Activation('sigmoid'))
-        
-        model.add(Conv1D(20, 3))
-        model.add(Activation('sigmoid'))
-        
         model.add(Conv1D(16, 3))
-        model.add(Activation('sigmoid'))
-        
-        model.add(Conv1D(12, 3))
-        model.add(Activation('sigmoid'))
-        
-        model.add(Conv1D(8, 3))
         model.add(Activation('sigmoid'))
         
         #model.add(MaxPooling1D(pool_size=2, strides=2))

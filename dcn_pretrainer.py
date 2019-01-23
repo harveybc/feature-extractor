@@ -51,28 +51,27 @@ class QPretrainer():
         # svm model
         self.svr_rbf = []
         # Best so far 0.0001 error=0.106 en 200 epochs
-        self.learning_rate = 0.001 
+        self.learning_rate = 0.0002 
         #prev:300
-        self.epochs = 800
+        self.epochs = 400
 
     def set_dcn_model(self):
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
-        # mejor result con dropout de 0.4 en 400 epochs con learning rate 0.0002 en config  521,64,32,16, en h4 2018 con indicator_period=70
-        model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
+        # mejor result 0.1 con dropout de 0.4 en 400 epochs con learning rate 0.0002 en config  521,64,32,16, en h4 2018 con indicator_period=70
+        model.add(Dropout(0.1,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
         
-        model.add(Dropout(0.2))
+        model.add(Dropout(0.05))
         # mejor config so far: D0.2-512,D0.1-64,d0.05-32,16d64 error_vs=0.13 con 300 epochs
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         
-        model.add(Dropout(0.1))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         
@@ -212,7 +211,6 @@ class QPretrainer():
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation_c(self, model, signal):
         self.vs = np.array(self.vs)
-        # TODO: NO ES TS SINO VS
         self.x_v_pre = self.vs[1:,0:self.num_f]
         self.x_v = self.dcn_input(self.x_v_pre)
         # TEST, remve 1 and replace by self.num_f

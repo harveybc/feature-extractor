@@ -4,7 +4,7 @@
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import sys
 from sklearn import svm
@@ -232,7 +232,7 @@ class QPretrainer():
         self.svr_rbf = self.set_dcn_model()
         # train DCN model with the training data
         #best res so far: batch_size = 100   epochs=self.epochs
-        self.svr_rbf.fit(self.x, self.y, batch_size=100, epochs=self.epochs, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=290, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
 
         

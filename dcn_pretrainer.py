@@ -15,7 +15,7 @@ from sklearn import preprocessing
 from sklearn.metrics import confusion_matrix
 from keras.models import Sequential
 from keras.layers import Conv2D,Conv1D, MaxPooling2D, MaxPooling1D
-from keras.layers import Activation, Dropout, Flatten, Dense
+from keras.layers import Activation, Dropout, Flatten, Dense, BatchNormalization
 from keras.optimizers import SGD, Adamax
 from keras.utils import multi_gpu_model
 import tensorflow as tf

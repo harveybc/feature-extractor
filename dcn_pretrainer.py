@@ -232,7 +232,7 @@ class QPretrainer():
         self.svr_rbf = self.set_dcn_model()
         # train DCN model with the training data
         #best res so far: batch_size = 100   epochs=self.epochs
-        #con batch size=64, epochs=200, lr=0.0002 daba:, cada epoca tardaba:
+        #con batch size=64, epochs=200, lr=0.0002 daba:, cada epoca tardaba: 6s con 1ms/step
         self.svr_rbf.fit(self.x, self.y, batch_size=64, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
 

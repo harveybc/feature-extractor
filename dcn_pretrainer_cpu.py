@@ -81,7 +81,8 @@ class QPretrainer():
         model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
-        model.add(BatchNormalization())
+        # con batch normalization en todas las capas daba 0.2
+        #model.add(BatchNormalization())
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
 
@@ -89,17 +90,17 @@ class QPretrainer():
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
-        model.add(BatchNormalization())
+        #model.add(BatchNormalization())
 
         #model.add(Dropout(0.1))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
-        model.add(BatchNormalization())
+        #model.add(BatchNormalization())
 
         #model.add(Dropout(0.1))
         model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
-        model.add(BatchNormalization())
+        #model.add(BatchNormalization())
 
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
@@ -107,7 +108,7 @@ class QPretrainer():
 
         model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
-        model.add(BatchNormalization())
+        #model.add(BatchNormalization())
 
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors

@@ -108,8 +108,8 @@ class QPretrainer():
             # use SGD optimizer
             opt = Adamax(lr=self.learning_rate)
             #opt = SGD(lr=self.learning_rate, momentum=0.9)
-        #paralell_model = multi_gpu_model(model, gpus=2)
-        paralell_model = model
+        paralell_model = multi_gpu_model(model, gpus=2)
+        #paralell_model = model
         paralell_model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         #model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
         #model.compile(loss="mse", optimizer=opt, metrics=["accuracy"])

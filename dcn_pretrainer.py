@@ -265,6 +265,7 @@ class QPretrainer():
 # main function 
 if __name__ == '__main__':
     #print(device_lib.list_local_devices())
+    print("TRAINING")
     pt = QPretrainer()
     pt.load_datasets()
     #for i in range(0,pt.num_s):

@@ -61,7 +61,7 @@ class QPretrainer():
         # 0.002 (Adamax default) = 0.137
         self.learning_rate = 0.0002 
         #prev:400 0.11 
-        self.epochs = 200
+        self.epochs = 400
 
     def set_dcn_model(self):
 

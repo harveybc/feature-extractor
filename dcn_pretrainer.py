@@ -64,60 +64,60 @@ class QPretrainer():
         self.epochs = 400
 
     def set_dcn_model(self):
-        with tf.device('/CPU:0'):
-            # Deep Convolutional Neural Network for Regression
-            model = Sequential()
-            # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
-            # first set of CONV => RELU => POOL
-            # mejor result 0.1 con dropout de 0.4 en 400 epochs con learning rate 0.0002 en config  521,64,32,16, en h4 2018 con indicator_period=70
-            # 0.1,0.5,0.025: 0.137
-            # 0.3,0.15,0.08: 0.134
-            # 0.4,0.1,0.05: 0.126 con 0.4,0.2,0.1 =0.142
-            # 0.2,0.1,lr=0.002  400 ep: 0.23
-            # 0.2,0.1,lr=0.0002 400 ep: 0.11
-            # 0.2,lr=0.0002 400ep:0.16
-            # 0.2,0.1, 0.1, 0.1:0.14
 
-            model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
-            model.add(Conv1D(512, 3))
-            model.add(Activation('sigmoid'))
-            model.add(BatchNormalization())
-            #model.add(MaxPooling1D(pool_size=2, strides=2))
-            # second set of CONV => RELU => POOL
+        # Deep Convolutional Neural Network for Regression
+        model = Sequential()
+        # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
+        # first set of CONV => RELU => POOL
+        # mejor result 0.1 con dropout de 0.4 en 400 epochs con learning rate 0.0002 en config  521,64,32,16, en h4 2018 con indicator_period=70
+        # 0.1,0.5,0.025: 0.137
+        # 0.3,0.15,0.08: 0.134
+        # 0.4,0.1,0.05: 0.126 con 0.4,0.2,0.1 =0.142
+        # 0.2,0.1,lr=0.002  400 ep: 0.23
+        # 0.2,0.1,lr=0.0002 400 ep: 0.11
+        # 0.2,lr=0.0002 400ep:0.16
+        # 0.2,0.1, 0.1, 0.1:0.14
 
-            model.add(Dropout(0.1))
-            # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
-            model.add(Conv1D(64, 3))
-            model.add(Activation('sigmoid'))
-            model.add(BatchNormalization())
+        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
+        model.add(Conv1D(512, 3))
+        model.add(Activation('sigmoid'))
+        model.add(BatchNormalization())
+        #model.add(MaxPooling1D(pool_size=2, strides=2))
+        # second set of CONV => RELU => POOL
 
-            #model.add(Dropout(0.1))
-            model.add(Conv1D(32, 3))
-            model.add(Activation('sigmoid'))
-            model.add(BatchNormalization())
+        model.add(Dropout(0.1))
+        # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
+        model.add(Conv1D(64, 3))
+        model.add(Activation('sigmoid'))
+        model.add(BatchNormalization())
 
-            #model.add(Dropout(0.1))
-            model.add(Conv1D(16, 3))
-            model.add(Activation('sigmoid'))
-            model.add(BatchNormalization())
+        #model.add(Dropout(0.1))
+        model.add(Conv1D(32, 3))
+        model.add(Activation('sigmoid'))
+        model.add(BatchNormalization())
 
-            #model.add(MaxPooling1D(pool_size=2, strides=2))
-            # second set of CONV => RELU => POOL
-           # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+        #model.add(Dropout(0.1))
+        model.add(Conv1D(16, 3))
+        model.add(Activation('sigmoid'))
+        model.add(BatchNormalization())
 
-            model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
-           # model.add(Activation ('sigmoid'))
-            model.add(BatchNormalization())
+        #model.add(MaxPooling1D(pool_size=2, strides=2))
+        # second set of CONV => RELU => POOL
+       # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
 
-            # output layer
-            model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-            model.add(Dense(1, activation = 'sigmoid'))
-            # multi-GPU support
-            #model = to_multi_gpu(model)
-            #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)
-            # use SGD optimizer
-            opt = Adamax(lr=self.learning_rate)
-            #opt = SGD(lr=self.learning_rate, momentum=0.9)
+        model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+       # model.add(Activation ('sigmoid'))
+        model.add(BatchNormalization())
+
+        # output layer
+        model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+        model.add(Dense(1, activation = 'sigmoid'))
+        # multi-GPU support
+        #model = to_multi_gpu(model)
+        #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)
+        # use SGD optimizer
+        opt = Adamax(lr=self.learning_rate)
+        #opt = SGD(lr=self.learning_rate, momentum=0.9)
         #paralell_model = multi_gpu_model(model, gpus=2)
         paralell_model = model
         paralell_model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])

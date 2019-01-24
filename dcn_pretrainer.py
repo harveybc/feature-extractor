@@ -55,7 +55,7 @@ class QPretrainer():
         self.svr_rbf = []
         # Best so far 0.0001 error = 0.106 en 200 epochs, 2nd best, 0.0002 en 400 epochs=0.104
         # 0.002 (Adamax default) = 0.137
-        self.learning_rate = 0.0002 
+        self.learning_rate = 0.002 
         #prev:400 0.11 
         self.epochs = 800
 
@@ -77,6 +77,7 @@ class QPretrainer():
             model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
             model.add(Conv1D(512, 3))
             model.add(Activation('sigmoid'))
+            model.add(BatchNormalization())
             #model.add(MaxPooling1D(pool_size=2, strides=2))
             # second set of CONV => RELU => POOL
 
@@ -84,14 +85,17 @@ class QPretrainer():
             # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
             model.add(Conv1D(64, 3))
             model.add(Activation('sigmoid'))
+            model.add(BatchNormalization())
 
             #model.add(Dropout(0.1))
             model.add(Conv1D(32, 3))
             model.add(Activation('sigmoid'))
+            model.add(BatchNormalization())
 
             #model.add(Dropout(0.1))
             model.add(Conv1D(16, 3))
             model.add(Activation('sigmoid'))
+            model.add(BatchNormalization())
 
             #model.add(MaxPooling1D(pool_size=2, strides=2))
             # second set of CONV => RELU => POOL
@@ -99,6 +103,8 @@ class QPretrainer():
 
             model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
            # model.add(Activation ('sigmoid'))
+            model.add(BatchNormalization())
+
             # output layer
             model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
             model.add(Dense(1, activation = 'sigmoid'))
@@ -123,9 +129,9 @@ class QPretrainer():
         self.num_features = self.num_f // self.window_size
         self.num_ticks = self.ts_g.shape[0]
         # split dataset into 75% training and 25% validation 
-        self.ts_s = self.ts_g[1:(11*self.num_ticks)//12,:]
+        self.ts_s = self.ts_g[1:(3*self.num_ticks)//4,:]
         self.ts = self.ts_s.copy()
-        self.vs_s = self.ts_g[(11*self.num_ticks)//12 : self.num_ticks,:]
+        self.vs_s = self.ts_g[(3*self.num_ticks)//4 : self.num_ticks,:]
         self.vs = self.vs_s.copy() 
     ## Train SVMs with the training dataset using cross-validation error estimation
     ## Returns best parameters

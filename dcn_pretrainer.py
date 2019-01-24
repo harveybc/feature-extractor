@@ -61,7 +61,7 @@ class QPretrainer():
         # 0.002 (Adamax default) = 0.137
         self.learning_rate = 0.0002 
         #prev:400 0.11 
-        self.epochs = 200
+        self.epochs = 600
 
     def set_dcn_model(self):
 
@@ -232,7 +232,7 @@ class QPretrainer():
         self.svr_rbf = self.set_dcn_model()
         # train DCN model with the training data
         #best res so far: batch_size = 100   epochs=self.epochs
-        self.svr_rbf.fit(self.x, self.y, batch_size=64, epochs=self.epochs, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=2817, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
 
         

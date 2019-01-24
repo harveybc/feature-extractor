@@ -19,7 +19,7 @@ from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.optimizers import SGD, Adamax
 from keras.utils import multi_gpu_model
 import tensorflow as tf
-#from tensorflow.python.client import device_lib
+from tensorflow.python.client import device_lib
 
 
 ## \class QPretrainer

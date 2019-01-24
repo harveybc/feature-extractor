@@ -2,6 +2,10 @@
 #                 prints nmse and exports svm pre-trained models to be used in a 
 #                 q-agent.
 
+import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 import sys
 from sklearn import svm
 from sklearn.model_selection import GridSearchCV
@@ -57,7 +61,7 @@ class QPretrainer():
         # 0.002 (Adamax default) = 0.137
         self.learning_rate = 0.002 
         #prev:400 0.11 
-        self.epochs = 800
+        self.epochs = 200
 
     def set_dcn_model(self):
         with tf.device('/CPU:0'):

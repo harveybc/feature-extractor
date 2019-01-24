@@ -19,6 +19,8 @@ from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.optimizers import SGD, Adamax
 from keras.utils import multi_gpu_model
 import tensorflow as tf
+#from tensorflow.python.client import device_lib
+
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
@@ -262,6 +264,7 @@ class QPretrainer():
         
 # main function 
 if __name__ == '__main__':
+    #print(device_lib.list_local_devices())
     pt = QPretrainer()
     pt.load_datasets()
     #for i in range(0,pt.num_s):

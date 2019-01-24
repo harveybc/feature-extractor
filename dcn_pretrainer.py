@@ -3,8 +3,8 @@
 #                 q-agent.
 
 import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+#os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import sys
 from sklearn import svm
@@ -61,7 +61,7 @@ class QPretrainer():
         # 0.002 (Adamax default) = 0.137
         self.learning_rate = 0.002 
         #prev:400 0.11 
-        self.epochs = 400
+        self.epochs = 200
 
     def set_dcn_model(self):
 
@@ -118,8 +118,8 @@ class QPretrainer():
         # use SGD optimizer
         opt = Adamax(lr=self.learning_rate)
         #opt = SGD(lr=self.learning_rate, momentum=0.9)
-        #paralell_model = multi_gpu_model(model, gpus=2)
-        paralell_model = model
+        paralell_model = multi_gpu_model(model, gpus=2)
+        #paralell_model = model
         paralell_model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         #model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
         #model.compile(loss="mse", optimizer=opt, metrics=["accuracy"])
@@ -232,7 +232,7 @@ class QPretrainer():
         self.svr_rbf = self.set_dcn_model()
         # train DCN model with the training data
         #best res so far: batch_size = 100   epochs=self.epochs
-        self.svr_rbf.fit(self.x, self.y, batch_size=2317, epochs=self.epochs, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=2317, epochs=5, verbose=1)
         return self.svr_rbf 
 
         

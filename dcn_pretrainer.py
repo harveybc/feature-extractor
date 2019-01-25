@@ -60,7 +60,7 @@ class QPretrainer():
         # Best so far 0.0001 error = 0.106 en 200 epochs, 2nd best, 0.0002 en 400 epochs=0.104
         # 0.002 (Adamax default) = 0.137
         self.learning_rate = 0.0002 
-        #prev:200 0.17 
+        # prev:200 0.17
         self.epochs = 400
 
     def set_dcn_model(self):
@@ -81,7 +81,9 @@ class QPretrainer():
         model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
-        model.add(BatchNormalization())
+        # con batch_norm: 0.286
+        # sin batch_norm: 
+        #model.add(BatchNormalization())
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
 
@@ -89,17 +91,17 @@ class QPretrainer():
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
-        model.add(BatchNormalization())
+        #model.add(BatchNormalization())
 
         #model.add(Dropout(0.1))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
-        model.add(BatchNormalization())
+        #model.add(BatchNormalization())
 
         #model.add(Dropout(0.1))
         model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
-        model.add(BatchNormalization())
+        #model.add(BatchNormalization())
 
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
@@ -107,7 +109,7 @@ class QPretrainer():
 
         model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
-        model.add(BatchNormalization())
+        #model.add(BatchNormalization())
 
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors

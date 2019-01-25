@@ -84,15 +84,14 @@ class QPretrainer():
         # sin batch_norm: 0.299
         # con batch_norm: 0.204
         model.add(BatchNormalization())
-        model.add(Dropout(0.1))
+        #con drop 0.1, e=0.299
+        #con drop 0.2, e=
+        model.add(Dropout(0.2))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
-        
-        # sin batch_norm: 0.204
-        # con batch_norm: XXXX
-        model.add(BatchNormalization())
+        #model.add(BatchNormalization())
         #model.add(Dropout(0.1))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))

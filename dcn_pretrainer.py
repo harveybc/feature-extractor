@@ -60,8 +60,9 @@ class QPretrainer():
         # con lr=0.0002 e=0.106
         # con lr=0.0003 e= 0.224
         self.learning_rate = 0.0002
-        # prev:200 0.17
-        self.epochs = 400
+        # con epochs 400, ave3=0.239
+        # con epochs 1200, ave3=XXX
+        self.epochs = 1200
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -181,7 +182,7 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==18:
+        if signal==19:
             plt.show()
         else:
             plt.show(block=False)
@@ -255,7 +256,7 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==16:
+        if signal==18:
             plt.show()
         else:
             plt.show(block=False)

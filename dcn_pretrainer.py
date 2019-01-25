@@ -57,9 +57,9 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
-        # Best so far 0.0001 error = 0.106 en 200 epochs, 2nd best, 0.0002 en 400 epochs=0.104
-        # 0.002 (Adamax default) = 0.137
-        self.learning_rate = 0.0002 
+        # con lr=0.0002 e=0.106
+        # con lr=0.0003 e= XXX
+        self.learning_rate = 0.0003 
         # prev:200 0.17
         self.epochs = 400
 
@@ -72,12 +72,7 @@ class QPretrainer():
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
         model.add(Dropout(0.2))
-        
-        # sin la capa adicional de 128, daba e=0.106
-        model.add(Conv1D(128, 3))
-        model.add(Activation('sigmoid'))
 
-        
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
 

@@ -81,9 +81,9 @@ class QPretrainer():
         model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
-        # con batch_norm: 0.286
-        # sin batch_norm: 
-        #model.add(BatchNormalization())
+        # sin batch_norm: 0.299
+        
+        model.add(BatchNormalization())
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
 

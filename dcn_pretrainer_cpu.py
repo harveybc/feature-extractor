@@ -272,7 +272,7 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==16:
+        if signal==18:
             plt.show()
         else:
             plt.show(block=False)

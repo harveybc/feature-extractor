@@ -60,8 +60,8 @@ class QPretrainer():
         # Best so far 0.0001 error = 0.106 en 200 epochs, 2nd best, 0.0002 en 400 epochs=0.104
         # 0.002 (Adamax default) = 0.137
         # 0.0002 = 0.127
-        # 0.0005 = XX
-        self.learning_rate = 0.0005 
+        # 0.0005 = 0.142
+        self.learning_rate = 0.0002 
         #prev:400 0.075
         self.epochs = 800
 
@@ -88,9 +88,8 @@ class QPretrainer():
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
         
-        # con d=0.1 daba 0.11
-        # sin esta capa da e=0.178 con loss=0.0645
-        # con esta capa da e=    con loss=  
+        # con d=0.1 daba e=0.142
+        # sin esta capa da:
         model.add(Dropout(0.1))
         
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
@@ -227,8 +226,7 @@ class QPretrainer():
                 #obs[j] = ob[0]
             obs_matrix.append(obs.copy())
         return np.array(obs_matrix)
- 
- ## Train SVMs with the training dataset using cross-validation error estimation
+
     ## Returns best parameters
     def train_model_c(self, signal):
         #converts to nparray
@@ -245,7 +243,6 @@ class QPretrainer():
         # con batch_size = 512, ev = 0.176
         self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
-
         
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation_c(self, model, signal):

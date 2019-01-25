@@ -62,7 +62,7 @@ class QPretrainer():
         # 0.0002 = 0.127
         # 0.0005 = 0.142
         # cambiado a 0.0003 desde 0.0002, daba e=0.121 sin capas extra de 24 y 48
-        self.learning_rate = 0.0003 
+        self.learning_rate = 0.0002 
         #prev:400 0.075
         self.epochs = 800
 

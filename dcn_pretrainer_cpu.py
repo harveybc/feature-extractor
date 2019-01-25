@@ -94,24 +94,18 @@ class QPretrainer():
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
-        #model.add(Dropout(0.1))
-        model.add(Conv1D(48, 3))
-        model.add(Activation('sigmoid'))
-        #model.add(BatchNormalization())
-        #model.add(Dropout(0.1))
+
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
         #model.add(Dropout(0.1))
         # sin capas extra de 24 y 48 daba e = 0.121
         # con capas extra de 24 y 48, e=XXX
-        
-        model.add(Conv1D(24, 3))
-        model.add(Activation('sigmoid'))
-        #model.add(BatchNormalization())
-        #model.add(Dropout(0.1))
-        model.add(Conv1D(16, 3))
-        model.add(Activation('sigmoid'))
+
+        # con capa de 16 daba e=0.106
+        # sin capa de 16 da   e=
+        #model.add(Conv1D(16, 3))
+        #model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
         #model.add(MaxPooling1D(pool_size=2, strides=2))

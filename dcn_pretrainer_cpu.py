@@ -87,7 +87,9 @@ class QPretrainer():
         # second set of CONV => RELU => POOL
         
         # con d=0.1 daba 0.11
-        #model.add(Dropout(0.1))
+        # sin esta capa da e=0.178 con loss=0.0645
+        # con esta capa da e=    con loss=  
+        model.add(Dropout(0.1))
         
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         model.add(Conv1D(64, 3))
@@ -234,8 +236,8 @@ class QPretrainer():
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
         self.svr_rbf = self.set_dcn_model()
-        # train DCN model with the training data
-        self.svr_rbf.fit(self.x, self.y, batch_size=64, epochs=self.epochs, verbose=1)
+        # train DCN model with the training data con 128 dio 0.17
+        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
 
         

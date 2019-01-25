@@ -64,7 +64,7 @@ class QPretrainer():
         self.learning_rate = 0.0002 
         #prev: epochs 800, eva=0.104
         # epocs 1200, eva= TODO
-        self.epochs = 1200
+        self.epochs = 1000
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -75,15 +75,10 @@ class QPretrainer():
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
         # mejor result 0.1 con dropout de 0.4 en 400 epochs con learning rate 0.0002 en config  521,64,32,16, en h4 2018 con indicator_period=70
-        # 0.1,0.5,0.025: 0.137
-        # 0.3,0.15,0.08: 0.134
-        # 0.4,0.1,0.05: 0.126 con 0.4,0.2,0.1 =0.142
-        # 0.2,0.1,lr=0.002  400 ep: 0.23
-        # 0.2,0.1,lr=0.0002 400 ep: 0.11
-        # 0.2,lr=0.0002 400ep:0.16
-        # 0.2,0.1, 0.1, 0.1:0.14
+        # 0.2,0.1,lr=0.0002 1200 eva: 0.117
+        # 0.4,eva = TODO
 
-        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
+        model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         # Sin batch_normalization daba: 0.204

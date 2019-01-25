@@ -59,6 +59,8 @@ class QPretrainer():
         self.svr_rbf = []
         # Best so far 0.0001 error = 0.106 en 200 epochs, 2nd best, 0.0002 en 400 epochs=0.104
         # 0.002 (Adamax default) = 0.137
+        # 0.0002 = 0.127
+        # 0.0005 = XX
         self.learning_rate = 0.0005 
         #prev:400 0.075
         self.epochs = 800

@@ -106,7 +106,7 @@ class QPretrainer():
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
        # sin dropout, e=0.106
        # con dropout = XXX
-       model.add(Dropout(0.2)
+        model.add(Dropout(0.2))
         model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         #model.add(BatchNormalization())

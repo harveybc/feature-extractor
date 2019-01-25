@@ -62,6 +62,7 @@ class QPretrainer():
         self.learning_rate = 0.0002
         # prev:200 0.17
         self.epochs = 400
+        # number of validation tests to avarage during each training
         self.num_tests = 3
 
     def set_dcn_model(self):

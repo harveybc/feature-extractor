@@ -240,8 +240,8 @@ class QPretrainer():
         # train DCN model with the training data 
         # con batch size =  128 dio 0.17
         # con batch_size = 1024, ev=0.75(0.1)
-        # con batch_size = 512, ev = XX
-        self.svr_rbf.fit(self.x, self.y, batch_size=512, epochs=self.epochs, verbose=1)
+        # con batch_size = 512, ev = 0.176
+        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
 
         

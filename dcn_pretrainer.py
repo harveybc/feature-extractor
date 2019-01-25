@@ -60,8 +60,8 @@ class QPretrainer():
         # Best so far 0.0001 error = 0.106 en 200 epochs, 2nd best, 0.0002 en 400 epochs=0.104
         # 0.002 (Adamax default) = 0.137
         self.learning_rate = 0.0002 
-        #prev:400 0.11 
-        self.epochs = 200
+        #prev:200 0.17 
+        self.epochs = 400
 
     def set_dcn_model(self):
 
@@ -233,12 +233,12 @@ class QPretrainer():
         # train DCN model with the training data
         #best res so far: batch_size = 100   epochs=self.epochs
         #con batch size=64, epochs=200, lr=0.0002 daba:  loss=0.0283, e_vs=0.313  , cada epoca tardaba: 6s con 1ms/step
-        #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251 cada epoca tardaba: 3s con 580us/step
+        #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251(0.241) cada epoca tardaba: 3s con 580us/step
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
         #con batch size=256(4*8): , daba: loss=XXX vs_e=XXX cada epoca tardaba: Xs con XXX/step
         # TODO: REPETIR ENTRENAMIENTO 3 O MAS VECES, EVALUAR Y PROMEDIAR error 
-        self.svr_rbf.fit(self.x, self.y, batch_size=512, epochs=self.epochs, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
 
         

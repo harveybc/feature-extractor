@@ -90,11 +90,8 @@ class QPretrainer():
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
-        #model.add(BatchNormalization())
-        #model.add(BatchNormalization())
-        #sin drop , e=0.106
-        #con drop 0.2, e=0.1
-        model.add(Dropout(0.2))
+
+        #model.add(Dropout(0.1))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
@@ -107,7 +104,9 @@ class QPretrainer():
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-
+       # sin dropout, e=0.106
+       # con dropout = XXX
+       model.add(Dropout(0.2))
         model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         #model.add(BatchNormalization())

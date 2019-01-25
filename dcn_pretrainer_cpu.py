@@ -291,7 +291,7 @@ if __name__ == '__main__':
     error_ant = self.num_s*[0.0]
     error_accum = self.num_s*[0.0]
     for j in range(0,pt.num_tests):
-        print('test: ',j+1,'/',self.num_tests)
+        print('test: ',j+1,'/',pt.num_tests)
         #for i in range(0,pt.num_s):
         for i in range(16,17):
             print('Training model '+str(i))
@@ -308,8 +308,8 @@ if __name__ == '__main__':
                 error[i] = pt.evaluate_validation(params,i)
                 print('mean_squared_error on validation set:' + str(i) + ' = ' + str(error[i]))
             error_accum[i] += error[i]
-            if j == self.num_tests-1:
-                print('average validation error:', error_accum[i]/self.num_tests)
+            if j == pt.num_tests-1:
+                print('average validation error:', error_accum[i]/pt.num_tests)
             if error[i] <= error_ant[i]:    
                 pt.export_model(i)
     

@@ -275,6 +275,7 @@ if __name__ == '__main__':
     error_ant = self.num_s*[0.0]
     error_accum = self.num_s*[0.0]
     for j in range(0,pt.num_tests):
+        print('test: ',j+1,'/',self.num_tests)
         #for i in range(0,pt.num_s):
         for i in range(16,17):
             print('Training model '+str(i))

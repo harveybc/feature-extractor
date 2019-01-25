@@ -67,18 +67,17 @@ class QPretrainer():
 
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
-        #con dropout =0.2, e=0.106
-        #con dropout = 0.3, e= XXXX
-        model.add(Dropout(0.3,input_shape=(self.num_features,self.window_size)))
+        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
-        # sin batch_norm: 0.299
-        # con batch_norm: 0.204
         model.add(BatchNormalization())
-        #con drop 0.1, e=0.299
-        #con drop 0.2, e=0.106
         model.add(Dropout(0.2))
-        # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
+        
+        # sin la capa adicional de 128, daba e=0.106
+        model.add(Conv1D(128, 3))
+        model.add(Activation('sigmoid'))
+
+        
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
 

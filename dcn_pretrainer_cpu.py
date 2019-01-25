@@ -103,7 +103,7 @@ class QPretrainer():
         #model.add(Dropout(0.1))
         
         # sin capa de 16 da   e=0.098
-        # con capa de 16 da   e=
+        # con capa de 16 da   e= TODO
         model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())

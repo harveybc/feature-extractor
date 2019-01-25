@@ -234,9 +234,10 @@ class QPretrainer():
         #best res so far: batch_size = 100   epochs=self.epochs
         #con batch size=64, epochs=200, lr=0.0002 daba:  loss=0.0283, e_vs=0.313  , cada epoca tardaba: 6s con 1ms/step
         #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251 cada epoca tardaba: 3s con 580us/step
-        #con batch size=1024(64*8): , daba: loss=X vs_e=X cada epoca tardaba: Xs con X/step
+        #con batch size=1024(128*8): , daba: loss=0.1787 vs_e=0.229 cada epoca tardaba: 3s con 540us/step
+        #con batch size=2048(256*8): , daba: loss=X vs_e=X cada epoca tardaba: 3s con Xus/step
         
-        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=2048, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
 
         

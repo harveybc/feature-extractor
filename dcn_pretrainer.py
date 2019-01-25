@@ -58,8 +58,8 @@ class QPretrainer():
         # svm model
         self.svr_rbf = []
         # con lr=0.0002 e=0.106
-        # con lr=0.0003 e= XXX
-        self.learning_rate = 0.0003 
+        # con lr=0.0003 e= 0.224
+        self.learning_rate = 0.0002
         # prev:200 0.17
         self.epochs = 400
 
@@ -270,20 +270,22 @@ if __name__ == '__main__':
     print("TRAINING")
     pt = QPretrainer()
     pt.load_datasets()
-    #for i in range(0,pt.num_s):
-    for i in range(16,17):
-        print('Training model '+str(i))
-        # verifies if the actions are for classification(the last 6 ones)
-        if (i>=10):
-            params = pt.train_model_c(i)
-            print('best_params_' + str(i) + ' = ',params)
-            error = pt.evaluate_validation_c(params,i)
-            print('error on validation set:' + str(i) + ' = ' + str(error))
-        else:    
-            params = pt.train_model(i)
-            print('best_params_' + str(i) + ' = ',params)
-            mse = pt.evaluate_validation(params,i)
-            print('mean_squared_error on validation set:' + str(i) + ' = ' + str(mse))
+    error = 3*[0.0]
+    for j in range(0,pt.num_tests):
+        #for i in range(0,pt.num_s):
+        for i in range(16,17):
+            print('Training model '+str(i))
+            # verifies if the actions are for classification(the last 6 ones)
+            if (i>=10):
+                params = pt.train_model_c(i)
+                print('best_params_' + str(i) + ' = ',params)
+                error[j] = pt.evaluate_validation_c(params,i)
+                print('error on validation set:' + str(i) + ' = ' + str(error))
+            else:    
+                params = pt.train_model(i)
+                print('best_params_' + str(i) + ' = ',params)
+                mse = pt.evaluate_validation(params,i)
+                print('mean_squared_error on validation set:' + str(i) + ' = ' + str(mse))
         pt.export_model(i)
     
     

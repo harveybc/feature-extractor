@@ -61,7 +61,6 @@ class QPretrainer():
         # 0.002 (Adamax default) = 0.137
         # 0.0002 = 0.127
         # 0.0005 = 0.142
-        # cambiado a 0.0003 desde 0.0002, daba e=0.121 sin capas extra de 24 y 48
         self.learning_rate = 0.0002 
         #prev:400 0.075
         self.epochs = 800
@@ -95,15 +94,15 @@ class QPretrainer():
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
-        model.add(Conv1D(32, 3))
-        model.add(Activation('sigmoid'))
+        #con capa de 32 da e=0.098
+        #sin capa de 32 da e=
+        #model.add(Conv1D(32, 3))
+        #model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
         #model.add(Dropout(0.1))
-        # sin capas extra de 24 y 48 daba e = 0.121
-        # con capas extra de 24 y 48, e=XXX
-
+        
         # con capa de 16 daba e=0.106
-        # sin capa de 16 da   e=
+        # sin capa de 16 da   e=0.098
         #model.add(Conv1D(16, 3))
         #model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())

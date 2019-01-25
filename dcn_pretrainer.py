@@ -238,7 +238,7 @@ class QPretrainer():
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
         #con batch size=256(4*8): , daba: loss=XXX vs_e=XXX cada epoca tardaba: Xs con XXX/step
         
-        self.svr_rbf.fit(self.x, self.y, batch_size=256, epochs=self.epochs, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
 
         

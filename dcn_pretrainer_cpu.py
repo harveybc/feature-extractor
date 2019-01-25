@@ -83,15 +83,9 @@ class QPretrainer():
         model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
-        # con batch normalization en todas las capas daba 0.2
-        #model.add(BatchNormalization())
-        #model.add(MaxPooling1D(pool_size=2, strides=2))
-        # second set of CONV => RELU => POOL
-        
-        # con d=0.1 daba e=0.124
-        # sin esta capa da:
-        #model.add(Dropout(0.1))
-        
+        # Sin batch_normalization daba: 0.204
+        model.add(BatchNormalization())
+        model.add(Dropout(0.1))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))

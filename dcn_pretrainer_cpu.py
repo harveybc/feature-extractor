@@ -258,19 +258,19 @@ class QPretrainer():
         # TODO: NO ES TS SINO VS
         x_seq = list(range(0, self.vs.shape[0]-1))
         # 0 = Buy/CloseSell/nopCloseBuy
-        print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
-        fig=plt.figure()
-        plt.plot(x_seq, self.y_v, color='darkorange', label='data')
-        plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
-        plt.xlabel('data')
-        plt.ylabel('target')
-        plt.title('Signal ' + str(signal))
-        plt.legend()
-        fig.savefig('predict_' + str(signal) + '.png')
-        if signal==18:
-            plt.show()
-        else:
-            plt.show(block=False)
+        #rint("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
+        #fig=plt.figure()
+        #plt.plot(x_seq, self.y_v, color='darkorange', label='data')
+        #plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
+        #plt.xlabel('data')
+        #plt.ylabel('target')
+        #plt.title('Signal ' + str(signal))
+        #plt.legend()
+        #fig.savefig('predict_' + str(signal) + '.png')
+        #if signal==18:
+        #    plt.show()
+        #else:
+        #    plt.show(block=False)
         return mean_squared_error(self.y_v, y_rbf)
  
     ## Export the trained models and the predicted validation set predictions, print statistics 

@@ -60,9 +60,10 @@ class QPretrainer():
         # con lr=0.0002 e=0.106
         # con lr=0.0003 e= 0.224
         self.learning_rate = 0.0002
-        # con epochs 400, ave3=0.239
-        # con epochs 1200, ave3=TODO:XXX
-        self.epochs = 1200
+        # con epochs 400, ave3 = 0.239
+        # con epochs 1200, ave3 = 0.273
+        # con epochs 800, ave3 = TODO
+        self.epochs = 800
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -242,22 +243,21 @@ class QPretrainer():
             print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
         lw = 2
-        # TODO: NO ES TS SINO VS
         x_seq = list(range(0, self.vs.shape[0]-1))
         # 0 = Buy/CloseSell/nopCloseBuy
-        print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
-        fig=plt.figure()
-        plt.plot(x_seq, self.y_v, color='darkorange', label='data')
-        plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
-        plt.xlabel('data')
-        plt.ylabel('target')
-        plt.title('Signal ' + str(signal))
-        plt.legend()
-        fig.savefig('predict_' + str(signal) + '.png')
-        if signal==18:
-            plt.show()
-        else:
-            plt.show(block=False)
+        #print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
+        #fig=plt.figure()
+        #plt.plot(x_seq, self.y_v, color='darkorange', label='data')
+        #plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
+        #plt.xlabel('data')
+        #plt.ylabel('target')
+        #plt.title('Signal ' + str(signal))
+        #plt.legend()
+        #fig.savefig('predict_' + str(signal) + '.png')
+        #if signal==18:
+        #    plt.show()
+        ##else:
+        #    plt.show(block=False)
         return mean_squared_error(self.y_v, y_rbf)
  
     ## Export the trained models and the predicted validation set predictions, print statistics 

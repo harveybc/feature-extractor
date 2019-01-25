@@ -287,9 +287,9 @@ if __name__ == '__main__':
     print("TRAINING")
     pt = QPretrainer()
     pt.load_datasets()
-    error = self.num_s*[0.0]
-    error_ant = self.num_s*[0.0]
-    error_accum = self.num_s*[0.0]
+    error = pt.num_s*[0.0]
+    error_ant = pt.num_s*[0.0]
+    error_accum = pt.num_s*[0.0]
     for j in range(0,pt.num_tests):
         print('test: ',j+1,'/',pt.num_tests)
         #for i in range(0,pt.num_s):

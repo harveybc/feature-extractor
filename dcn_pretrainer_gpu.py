@@ -62,8 +62,8 @@ class QPretrainer():
         self.learning_rate = 0.0002
         # con epochs 400, ave3 = 0.239
         # con epochs 1200, ave3 = 0.273
-        # con epochs 800, ave3 = TODO
-        self.epochs = 800
+        # con epochs 800, ave5 = 0.243
+        self.epochs = 400 
         # number of validation tests to avarage during each training
         self.num_tests = 5
 
@@ -71,7 +71,10 @@ class QPretrainer():
 
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
-        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
+        # con d = 0.2, ave3 = 0.273
+        # con d = 0.4, ave3 = TODO
+        
+        model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())

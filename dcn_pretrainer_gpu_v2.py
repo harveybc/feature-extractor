@@ -57,8 +57,8 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
-        # con lr=0.0003 e= TODO
-        self.learning_rate = 0.0004
+        # con lr=0.0002 e= TODO
+        self.learning_rate = 0.0002
         # con epochs 400, ave3 = 0.239
         # con epochs 1200, ave3 = 0.273
         # con epochs 800, ave5 = 0.243
@@ -119,7 +119,7 @@ class QPretrainer():
         #paralell_model = multi_gpu_model(model, gpus=2)
         paralell_model = model
         if regression:
-            paralell_model.compile(loss="mse", optimizer=opt, metrics=["mae"])
+            paralell_model.compile(loss="mae", optimizer=opt, metrics=["mse"])
         #model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
         #model.compile(loss="mse", optimizer=opt, metrics=["accuracy"])
         return paralell_model 

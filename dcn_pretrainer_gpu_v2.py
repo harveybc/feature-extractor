@@ -162,7 +162,7 @@ class QPretrainer():
         #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251(0.241) cada epoca tardaba: 3s con 580us/step
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
-        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=0)
         return self.svr_rbf 
 
     
@@ -186,10 +186,10 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==3:
-            plt.show()
-        else:
-            plt.show(block=False)
+        #if signal==3:
+        #    plt.show()
+        #else:
+        #    plt.show(block=False)
         return mean_squared_error(self.y_v, y_rbf)
     
  
@@ -210,7 +210,7 @@ class QPretrainer():
         #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251(0.241) cada epoca tardaba: 3s con 580us/step
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
-        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=0)
         return self.svr_rbf 
 
         
@@ -231,19 +231,19 @@ class QPretrainer():
         lw = 2
         x_seq = list(range(0, self.vs.shape[0]-1))
         # 0 = Buy/CloseSell/nopCloseBuy
-        #print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
-        #fig=plt.figure()
-        #plt.plot(x_seq, self.y_v, color='darkorange', label='data')
-        #plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
-        #plt.xlabel('data')
-        #plt.ylabel('target')
-        #plt.title('Signal ' + str(signal))
-        #plt.legend()
-        #fig.savefig('predict_' + str(signal) + '.png')
-        #if signal==18:
-        #    plt.show()
-        ##else:
-        #    plt.show(block=False)
+        print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
+        fig=plt.figure()
+        plt.plot(x_seq, self.y_v, color='darkorange', label='data')
+        plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
+        plt.xlabel('data')
+        plt.ylabel('target')
+        plt.title('Signal ' + str(signal))
+        plt.legend()
+        fig.savefig('predict_' + str(signal) + '.png')
+        if signal==18:
+            plt.show()
+        else:
+            plt.show(block=False)
         return mean_squared_error(self.y_v, y_rbf)
  
     ## Export the trained models and the predicted validation set predictions, print statistics 
@@ -263,7 +263,7 @@ if __name__ == '__main__':
     for j in range(0,pt.num_tests):
         print('test: ',j+1,'/',pt.num_tests)
         #for i in range(0,pt.num_s):
-        for i in range(16,17):
+        for i in range(0,19):
             print('Training model '+str(i))
             error_ant[i] = error[i]
             # verifies if the actions are for classification(the last 6 ones)

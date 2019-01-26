@@ -71,9 +71,9 @@ class QPretrainer():
 
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
-        # con d = 0.2, ave5 = TODO
-        
-        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
+        # con d = 0.2, ave5 = 0.245
+        # con d = 0.42, ave5 = TODO
+        model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())

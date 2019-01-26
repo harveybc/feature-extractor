@@ -67,7 +67,7 @@ class QPretrainer():
         # number of validation tests to avarage during each training
         self.num_tests = 1
 
-    def set_dcn_model(self):
+    def set_dcn_model(self, regression):
 
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
@@ -101,7 +101,11 @@ class QPretrainer():
 
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(1, activation = 'sigmoid'))
+        # check if output layers is for classification or regression
+        if regression:
+            model.add(Dense(1, activation = 'linear'))
+        else:
+            model.add(Dense(1, activation = 'sigmoid'))
         # multi-GPU support
         #model = to_multi_gpu(model)
         #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)
@@ -155,7 +159,7 @@ class QPretrainer():
         self.y = self.ts[1:,self.num_f + signal]                  
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
-        self.svr_rbf = self.set_dcn_model()
+        self.svr_rbf = self.set_dcn_model(True)
         # train DCN model with the training data
         #best res so far: batch_size = 100   epochs=self.epochs
         #con batch size=64, epochs=200, lr=0.0002 daba:  loss=0.0283, e_vs=0.313  , cada epoca tardaba: 6s con 1ms/step
@@ -172,7 +176,13 @@ class QPretrainer():
         self.x_v_pre = self.vs[1:,0:self.num_f]
         self.x_v = self.dcn_input(self.x_v_pre)
         # TEST, remve 1 and replace by self.num_f
-        self.y_v = self.vs[1:,self.num_f + signal]
+        self.y_v = self.vs[1:,self.num_f + signal].astype(int)
+        if signal == 0:
+            print("Validation set self.x_v = ",self.x_v)
+        # predict the class of in the validation set
+        y_rbf = self.svr_rbf.predict_classes(self.x_v)
+        if signal == 0:
+            print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
         lw = 2
         x_seq = list(range(0, self.vs.shape[0]-1))
@@ -186,10 +196,6 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        #if signal==3:
-        #    plt.show()
-        #else:
-        #    plt.show(block=False)
         return mean_squared_error(self.y_v, y_rbf)
     
  
@@ -203,7 +209,7 @@ class QPretrainer():
         self.y = self.ts[1:,self.num_f + signal].astype(int)                  
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
-        self.svr_rbf = self.set_dcn_model()
+        self.svr_rbf = self.set_dcn_model(False)
         # train DCN model with the training data
         #best res so far: batch_size = 100   epochs=self.epochs
         #con batch size=64, epochs=200, lr=0.0002 daba:  loss=0.0283, e_vs=0.313  , cada epoca tardaba: 6s con 1ms/step

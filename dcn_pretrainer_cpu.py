@@ -64,7 +64,7 @@ class QPretrainer():
         self.learning_rate = 0.0002 
         #prev: epochs 800, eva=0.104
         #epochs 1200, eva5 = 0.12
-        # epocs 800, eva= TODO
+        # epocs 800, eva5= TODO
         self.epochs = 800
         # number of validation tests to avarage during each training
         self.num_tests = 5

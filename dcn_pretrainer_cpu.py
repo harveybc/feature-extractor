@@ -94,10 +94,10 @@ class QPretrainer():
         #model.add(BatchNormalization())
 
         # sin capa de 32, eva5 = 0.114
-        # sin capa de 32, eva5 = TODO
-        model.add(Conv1D(32, 3))
-        model.add(Activation('sigmoid'))
-        model.add(BatchNormalization())
+        # con capa de 32, eva5 = 0.133
+        #model.add(Conv1D(32, 3))
+        #model.add(Activation('sigmoid'))
+        #model.add(BatchNormalization())
         #model.add(Dropout(0.1))
         
         # con capa de 16 da   ave= 104

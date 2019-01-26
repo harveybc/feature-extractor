@@ -58,7 +58,7 @@ class QPretrainer():
         # svm model
         self.svr_rbf = []
         # con lr=0.0003 e= TODO
-        self.learning_rate = 0.0003
+        self.learning_rate = 0.0004
         # con epochs 400, ave3 = 0.239
         # con epochs 1200, ave3 = 0.273
         # con epochs 800, ave5 = 0.243

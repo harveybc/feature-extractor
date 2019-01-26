@@ -71,10 +71,9 @@ class QPretrainer():
 
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
-        # con d = 0.2, ave3 = 0.243
-        # con d = 0.4, ave5 = TODO
+        # con d = 0.2, ave5 = TODO
         
-        model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
+        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
@@ -84,14 +83,14 @@ class QPretrainer():
         model.add(Activation('sigmoid'))
 
         #model.add(Dropout(0.1))
-        model.add(Conv1D(32, 3))
-        model.add(Activation('sigmoid'))
+        #model.add(Conv1D(32, 3))
+        #model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
         #model.add(Dropout(0.1))
         model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
-        #model.add(BatchNormalization())
+        model.add(BatchNormalization())
 
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL

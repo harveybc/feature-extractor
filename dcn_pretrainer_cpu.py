@@ -89,7 +89,9 @@ class QPretrainer():
         # con dropout = 0.4, e= 0.114
         model.add(Dropout(0.4))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
-        model.add(Conv1D(64, 3))
+        # sin capa de 64, eva = 0.114
+        # on capa de 128, eva = TODO
+        model.add(Conv1D(128, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 

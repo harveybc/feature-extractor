@@ -274,7 +274,7 @@ if __name__ == '__main__':
     for j in range(0,pt.num_tests):
         print('test: ',j+1,'/',pt.num_tests)
         #for i in range(0,pt.num_s):
-        for i in range(0,19):
+        for i in range(10,19):
             print('Training model '+str(i))
             error_ant[i] = error[i]
             # verifies if the actions are for classification(the last 6 ones)

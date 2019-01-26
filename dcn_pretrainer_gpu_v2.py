@@ -59,7 +59,7 @@ class QPretrainer():
         self.svr_rbf = []
         # con lr=0.0002 e=0.106
         # con lr=0.0003 e= 0.224
-        self.learning_rate = 0.0002
+        self.learning_rate = 0.002
         # con epochs 400, ave3 = 0.239
         # con epochs 1200, ave3 = 0.273
         # con epochs 800, ave5 = 0.243

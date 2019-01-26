@@ -120,7 +120,8 @@ class QPretrainer():
         paralell_model = model
         if regression:
             paralell_model.compile(loss="mae", optimizer=opt, metrics=["mse"])
-        #model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
+        else:
+            paralell_model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
         #model.compile(loss="mse", optimizer=opt, metrics=["accuracy"])
         return paralell_model 
 

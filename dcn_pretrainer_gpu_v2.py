@@ -79,21 +79,17 @@ class QPretrainer():
         # Sin batch_normalization daba: 0.204
         # Con batch normalization: e=0.168
         model.add(BatchNormalization())
-        # Con dropout = 0.1, e=0.168
-        # con dropout = 0.2, e=0.121
-        # con dropout = 0.4, e= 0.114
         model.add(Dropout(0.4))
-        # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
+        
         model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
-        # sin capa de 32, eva5 = 0.114
-        # sin capa de 32, eva5 = TODO
-        model.add(Conv1D(32, 3))
-        model.add(Activation('sigmoid'))
-        model.add(BatchNormalization())
-        #model.add(Dropout(0.1))
+        # sin capa de 32, eva = TODO
+        # model.add(Conv1D(32, 3))
+        # model.add(Activation('sigmoid'))
+        # model.add(BatchNormalization())
+        # model.add(Dropout(0.1))
         
         # con capa de 16 da   ave= 104
         model.add(Conv1D(16, 3))

@@ -91,8 +91,9 @@ class QPretrainer():
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         # sin capa de 64, eva = 0.114
         # on capa de 128, eva = 0.125
-        # on capa de 32, eva = TODO
-        model.add(Conv1D(32, 3))
+        # on capa de 32,  eva = 0.107
+        # on capa de 16,  eva = TODO
+        model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 

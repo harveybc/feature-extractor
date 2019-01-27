@@ -111,9 +111,7 @@ class QPretrainer():
 
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(1, activation = 'sigmoid'))
-        
-        model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+
         # check if output layers is for classification or regression
         if regression:
             model.add(Dense(1, activation = 'linear'))

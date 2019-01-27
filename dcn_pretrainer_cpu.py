@@ -63,8 +63,6 @@ class QPretrainer():
         # 0.0005 = 0.142
         self.learning_rate = 0.0002 
         #prev: epochs 800, eva=0.104
-        #epochs 1200, eva5 = 0.12
-        # epocs 800, eva5= TODO
         self.epochs = 800
         # number of validation tests to avarage during each training
         self.num_tests = 5
@@ -92,15 +90,15 @@ class QPretrainer():
         # sin capa de 64, eva = 0.114
         # on capa de 128, eva = 0.125
         # on capa de 32,  eva = 0.107
-        # on capa de 16,  eva = TODO
-        model.add(Conv1D(16, 3))
+        # on capa de 16,  eva = 0.114
+        model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
-        # sin capa de 32, eva5 = 0.114
-        # con capa de 32, eva5 = 0.133
-        #model.add(Conv1D(32, 3))
-        #model.add(Activation('sigmoid'))
+        # sin otra capa de 32, eva5 = 0.107
+        # con otra capa de 32, eva5 = TODO
+        model.add(Conv1D(32, 3))
+        model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
         #model.add(Dropout(0.1))
         

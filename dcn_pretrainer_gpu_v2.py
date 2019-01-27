@@ -62,7 +62,7 @@ class QPretrainer():
         # con epochs 400, ave3 = 0.239
         # con epochs 1200, ave3 = 0.273
         # con epochs 800, ave5 = 0.243
-        self.epochs = 800
+        self.epochs = 1200
         # number of validation tests to avarage during each training
         self.num_tests = 3
 

@@ -64,7 +64,7 @@ class QPretrainer():
         # con epochs 800, ave5 = 0.243
         self.epochs = 800
         # number of validation tests to avarage during each training
-        self.num_tests = 1
+        self.num_tests = 3
 
     def set_dcn_model(self, regression):
 
@@ -77,18 +77,23 @@ class QPretrainer():
         # Sin batch_normalization daba: 0.204
         # Con batch normalization: e=0.168
         model.add(BatchNormalization())
+        # Con dropout = 0.1, e=0.168
+        # con dropout = 0.2, e=0.121
+        # con dropout = 0.4, e= 0.114
         model.add(Dropout(0.4))
+        # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
+        # sin batchNormalization, eva = 0.107
+        # con batchNormalization, eva = 0.107
         
-        # sin batch normalization eva = 0.107
-        # con batch normalization eva = TODO
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
 
-        # model.add(Conv1D(32, 3))
-        # model.add(Activation('sigmoid'))
-        # model.add(BatchNormalization())
-        # model.add(Dropout(0.1))
+        # sin otra capa de 32, eva5 = 0.107
+        #model.add(Conv1D(32, 3))
+        #model.add(Activation('sigmoid'))
+        #model.add(BatchNormalization())
+        #model.add(Dropout(0.1))
         
         # con capa de 16 da   ave= 104
         model.add(Conv1D(16, 3))
@@ -103,6 +108,10 @@ class QPretrainer():
         model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         #model.add(BatchNormalization())
+
+        # output layer
+        model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+        model.add(Dense(1, activation = 'sigmoid'))
         
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         # check if output layers is for classification or regression

@@ -70,7 +70,6 @@ class QPretrainer():
 
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
-        # con d = 0.2, ave5 = TODO
         
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
@@ -80,11 +79,12 @@ class QPretrainer():
         model.add(BatchNormalization())
         model.add(Dropout(0.4))
         
-        model.add(Conv1D(64, 3))
+        # sin batch normalization eva = 0.107
+        # con batch normalization eva = TODO
+        model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
-        #model.add(BatchNormalization())
+        model.add(BatchNormalization())
 
-        # sin capa de 32, eva = TODO
         # model.add(Conv1D(32, 3))
         # model.add(Activation('sigmoid'))
         # model.add(BatchNormalization())
@@ -275,7 +275,7 @@ if __name__ == '__main__':
     for j in range(0,pt.num_tests):
         print('test: ',j+1,'/',pt.num_tests)
         #for i in range(0,pt.num_s):
-        for i in range(10,19):
+        for i in range(16,19):
             print('Training model '+str(i))
             error_ant[i] = error[i]
             # verifies if the actions are for classification(the last 6 ones)

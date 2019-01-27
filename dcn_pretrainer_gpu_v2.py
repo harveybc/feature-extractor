@@ -272,6 +272,7 @@ if __name__ == '__main__':
     error = pt.num_s*[0.0]
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
+    
     for j in range(0,pt.num_tests):
         print('test: ',j+1,'/',pt.num_tests)
         #for i in range(0,pt.num_s):
@@ -294,5 +295,7 @@ if __name__ == '__main__':
                 print('average validation error:', error_accum[i]/pt.num_tests)
             if error[i] <= error_ant[i]:    
                 pt.export_model(i)
-    
+    for i in range(16,19):
+        print('Error in signal ', i, ": ", error_accum[i]/pt.num_tests )
+       
     

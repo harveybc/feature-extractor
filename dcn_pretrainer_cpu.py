@@ -63,7 +63,8 @@ class QPretrainer():
         # 0.0005 = 0.142
         self.learning_rate = 0.0002 
         #prev: epochs 800, eva=0.104
-        self.epochs = 800
+        #epocsh 400, e= TODO
+        self.epochs = 400
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -87,8 +88,8 @@ class QPretrainer():
         # con dropout = 0.4, e= 0.114
         model.add(Dropout(0.4))
         #sin capa de LSTM50,  e=0.107
-        #con capa de LSTM50, e= TODO
-        model.add(LSTM(units = 50, return_sequences = True))
+        #con capa de LSTM50, e= 0.191
+        #model.add(LSTM(units = 50, return_sequences = True))
         
         #model.add(Dropout(0.2))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
@@ -113,6 +114,10 @@ class QPretrainer():
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
 
+        #sin capa de LSTM50,  e=0.107? probar con 400 epoch first
+        #con capa de LSTM50, e= TODO
+        #model.add(LSTM(units = 50, return_sequences = True))
+        
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
@@ -276,7 +281,7 @@ class QPretrainer():
         #plt.ylabel('target')
         #plt.title('Signal ' + str(signal))
         #plt.legend()
-        #fig.savefig('predict_' + str(signal) + '.png')
+        fig.savefig('predict_cpu_' + str(signal) + '.png')
         #if signal==18:
         #    plt.show()
         #else:

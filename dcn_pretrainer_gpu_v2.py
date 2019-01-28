@@ -59,10 +59,10 @@ class QPretrainer():
         self.svr_rbf = []
         # con lr=0.0002 e= TODO
         self.learning_rate = 0.0002
-        # con epochs 400, ave3 = 0.239
+        # con epochs 400, ave3 con 0.6featureselect = TODO
         # con epochs 1200, ave3 = 0.273
         # con epochs 800, ave5 = TODO
-        self.epochs = 512
+        self.epochs = 400
         # number of validation tests to avarage during each training
         self.num_tests = 3
 

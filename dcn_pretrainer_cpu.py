@@ -62,8 +62,9 @@ class QPretrainer():
         # 0.0002 = 0.127
         # 0.0005 = 0.142
         self.learning_rate = 0.0002 
-        #epocsh 400, e= 0.104
-        self.epochs = 400
+        #epocsh 400, e= 0.107
+        #epocsh 50, e= TODO
+        self.epochs = 50
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -108,14 +109,14 @@ class QPretrainer():
         #model.add(BatchNormalization())
         #model.add(Dropout(0.1))
         
-        # con capa de 16 da   ave= 104
+        # con capa de 16 da   eva5= 107
         model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
 
         #sin capa de LSTM50, eva3=0.104 probar con 400 epochs
-        #con capa de LSTM50, eva3= TODO
-        model.add(LSTM(units = 50, return_sequences = True))
+        #con capa de LSTM50, eva3= 0.212
+        #model.add(LSTM(units = 50, return_sequences = True))
         
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL

@@ -60,7 +60,9 @@ class QPretrainer():
         self.learning_rate = 0.0002
         # con epochs 50, lr=0.0002 con 0.6 featureselect y batch size=1024  ave5 = 0.214
         # con epochs 100, lr=0.0002 con 0.6 featureselect y batch size=1024  ave5 = 0.232
-        # con epochs 100, lr=0.0002 con 0.4 featureselect y batch size=1024  ave5 = TODO
+        # con epochs 100, lr=0.0002 con 0.4 featureselect y batch size=1024  ave5 = 0.255
+        # con epochs 100, lr=0.0002 con 0.25 featureselect y batch size=1024  ave5 = 0.255
+        
         
         self.epochs = 100
         

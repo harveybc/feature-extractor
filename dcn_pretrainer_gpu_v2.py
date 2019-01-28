@@ -57,21 +57,9 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
-        # con lr=0.002 e= TODO
-        self.learning_rate = 0.002
-        # con epochs 400, ave3 con 0.6 featureselect y batch size=1024  e=0.418 
-        # con epochs 800, ave3 con 0.6 featureselect y batch size=480  e= 0.361 
-        # con epochs 800, ave3 con 0.6 featureselect y batch size=1024  e=0.0.519
-        # con epochs 200, ave3 con 0.6 featureselect y batch size=256  ave3= 0.343
-        # con epochs 400, ave3 con 0.6 featureselect y batch size=256  ave3= 0.416 
-        # con epochs 400, ave3 con 0.6 featureselect y batch size=1024  ave3= 0.3746
-        # con epochs 100, ave3 con 0.6 featureselect y batch size=1024  ave3= 0.305
-        # con epochs 50, ave3 con 0.6 featureselect y batch size=1024  ave3= 0.264
-        # con epochs 25, ave5 con 0.6 featureselect y batch size=1024  ave5= 0.39
-        # con epochs 25, lr=0.002 con 0.6 featureselect y batch size=1024  ave5= 0.335
-        # con epochs 50, lr=0.002 con 0.6 featureselect y batch size=1024  ave5= 0.279
-        # con epochs 100, lr=0.002 con 0.6 featureselect y batch size=1024  ave5= 0.TODO
-        self.epochs = 100
+        self.learning_rate = 0.0002
+        # con epochs 50, lr=0.0002 con 0.6 featureselect y batch size=1024  ave5=TODO
+        self.epochs = 50
         
         # number of validation tests to avarage during each training
         self.num_tests = 5
@@ -147,9 +135,9 @@ class QPretrainer():
         self.num_features = self.num_f // self.window_size
         self.num_ticks = self.ts_g.shape[0]
         # split dataset into 75% training and 25% validation 
-        self.ts_s = self.ts_g[1:(11*self.num_ticks)//12,:]
+        self.ts_s = self.ts_g[1:(3*self.num_ticks)//4,:]
         self.ts = self.ts_s.copy()
-        self.vs_s = self.ts_g[(11*self.num_ticks)//12 : self.num_ticks,:]
+        self.vs_s = self.ts_g[(3*self.num_ticks)//4 : self.num_ticks,:]
         self.vs = self.vs_s.copy() 
     
     ## Generate DCN  input matrix

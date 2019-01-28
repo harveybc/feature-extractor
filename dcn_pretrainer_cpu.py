@@ -67,7 +67,7 @@ class QPretrainer():
         #epocsh 100, ave3 = 0.113
         #epocsh 200, ave3 = 0.114
         #epocsh 400, ave3 = 0.102
-        #epocsh 600, ave3 = 0.102
+        #epocsh 600, ave3 = TODO
         
         self.epochs = 600
         # number of validation tests to avarage during each training

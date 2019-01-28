@@ -90,7 +90,7 @@ class QPretrainer():
         #con capa de LSTM50, e= TODO
         model.add(LSTM(units = 50, return_sequences = True))
         
-        regressor.add(Dropout(0.2))
+        #model.add(Dropout(0.2))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         # sin capa de 64, eva = 0.114
         # on capa de 128, eva = 0.125

@@ -62,7 +62,7 @@ class QPretrainer():
         # con epochs 400, ave3 = 0.239
         # con epochs 1200, ave3 = 0.273
         # con epochs 800, ave5 = TODO
-        self.epochs = 400
+        self.epochs = 512
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -70,9 +70,8 @@ class QPretrainer():
 
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
-        # con 512,64 ave=
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(1024, 3))
+        model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         # Sin batch_normalization daba: 0.204
         # Con batch normalization: e=0.168
@@ -83,7 +82,7 @@ class QPretrainer():
         model.add(Dropout(0.4))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         # sin batchNormalization, eva = 0.107
-        model.add(Conv1D(64, 3))
+        model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 

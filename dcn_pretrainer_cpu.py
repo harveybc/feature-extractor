@@ -24,7 +24,7 @@ from keras.optimizers import SGD, Adamax
 from keras.utils import multi_gpu_model
 import tensorflow as tf
 from tensorflow.python.client import device_lib
-
+from keras.layers import LSTM
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
@@ -86,6 +86,11 @@ class QPretrainer():
         # con dropout = 0.2, e=0.121
         # con dropout = 0.4, e= 0.114
         model.add(Dropout(0.4))
+        #sin capa de LSTM50,  e=0.107
+        #con capa de LSTM50, e= TODO
+        regressor.add(LSTM(units = 50, return_sequences = True))
+        
+        regressor.add(Dropout(0.2))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         # sin capa de 64, eva = 0.114
         # on capa de 128, eva = 0.125
@@ -97,7 +102,7 @@ class QPretrainer():
 
         # con otra capa de 32, eva5 = 0.126
         # sin otra capa de 32, eva5 = 0.107, sin minmax normalization
-        # sin otra capa de 32, eva5 = TODO , con minmax normalization antes de power transform
+        # sin otra capa de 32, eva5 = 0.124 , con minmax normalization antes de power transform
         #model.add(Conv1D(32, 3))
         #model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())

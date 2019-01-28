@@ -65,7 +65,7 @@ class QPretrainer():
         #prev: epochs 800, eva=0.104
         self.epochs = 800
         # number of validation tests to avarage during each training
-        self.num_tests = 5
+        self.num_tests = 3
 
     def set_dcn_model(self):
 

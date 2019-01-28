@@ -62,7 +62,7 @@ class QPretrainer():
         # con epochs 400, ave3 = 0.239
         # con epochs 1200, ave3 = 0.273
         # con epochs 800, ave5 = TODO
-        self.epochs = 800
+        self.epochs = 1000
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -70,9 +70,9 @@ class QPretrainer():
 
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
-        
+        # con 512,64 ave=
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(512, 3))
+        model.add(Conv1D(1024, 3))
         model.add(Activation('sigmoid'))
         # Sin batch_normalization daba: 0.204
         # Con batch normalization: e=0.168
@@ -83,7 +83,7 @@ class QPretrainer():
         model.add(Dropout(0.4))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         # sin batchNormalization, eva = 0.107
-        model.add(Conv1D(32, 3))
+        model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
@@ -257,7 +257,7 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==18:
+        if signal==16:
             plt.show()
         else:
             plt.show(block=False)
@@ -281,7 +281,7 @@ if __name__ == '__main__':
     for j in range(0,pt.num_tests):
         print('test: ',j+1,'/',pt.num_tests)
         #for i in range(0,pt.num_s):
-        for i in range(16,19):
+        for i in range(16,17):
             print('Training model '+str(i))
             error_ant[i] = error[i]
             # verifies if the actions are for classification(the last 6 ones)

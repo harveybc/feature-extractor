@@ -114,9 +114,9 @@ class QPretrainer():
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
 
-        #sin capa de LSTM50,  e=0.107? probar con 400 epoch first
+        #sin capa de LSTM50,  e=0.104 probar con 400 epochs
         #con capa de LSTM50, e= TODO
-        #model.add(LSTM(units = 50, return_sequences = True))
+        model.add(LSTM(units = 50, return_sequences = True))
         
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL

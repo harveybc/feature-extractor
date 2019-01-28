@@ -66,8 +66,10 @@ class QPretrainer():
         # con epochs 100, lr=0.0002 con 0.5 featureselect y batch size=1024  ave5 = 0.35 , pero se requiere adicionar padding
         # con epochs 400, lr=0.0002 con 0.5 featureselect y batch size=1024  ave5 = 0.38 , pero se requiere adicionar padding
         # con epochs 50, lr=0.0002 con 0.3 featureselect y batch size=1024  ave5 = 0.305
-        # con epochs 100, lr=0.0002 con 0.3 featureselect y batch size=1024  ave5 = TODO
-        self.epochs = 100
+        # con epochs 100, lr=0.0002 con 0.3 featureselect y batch size=1024  ave5 = 0.325
+        # con epochs 50, lr=0.0002 con 0.2 featureselect y batch size=1024  ave5 = TODO
+        
+        self.epochs = 50
         
         # number of validation tests to avarage during each training
         self.num_tests = 5

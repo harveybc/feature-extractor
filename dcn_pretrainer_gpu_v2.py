@@ -57,8 +57,8 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
-        # con lr=0.0002 e= TODO
-        self.learning_rate = 0.0002
+        # con lr=0.002 e= TODO
+        self.learning_rate = 0.002
         # con epochs 400, ave3 con 0.6 featureselect y batch size=1024  e=0.418 
         # con epochs 800, ave3 con 0.6 featureselect y batch size=480  e= 0.361 
         # con epochs 800, ave3 con 0.6 featureselect y batch size=1024  e=0.0.519
@@ -67,8 +67,10 @@ class QPretrainer():
         # con epochs 400, ave3 con 0.6 featureselect y batch size=1024  ave3= 0.3746
         # con epochs 100, ave3 con 0.6 featureselect y batch size=1024  ave3= 0.305
         # con epochs 50, ave3 con 0.6 featureselect y batch size=1024  ave3= 0.264
-        # con epochs 25, ave5 con 0.6 featureselect y batch size=1024  ave5= TODO
+        # con epochs 25, ave5 con 0.6 featureselect y batch size=1024  ave5= 0.39
+        # con epochs 25, lr=0.002 con 0.6 featureselect y batch size=1024  ave5= TODO
         self.epochs = 25
+        
         # number of validation tests to avarage during each training
         self.num_tests = 5
 

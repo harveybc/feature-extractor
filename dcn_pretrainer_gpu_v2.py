@@ -259,10 +259,10 @@ class QPretrainer():
         plt.title('Signal ' + str(signal))
         plt.legend()
         fig.savefig('predict_' + str(signal) + '.png')
-        if signal==16:
-            plt.show()
-        else:
-            plt.show(block=False)
+        #if signal==16:
+        #    plt.show()
+        #else:
+        #    plt.show(block=False)
         return mean_squared_error(self.y_v, y_rbf)
  
     ## Export the trained models and the predicted validation set predictions, print statistics 

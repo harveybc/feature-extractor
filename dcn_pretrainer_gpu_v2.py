@@ -100,7 +100,7 @@ class QPretrainer():
         # on capa de 128, eva = 0.125
         # on capa de 32,  eva = 0.107
         # on capa de 16,  eva = 0.114
-        model.add(Conv1D(32, 3, data_format='channels_first'))
+        model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
@@ -113,7 +113,7 @@ class QPretrainer():
         #model.add(Dropout(0.1))
         
         # con capa de 16 da   eva5= 107
-        model.add(Conv1D(16, 3, data_format='channels_first'))
+        model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
 

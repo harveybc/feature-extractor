@@ -79,7 +79,7 @@ class QPretrainer():
         # 0.2,0.1,lr=0.0002 1200 eva: 0.117
         # 0.4,eva = 0.108
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(512, 3))
+        model.add(Conv1D(512, 3, padding='same'))
         model.add(Activation('sigmoid'))
         # Sin batch_normalization daba: 0.204
         # Con batch normalization: e=0.168
@@ -98,7 +98,7 @@ class QPretrainer():
         # on capa de 128, eva = 0.125
         # on capa de 32,  eva = 0.107
         # on capa de 16,  eva = 0.114
-        model.add(Conv1D(32, 3))
+        model.add(Conv1D(32, 3, padding='same'))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
@@ -111,7 +111,7 @@ class QPretrainer():
         #model.add(Dropout(0.1))
         
         # con capa de 16 da   eva5= 107
-        model.add(Conv1D(16, 3))
+        model.add(Conv1D(16, 3, padding='same'))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
 

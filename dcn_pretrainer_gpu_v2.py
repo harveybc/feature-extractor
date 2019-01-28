@@ -62,8 +62,9 @@ class QPretrainer():
         # con epochs 400, ave3 con 0.6 featureselect y batch size=480  e= 0.317 
         # con epochs 400, ave3 con 0.6 featureselect y batch size=1024  e=0.418 
         # con epochs 800, ave3 con 0.6 featureselect y batch size=480  e= 0.361 
-        # con epochs 800, ave3 con 0.6 featureselect y batch size=1024  e=0.TODO
-        self.epochs = 800
+        # con epochs 800, ave3 con 0.6 featureselect y batch size=1024  e=0.0.519
+        # con epochs 200, ave3 con 0.6 featureselect y batch size=256  e= 0.317 
+        self.epochs = 200
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -227,7 +228,7 @@ class QPretrainer():
         #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251(0.241) cada epoca tardaba: 3s con 580us/step
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
-        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=256, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
 
         

@@ -69,8 +69,8 @@ class QPretrainer():
         # con epochs 100, lr=0.0002 con 0.3 featureselect y batch size=1024  ave5 = 0.325
         # con epochs 50, lr=0.0002 con 0.2 featureselect y batch size=1024  ave5 = 0.239
         # con epochs 50, lr=0.0002 con 0.15 featureselect y batch size=1024  ave5 = 0.239
-        # con epochs 400, lr=0.0002 con 0.15 featureselect y batch size=1024  ave5 = TODO
-                
+        # con epochs 400, lr=0.0002 con 0.15 featureselect y batch size=1024  ave5 = 0.394
+        # con epochs 50, lr=0.0002 con 0.10 featureselect y batch size=1024  ave5 = TODO                
                 
         self.epochs = 400
         

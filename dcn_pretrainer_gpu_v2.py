@@ -58,11 +58,6 @@ class QPretrainer():
         # svm model
         self.svr_rbf = []
         self.learning_rate = 0.0002
-        # con epochs 50, lr=0.0002 con 0.6 featureselect y batch size=1024  ave5 = 0.214
-        # con epochs 100, lr=0.0002 con 0.6 featureselect y batch size=1024  ave5 = 0.232
-        # con epochs 100, lr=0.0002 con 0.4 featureselect y batch size=1024  ave5 = 0.255
-        # con epochs 100, lr=0.0002 con 0.25 featureselect y batch size=1024  ave5 = 0.3
-        # con epochs 100, lr=0.0002 con 0.75 featureselect y batch size=1024  ave5 = ERROR, solo 2 features
         # con epochs 100, lr=0.0002 con 0.5 featureselect y batch size=1024  ave5 = 0.35 , pero se requiere adicionar padding
         # con epochs 400, lr=0.0002 con 0.5 featureselect y batch size=1024  ave5 = 0.38 , pero se requiere adicionar padding
         # con epochs 50, lr=0.0002 con 0.3 featureselect y batch size=1024  ave5 = 0.305
@@ -71,7 +66,8 @@ class QPretrainer():
         # con epochs 50, lr=0.0002 con 0.15 featureselect y batch size=1024  ave5 = 0.239
         # con epochs 400, lr=0.0002 con 0.15 featureselect y batch size=1024  ave5 = 0.394
         # con epochs 50, lr=0.0002 con 0.10 featureselect y batch size=1024  ave5 = 0.225                
-        # con epochs 50, con minmax con 0.10 featureselect y batch size=1024  ave5 = TODO  
+        # con epochs 50, con minmax con 0.10 featureselect y batch size=1024  ave5 = 0.229  
+        # con epochs 50, lr=0.0002 con 0.6 featureselect y batch size=1024  ave5 = TODO
         
         self.epochs = 50
         

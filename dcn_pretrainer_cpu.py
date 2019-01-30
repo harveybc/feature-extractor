@@ -66,7 +66,7 @@ class QPretrainer():
         #epocsh 50, ave3 = 0.138
         #epocsh 100, ave3 = 0.113
         #epocsh 200, ave3 = 0.114
-        #epocsh 400, ave3 = TODO
+        #epocsh 400, ave3 = 0.105
         #epocsh 600, ave3 = 0.113
         #epocsh 300, ave3 = 0.126
         #epocsh 500, ave3 = 0.121

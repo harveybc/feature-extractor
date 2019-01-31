@@ -72,7 +72,7 @@ class QPretrainer():
         self.epochs = 50
         
         # number of validation tests to avarage during each training
-        self.num_tests = 5
+        self.num_tests = 3
 
     def set_dcn_model(self, regression):
 
@@ -304,11 +304,10 @@ if __name__ == '__main__':
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     
-    for j in range(0,pt.num_tests):
-        print('test: ',j+1,'/',pt.num_tests)
-        #for i in range(0,pt.num_s):
-        for i in range(16,17):
-            print('Training model '+str(i))
+    for i in range(13,19):
+        print('Training model '+str(i))
+        for j in range(0,pt.num_tests):
+            print('test: ',j+1,'/',pt.num_tests)
             error_ant[i] = error[i]
             # verifies if the actions are for classification(the last 6 ones)
             if (i>=10):
@@ -326,7 +325,7 @@ if __name__ == '__main__':
                 print('average validation error:', error_accum[i]/pt.num_tests)
             if error[i] <= error_ant[i]:    
                 pt.export_model(i)
-    for i in range(16,19):
+    for i in range(13,19):
         print('Error in signal ', i, ": ", error_accum[i]/pt.num_tests )
        
     

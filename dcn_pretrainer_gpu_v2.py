@@ -72,7 +72,7 @@ class QPretrainer():
         self.epochs = 400
         
         # number of validation tests to avarage during each training
-        self.num_tests = 5
+        self.num_tests = 3
 
     def set_dcn_model(self, regression):
 
@@ -313,7 +313,7 @@ if __name__ == '__main__':
             if (i>=10):
                 params = pt.train_model_c(i)
                 print('best_params_' + str(i) + ' = ',params)
-                error[i] = pt.evaluate_validation_c(params,i)
+                error[i] = pt.evaluate_validation_c(params,14)
                 print('error on validation set:' + str(i) + ' = ' + str(error[i]))
             else:    
                 params = pt.train_model(i)

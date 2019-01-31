@@ -72,7 +72,7 @@ class QPretrainer():
         self.epochs = 400
         
         # number of validation tests to avarage during each training
-        self.num_tests = 3
+        self.num_tests = 5
 
     def set_dcn_model(self, regression):
 

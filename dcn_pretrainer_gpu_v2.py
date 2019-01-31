@@ -69,7 +69,7 @@ class QPretrainer():
         # con epochs 50, con minmax con 0.10 featureselect y batch size=1024  ave5 = 0.229  
         # con epochs 50, lr=0.0002 con 0.6 featureselect y batch size=1024  ave5 = TODO
         
-        self.epochs = 50
+        self.epochs = 400
         
         # number of validation tests to avarage during each training
         self.num_tests = 3

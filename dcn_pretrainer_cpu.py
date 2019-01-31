@@ -309,11 +309,12 @@ if __name__ == '__main__':
     error = pt.num_s*[0.0]
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
-    for j in range(0,pt.num_tests):
-        print('test: ',j+1,'/',pt.num_tests)
-        #for i in range(0,pt.num_s):
-        for i in range(16,17):
-            print('Training model '+str(i))
+        
+    #for i in range(0,pt.num_s):
+    for i in range(16,19):
+        print('Training model '+str(i))
+        for j in range(0,pt.num_tests):
+            print('test: ',j+1,'/',pt.num_tests)
             error_ant[i] = error[i]
             # verifies if the actions are for classification(the last 6 ones)
             if (i>=10):

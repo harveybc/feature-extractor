@@ -317,7 +317,7 @@ if __name__ == '__main__':
             print('test: ',j+1,'/',pt.num_tests)
             error_ant[i] = error[i]
             # verifies if the actions are for classification(the last 6 ones)
-            if (i>=10):
+            if (i>=8):
                 params = pt.train_model_c(i)
                 print('best_params_' + str(i) + ' = ',params)
                 error[i] = pt.evaluate_validation_c(params,i)

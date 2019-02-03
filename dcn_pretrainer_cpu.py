@@ -61,7 +61,7 @@ class QPretrainer():
         # 0.002 (Adamax default) = 0.137
         # 0.0002 = 0.127
         # 0.0005 = 0.142
-        self.learning_rate = 0.0005 
+        self.learning_rate = 0.0003
         
         #epocsh 50, ave3 = 0.138
         #epocsh 100, ave3 = 0.113
@@ -85,7 +85,7 @@ class QPretrainer():
         # 0.2,0.1,lr=0.0002 1200 eva: 0.117
         # 0.4,eva = 0.108
         model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(1024, 3))
+        model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         # Sin batch_normalization daba: 0.204
         # Con batch normalization: e=0.168

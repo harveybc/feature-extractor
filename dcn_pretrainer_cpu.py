@@ -61,7 +61,7 @@ class QPretrainer():
         # 0.002 (Adamax default) = 0.137
         # 0.0002 = 0.127
         # 0.0005 = 0.142
-        self.learning_rate = 0.0002 
+        self.learning_rate = 0.002 
         
         #epocsh 50, ave3 = 0.138
         #epocsh 100, ave3 = 0.113
@@ -269,26 +269,26 @@ class QPretrainer():
         self.x_v = self.dcn_input(self.x_v_pre)
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal].astype(int)
-        if signal == 0:
-            print("Validation set self.x_v = ",self.x_v)
+        #if signal == 0:
+        #    print("Validation set self.x_v = ",self.x_v)
         # predict the class of in the validation set
         y_rbf = self.svr_rbf.predict_classes(self.x_v)
-        if signal == 0:
-            print("Validation set y_rbf = ",y_rbf)
+        #if signal == 0:
+        #    print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
         lw = 2
         # TODO: NO ES TS SINO VS
         x_seq = list(range(0, self.vs.shape[0]-1))
         # 0 = Buy/CloseSell/nopCloseBuy
         #rint("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
-        fig=plt.figure()
-        plt.plot(x_seq, self.y_v, color='darkorange', label='data')
-        plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
-        plt.xlabel('data')
-        plt.ylabel('target')
-        plt.title('Signal ' + str(signal))
-        plt.legend()
-        fig.savefig('predict_cpu_' + str(signal) + '.png')
+        #fig=plt.figure()
+        #plt.plot(x_seq, self.y_v, color='darkorange', label='data')
+        #plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
+        #plt.xlabel('data')
+        #plt.ylabel('target')
+        #plt.title('Signal ' + str(signal))
+        #plt.legend()
+        #fig.savefig('predict_cpu_' + str(signal) + '.png')
         #if signal==18:
         #    plt.show()
         #else:
@@ -311,7 +311,7 @@ if __name__ == '__main__':
     error_accum = pt.num_s*[0.0]
         
     #for i in range(0,pt.num_s):
-    for i in range(8,12):
+    for i in range(10,11):
         print('Training model '+str(i))
         for j in range(0,pt.num_tests):
             print('test: ',j+1,'/',pt.num_tests)
@@ -332,6 +332,6 @@ if __name__ == '__main__':
                 print('average validation error:', error_accum[i]/pt.num_tests)
             if error[i] <= error_ant[i]:    
                 pt.export_model(i)
-    for i in range(8,12):
+    for i in range(10,11):
         print('Error in signal ', i, ": ", error_accum[i]/pt.num_tests )    
     

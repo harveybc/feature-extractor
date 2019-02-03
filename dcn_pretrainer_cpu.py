@@ -61,7 +61,7 @@ class QPretrainer():
         # 0.002 (Adamax default) = 0.137
         # 0.0002 = 0.127
         # 0.0005 = 0.142
-        self.learning_rate = 0.002 
+        self.learning_rate = 0.0005 
         
         #epocsh 50, ave3 = 0.138
         #epocsh 100, ave3 = 0.113

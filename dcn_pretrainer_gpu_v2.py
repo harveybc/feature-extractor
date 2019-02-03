@@ -57,7 +57,7 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
-        self.learning_rate = 0.002
+        self.learning_rate = 0.0003
         # con epochs 100, lr=0.0002 con 0.5 featureselect y batch size=1024  ave5 = 0.35 , pero se requiere adicionar padding
         # con epochs 400, lr=0.0002 con 0.5 featureselect y batch size=1024  ave5 = 0.38 , pero se requiere adicionar padding
         # con epochs 50, lr=0.0002 con 0.3 featureselect y batch size=1024  ave5 = 0.305
@@ -72,7 +72,7 @@ class QPretrainer():
         self.epochs = 400
         
         # number of validation tests to avarage during each training
-        self.num_tests = 5
+        self.num_tests = 3
 
     def set_dcn_model(self, regression):
 
@@ -122,7 +122,7 @@ class QPretrainer():
 
         #sin capa de LSTM50, eva3=0.104 probar con 400 epochs
         #con capa de LSTM50, eva3= 0.212
-        model.add(LSTM(units = 50, return_sequences = True))
+        #model.add(LSTM(units = 50, return_sequences = True))
         
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL

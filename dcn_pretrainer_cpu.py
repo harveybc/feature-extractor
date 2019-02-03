@@ -96,9 +96,9 @@ class QPretrainer():
         model.add(Dropout(0.4))
         #sin capa de LSTM50,  e=0.107
         #con capa de LSTM50, e= 0.191
-        model.add(LSTM(units = 50, return_sequences = True))
+        #model.add(LSTM(units = 50, return_sequences = True))
         
-        model.add(Dropout(0.2))
+        #model.add(Dropout(0.2))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
         # sin capa de 64, eva = 0.114
         # on capa de 128, eva = 0.125
@@ -123,7 +123,7 @@ class QPretrainer():
 
         #sin capa de LSTM50, eva3=0.104 probar con 400 epochs
         #con capa de LSTM50, eva3= 0.212
-        model.add(LSTM(units = 50, return_sequences = True))
+        #model.add(LSTM(units = 50, return_sequences = True))
         
         #model.add(MaxPooling1D(pool_size=2, strides=2))
         # second set of CONV => RELU => POOL

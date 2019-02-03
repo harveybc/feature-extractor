@@ -13,7 +13,7 @@ from numpy import genfromtxt
 from numpy import shape
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, accuracy_score
 from joblib import dump, load
 from sklearn import preprocessing
 from sklearn.metrics import confusion_matrix
@@ -287,7 +287,7 @@ class QPretrainer():
         #    plt.show()
         #else:
         #    plt.show(block=False)
-        return binary_accuracy(self.y_v, y_rbf)
+        return accuracy_score(self.y_v, y_rbf)
  
     ## Export the trained models and the predicted validation set predictions, print statistics 
     def export_model(self, signal):

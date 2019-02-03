@@ -61,7 +61,7 @@ class QPretrainer():
         # 0.002 (Adamax default) = 0.137
         # 0.0002 = 0.127
         # 0.0005 = 0.142
-        self.learning_rate = 0.0005
+        self.learning_rate = 0.0002
         
         #epocsh 50, ave3 = 0.138
         #epocsh 100, ave3 = 0.113
@@ -71,7 +71,7 @@ class QPretrainer():
         #epocsh 300, ave3 = 0.126
         #epocsh 500, ave3 = 0.121
         
-        self.epochs = 400
+        self.epochs = 1200
         # number of validation tests to avarage during each training
         self.num_tests = 3
 

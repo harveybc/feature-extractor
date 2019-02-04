@@ -57,7 +57,7 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
-        self.learning_rate = 0.0005
+        self.learning_rate = 0.0002
         # con epochs 100, lr=0.0002 con 0.5 featureselect y batch size=1024  ave5 = 0.35 , pero se requiere adicionar padding
         # con epochs 400, lr=0.0002 con 0.5 featureselect y batch size=1024  ave5 = 0.38 , pero se requiere adicionar padding
         # con epochs 50, lr=0.0002 con 0.3 featureselect y batch size=1024  ave5 = 0.305
@@ -304,13 +304,13 @@ if __name__ == '__main__':
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     
-    for i in range(10,11):
+    for i in range(8,19):
         print('Training model '+str(i))
         for j in range(0,pt.num_tests):
             print('test: ',j+1,'/',pt.num_tests)
             error_ant[i] = error[i]
             # verifies if the actions are for classification(the last 6 ones)
-            if (i>=10):
+            if (i>=8):
                 params = pt.train_model_c(i)
                 print('best_params_' + str(i) + ' = ',params)
                 error[i] = pt.evaluate_validation_c(params,i)
@@ -325,7 +325,7 @@ if __name__ == '__main__':
                 print('average validation error:', error_accum[i]/pt.num_tests)
             if error[i] <= error_ant[i]:    
                 pt.export_model(i)
-    for i in range(10,11):
+    for i in range(8,19):
         print('Error in signal ', i, ": ", error_accum[i]/pt.num_tests )
        
     

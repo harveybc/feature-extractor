@@ -314,7 +314,7 @@ if __name__ == '__main__':
                 params = pt.train_model_c(i)
                 print('best_params_' + str(i) + ' = ',params)
                 error[i] = pt.evaluate_validation_c(params,i)
-                print('error on validation set:' + str(i) + ' = ' + str(error[i]))
+                print('accuracy:' + str(i) + ' = ' + str(error[i]))
             else:    
                 params = pt.train_model(i)
                 print('best_params_' + str(i) + ' = ',params)

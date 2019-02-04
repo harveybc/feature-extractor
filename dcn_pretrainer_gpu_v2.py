@@ -103,15 +103,15 @@ class QPretrainer():
         # on capa de 128, eva = 0.125
         # on capa de 32,  eva = 0.107
         # on capa de 16,  eva = 0.114
-        model.add(Conv1D(64, 3))
+        model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
         # con otra capa de 32, eva5 = 0.126
         # sin otra capa de 32, eva5 = 0.107, sin minmax normalization
         # sin otra capa de 32, eva5 = 0.124 , con minmax normalization antes de power transform
-        model.add(Conv1D(32, 3))
-        model.add(Activation('sigmoid'))
+        #model.add(Conv1D(32, 3))
+        #model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
         #model.add(Dropout(0.1))
         

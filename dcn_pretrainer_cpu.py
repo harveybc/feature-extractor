@@ -317,11 +317,11 @@ if __name__ == '__main__':
             print('test: ',j+1,'/',pt.num_tests)
             error_ant[i] = error[i]
             # verifies if the actions are for classification(the last 6 ones)
-            if (i>=8):
+            if (i>=10):
                 params = pt.train_model_c(i)
                 print('best_params_' + str(i) + ' = ',params)
                 error[i] = pt.evaluate_validation_c(params,i)
-                print('error on validation set:' + str(i) + ' = ' + str(error[i]))
+                print('accuracy on validation set:' + str(i) + ' = ' + str(error[i]))
             else:    
                 params = pt.train_model(i)
                 print('best_params_' + str(i) + ' = ',params)
@@ -329,7 +329,7 @@ if __name__ == '__main__':
                 print('mean_squared_error on validation set:' + str(i) + ' = ' + str(error[i]))
             error_accum[i] += error[i]
             if j == pt.num_tests-1:
-                print('average validation error:', error_accum[i]/pt.num_tests)
+                print('average accuracy:', error_accum[i]/pt.num_tests)
             if error[i] <= error_ant[i]:    
                 pt.export_model(i)
     for i in range(10,11):

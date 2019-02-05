@@ -304,7 +304,7 @@ if __name__ == '__main__':
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     
-    for i in range(10,19):
+    for i in range(10,11):
         print('Training model '+str(i))
         for j in range(0,pt.num_tests):
             print('test: ',j+1,'/',pt.num_tests)
@@ -325,7 +325,7 @@ if __name__ == '__main__':
                 print('average accuracy:', error_accum[i]/pt.num_tests)
             if error[i] <= error_ant[i]:    
                 pt.export_model(i)
-    for i in range(10,19):
+    for i in range(10,11):
         print('Accuracy ', i, ": ", error_accum[i]/pt.num_tests )
        
     

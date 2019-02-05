@@ -322,7 +322,7 @@ if __name__ == '__main__':
                 print('mean_squared_error on validation set:' + str(i) + ' = ' + str(error[i]))
             error_accum[i] += error[i]
             if j == pt.num_tests-1:
-                print('average validation error:', error_accum[i]/pt.num_tests)
+                print('average accuracy:', error_accum[i]/pt.num_tests)
             if error[i] <= error_ant[i]:    
                 pt.export_model(i)
     for i in range(10,11):

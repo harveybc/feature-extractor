@@ -253,7 +253,7 @@ class QPretrainer():
         #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251(0.241) cada epoca tardaba: 3s con 580us/step
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
-        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=0)
+        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
 
         
@@ -304,13 +304,13 @@ if __name__ == '__main__':
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     
-    for i in range(8,19):
+    for i in range(10,15):
         print('Training model '+str(i))
         for j in range(0,pt.num_tests):
             print('test: ',j+1,'/',pt.num_tests)
             error_ant[i] = error[i]
             # verifies if the actions are for classification(the last 6 ones)
-            if (i>=8):
+            if (i>=10):
                 params = pt.train_model_c(i)
                 print('best_params_' + str(i) + ' = ',params)
                 error[i] = pt.evaluate_validation_c(params,i)
@@ -325,7 +325,7 @@ if __name__ == '__main__':
                 print('average validation error:', error_accum[i]/pt.num_tests)
             if error[i] <= error_ant[i]:    
                 pt.export_model(i)
-    for i in range(8,19):
-        print('Error in signal ', i, ": ", error_accum[i]/pt.num_tests )
+    for i in range(10,15):
+        print('Accuracy ', i, ": ", error_accum[i]/pt.num_tests )
        
     

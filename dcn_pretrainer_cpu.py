@@ -104,17 +104,17 @@ class QPretrainer():
         # on capa de 128, eva = 0.125
         # on capa de 32,  eva = 0.107
         # on capa de 16,  eva = 0.114
-        model.add(Conv1D(64, 3))
+        model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
         # con otra capa de 32, eva5 = 0.126
         # sin otra capa de 32, eva5 = 0.107, sin minmax normalization
         # sin otra capa de 32, eva5 = 0.124 , con minmax normalization antes de power transform
-        model.add(Conv1D(32, 3))
-        model.add(Activation('sigmoid'))
+        #model.add(Conv1D(32, 3))
+        #model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
-        model.add(Dropout(0.1))
+        #model.add(Dropout(0.1))
         
         # con capa de 16 da   eva5= 107
         model.add(Conv1D(16, 3))
@@ -333,5 +333,5 @@ if __name__ == '__main__':
             if error[i] <= error_ant[i]:    
                 pt.export_model(i)
     for i in range(10,11):
-        print('Error in signal ', i, ": ", error_accum[i]/pt.num_tests )    
+        print('Average accuracy in signal ', i, ": ", error_accum[i]/pt.num_tests )    
     

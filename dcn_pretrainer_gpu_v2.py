@@ -203,7 +203,7 @@ class QPretrainer():
         #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251(0.241) cada epoca tardaba: 3s con 580us/step
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
-        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
+        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=0)
         return self.svr_rbf 
 
     
@@ -304,7 +304,7 @@ if __name__ == '__main__':
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     
-    for i in range(10,15):
+    for i in range(10,11):
         print('Training model '+str(i))
         for j in range(0,pt.num_tests):
             print('test: ',j+1,'/',pt.num_tests)
@@ -325,7 +325,7 @@ if __name__ == '__main__':
                 print('average validation error:', error_accum[i]/pt.num_tests)
             if error[i] <= error_ant[i]:    
                 pt.export_model(i)
-    for i in range(10,15):
+    for i in range(10,11):
         print('Accuracy ', i, ": ", error_accum[i]/pt.num_tests )
        
     

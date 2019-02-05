@@ -300,7 +300,7 @@ if __name__ == '__main__':
     print("TRAINING")
     pt = QPretrainer()
     pt.load_datasets()
-    error = pt.num_s*[0.0]
+    error = pt.num_s*[0.0] 
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     

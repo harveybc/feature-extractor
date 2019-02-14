@@ -32,7 +32,7 @@ class QPretrainer():
     ## init method
     ## Loads the training and validation datasets
     def __init__(self):
-        # Training set
+         # Training set
         self.ts = []
         # Validation set
         self.vs = []
@@ -57,32 +57,33 @@ class QPretrainer():
         self.model_prefix = sys.argv[2]
         # svm model
         self.svr_rbf = []
+        # Best so far 0.0001 error = 0.106 en 200 epochs, 2nd best, 0.0002 en 400 epochs=0.104
+        # 0.002 (Adamax default) = 0.137
+        # 0.0002 = 0.127
+        # 0.0005 = 0.142
         self.learning_rate = 0.0002
-        # con epochs 100, lr=0.0002 con 0.5 featureselect y batch size=1024  ave5 = 0.35 , pero se requiere adicionar padding
-        # con epochs 400, lr=0.0002 con 0.5 featureselect y batch size=1024  ave5 = 0.38 , pero se requiere adicionar padding
-        # con epochs 50, lr=0.0002 con 0.3 featureselect y batch size=1024  ave5 = 0.305
-        # con epochs 100, lr=0.0002 con 0.3 featureselect y batch size=1024  ave5 = 0.325
-        # con epochs 50, lr=0.0002 con 0.2 featureselect y batch size=1024  ave5 = 0.239
-        # con epochs 50, lr=0.0002 con 0.15 featureselect y batch size=1024  ave5 = 0.239
-        # con epochs 400, lr=0.0002 con 0.15 featureselect y batch size=1024  ave5 = 0.394
-        # con epochs 50, lr=0.0002 con 0.10 featureselect y batch size=1024  ave5 = 0.225                
-        # con epochs 50, con minmax con 0.10 featureselect y batch size=1024  ave5 = 0.229  
-        # con epochs 50, lr=0.0002 con 0.6 featureselect y batch size=1024  ave5 = TODO
+        
+        #epocsh 50, ave3 = 0.138
+        #epocsh 100, ave3 = 0.113
+        #epocsh 200, ave3 = 0.114
+        #epocsh 400, ave3 = 0.105
+        #epocsh 600, ave3 = 0.113
+        #epocsh 300, ave3 = 0.126
+        #epocsh 500, ave3 = 0.121
         
         self.epochs = 400
-        
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
-    def set_dcn_model(self, regression):
+    def set_dcn_model(self):
 
-       # Deep Convolutional Neural Network for Regression
+        # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # first set of CONV => RELU => POOL
         # mejor result 0.1 con dropout de 0.4 en 400 epochs con learning rate 0.0002 en config  521,64,32,16, en h4 2018 con indicator_period=70
         # 0.2,0.1,lr=0.0002 1200 eva: 0.117
-        # 0.4,eva = 0.108 TODO respecto a 0.2
+        # 0.4,eva = 0.108
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
@@ -135,12 +136,7 @@ class QPretrainer():
 
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-
-        # check if output layers is for classification or regression
-        if regression:
-            model.add(Dense(1, activation = 'linear'))
-        else:
-            model.add(Dense(1, activation = 'sigmoid'))
+        model.add(Dense(1, activation = 'sigmoid'))
         # multi-GPU support
         #model = to_multi_gpu(model)
         #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)
@@ -149,10 +145,8 @@ class QPretrainer():
         #opt = SGD(lr=self.learning_rate, momentum=0.9)
         #paralell_model = multi_gpu_model(model, gpus=2)
         paralell_model = model
-        if regression:
-            paralell_model.compile(loss="mae", optimizer=opt, metrics=["mse"])
-        else:
-            paralell_model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
+        paralell_model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+        #model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
         #model.compile(loss="mse", optimizer=opt, metrics=["accuracy"])
         return paralell_model 
 
@@ -236,8 +230,7 @@ class QPretrainer():
         return mean_squared_error(self.y_v, y_rbf)
     
  
- ## Train SVMs with the training dataset using cross-validation error estimation
-    ## Returns best parameters
+  ## Returns best parameters
     def train_model_c(self, signal):
         #converts to nparray
         self.ts = np.array(self.ts)
@@ -246,16 +239,13 @@ class QPretrainer():
         self.y = self.ts[1:,self.num_f + signal].astype(int)                  
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
-        self.svr_rbf = self.set_dcn_model(False)
-        # train DCN model with the training data
-        #best res so far: batch_size = 100   epochs=self.epochs
-        #con batch size=64, epochs=200, lr=0.0002 daba:  loss=0.0283, e_vs=0.313  , cada epoca tardaba: 6s con 1ms/step
-        #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251(0.241) cada epoca tardaba: 3s con 580us/step
-        #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
-        #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
-        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=0)
+        self.svr_rbf = self.set_dcn_model()
+        # train DCN model with the training data 
+        # con batch size =  128 dio 0.17
+        # con batch_size = 1024, ev=0.75(0.1)
+        # con batch_size = 512, ev = 0.176
+        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
         return self.svr_rbf 
-
         
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation_c(self, model, signal):
@@ -264,17 +254,18 @@ class QPretrainer():
         self.x_v = self.dcn_input(self.x_v_pre)
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal].astype(int)
-        if signal == 0:
-            print("Validation set self.x_v = ",self.x_v)
+        #if signal == 0:
+        #    print("Validation set self.x_v = ",self.x_v)
         # predict the class of in the validation set
         y_rbf = self.svr_rbf.predict_classes(self.x_v)
-        if signal == 0:
-            print("Validation set y_rbf = ",y_rbf)
+        #if signal == 0:
+        #    print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
         lw = 2
+        # TODO: NO ES TS SINO VS
         x_seq = list(range(0, self.vs.shape[0]-1))
         # 0 = Buy/CloseSell/nopCloseBuy
-        #print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
+        #rint("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
         #fig=plt.figure()
         #plt.plot(x_seq, self.y_v, color='darkorange', label='data')
         #plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
@@ -282,8 +273,8 @@ class QPretrainer():
         #plt.ylabel('target')
         #plt.title('Signal ' + str(signal))
         #plt.legend()
-        #fig.savefig('predict_' + str(signal) + '.png')
-        #if signal==16:
+        #fig.savefig('predict_cpu_' + str(signal) + '.png')
+        #if signal==18:
         #    plt.show()
         #else:
         #    plt.show(block=False)

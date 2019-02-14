@@ -189,7 +189,6 @@ class QPretrainer():
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation(self, params, signal):
         self.vs = np.array(self.vs)
-        # TODO: NO ES TS SINO VS
         self.x_v = self.vs[1:,0:self.num_f]
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal]
@@ -200,16 +199,12 @@ class QPretrainer():
         self.y = self.ts[1:,self.num_f + signal]
         if signal == 0:
             print("Validation set self.x_v = ",self.x_v)
-        #TODO, NO ES PREDICT X SINO X_V
         y_rbf = self.svr_rbf.fit(self.x, self.y).predict(self.x_v)
         #scaler = preprocessing.StandardScaler()
-        # TODO: PRUEBA DE SCALER DE OUTPUT DE SVM
-        #y_rbf = scaler.fit_transform([y_rbf_o])
         if signal == 0:
             print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
         lw = 2
-        # TODO: NO ES TS SINO VS
         x_seq = list(range(0, self.vs.shape[0]-1))
         # 0 = Buy/CloseSell/nopCloseBuy
         print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )

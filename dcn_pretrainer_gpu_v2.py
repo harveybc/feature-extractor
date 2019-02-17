@@ -63,7 +63,7 @@ class QPretrainer():
         # 0.0005 = 0.142
         self.learning_rate = 0.0002
         
-        #epocsh 400, ava3 = 0.77
+        #epocsh 400, ava3 = 0.77, loss=0.4005
         #epocsh 1200, ava3 = TODO
         
         self.epochs = 1200

@@ -222,7 +222,6 @@ class QPretrainer():
             plt.show(block=False)
         return confusion_matrix(self.y_v, y_rbf)
  
-     
     ## Generate DCN  input matrix
     def dcn_input(self, data):
         #obs_matrix = np.array([np.array([0.0] * self.num_features)]*len(data), dtype=object)

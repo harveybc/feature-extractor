@@ -186,7 +186,7 @@ class QPretrainer():
         self.y = self.ts[1:,self.num_f + signal]                  
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
-        self.svr_rbf = self.set_dcn_model(True)
+        self.svr_rbf = self.set_dcn_model()
         # train DCN model with the training data
         #best res so far: batch_size = 100   epochs=self.epochs
         #con batch size=64, epochs=200, lr=0.0002 daba:  loss=0.0283, e_vs=0.313  , cada epoca tardaba: 6s con 1ms/step

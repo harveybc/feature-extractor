@@ -158,6 +158,10 @@ class QPretrainer():
         self.ts = self.ts_s.copy()
         self.vs_s = self.ts_g[(3*self.num_ticks)//4 : self.num_ticks,:]
         self.vs = self.vs_s.copy() 
+        
+        vs_n = np.array(self.vs)
+        y_v = vs_n[1:,self.num_f + 1]         
+        print("y_v = ", y_v)
     
     ## Generate DCN  input matrix
     def dcn_input(self, data):
@@ -183,7 +187,9 @@ class QPretrainer():
         self.ts = np.array(self.ts)
         self.x_pre = self.ts[1:,0:self.num_f]
         self.x = self.dcn_input(self.x_pre)
-        self.y = self.ts[1:,self.num_f + signal]                  
+        self.y = self.ts[1:,self.num_f + signal]         
+        
+        print("signal = ",signal,"   self.y_v = ", self.y_v)         
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
         self.svr_rbf = self.set_dcn_model()

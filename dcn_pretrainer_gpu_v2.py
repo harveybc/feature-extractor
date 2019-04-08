@@ -214,7 +214,7 @@ class QPretrainer():
             print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
         lw = 2
-        x_seq = list(range(0, self.vs.shape[0]-1))
+        x_seq = list(range(0, self.vs.shape[0]-1)) 
         # 0 = Buy/CloseSell/nopCloseBuy
         print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
         fig=plt.figure()

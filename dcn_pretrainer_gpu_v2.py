@@ -205,7 +205,7 @@ class QPretrainer():
         
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[1:,self.num_f + signal].astype(int)
-        print("self.y_v = ", self.y_v)
+        print("signal = ",signal,"   self.y_v = ", self.y_v)
         if signal == 0:
             print("Validation set self.x_v = ",self.x_v)
         # predict the class of in the validation set

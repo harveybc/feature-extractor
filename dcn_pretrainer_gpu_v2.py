@@ -195,7 +195,7 @@ class QPretrainer():
         self.x_pre = self.ts[0:,0:self.num_f]
         
         #TODO: BBORRAR hasta print
-        print("self.x_pre[0:30, self.num_f] = ", self.x_pre[0:30, self.num_f])
+        print("self.x_pre[0:30, self.num_f-1] = ", self.x_pre[0:30, self.num_f-1])
         
         self.x = self.dcn_input(self.x_pre)
         self.y = self.ts[0,self.num_f + signal]         

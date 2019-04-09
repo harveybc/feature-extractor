@@ -158,17 +158,17 @@ class QPretrainer():
         self.ts = self.ts_s.copy()
         
         #TODO: TEST: QUITAR hasta print
-        ts_n = np.array(self.ts)
-        y_t = ts_n[0:,self.num_f + 0]         
-        print("y_t = ", y_t[0:30] )
+        #ts_n = np.array(self.ts)
+        #y_t = ts_n[0:,self.num_f + 0]         
+        #print("y_t = ", y_t[0:30] )
         
         self.vs_s = self.ts_g[(3*self.num_ticks)//4 : self.num_ticks,:]
         self.vs = self.vs_s.copy() 
         
         #TODO: TEST: QUITAR hasta print
-        vs_n = np.array(self.vs)
-        y_v = vs_n[0:,self.num_f + 0]         
-        print("y_v = ", y_v)
+        #vs_n = np.array(self.vs)
+        #y_v = vs_n[0:,self.num_f + 0]         
+        #print("y_v = ", y_v)
     
     ## Generate DCN  input matrix
     def dcn_input(self, data):
@@ -192,9 +192,13 @@ class QPretrainer():
     def train_model(self, signal):
         #converts to nparray
         self.ts = np.array(self.ts)
-        self.x_pre = self.ts[1:,0:self.num_f]
+        self.x_pre = self.ts[0:,0:self.num_f]
+        
+        #TODO: BBORRAR hasta print
+        print("self.x_pre[0:30, self.num_f] = ", self.x_pre[0:30, self.num_f])
+        
         self.x = self.dcn_input(self.x_pre)
-        self.y = self.ts[1:,self.num_f + signal]         
+        self.y = self.ts[0,self.num_f + signal]         
         
         print("signal = ",signal,"   self.y = ", self.y)         
         # TODO: Cambiar var svr_rbf por p_model
@@ -306,7 +310,7 @@ if __name__ == '__main__':
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     # for i in range(10, 11):
-    for i in range(1, 2):
+    for i in range(0,1):
         print('Training model '+str(i))
         for j in range(0,pt.num_tests):
             print('test: ',j+1,'/',pt.num_tests)

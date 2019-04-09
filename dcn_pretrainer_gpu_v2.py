@@ -148,7 +148,7 @@ class QPretrainer():
 
     ## Load  training and validation datasets, initialize number of features and training signals
     def load_datasets(self):
-        self.ts_g = genfromtxt(self.ts_f, delimiter=',', skip_header = 0)
+        self.ts_g = genfromtxt(self.ts_f, delimiter=',', skip_header = 1)
         # split training and validation sets into features and training signal for regression
         self.num_f = self.ts_g.shape[1] - self.num_s
         self.num_features = self.num_f // self.window_size
@@ -159,7 +159,7 @@ class QPretrainer():
         
         #TODO: TEST: QUITAR hasta print
         ts_n = np.array(self.ts)
-        y_t = ts_n[1:,self.num_f + 1]         
+        y_t = ts_n[0:,self.num_f + 0]         
         print("y_t = ", y_t[0:30] )
         
         self.vs_s = self.ts_g[(3*self.num_ticks)//4 : self.num_ticks,:]
@@ -167,7 +167,7 @@ class QPretrainer():
         
         #TODO: TEST: QUITAR hasta print
         vs_n = np.array(self.vs)
-        y_v = vs_n[1:,self.num_f + 1]         
+        y_v = vs_n[0:,self.num_f + 0]         
         print("y_v = ", y_v)
     
     ## Generate DCN  input matrix

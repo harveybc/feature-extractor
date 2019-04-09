@@ -189,7 +189,7 @@ class QPretrainer():
         self.x = self.dcn_input(self.x_pre)
         self.y = self.ts[1:,self.num_f + signal]         
         
-        print("signal = ",signal,"   self.y_v = ", self.y_v)         
+        print("signal = ",signal,"   self.y = ", self.y)         
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
         self.svr_rbf = self.set_dcn_model()

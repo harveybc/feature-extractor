@@ -154,7 +154,7 @@ class QPretrainer():
         self.num_features = self.num_f // self.window_size
         self.num_ticks = self.ts_g.shape[0]
         # split dataset into 75% training and 25% validation 
-        self.ts_s = self.ts_g[1:(3*self.num_ticks)//4,:]
+        self.ts_s = self.ts_g[0:(3*self.num_ticks)//4,:]
         self.ts = self.ts_s.copy()
         
         #TODO: TEST: QUITAR hasta print

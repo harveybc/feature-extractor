@@ -223,16 +223,16 @@ class QPretrainer():
         
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[0:,self.num_f + signal]
-        #print("signal = ",signal,"   self.y_v = ", self.y_v)
+        print("signal = ",signal,"   self.y_v = ", self.y_v)
         #if signal == 0:
         #    print("Validation set self.x_v = ",self.x_v)
         # predict the class of in the validation set
-        y_rbf = self.svr_rbf.predict_classes(self.x_v)
+        y_rbf = self.svr_rbf.predict(self.x_v)
         if signal == 0:
             print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
         lw = 2
-        x_seq = list(range(0, self.vs.shape[0]-1)) 
+        x_seq = list(range(0, self.vs.shape[0])) 
         # 0 = Buy/CloseSell/nopCloseBuy
         print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
         fig=plt.figure()

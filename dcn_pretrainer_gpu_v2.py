@@ -160,7 +160,7 @@ class QPretrainer():
         #TODO: TEST: QUITAR hasta print
         ts_n = np.array(self.ts)
         y_t = ts_n[1:,self.num_f + 1]         
-        print("y_t = ", y_t[0:30])
+        print("y_t = ", y_t[0:30] )
         
         self.vs_s = self.ts_g[(3*self.num_ticks)//4 : self.num_ticks,:]
         self.vs = self.vs_s.copy() 

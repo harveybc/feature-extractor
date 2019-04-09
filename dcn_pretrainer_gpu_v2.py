@@ -200,8 +200,9 @@ class QPretrainer():
         self.x = self.dcn_input(self.x_pre)
         self.y = self.ts[0:,self.num_f + signal]         
         
-        print("signal = ",signal,"   self.y = ", self.y)         
+        #print("signal = ",signal,"   self.y = ", self.y)         
         # TODO: Cambiar var svr_rbf por p_model
+        
         # setup the DCN model
         self.svr_rbf = self.set_dcn_model()
         # train DCN model with the training data
@@ -217,14 +218,14 @@ class QPretrainer():
     ## Evaluate the trained models in the validation set to obtain the error
     def evaluate_validation(self, params, signal):
         self.vs = np.array(self.vs)
-        self.x_v_pre = self.vs[1:,0:self.num_f]
+        self.x_v_pre = self.vs[0:,0:self.num_f]
         self.x_v = self.dcn_input(self.x_v_pre)
         
         # TEST, remve 1 and replace by self.num_f
-        self.y_v = self.vs[1:,self.num_f + signal].astype(int)
-        print("signal = ",signal,"   self.y_v = ", self.y_v)
-        if signal == 0:
-            print("Validation set self.x_v = ",self.x_v)
+        self.y_v = self.vs[0:,self.num_f + signal]
+        #print("signal = ",signal,"   self.y_v = ", self.y_v)
+        #if signal == 0:
+        #    print("Validation set self.x_v = ",self.x_v)
         # predict the class of in the validation set
         y_rbf = self.svr_rbf.predict_classes(self.x_v)
         if signal == 0:
@@ -245,6 +246,8 @@ class QPretrainer():
         return mean_squared_error(self.y_v, y_rbf)
     
  
+ 
+ # TODO: COREGIR RANGOS DE TS Y VS PARA TRAIN_MODEL_C Y EVALUATE_C
   ## Returns best parameters
     def train_model_c(self, signal):
         #converts to nparray

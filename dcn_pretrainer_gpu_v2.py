@@ -148,7 +148,7 @@ class QPretrainer():
 
     ## Load  training and validation datasets, initialize number of features and training signals
     def load_datasets(self):
-        self.ts_g = genfromtxt(self.ts_f, delimiter=',', skip_header = 1)
+        self.ts_g = genfromtxt(self.ts_f, delimiter=',', skip_header = 0)
         # split training and validation sets into features and training signal for regression
         self.num_f = self.ts_g.shape[1] - self.num_s
         self.num_features = self.num_f // self.window_size

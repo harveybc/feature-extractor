@@ -156,9 +156,16 @@ class QPretrainer():
         # split dataset into 75% training and 25% validation 
         self.ts_s = self.ts_g[1:(3*self.num_ticks)//4,:]
         self.ts = self.ts_s.copy()
+        
+        #TODO: TEST: QUITAR hasta print
+        ts_n = np.array(self.ts)
+        y_t = ts_n[1:,self.num_f + 1]         
+        print("y_t = ", y_t)
+        
         self.vs_s = self.ts_g[(3*self.num_ticks)//4 : self.num_ticks,:]
         self.vs = self.vs_s.copy() 
         
+        #TODO: TEST: QUITAR hasta print
         vs_n = np.array(self.vs)
         y_v = vs_n[1:,self.num_f + 1]         
         print("y_v = ", y_v)

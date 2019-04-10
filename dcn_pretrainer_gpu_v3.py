@@ -82,7 +82,7 @@ class QPretrainer():
         # mejor result 0.1 con dropout de 0.4 en 400 epochs con learning rate 0.0002 en config  521,64,32,16, en h4 2018 con indicator_period=70
         # 0.2,0.1,lr=0.0002 1200 eva: 0.117
         # 0.4,eva = 0.108
-        model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
+        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         # Sin batch_normalization daba: 0.204
@@ -91,7 +91,7 @@ class QPretrainer():
         # Con dropout = 0.1, e=0.168
         # con dropout = 0.2, e=0.121
         # con dropout = 0.4, e= 0.114
-        model.add(Dropout(0.4))
+        model.add(Dropout(0.2))
         #sin capa de LSTM50,  e=0.107
         #con capa de LSTM50, e= 0.191
         #model.add(LSTM(units = 50, return_sequences = True))
@@ -102,7 +102,7 @@ class QPretrainer():
         # on capa de 128, eva = 0.125
         # on capa de 32,  eva = 0.107
         # on capa de 16,  eva = 0.114
-        model.add(Conv1D(32, 3))
+        model.add(Conv1D(256, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
@@ -128,7 +128,7 @@ class QPretrainer():
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
        # con d=0.1 daba 0.11 con loss=0.08
        # con d=0.2 daba 0.22 con loss=0.06
-        model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+        model.add(Dense(640, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         #model.add(BatchNormalization())
 

@@ -69,7 +69,7 @@ class QPretrainer():
         #epocsh 1200, ava3 = 0.66, loss=0.169
         
         
-        self.epochs = 4000
+        self.epochs = 1200
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -94,7 +94,7 @@ class QPretrainer():
         model.add(Dropout(0.2))
         #sin capa de LSTM50,  e=0.107
         #con capa de LSTM50, e= 0.191
-        #model.add(LSTM(units = 50, return_sequences = True))
+        model.add(LSTM(units = 256, return_sequences = True))
         
         #model.add(Dropout(0.2))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
@@ -109,10 +109,10 @@ class QPretrainer():
         # con otra capa de 32, eva5 = 0.126
         # sin otra capa de 32, eva5 = 0.107, sin minmax normalization
         # sin otra capa de 32, eva5 = 0.124 , con minmax normalization antes de power transform
-        #model.add(Conv1D(32, 3))
-        #model.add(Activation('sigmoid'))
+        model.add(Conv1D(32, 3))
+        model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
-        #model.add(Dropout(0.1))
+        model.add(Dropout(0.1))
         
         # con capa de 16 da   eva5= 107
         model.add(Conv1D(16, 3))

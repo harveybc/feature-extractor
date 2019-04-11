@@ -70,7 +70,7 @@ class QPretrainer():
         #epocsh 1200, ava3 = 0.66, loss=0.169
         
         
-        self.epochs = 100
+        self.epochs = 200
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -124,7 +124,7 @@ class QPretrainer():
         paralell_model = model
         #paralell_model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         #model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
-        model.compile(loss="mse", optimizer=opt, metrics=["mse"])
+        model.compile(loss="mean_absolute_percentage_error", optimizer=opt, metrics=["mean_absolute_percentage_error"])
         return paralell_model 
 
     def set_dcn_model_c(self):

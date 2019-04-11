@@ -113,7 +113,7 @@ class QPretrainer():
         #model.add(BatchNormalization())
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(1, activation = 'linear'))
+        model.add(Dense(1, activation = 'linear')) 
         # multi-GPU support
         #model = to_multi_gpu(model)
         #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)

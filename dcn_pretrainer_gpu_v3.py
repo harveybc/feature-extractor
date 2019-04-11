@@ -88,6 +88,12 @@ class QPretrainer():
         model.add(Dropout(0.2))
         #model.add(LSTM(units = 50, return_sequences = True))
         #model.add(Dropout(0.2))
+        model.add(Conv1D(256, 3))
+        model.add(Activation('sigmoid'))
+        model.add(Conv1D(128, 3))
+        model.add(Activation('sigmoid'))
+        model.add(Conv1D(64, 3))
+        model.add(Activation('sigmoid'))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
@@ -107,7 +113,7 @@ class QPretrainer():
         #model.add(BatchNormalization())
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(1, activation = 'sigmoid'))
+        model.add(Dense(1, activation = 'linear'))
         # multi-GPU support
         #model = to_multi_gpu(model)
         #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)
@@ -273,13 +279,13 @@ class QPretrainer():
         
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[0:,self.num_f + signal]
-        print("signal = ",signal,"   self.y_v = ", self.y_v)
+        #print("signal = ",signal,"   self.y_v = ", self.y_v)
         #if signal == 0:
         #    print("Validation set self.x_v = ",self.x_v)
         # predict the class of in the validation set
         y_rbf = self.svr_rbf.predict(self.x_v)
-        if signal == 0:
-            print("Validation set y_rbf = ",y_rbf)
+        #if signal == 0:
+        #    print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
         lw = 2
         x_seq = list(range(0, self.vs.shape[0])) 

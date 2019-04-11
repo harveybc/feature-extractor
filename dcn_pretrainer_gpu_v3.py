@@ -70,11 +70,58 @@ class QPretrainer():
         #epocsh 1200, ava3 = 0.66, loss=0.169
         
         
-        self.epochs = 4000
+        self.epochs = 1000
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
-    def set_dcn_model(self):
+
+    def set_dcn_model_r(self):
+        # Deep Convolutional Neural Network for Regression
+        model = Sequential()
+        # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
+        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
+        model.add(Conv1D(512, 3))
+        model.add(Activation('sigmoid'))
+
+        model.add(BatchNormalization())
+
+        model.add(Dropout(0.2))
+        #model.add(LSTM(units = 50, return_sequences = True))
+        #model.add(Dropout(0.2))
+        model.add(Conv1D(32, 3))
+        model.add(Activation('sigmoid'))
+        #model.add(BatchNormalization())
+        #model.add(Conv1D(32, 3))
+        #model.add(Activation('sigmoid'))
+        #model.add(BatchNormalization())
+        #model.add(Dropout(0.1))
+        # con capa de 16 da   eva5= 107
+        model.add(Conv1D(16, 3))
+        model.add(Activation('sigmoid'))
+        model.add(BatchNormalization())
+        #model.add(LSTM(units = 50, return_sequences = True))
+        #model.add(MaxPooling1D(pool_size=2, strides=2))
+       # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+        model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+       # model.add(Activation ('sigmoid'))
+        #model.add(BatchNormalization())
+        # output layer
+        model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+        model.add(Dense(1, activation = 'sigmoid'))
+        # multi-GPU support
+        #model = to_multi_gpu(model)
+        #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)
+        # use SGD optimizer
+        opt = Adamax(lr=self.learning_rate)
+        #opt = SGD(lr=self.learning_rate, momentum=0.9)
+        #paralell_model = multi_gpu_model(model, gpus=2)
+        paralell_model = model
+        #paralell_model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+        #model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
+        model.compile(loss="mse", optimizer=opt, metrics=["mape"])
+        return paralell_model 
+
+    def set_dcn_model_c(self):
 
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
@@ -84,7 +131,7 @@ class QPretrainer():
         # 0.2,0.1,lr=0.0002 1200 eva: 0.117
         # 0.4,eva = 0.108
         model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(1024, 3))
+        model.add(Conv1D(512, 3))
         model.add(Activation('sigmoid'))
         # Sin batch_normalization daba: 0.204
         # Con batch normalization: e=0.168
@@ -95,7 +142,7 @@ class QPretrainer():
         model.add(Dropout(0.2))
         #sin capa de LSTM50,  e=0.107
         #con capa de LSTM50, e= 0.191
-        model.add(LSTM(units = 512, return_sequences = True))
+        #model.add(LSTM(units = 50, return_sequences = True))
         
         #model.add(Dropout(0.2))
         # mejor config so far: D0.4-512,D0.2-64,d0.1-32,16d64 error_vs=0.1 con 400 epochs y lr=0.0002
@@ -103,17 +150,17 @@ class QPretrainer():
         # on capa de 128, eva = 0.125
         # on capa de 32,  eva = 0.107
         # on capa de 16,  eva = 0.114
-        model.add(Conv1D(256, 3))
+        model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
 
         # con otra capa de 32, eva5 = 0.126
         # sin otra capa de 32, eva5 = 0.107, sin minmax normalization
         # sin otra capa de 32, eva5 = 0.124 , con minmax normalization antes de power transform
-        model.add(Conv1D(32, 3))
-        model.add(Activation('sigmoid'))
+        #model.add(Conv1D(32, 3))
+        #model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
-        model.add(Dropout(0.1))
+        #model.add(Dropout(0.1))
         
         # con capa de 16 da   eva5= 107
         model.add(Conv1D(16, 3))
@@ -129,7 +176,7 @@ class QPretrainer():
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
        # con d=0.1 daba 0.11 con loss=0.08
        # con d=0.2 daba 0.22 con loss=0.06
-        model.add(Dense(1024, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+        model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         #model.add(BatchNormalization())
 
@@ -207,7 +254,7 @@ class QPretrainer():
         # TODO: Cambiar var svr_rbf por p_model
         
         # setup the DCN model
-        self.svr_rbf = self.set_dcn_model()
+        self.svr_rbf = self.set_dcn_model_r()
         # train DCN model with the training data
         #best res so far: batch_size = 100   epochs=self.epochs
         #con batch size=64, epochs=200, lr=0.0002 daba:  loss=0.0283, e_vs=0.313  , cada epoca tardaba: 6s con 1ms/step
@@ -260,7 +307,7 @@ class QPretrainer():
         self.y = self.ts[1:,self.num_f + signal].astype(int)                  
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model
-        self.svr_rbf = self.set_dcn_model()
+        self.svr_rbf = self.set_dcn_model_c()
         # train DCN model with the training data 
         # con batch size =  128 dio 0.17
         # con batch_size = 1024, ev=0.75(0.1)

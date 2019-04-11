@@ -64,13 +64,13 @@ class QPretrainer():
         # 0.002 (Adamax default) = 0.137
         # 0.0002 = 0.127
         # 0.0005 = 0.142
-        self.learning_rate = 0.002
+        self.learning_rate = 0.0002
         
         #epocsh 400, ava3 = TODO
         #epocsh 1200, ava3 = 0.66, loss=0.169
         
         
-        self.epochs = 1000
+        self.epochs = 4000
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -86,29 +86,28 @@ class QPretrainer():
         model.add(BatchNormalization())
 
         model.add(Dropout(0.2))
-        #model.add(LSTM(units = 50, return_sequences = True))
-        #model.add(Dropout(0.2))
-        #model.add(Conv1D(256, 3))
-        #model.add(Activation('sigmoid'))
-        #model.add(Conv1D(128, 3))
-        #model.add(Activation('sigmoid'))
-        #model.add(Conv1D(64, 3))
-        #model.add(Activation('sigmoid'))
-        #model.add(Conv1D(32, 3))
-        #model.add(Activation('sigmoid'))
-        #model.add(BatchNormalization())
+        model.add(LSTM(units = 50, return_sequences = True))
+        model.add(Dropout(0.2))
+        model.add(Conv1D(256, 3))
+        model.add(Activation('sigmoid'))
+        model.add(Conv1D(128, 3))
+        model.add(Activation('sigmoid'))
+        model.add(Conv1D(64, 3))
+        model.add(Activation('sigmoid'))
+        
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
+        #model.add(BatchNormalization())
         #model.add(BatchNormalization()) 
         #model.add(Dropout(0.1))
         # con capa de 16 da   eva5= 107
-        model.add(Conv1D(16, 3))
-        model.add(Activation('sigmoid'))
-        model.add(BatchNormalization())
+        #model.add(Conv1D(16, 3))
+        #model.add(Activation('sigmoid'))
+        #model.add(BatchNormalization())
         #model.add(LSTM(units = 50, return_sequences = True))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(128, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+        model.add(Dense(512, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         #model.add(BatchNormalization())
         # output layer

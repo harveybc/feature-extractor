@@ -102,7 +102,7 @@ class QPretrainer():
         #model.add(BatchNormalization()) 
         #model.add(Dropout(0.1))
         # con capa de 16 da   eva5= 107
-        model.add(Conv1D(16, 3))
+        #model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
         #model.add(LSTM(units = 50, return_sequences = True))

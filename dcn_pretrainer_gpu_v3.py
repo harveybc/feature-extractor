@@ -70,9 +70,9 @@ class QPretrainer():
         #epocsh 1200, ava3 = 0.66, loss=0.169
         
         
-        self.epochs = 4000
+        self.epochs = 400
         # number of validation tests to avarage during each training
-        self.num_tests = 3
+        self.num_tests = 1
 
 
     def set_dcn_model_r(self):
@@ -85,16 +85,16 @@ class QPretrainer():
 
         model.add(BatchNormalization())
 
-        model.add(Dropout(0.2))
-        model.add(LSTM(units = 50, return_sequences = True))
-        model.add(Dropout(0.2))
-        model.add(Conv1D(256, 3))
-        model.add(Activation('sigmoid'))
-        model.add(Conv1D(128, 3))
-        model.add(Activation('sigmoid'))
-        model.add(Conv1D(64, 3))
-        model.add(Activation('sigmoid'))
+        #model.add(Dropout(0.2))
+        # model.add(Dropout(0.2))
+        #model.add(Conv1D(256, 3))
+        #model.add(Activation('sigmoid'))
+        #model.add(Conv1D(128, 3))
+        #model.add(Activation('sigmoid'))
+        #model.add(Conv1D(64, 3))
+        #model.add(Activation('sigmoid'))
         
+        model.add(Dropout(0.2))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
@@ -107,12 +107,14 @@ class QPretrainer():
         #model.add(LSTM(units = 50, return_sequences = True))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(512, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+        model.add(Dense(128, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         #model.add(BatchNormalization())
         # output layer
         model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         model.add(Dense(1, activation = 'linear')) 
+        model.add(LSTM(units = 128, return_sequences = True))
+        model.add(Dense(1))
         # multi-GPU support
         #model = to_multi_gpu(model)
         #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)

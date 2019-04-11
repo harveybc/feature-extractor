@@ -90,25 +90,25 @@ class QPretrainer():
         #model.add(Dropout(0.2))
         #model.add(Conv1D(256, 3))
         #model.add(Activation('sigmoid'))
-        model.add(Conv1D(128, 3))
-        model.add(Activation('sigmoid'))
-        model.add(Conv1D(64, 3))
-        model.add(Activation('sigmoid'))
-        model.add(Conv1D(32, 3))
-        model.add(Activation('sigmoid'))
-        #model.add(BatchNormalization())
+        #model.add(Conv1D(128, 3))
+        #model.add(Activation('sigmoid'))
+        #model.add(Conv1D(64, 3))
+        #model.add(Activation('sigmoid'))
         #model.add(Conv1D(32, 3))
         #model.add(Activation('sigmoid'))
+        #model.add(BatchNormalization())
+        model.add(Conv1D(32, 3))
+        model.add(Activation('sigmoid'))
         #model.add(BatchNormalization()) 
         #model.add(Dropout(0.1))
         # con capa de 16 da   eva5= 107
-        #model.add(Conv1D(16, 3))
-        #model.add(Activation('sigmoid'))
+        model.add(Conv1D(16, 3))
+        model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
         #model.add(LSTM(units = 50, return_sequences = True))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(640, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+        model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         #model.add(BatchNormalization())
         # output layer
@@ -124,7 +124,7 @@ class QPretrainer():
         paralell_model = model
         #paralell_model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         #model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
-        model.compile(loss="mse", optimizer=opt, metrics=["mape"])
+        model.compile(loss="cosine_proximity", optimizer=opt, metrics=["mse"])
         return paralell_model 
 
     def set_dcn_model_c(self):

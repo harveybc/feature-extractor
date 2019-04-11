@@ -70,7 +70,7 @@ class QPretrainer():
         #epocsh 1200, ava3 = 0.66, loss=0.169
         
         
-        self.epochs = 1000
+        self.epochs = 10000
         # number of validation tests to avarage during each training
         self.num_tests = 3
 

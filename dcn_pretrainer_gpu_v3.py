@@ -95,8 +95,13 @@ class QPretrainer():
         #model.add(Activation('sigmoid'))
         
         model.add(Dropout(0.2))
-        model.add(Conv1D(32, 3))
+        model.add(Conv1D(64, 3))
         model.add(Activation('sigmoid'))
+        
+        model.add(LSTM(units = 64, return_sequences = True))        
+        model.add(LSTM(units=30, return_sequences=True))
+        model.add(LSTM(units=30))
+
         #model.add(BatchNormalization())
         #model.add(BatchNormalization()) 
         #model.add(Dropout(0.1))
@@ -107,14 +112,12 @@ class QPretrainer():
         #model.add(LSTM(units = 50, return_sequences = True))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(128, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+       # model.add(Dense(128, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         #model.add(BatchNormalization())
         # output layer
-        model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+        #model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         model.add(Dense(1, activation = 'linear')) 
-        model.add(LSTM(units = 128, return_sequences = True))
-        model.add(Dense(1))
         # multi-GPU support
         #model = to_multi_gpu(model)
         #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)
@@ -125,7 +128,7 @@ class QPretrainer():
         paralell_model = model
         #paralell_model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         #model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
-        model.compile(loss="mse", optimizer=opt, metrics=["mse"])
+        model.compile(loss="mae", optimizer=opt, metrics=["mse"])
         return paralell_model 
 
     def set_dcn_model_c(self):

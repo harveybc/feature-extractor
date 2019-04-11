@@ -70,7 +70,7 @@ class QPretrainer():
         #epocsh 1200, ava3 = 0.66, loss=0.169
         
         
-        self.epochs = 1000
+        self.epochs = 400
         # number of validation tests to avarage during each training
         self.num_tests = 3
 
@@ -88,12 +88,12 @@ class QPretrainer():
         model.add(Dropout(0.2))
         #model.add(LSTM(units = 50, return_sequences = True))
         #model.add(Dropout(0.2))
-        model.add(Conv1D(256, 3))
-        model.add(Activation('sigmoid'))
-        model.add(Conv1D(128, 3))
-        model.add(Activation('sigmoid'))
-        model.add(Conv1D(64, 3))
-        model.add(Activation('sigmoid'))
+        #model.add(Conv1D(256, 3))
+        #model.add(Activation('sigmoid'))
+        #model.add(Conv1D(128, 3))
+        #model.add(Activation('sigmoid'))
+        #model.add(Conv1D(64, 3))
+        #model.add(Activation('sigmoid'))
         model.add(Conv1D(32, 3))
         model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
@@ -102,13 +102,13 @@ class QPretrainer():
         #model.add(BatchNormalization()) 
         #model.add(Dropout(0.1))
         # con capa de 16 da   eva5= 107
-        #model.add(Conv1D(16, 3))
+        model.add(Conv1D(16, 3))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
         #model.add(LSTM(units = 50, return_sequences = True))
         #model.add(MaxPooling1D(pool_size=2, strides=2))
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(640, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
+        model.add(Dense(64, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
         #model.add(BatchNormalization())
         # output layer

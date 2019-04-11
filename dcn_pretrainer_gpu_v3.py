@@ -57,7 +57,7 @@ class QPretrainer():
         # 2 = dInv
         # 3 = direction (1: buy, -1: sell)
         self.num_ticks = 0
-        self.model_prefix = sys.argv[2]
+        self.model_prefix = sys.argv[2] 
         # svm model
         self.svr_rbf = []
         # Best so far 0.0001 error = 0.106 en 200 epochs, 2nd best, 0.0002 en 400 epochs=0.104

@@ -124,7 +124,7 @@ class QPretrainer():
         paralell_model = model
         #paralell_model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         #model.compile(loss="binary_crossentropy", optimizer="adamax", metrics=["accuracy"])
-        model.compile(loss="cosine_proximity", optimizer=opt, metrics=["mse"])
+        model.compile(loss="mse", optimizer=opt, metrics=["mse"])
         return paralell_model 
 
     def set_dcn_model_c(self):
@@ -369,7 +369,7 @@ if __name__ == '__main__':
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     # for i in range(10, 11):
-    for i in range(8,9):
+    for i in range(0,1):
         print('Training model '+str(i))
         for j in range(0,pt.num_tests):
             print('test: ',j+1,'/',pt.num_tests)

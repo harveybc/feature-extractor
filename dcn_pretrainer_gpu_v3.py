@@ -70,7 +70,7 @@ class QPretrainer():
         #epocsh 1200, ava3 = 0.66, loss=0.169
         
         
-        self.epochs = 4000
+        self.epochs = 1000
         # number of validation tests to avarage during each training
         self.num_tests = 1
 
@@ -79,11 +79,11 @@ class QPretrainer():
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
-        model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(512, 3))
-        model.add(Activation('sigmoid'))
+        #model.add(Dropout(0.2,input_shape=(self.num_features,self.window_size)))
+        #model.add(Conv1D(512, 3))
+        #model.add(Activation('sigmoid'))
 
-        model.add(BatchNormalization())
+        #model.add(BatchNormalization())
 
         #model.add(Dropout(0.2))
         # model.add(Dropout(0.2))
@@ -94,12 +94,12 @@ class QPretrainer():
         #model.add(Conv1D(64, 3))
         #model.add(Activation('sigmoid'))
         
-        model.add(Dropout(0.2))
-        model.add(Conv1D(64, 3))
-        model.add(Activation('sigmoid'))
+        #model.add(Dropout(0.2))
+        #model.add(Conv1D(64, 3))
+        #model.add(Activation('sigmoid'))
         
-        model.add(LSTM(units = 64, return_sequences = True))        
-        model.add(LSTM(units=30, return_sequences=True))
+        model.add(LSTM(units = 512, input_shape=(self.num_features,self.window_size), return_sequences = True))        
+        model.add(LSTM(units=128, return_sequences=True))
         model.add(LSTM(units=30))
 
         #model.add(BatchNormalization())

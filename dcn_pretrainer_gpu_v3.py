@@ -98,9 +98,9 @@ class QPretrainer():
         #model.add(Conv1D(64, 3))
         #model.add(Activation('sigmoid'))
         
-        model.add(LSTM(units = 512, input_shape=(self.num_features,self.window_size), return_sequences = True))        
-        model.add(LSTM(units=128, return_sequences=True))
-        model.add(LSTM(units=30))
+        model.add(LSTM(units = 512, input_shape=(self.num_features,self.window_size), return_sequences = True, dropout = 0.4))        
+        #model.add(LSTM(units=128, return_sequences=True))
+        #model.add(LSTM(units=30))
 
         #model.add(BatchNormalization())
         #model.add(BatchNormalization()) 

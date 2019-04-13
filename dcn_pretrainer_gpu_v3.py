@@ -75,12 +75,22 @@ class QPretrainer():
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
+        # TODO: originalmente era una sola de 512
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(256, 3))
-        model.add(Activation('sigmoid'))
+        model.add(Conv1D(64, 3, use_bias=False))
         model.add(BatchNormalization())
+        model.add(Activation('sigmoid'))
         
-        #model.add(Dropout(0.3))
+        model.add(Dropout(0.4))
+        model.add(Conv1D(128, 3, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(Activation('sigmoid'))
+        
+        model.add(Dropout(0.4))
+        model.add(Conv1D(128, 3, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(Activation('sigmoid'))
+        
         #model.add(Conv1D(32, 3))
         #model.add(Activation('sigmoid'))
         #model.add(Conv1D(128, 3))
@@ -114,7 +124,12 @@ class QPretrainer():
         #model.add(BatchNormalization())
         # output layer
         #model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(1, activation = 'linear')) 
+        # TODO: Originalmente era una sola densse de 1 linear
+        model.add(Dense(64, activation = 'sigmoid', use_bias=False)) 
+        model.add(BatchNormalization())
+        model.add(Dense(16, activation = 'linear', use_bias=False)) 
+        model.add(BatchNormalization())
+        model.add(Dense(1, activation = 'linear'))
         # multi-GPU support
         #model = to_multi_gpu(model)
         #self.reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.3, patience=5, min_lr=1e-4)

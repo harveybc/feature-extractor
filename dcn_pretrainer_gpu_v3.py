@@ -125,10 +125,10 @@ class QPretrainer():
         # output layer
         #model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         # TODO: Originalmente era una sola densse de 1 linear
-        model.add(Dense(64, activation = 'sigmoid', use_bias=False)) 
-        model.add(BatchNormalization())
-        model.add(Dense(16, activation = 'linear', use_bias=False)) 
-        model.add(BatchNormalization())
+        #model.add(Dense(64, activation = 'sigmoid', use_bias=False)) 
+        #model.add(BatchNormalization())
+        #model.add(Dense(16, activation = 'linear', use_bias=False)) 
+        #model.add(BatchNormalization())
         model.add(Dense(1, activation = 'linear'))
         # multi-GPU support
         #model = to_multi_gpu(model)

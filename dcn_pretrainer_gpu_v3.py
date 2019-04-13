@@ -76,7 +76,7 @@ class QPretrainer():
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         model.add(Dropout(0.3,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(64, 3))
+        model.add(Conv1D(1024, 3))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
         
@@ -93,11 +93,11 @@ class QPretrainer():
         #model.add(Activation('sigmoid'))
         
         #model.add(LSTM(units = 512, input_shape=(self.num_features,self.window_size), return_sequences = True, dropout = 0.3))        
-        model.add(LSTM(units=32, return_sequences=True, dropout = 0.3))
+        model.add(LSTM(units=512, return_sequences=True, dropout = 0.3))
         #model.add(LSTM(units=128, return_sequences=True, dropout = 0.3))
-        model.add(LSTM(units=16, return_sequences=True, dropout = 0.3))
+        model.add(LSTM(units=128, return_sequences=True, dropout = 0.3))
         #model.add(LSTM(units=32, return_sequences=True, dropout = 0.3))
-        model.add(LSTM(units=8, dropout = 0.3))
+        model.add(LSTM(units=32, dropout = 0.3))
 
         #model.add(BatchNormalization())
         #model.add(BatchNormalization()) 

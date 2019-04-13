@@ -64,6 +64,7 @@ class QPretrainer():
         # 0.002 (Adamax default) = 0.137
         # 0.0002 = 0.127
         # 0.0005 = 0.142
+        # mejor leaning rate sin batch normalization + 0.0002
         self.learning_rate = 0.002
         #epocsh 400, ava3 = TODO
         #epocsh 1200, ava3 = 0.66, loss=0.169

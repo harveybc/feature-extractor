@@ -76,7 +76,7 @@ class QPretrainer():
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(256, 3))
+        model.add(Conv1D(256, 3, use_bias=False))
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
         #model.add(Dropout(0.3))

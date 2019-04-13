@@ -80,10 +80,9 @@ class QPretrainer():
         model.add(Activation('sigmoid'))
         model.add(BatchNormalization())
         
-        #model.add(Dropout(0.4))
-        # model.add(Dropout(0.2))
-        #model.add(Conv1D(256, 3))
-        #model.add(Activation('sigmoid'))
+        model.add(Dropout(0.3))
+        model.add(Conv1D(32, 3))
+        model.add(Activation('sigmoid'))
         #model.add(Conv1D(128, 3))
         #model.add(Activation('sigmoid'))
         #model.add(Conv1D(64, 3))

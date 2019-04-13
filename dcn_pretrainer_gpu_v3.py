@@ -75,10 +75,10 @@ class QPretrainer():
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
-        #model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
-        #model.add(Conv1D(512, 3))
-        #model.add(Activation('sigmoid'))
-        #model.add(BatchNormalization())
+        model.add(Dropout(0.3,input_shape=(self.num_features,self.window_size)))
+        model.add(Conv1D(512, 3))
+        model.add(Activation('sigmoid'))
+        model.add(BatchNormalization())
         
         #model.add(Dropout(0.4))
         # model.add(Dropout(0.2))
@@ -93,12 +93,12 @@ class QPretrainer():
         #model.add(Conv1D(64, 3))
         #model.add(Activation('sigmoid'))
         
-        model.add(LSTM(units = 512, input_shape=(self.num_features,self.window_size), return_sequences = True, dropout = 0.4))        
-        model.add(LSTM(units=256, return_sequences=True, dropout = 0.4))
-        model.add(LSTM(units=128, return_sequences=True, dropout = 0.4))
-        model.add(LSTM(units=64, return_sequences=True, dropout = 0.4))
-        model.add(LSTM(units=32, return_sequences=True, dropout = 0.4))
-        model.add(LSTM(units=16, dropout = 0.4))
+        model.add(LSTM(units = 512, input_shape=(self.num_features,self.window_size), return_sequences = True, dropout = 0.3))        
+        model.add(LSTM(units=256, return_sequences=True, dropout = 0.3))
+        model.add(LSTM(units=128, return_sequences=True, dropout = 0.3))
+        model.add(LSTM(units=64, return_sequences=True, dropout = 0.3))
+        model.add(LSTM(units=32, return_sequences=True, dropout = 0.3))
+        model.add(LSTM(units=16, dropout = 0.3))
 
         #model.add(BatchNormalization())
         #model.add(BatchNormalization()) 

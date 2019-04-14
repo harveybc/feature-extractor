@@ -108,11 +108,10 @@ class QPretrainer():
         
         model.add(LSTM(units = 512, return_sequences = True, dropout = 0.3))        
         
-        model.add(LSTM(units=256, return_sequences=True, dropout = 0.4))
+    
         
         model.add(LSTM(units=128, return_sequences=True, dropout = 0.4))
-        #model.add(LSTM(units=128, return_sequences=True, dropout = 0.3))
-        model.add(LSTM(units=64, return_sequences=True, dropout = 0.4))
+
         #model.add(LSTM(units=32, return_sequences=True, dropout = 0.3))
         model.add(LSTM(units=32, dropout = 0.4))
 
@@ -131,7 +130,11 @@ class QPretrainer():
         #model.add(BatchNormalization())
         # output layer
         model.add(Dense(128,use_bias=False)) 
+        model.add(BatchNormalization())
+        model.add(Activation('sigmoid'))
         model.add(Dense(32,use_bias=False)) 
+        model.add(BatchNormalization())
+        model.add(Activation('sigmoid'))
         #model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         model.add(Dense(1, activation = 'linear')) 
         # multi-GPU support

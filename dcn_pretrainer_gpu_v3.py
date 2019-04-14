@@ -123,7 +123,7 @@ class QPretrainer():
         #model.add(Activation('sigmoid'))
         #model.add(BatchNormalization())
         #model.add(LSTM(units = 50, return_sequences = True))
-        #model.add(MaxPooling1D(pool_size=2, strides=2))
+        #model.add(MaxPooling1D(pool_size=2 , strides=2))
        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
        # model.add(Dense(128, activation='sigmoid', kernel_initializer='glorot_uniform')) # valor óptimo:64 @400k
        # model.add(Activation ('sigmoid'))
@@ -131,10 +131,10 @@ class QPretrainer():
         # output layer
         model.add(Dense(128,use_bias=False)) 
         model.add(BatchNormalization())
-        model.add(Activation('relu'))
+        model.add(Activation('linear'))
         model.add(Dense(32,use_bias=False)) 
         model.add(BatchNormalization())
-        model.add(Activation('relu'))
+        model.add(Activation('linear'))
         #model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         model.add(Dense(1, activation = 'linear')) 
         # multi-GPU support

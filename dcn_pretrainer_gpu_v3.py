@@ -65,7 +65,7 @@ class QPretrainer():
         # 0.0002 = 0.127
         # 0.0005 = 0.142
         # mejor leaning rate sin batch normalization + 0.0002
-        self.learning_rate = 0.002
+        self.learning_rate = 0.001
         #epocsh 400, ava3 = TODO
         #epocsh 1200, ava3 = 0.66, loss=0.169
         self.epochs = 1000
@@ -76,12 +76,12 @@ class QPretrainer():
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
-        model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
+        model.add(Dropout(0.6,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(256, 3, use_bias=False))
         model.add(BatchNormalization())
         model.add(Activation('sigmoid'))
         
-        model.add(Dropout(0.4))
+        model.add(Dropout(0.6))
         model.add(Conv1D(64, 3, use_bias=False))
         model.add(BatchNormalization())
         model.add(Activation('sigmoid'))
@@ -106,12 +106,12 @@ class QPretrainer():
         #model.add(Conv1D(64, 3))
         #model.add(Activation('sigmoid'))
         
-        model.add(LSTM(units = 128, return_sequences = True, dropout = 0.3))        
+        model.add(LSTM(units = 128, return_sequences = True, dropout = 0.6))        
         
-        model.add(LSTM(units=64, return_sequences=True, dropout = 0.4))
+        model.add(LSTM(units=64, return_sequences=True, dropout = 0.6))
 
         #model.add(LSTM(units=32, return_sequences=True, dropout = 0.3))
-        model.add(LSTM(units=32, dropout = 0.4))
+        model.add(LSTM(units=32, dropout = 0.6))
 
         #model.add(BatchNormalization())
         #model.add(BatchNormalization()) 
@@ -130,9 +130,16 @@ class QPretrainer():
         #model.add(Dense(128,use_bias=False)) 
         #model.add(BatchNormalization())
         #model.add(Activation('linear'))
+        model.add(Dropout(0.6))
         model.add(Dense(32,use_bias=False)) 
         model.add(BatchNormalization())
         model.add(Activation('linear'))
+        
+        model.add(Dropout(0.6))
+        model.add(Dense(8,use_bias=False)) 
+        model.add(BatchNormalization())
+        model.add(Activation('linear'))
+        
         #model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         model.add(Dense(1, activation = 'linear')) 
         # multi-GPU support

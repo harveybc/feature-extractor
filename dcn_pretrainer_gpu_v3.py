@@ -79,7 +79,7 @@ class QPretrainer():
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(512, 3, use_bias=False))
         model.add(BatchNormalization())
-        model.add(Activation('sigmoid'))
+        model.add(Activation('relu'))
         
         #model.add(Dropout(0.4))
         #model.add(Conv1D(128, 3, use_bias=False))
@@ -131,10 +131,10 @@ class QPretrainer():
         # output layer
         model.add(Dense(128,use_bias=False)) 
         model.add(BatchNormalization())
-        model.add(Activation('sigmoid'))
+        model.add(Activation('relu'))
         model.add(Dense(32,use_bias=False)) 
         model.add(BatchNormalization())
-        model.add(Activation('sigmoid'))
+        model.add(Activation('relu'))
         #model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         model.add(Dense(1, activation = 'linear')) 
         # multi-GPU support

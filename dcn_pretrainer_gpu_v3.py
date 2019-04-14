@@ -130,15 +130,15 @@ class QPretrainer():
         #model.add(Dense(128,use_bias=False)) 
         #model.add(BatchNormalization())
         #model.add(Activation('linear'))
-        model.add(Dropout(0.6))
+        #model.add(Dropout(0.6))
         model.add(Dense(32,use_bias=False)) 
-        model.add(BatchNormalization())
-        model.add(Activation('linear'))
+        #model.add(BatchNormalization())
+        #model.add(Activation('linear'))
         
-        model.add(Dropout(0.6))
+        #model.add(Dropout(0.6))
         model.add(Dense(8,use_bias=False)) 
-        model.add(BatchNormalization())
-        model.add(Activation('linear'))
+        #model.add(BatchNormalization())
+        #model.add(Activation('linear'))
         
         #model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
         model.add(Dense(1, activation = 'linear')) 

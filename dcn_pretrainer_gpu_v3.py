@@ -91,20 +91,7 @@ class QPretrainer():
         model.add(BatchNormalization())
         model.add(Activation('sigmoid'))
 
-        model.add(Dropout(0.6))
-        model.add(Conv1D(16, 3, use_bias=False))
-        model.add(BatchNormalization())
-        model.add(Activation('sigmoid'))
-
-        model.add(Dropout(0.6))
-        model.add(Conv1D(8, 3, use_bias=False))
-        model.add(BatchNormalization())
-        model.add(Activation('sigmoid'))
-
-        model.add(Dropout(0.6))
-        model.add(Conv1D(4, 3, use_bias=False))
-        model.add(BatchNormalization())
-        model.add(Activation('sigmoid'))
+        
         
         #model.add(Dropout(0.4))
         #model.add(Conv1D(32, 3, use_bias=False))
@@ -128,9 +115,6 @@ class QPretrainer():
         
         model.add(LSTM(units = 128, return_sequences = True, dropout = 0.4,input_shape=(self.num_features,self.window_size)))            
         model.add(LSTM(units=64, return_sequences=True, dropout = 0.4))
-        model.add(LSTM(units=32, return_sequences=True, dropout = 0.4))
-        model.add(LSTM(units=16, return_sequences=True, dropout = 0.4))
-        model.add(LSTM(units=8, return_sequences=True, dropout = 0.4))
         model.add(LSTM(units=32, dropout = 0.4))
 
         #model.add(BatchNormalization())
@@ -156,7 +140,7 @@ class QPretrainer():
         #model.add(Activation('linear'))
         
         #model.add(Dropout(0.6))
-        model.add(Dense(8,use_bias=False)) 
+        model.add(Dense(16,use_bias=False)) 
         #model.add(BatchNormalization())
         #model.add(Activation('linear'))
         

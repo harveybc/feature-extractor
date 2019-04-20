@@ -79,17 +79,17 @@ class QPretrainer():
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(128, 3, use_bias=False))
         model.add(BatchNormalization())
-        model.add(Activation('relu'))
+        model.add(Activation('linear'))
         
         model.add(Dropout(0.6))
         model.add(Conv1D(64, 3, use_bias=False))
         model.add(BatchNormalization())
-        model.add(Activation('relu'))
+        model.add(Activation('linear'))
         
         model.add(Dropout(0.6))
         model.add(Conv1D(32, 3, use_bias=False))
         model.add(BatchNormalization())
-        model.add(Activation('relu'))
+        model.add(Activation('linear'))
 
         
         
@@ -135,12 +135,12 @@ class QPretrainer():
         #model.add(BatchNormalization())
         #model.add(Activation('linear'))
         #model.add(Dropout(0.6))
-        model.add(Dense(32,use_bias=False)) 
+        model.add(Dense(32)) 
         #model.add(BatchNormalization())
         #model.add(Activation('linear'))
         
         #model.add(Dropout(0.6))
-        model.add(Dense(16,use_bias=False)) 
+        model.add(Dense(16)) 
         #model.add(BatchNormalization())
         #model.add(Activation('linear'))
         
@@ -401,7 +401,7 @@ if __name__ == '__main__':
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     # for i in range(10, 11):
-    for i in range(0,1):
+    for i in range(8,9):
         print('Training model '+str(i))
         for j in range(0,pt.num_tests):
             print('test: ',j+1,'/',pt.num_tests)

@@ -79,17 +79,17 @@ class QPretrainer():
         model.add(Dropout(0.4,input_shape=(self.num_features,self.window_size)))
         model.add(Conv1D(128, 3, use_bias=False))
         model.add(BatchNormalization())
-        model.add(Activation('sigmoid'))
+        model.add(Activation('relu'))
         
         model.add(Dropout(0.6))
         model.add(Conv1D(64, 3, use_bias=False))
         model.add(BatchNormalization())
-        model.add(Activation('sigmoid'))
+        model.add(Activation('relu'))
         
         model.add(Dropout(0.6))
         model.add(Conv1D(32, 3, use_bias=False))
         model.add(BatchNormalization())
-        model.add(Activation('sigmoid'))
+        model.add(Activation('relu'))
 
         
         

@@ -81,12 +81,12 @@ class QPretrainer():
         model.add(BatchNormalization())
         model.add(Activation('relu'))
         
-        model.add(Dropout(0.6))
+        model.add(Dropout(0.4))
         model.add(Conv1D(64, 3, use_bias=False))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
         
-        model.add(Dropout(0.6))
+        model.add(Dropout(0.4))
         model.add(Conv1D(32, 3, use_bias=False))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
@@ -113,9 +113,9 @@ class QPretrainer():
         #model.add(Conv1D(64, 3))
         #model.add(Activation('sigmoid'))
         
-        model.add(LSTM(activation='relu', units = 128, return_sequences = True, dropout = 0.4,input_shape=(self.num_features,self.window_size)))            
-        model.add(LSTM(activation='relu', units=64, return_sequences=True, dropout = 0.4))
-        model.add(LSTM(activation='relu', units=32, dropout = 0.4))
+        model.add(LSTM(units = 128, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))            
+        model.add(LSTM(units=64, return_sequences=True, dropout = 0.4))
+        model.add(LSTM(units=32, dropout = 0.4))
 
         #model.add(BatchNormalization())
         #model.add(BatchNormalization()) 

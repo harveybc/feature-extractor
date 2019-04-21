@@ -87,9 +87,8 @@ class QPretrainer():
         model.add(Activation('relu'))
         
         model.add(LSTM(units = 128, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))            
-        model.add(LSTM(units=64, return_sequences=True, dropout = 0.4))
-        model.add(LSTM(units=32, dropout = 0.4))
-
+        model.add(LSTM(units=64, dropout = 0.4))
+        
         model.add(Dense(32)) 
         model.add(Dense(16)) 
         model.add(Dense(1, activation = 'linear')) 

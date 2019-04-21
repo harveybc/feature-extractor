@@ -81,10 +81,10 @@ class QPretrainer():
         model.add(BatchNormalization())
         model.add(Activation('relu'))
         
-        #model.add(Dropout(0.4))
-        #model.add(Conv1D(64, 3, use_bias=False))
-        #model.add(BatchNormalization())
-        #model.add(Activation('relu'))
+        model.add(Dropout(0.4))
+        model.add(Conv1D(64, 3, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(Activation('relu'))
         
         model.add(Dropout(0.4))
         model.add(Conv1D(32, 3, use_bias=False))

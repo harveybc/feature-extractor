@@ -96,10 +96,16 @@ class QPretrainer():
         model.add(BatchNormalization())
         model.add(Activation('relu'))
         
+        model.add(Dropout(0.6))
+        model.add(Conv1D(8, 3, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(Activation('relu'))
+        
         model.add(LSTM(units = 128, return_sequences = True, dropout = 0.6, input_shape=(self.num_features,self.window_size))) 
         model.add(LSTM(units = 64, return_sequences = True, dropout = 0.6, input_shape=(self.num_features,self.window_size)))            
-        model.add(LSTM(units = 32, return_sequences = True, dropout = 0.6, input_shape=(self.num_features,self.window_size)))                      
-        model.add(LSTM(units=16, dropout = 0.6))
+        model.add(LSTM(units = 32, return_sequences = True, dropout = 0.6, input_shape=(self.num_features,self.window_size)))            
+        model.add(LSTM(units = 16, return_sequences = True, dropout = 0.6, input_shape=(self.num_features,self.window_size)))            
+        model.add(LSTM(units=8, dropout = 0.6))
         
         model.add(Dense(32)) 
         model.add(Dense(16)) 

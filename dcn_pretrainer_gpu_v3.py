@@ -21,7 +21,7 @@ from sklearn import preprocessing
 from sklearn.metrics import confusion_matrix
 from keras.models import Sequential
 from keras.layers import Conv2D,Conv1D, MaxPooling2D, MaxPooling1D
-from keras.layers import Activation, Dropout, Flatten, Dense, BatchNormalization
+from keras.layers import Activation, Dropout, Flatten, Dense, BatchNormalization, TimeDistributed
 from keras.optimizers import SGD, Adamax
 from keras.utils import multi_gpu_model
 import tensorflow as tf
@@ -77,42 +77,40 @@ class QPretrainer():
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         model.add(Dropout(0.6,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(256, 3, use_bias=False))
+        model.add(TimeDistributed(Conv1D(256, 3, use_bias=False)))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
         
         model.add(Dropout(0.6))
-        model.add(Conv1D(128, 3, use_bias=False))
+        model.add(TimeDistributed(Conv1D(128, 3, use_bias=False)))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
         
         model.add(Dropout(0.6))
-        model.add(Conv1D(64, 3, use_bias=False))
+        model.add(TimeDistributed(Conv1D(64, 3, use_bias=False)))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
         
         model.add(Dropout(0.6))
-        model.add(Conv1D(32, 3, use_bias=False))
+        model.add(TimeDistributed(Conv1D(32, 3, use_bias=False)))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
-        
                 
-        model.add(Dropout(0.6))
-        model.add(Conv1D(16, 3, use_bias=False))
-        model.add(BatchNormalization())
-        model.add(Activation('relu'))
-        
+        #model.add(Dropout(0.6))
+        #model.add(Conv1D(16, 3, use_bias=False))
+        #model.add(BatchNormalization())
+        #model.add(Activation('relu')) 
                 
-        model.add(Dropout(0.6))
-        model.add(Conv1D(8, 3, use_bias=False))
-        model.add(BatchNormalization())
-        model.add(Activation('relu'))
+        #model.add(Dropout(0.6))
+        #model.add(Conv1D(8, 3, use_bias=False))
+        #model.add(BatchNormalization())
+        #model.add(Activation('relu'))
         
         model.add(LSTM(units = 256, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size))) 
         model.add(LSTM(units = 64, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))            
-        model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
-        model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        
-        model.add(LSTM(units=8, dropout = 0.4, recurrent_dropout = 0.4 ))
+        #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
+        #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        
+        model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.4 ))
         
         model.add(Dense(32)) 
         model.add(Dense(16)) 

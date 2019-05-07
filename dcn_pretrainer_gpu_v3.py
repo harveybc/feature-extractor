@@ -108,11 +108,11 @@ class QPretrainer():
         
         model.add(LSTM(units = 256, return_sequences = True, dropout = 0.6, input_shape=(self.num_features,self.window_size))) 
         #model.add(BatchNormalization())
-        model.add(LSTM(units = 64, return_sequences = True, dropout = 0.6))            
+        model.add(LSTM(units = 256, return_sequences = True, dropout = 0.6))            
         #model.add(BatchNormalization())
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        
-        model.add(LSTM(units=16, dropout = 0.4, recurrent_dropout = 0.6 ))
+        #model.add(LSTM(units=16, dropout = 0.4, recurrent_dropout = 0.6 ))
         #model.add(BatchNormalization())
 
         model.add(Dense(32)) 

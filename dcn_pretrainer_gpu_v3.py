@@ -77,12 +77,12 @@ class QPretrainer():
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # model.add(Dropout(0.6,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(512, 3, use_bias=False))
+        model.add(Conv1D(256, 3, use_bias=False))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
         
         #model.add(Dropout(0.6))
-        model.add(Conv1D(128, 3, use_bias=False))
+        model.add(Conv1D(64, 3, use_bias=False))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
         
@@ -92,7 +92,7 @@ class QPretrainer():
         #model.add(Activation('relu'))
         
         #model.add(Dropout(0.6))
-        model.add(Conv1D(32, 3, use_bias=False))
+        model.add(Conv1D(16, 3, use_bias=False))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
                 
@@ -106,13 +106,13 @@ class QPretrainer():
         #model.add(BatchNormalization())
         #model.add(Activation('relu'))
         
-        model.add(LSTM(units = 512, return_sequences = True, dropout = 0.6, input_shape=(self.num_features,self.window_size))) 
+        model.add(LSTM(units = 256, return_sequences = True, dropout = 0.6, input_shape=(self.num_features,self.window_size))) 
         #model.add(BatchNormalization())
-        model.add(LSTM(units = 128, return_sequences = True, dropout = 0.6))            
+        model.add(LSTM(units = 64, return_sequences = True, dropout = 0.6))            
         #model.add(BatchNormalization())
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        
-        model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.6 ))
+        model.add(LSTM(units=16, dropout = 0.4, recurrent_dropout = 0.6 ))
         #model.add(BatchNormalization())
 
         model.add(Dense(32)) 

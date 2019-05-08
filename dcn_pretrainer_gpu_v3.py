@@ -122,7 +122,7 @@ class QPretrainer():
         model.compile(loss="mae", optimizer=opt, metrics=["mse"])
         return paralell_model 
 
-def set_dcn_model_r(self):
+    def set_dcn_model_r(self):
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)

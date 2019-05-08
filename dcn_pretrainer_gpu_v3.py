@@ -170,9 +170,9 @@ class QPretrainer():
         #model.add(BatchNormalization())
         #model.add(Activation('relu'))
         
-        model.add(LSTM(units = 1024, return_sequences = True, dropout = 0.6, input_shape=(self.num_features,self.window_size))) 
+        model.add(LSTM(units = 512, return_sequences = True, dropout = 0.6, input_shape=(self.num_features,self.window_size))) 
         #model.add(BatchNormalization())
-        model.add(LSTM(units = 512, dropout = 0.6, recurrent_dropout = 0.6))            
+        model.add(LSTM(units = 256, dropout = 0.6, recurrent_dropout = 0.6))            
         #model.add(LSTM(units = 32, dropout = 0.6, recurrent_dropout = 0.6))            
         #model.add(BatchNormalization())
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            

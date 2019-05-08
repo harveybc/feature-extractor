@@ -72,12 +72,62 @@ class QPretrainer():
         # number of validation tests to avarage during each training
         self.num_tests = 1
 
-    def set_dcn_model_r(self):
+    def set_dcn_model_r_alex(self):
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # model.add(Dropout(0.6,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(256, 3, use_bias=False, input_shape=(self.num_features,self.window_size)))
+        model.add(Conv1D(48, 5, strides=2,use_bias=False, input_shape=(self.num_features,self.window_size)))
+        model.add(BatchNormalization())
+        model.add(Activation('relu'))
+        
+        model.add(MaxPooling1D(pool_size=3, strides=2))
+        
+        model.add(Conv1D(128, 3, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(Activation('relu'))
+       
+        model.add(MaxPooling1D(pool_size=3, strides=2))
+        
+        model.add(Conv1D(200, 3, stride=1, padding=1, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(Activation('relu'))
+       
+       model.add(Conv1D(200, 3, stride=1, padding=1, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(Activation('relu'))
+       
+       model.add(Conv1D(128, 3, stride=1, padding=1, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(Activation('relu'))
+       
+        model.add(MaxPooling1D(pool_size=3, strides=2))
+        
+        model.add(Dense(640)) 
+        model.add(Dropout(0.2))
+        model.add(Dense(640)) 
+        model.add(Dropout(0.2))
+        model.add(Dense(256)) 
+        model.add(Dropout(0.2))
+        #model.add(Dense(32)) 
+        #model.add(Dropout(0.4))
+        model.add(Dense(1, activation = 'linear')) 
+
+        # use SGD optimizer
+        opt = Adamax(lr=self.learning_rate)
+
+        #paralell_model = multi_gpu_model(model, gpus=2)
+        paralell_model = model
+
+        model.compile(loss="mae", optimizer=opt, metrics=["mse"])
+        return paralell_model 
+
+def set_dcn_model_r(self):
+        # Deep Convolutional Neural Network for Regression
+        model = Sequential()
+        # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
+        # model.add(Dropout(0.6,input_shape=(self.num_features,self.window_size)))
+        model.add(Conv1D(128, 5, strides=2,use_bias=False, input_shape=(self.num_features,self.window_size)))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
         
@@ -122,18 +172,18 @@ class QPretrainer():
         
         model.add(LSTM(units = 128, return_sequences = True, dropout = 0.6)) 
         #model.add(BatchNormalization())
-        model.add(LSTM(units = 64, return_sequences = True, dropout = 0.6))            
-        model.add(LSTM(units = 32, dropout = 0.6, recurrent_dropout = 0.6))            
+        model.add(LSTM(units = 64, dropout = 0.6, recurrent_dropout = 0.6))            
+        #model.add(LSTM(units = 32, dropout = 0.6, recurrent_dropout = 0.6))            
         #model.add(BatchNormalization())
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        
         #model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.6 ))
         #model.add(BatchNormalization())
 
-        model.add(Dense(64)) 
+        model.add(Dense(640)) 
         model.add(Dropout(0.4))
-        #model.add(Dense(32)) 
-        #model.add(Dropout(0.4))
+        model.add(Dense(320)) 
+        model.add(Dropout(0.4))
         model.add(Dense(1, activation = 'linear')) 
 
         # use SGD optimizer

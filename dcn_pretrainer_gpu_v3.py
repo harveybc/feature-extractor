@@ -108,7 +108,7 @@ class QPretrainer():
         #model.add(Dropout(0.6))
         #model.add(Conv1D(16, 3, use_bias=False))
         #model.add(BatchNormalization())
-        m#odel.add(Activation('relu'))
+        #model.add(Activation('relu'))
                 
         #model.add(Dropout(0.6))
         #model.add(Conv1D(16, 3, use_bias=False))

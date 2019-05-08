@@ -190,7 +190,7 @@ class QPretrainer():
         opt = Adamax(lr=self.learning_rate)
 
         #paralell_model = multi_gpu_model(model, gpus=2)
-        paralell_model = model
+        paralell_model = model 
 
         model.compile(loss="mae", optimizer=opt, metrics=["mse"])
         return paralell_model 

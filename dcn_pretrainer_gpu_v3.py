@@ -174,7 +174,7 @@ class QPretrainer():
         model.add(BatchNormalization())
         model.add(LSTM(units = 128, return_sequences = True)) 
         model.add(BatchNormalization())
-        model.add(LSTM(units = 64, dropout = 0.6, recurrent_dropout = 0.6))            
+        model.add(LSTM(units = 64))            
         model.add(BatchNormalization())
         #model.add(LSTM(units = 32, dropout = 0.6, recurrent_dropout = 0.6))            
         #model.add(BatchNormalization())

@@ -341,13 +341,13 @@ class QPretrainer():
         print(history.history.keys())
         # summarize history for accuracy
         fig = plt.figure()
-        plt.plot(history.history['acc'])
-        plt.plot(history.history['val_acc'])
-        plt.title('model accuracy')
-        plt.ylabel('accuracy')
+        plt.plot(history.history['mean_squared_error'])
+        plt.plot(history.history['val_mean_squared_error'])
+        plt.title('model mse')
+        plt.ylabel('mse')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
-        fig.savefig('predict_' + str(signal) + '_acc.png')
+        fig.savefig('predict_' + str(signal) + '_mse.png')
         # summarize history for loss
         fig = plt.figure()
         plt.plot(history.history['loss'])

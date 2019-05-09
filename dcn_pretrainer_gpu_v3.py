@@ -180,9 +180,9 @@ class QPretrainer():
         #model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.6 ))
         #model.add(BatchNormalization())
 
-        model.add(Dense(640)) 
+        model.add(Dense(64)) 
         model.add(Dropout(0.4))
-        model.add(Dense(320)) 
+        model.add(Dense(32)) 
         model.add(Dropout(0.4))
         model.add(Dense(1, activation = 'linear')) 
 
@@ -315,7 +315,8 @@ class QPretrainer():
     ## Returns best parameterse
     def train_model(self, signal):
         #converts to nparray
-        self.ts = np.array(self.ts)
+        # TODO: Usando dataset completo ts_g en lugar de solo ts,incluyendo validation set, se hace separación por parámetro validation_split de fit
+        self.ts = np.array(self.ts_g)
         self.x_pre = self.ts[0:,0:self.num_f]
         
         #TODO: BBORRAR hasta print
@@ -335,7 +336,28 @@ class QPretrainer():
         #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251(0.241) cada epoca tardaba: 3s con 580us/step
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
-        self.svr_rbf.fit(self.x, self.y, batch_size=1024, epochs=self.epochs, verbose=1)
+        history = self.svr_rbf.fit(self.x, self.y, validation_split=0.25, batch_size=1024, epochs=self.epochs, verbose=1)
+        # list all data in history
+        print(history.history.keys())
+        # summarize history for accuracy
+        fig = plt.figure()
+        plt.plot(history.history['acc'])
+        plt.plot(history.history['val_acc'])
+        plt.title('model accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        fig.savefig('predict_' + str(signal) + '_acc.png')
+        # summarize history for loss
+        fig = plt.figure()
+        plt.plot(history.history['loss'])
+        plt.plot(history.history['val_loss'])
+        plt.title('model loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        fig.savefig('predict_' + str(signal) + '_loss.png')
+        
         return self.svr_rbf 
 
     

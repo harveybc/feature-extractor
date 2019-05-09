@@ -184,9 +184,9 @@ class QPretrainer():
         #model.add(BatchNormalization())
  
         model.add(Dense(64)) 
-        model.add(Dropout(0.4))
+        model.add(Dropout(0.2))
         model.add(Dense(32)) 
-        model.add(Dropout(0.4))
+        model.add(Dropout(0.2))
         model.add(Dense(1, activation = 'linear')) 
 
         # use SGD optimizer

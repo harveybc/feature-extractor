@@ -65,7 +65,7 @@ class QPretrainer():
         # 0.0002 = 0.127
         # 0.0005 = 0.142
         # mejor leaning rate sin batch normalization + 0.0002
-        self.learning_rate = 0.0005
+        self.learning_rate = 0.001
         #epocsh 400, ava3 = TODO
         #epocsh 1200, ava3 = 0.66, loss=0.169
         self.epochs = 200 
@@ -180,9 +180,9 @@ class QPretrainer():
         #model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.6 ))
         #model.add(BatchNormalization())
 
-        model.add(Dense(64)) 
+        model.add(Dense(640)) 
         model.add(Dropout(0.4))
-        model.add(Dense(32)) 
+        model.add(Dense(320)) 
         model.add(Dropout(0.4))
         model.add(Dense(1, activation = 'linear')) 
 

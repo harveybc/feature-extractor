@@ -130,14 +130,6 @@ class QPretrainer():
         model.add(Conv1D(512, 5, strides=2,use_bias=False, input_shape=(self.num_features,self.window_size)))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
-        
-        model.add(Conv1D(256, 5, strides=2,use_bias=False))
-        model.add(BatchNormalization())
-        model.add(Activation('relu'))
-        
-        model.add(Conv1D(32, 3, use_bias=False))
-        model.add(BatchNormalization())
-        model.add(Activation('relu')) 
 
         #model.add(Conv1D(220, 3, use_bias=False))
         #model.add(BatchNormalization())
@@ -175,10 +167,7 @@ class QPretrainer():
         
         model.add(LSTM(units = 256, return_sequences = True, input_shape=(self.num_features,self.window_size))) 
         model.add(BatchNormalization())
-        model.add(LSTM(units = 128, return_sequences = True)) 
-        model.add(BatchNormalization())
-        model.add(LSTM(units = 64))            
-        model.add(BatchNormalization())
+
         #model.add(LSTM(units = 32, dropout = 0.6, recurrent_dropout = 0.6))            
         #model.add(BatchNormalization())
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
@@ -187,9 +176,13 @@ class QPretrainer():
         #model.add(BatchNormalization())
  
         model.add(Dense(64)) 
-        model.add(Dropout(0.2))
+        model.add(BatchNormalization())
+        model.add(activation='hard_sigmoid')
+        #model.add(Dropout(0.2))
         model.add(Dense(32)) 
-        model.add(Dropout(0.2))
+        model.add(BatchNormalization())
+        model.add(activation='hard_sigmoid')
+        #model.add(Dropout(0.2))
         model.add(Dense(1, activation = 'linear')) 
 
         # use SGD optimizer

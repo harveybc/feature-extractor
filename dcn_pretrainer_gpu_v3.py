@@ -177,11 +177,11 @@ class QPretrainer():
  
         model.add(Dense(64)) 
         model.add(BatchNormalization())
-        model.add(activation='hard_sigmoid')
+        model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))
         model.add(Dense(32)) 
         model.add(BatchNormalization())
-        model.add(activation='hard_sigmoid')
+        model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))
         model.add(Dense(1, activation = 'linear')) 
 

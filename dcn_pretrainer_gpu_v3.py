@@ -131,9 +131,9 @@ class QPretrainer():
         model.add(BatchNormalization())
         model.add(Activation('relu'))
 
-        #model.add(Conv1D(220, 3, use_bias=False))
-        #model.add(BatchNormalization())
-        #model.add(Activation('relu'))
+        model.add(Conv1D(256, 3, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(Activation('relu'))
         
         #model.add(Conv1D(150, 3, use_bias=False))
         #model.add(BatchNormalization())
@@ -175,11 +175,11 @@ class QPretrainer():
         #model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.6 ))
         #model.add(BatchNormalization())
  
-        model.add(Dense(64)) 
+        model.add(Dense(640)) 
         model.add(BatchNormalization())
         model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))
-        model.add(Dense(32)) 
+        model.add(Dense(320)) 
         model.add(BatchNormalization())
         model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))

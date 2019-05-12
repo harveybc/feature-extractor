@@ -68,7 +68,7 @@ class QPretrainer():
         self.learning_rate = 0.0008
         #epocsh 400, ava3 = TODO
         #epocsh 1200, ava3 = 0.66, loss=0.169
-        self.epochs = 200 
+        self.epochs = 50 
         # number of validation tests to avarage during each training
         self.num_tests = 1
 
@@ -175,11 +175,11 @@ class QPretrainer():
         #model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.6 ))
         #model.add(BatchNormalization())
  
-        model.add(Dense(640)) 
+        model.add(Dense(64)) 
         model.add(BatchNormalization())
         model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))
-        model.add(Dense(320)) 
+        model.add(Dense(32)) 
         model.add(BatchNormalization())
         model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))

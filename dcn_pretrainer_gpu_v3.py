@@ -175,11 +175,11 @@ class QPretrainer():
         #model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.6 ))
         #model.add(BatchNormalization())
  
-        model.add(Dense(640)) 
+        model.add(Dense(64)) 
         model.add(BatchNormalization())
         model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))
-        model.add(Dense(320)) 
+        model.add(Dense(32)) 
         model.add(BatchNormalization())
         model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))

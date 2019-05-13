@@ -127,7 +127,7 @@ class QPretrainer():
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
         # model.add(Dropout(0.6,input_shape=(self.num_features,self.window_size)))
-        model.add(Conv1D(256, 5, strides=2,use_bias=False, input_shape=(self.num_features,self.window_size)))
+        model.add(Conv1D(512, 5, strides=2,use_bias=False, input_shape=(self.num_features,self.window_size)))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
         
@@ -157,20 +157,19 @@ class QPretrainer():
         #model.add(BatchNormalization())
         #model.add(Activation('relu'))
         
-        model.add(LSTM(units = 256, return_sequences = True, input_shape=(self.num_features,self.window_size))) 
+        model.add(LSTM(units = 256, recurrent_dropout = 0.4, input_shape=(self.num_features,self.window_size))) 
         model.add(BatchNormalization()) 
-        model.add(LSTM(units = 256)) 
-        model.add(BatchNormalization())
+
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        
         #model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.6 ))
         #model.add(BatchNormalization())
  
-        model.add(Dense(512)) 
+        model.add(Dense(640)) 
         model.add(BatchNormalization())
         model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))
-        model.add(Dense(256)) 
+        model.add(Dense(320)) 
         model.add(BatchNormalization())
         model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))

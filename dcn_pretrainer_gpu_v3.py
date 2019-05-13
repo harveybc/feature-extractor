@@ -130,14 +130,6 @@ class QPretrainer():
         model.add(Conv1D(512, 5, strides=2,use_bias=False, input_shape=(self.num_features,self.window_size)))
         model.add(BatchNormalization())
         model.add(Activation('relu'))
-
-        model.add(Conv1D(256, 3, use_bias=False))
-        model.add(BatchNormalization())
-        model.add(Activation('relu'))
-        
-        model.add(Conv1D(128, 3, use_bias=False))
-        model.add(BatchNormalization())
-        model.add(Activation('relu'))#model.add(Dropout(0.6))
         
         #model.add(Conv1D(100, 3, use_bias=False))
         #model.add(BatchNormalization())
@@ -165,14 +157,9 @@ class QPretrainer():
         #model.add(BatchNormalization())
         #model.add(Activation('relu'))
         
-        model.add(LSTM(units = 256, return_sequences = True, input_shape=(self.num_features,self.window_size))) 
+        model.add(LSTM(units = 512, input_shape=(self.num_features,self.window_size))) 
         model.add(BatchNormalization()) 
 
-        model.add(LSTM(units = 128, return_sequences = True))            
-        model.add(BatchNormalization())
-        
-        model.add(LSTM(units = 64))            
-        model.add(BatchNormalization())
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        
         #model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.6 ))

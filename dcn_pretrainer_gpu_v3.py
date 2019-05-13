@@ -168,18 +168,19 @@ class QPretrainer():
         model.add(LSTM(units = 256, input_shape=(self.num_features,self.window_size))) 
         model.add(BatchNormalization())
 
-        #model.add(LSTM(units = 32, dropout = 0.6, recurrent_dropout = 0.6))            
-        #model.add(BatchNormalization())
+        model.add(LSTM(units = 128))            
+        model.add(BatchNormalization())
+        
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        
         #model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.6 ))
         #model.add(BatchNormalization())
  
-        model.add(Dense(64)) 
+        model.add(Dense(512)) 
         model.add(BatchNormalization())
         model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))
-        model.add(Dense(32)) 
+        model.add(Dense(256)) 
         model.add(BatchNormalization())
         model.add(Activation('hard_sigmoid'))
         #model.add(Dropout(0.2))

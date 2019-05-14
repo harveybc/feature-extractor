@@ -164,7 +164,7 @@ class QPretrainer():
         #paralell_model = multi_gpu_model(model, gpus=2)
         paralell_model = model 
 
-        model.compile(loss="mae", optimizer=opt, metrics=["mse"])
+        model.compile(loss="mse", optimizer=opt, metrics=["mae"])
         return paralell_model 
 
     def set_dcn_model_c(self):

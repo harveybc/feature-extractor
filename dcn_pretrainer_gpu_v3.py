@@ -140,7 +140,7 @@ class QPretrainer():
         #model.add(BatchNormalization())
         #model.add(Activation('relu'))
         
-        model.add(LSTM(units = 128, input_shape=(self.num_features,self.window_size))) 
+        model.add(LSTM(units = 512, input_shape=(self.num_features,self.window_size))) 
         model.add(BatchNormalization()) 
 
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            

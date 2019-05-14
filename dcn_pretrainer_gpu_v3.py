@@ -313,8 +313,8 @@ class QPretrainer():
         print(history.history.keys())
         # summarize history for accuracy
         fig = plt.figure()
-        plt.plot(history.history['mean_squared_error'])
-        plt.plot(history.history['val_mean_squared_error'])
+        plt.plot(history.history['mean_absolute_error'])
+        plt.plot(history.history['val_mean_absolute_error'])
         plt.title('model mse')
         plt.ylabel('mse')
         plt.xlabel('epoch')

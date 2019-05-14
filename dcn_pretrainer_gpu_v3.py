@@ -126,7 +126,7 @@ class QPretrainer():
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
-        # model.add(Dropout(0.6,input_shape=(self.num_features,self.window_size)))
+
         model.add(Conv1D(512, 5, strides=2,use_bias=False, input_shape=(self.num_features,self.window_size))) 
         model.add(BatchNormalization())  
         model.add(Activation('relu'))
@@ -142,10 +142,10 @@ class QPretrainer():
         
         model.add(LSTM(units = 256, return_sequences = True,  input_shape=(self.num_features,self.window_size))) 
         model.add(BatchNormalization()) 
-        
-        model.add(LSTM(units = 192, input_shape=(self.num_features,self.window_size))) 
-        model.add(BatchNormalization()) 
 
+        model.add(LSTM(units = 640,  input_shape=(self.num_features,self.window_size))) 
+        model.add(BatchNormalization()) 
+        
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        
         #model.add(LSTM(units=32, dropout = 0.4, recurrent_dropout = 0.6 ))

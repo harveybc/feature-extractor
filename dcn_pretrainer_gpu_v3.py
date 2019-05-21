@@ -65,7 +65,7 @@ class QPretrainer():
         # 0.0002 = 0.127
         # 0.0005 = 0.142
         # mejor leaning rate sin batch normalization + 0.0002
-        self.learning_rate = 0.001
+        self.learning_rate = 0.00001
         #epocsh 400, ava3 = TODO
         #epocsh 1200, ava3 = 0.66, loss=0.169
         self.epochs = 50 
@@ -319,7 +319,7 @@ class QPretrainer():
         plt.ylabel('mae')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
-        fig.savefig('predict_' + str(signal) + '_mae.png', dpi=300)
+        fig.savefig('predict_' + str(signal) + '_mae.png', dpi=600)
         # summarize history for loss
         fig = plt.figure()
         plt.plot(history.history['loss'])
@@ -328,7 +328,7 @@ class QPretrainer():
         plt.ylabel('loss')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
-        fig.savefig('predict_' + str(signal) + '_loss.png', dpi=300)
+        fig.savefig('predict_' + str(signal) + '_loss.png', dpi=600)
         
         return self.svr_rbf 
 
@@ -349,18 +349,18 @@ class QPretrainer():
         #if signal == 0:
         #    print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
-        lw = 2
+        lw = 0.5
         x_seq = list(range(0, self.vs.shape[0])) 
         # 0 = Buy/CloseSell/nopCloseBuy
         print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
         fig=plt.figure()
-        plt.plot(x_seq, self.y_v, color='darkorange', label='data')
+        plt.plot(x_seq, self.y_v, color='darkorange', lw=lw, label='data')
         plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')
         plt.xlabel('data')
         plt.ylabel('target')
         plt.title('Signal ' + str(signal))
         plt.legend()
-        fig.savefig('predict_' + str(signal) + '.svg')
+        fig.savefig('predict_' + str(signal) + '.png', dpi=1000)
         return mean_squared_error(self.y_v, y_rbf)
     
  

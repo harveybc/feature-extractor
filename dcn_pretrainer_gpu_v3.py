@@ -130,7 +130,11 @@ class QPretrainer():
         model.add(Conv1D(512, 5, strides=2,use_bias=False, input_shape=(self.num_features,self.window_size))) 
         model.add(BatchNormalization())  
         model.add(Activation('relu'))
-               
+        
+        model.add(Conv1D(256, 3, use_bias=False)) 
+        model.add(BatchNormalization())  
+        model.add(Activation('relu'))
+        
         #model.add(Dropout(0.6))
         #model.add(Conv1D(8, 3, use_bias=False))
         #model.add(BatchNormalization())
@@ -315,7 +319,7 @@ class QPretrainer():
         plt.ylabel('mse')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
-        fig.savefig('predict_' + str(signal) + '_mse.png')
+        fig.savefig('predict_' + str(signal) + '_mse.png', dpi=600)
         # summarize history for loss
         fig = plt.figure()
         plt.plot(history.history['loss'])
@@ -324,7 +328,7 @@ class QPretrainer():
         plt.ylabel('loss')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
-        fig.savefig('predict_' + str(signal) + '_loss.png')
+        fig.savefig('predict_' + str(signal) + '_loss.png', dpi=600)
         
         return self.svr_rbf 
 
@@ -356,7 +360,7 @@ class QPretrainer():
         plt.ylabel('target')
         plt.title('Signal ' + str(signal))
         plt.legend()
-        fig.savefig('predict_' + str(signal) + '.png')
+        fig.savefig('predict_' + str(signal) + '.png', dpi=600)
         return mean_squared_error(self.y_v, y_rbf)
     
  

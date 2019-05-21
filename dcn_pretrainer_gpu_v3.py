@@ -419,7 +419,7 @@ class QPretrainer():
     ## Export the trained models and the predicted validation set predictions, print statistics 
     def export_model(self, signal):
         self.svr_rbf.save(self.model_prefix + str(signal)+'.dcn') 
-    
+
         
 # main function 
 if __name__ == '__main__':
@@ -453,9 +453,9 @@ if __name__ == '__main__':
                     print('average accuracy:', error_accum[i]/pt.num_tests)
                 else: 
                     print('average error:', error_accum[i]/pt.num_tests)
-            # exports model
-            if error[i] <= error_ant[i]:    
-                pt.export_model(i)
+        # exports model
+        print('Saving model '+str(i))
+        pt.export_model(i)
     #for i in range(10,11):
     #    print('Accuracy ', i, ": ", error_accum[i]/pt.num_tests )
        

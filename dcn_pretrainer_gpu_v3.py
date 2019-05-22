@@ -350,7 +350,7 @@ class QPretrainer():
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
         with open('output_obs.csv' , 'w', newline='') as myfile:
             wr = csv.writer(myfile)
-            wr.writerows(x_v)
+            wr.writerows(self.x_v)
         print("Finished generating validation set observations.")
         with open('output_act.csv' , 'w', newline='') as myfile:
             wr = csv.writer(myfile)

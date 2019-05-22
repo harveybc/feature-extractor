@@ -27,6 +27,7 @@ from keras.utils import multi_gpu_model
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 from keras.layers import LSTM
+import csv 
 
 
 ## \class QPretrainer

@@ -346,6 +346,16 @@ class QPretrainer():
         #    print("Validation set self.x_v = ",self.x_v)
         # predict the class of in the validation set
         y_rbf = self.svr_rbf.predict(self.x_v)
+        # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
+        with open('output_obs.csv' , 'w', newline='') as myfile:
+            wr = csv.writer(myfile)
+            wr.writerows(x_v)
+        print("Finished generating validation set observations.")
+        with open('output_act.csv' , 'w', newline='') as myfile:
+            wr = csv.writer(myfile)
+            wr.writerows(y_rbf)
+        print("Finished generating validation set actions per observation.")
+        
         #if signal == 0:
         #    print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset

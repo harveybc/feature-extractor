@@ -208,7 +208,18 @@ class QPretrainer():
         y_rbf = self.svr_rbf.predict(self.x_v)
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
         print("self.x_v.shape = ", self.x_v.shape)
-        np.savetxt("output_obs.csv",self.x_v,delimiter=",")
+        x_v_2d = []
+        # para cada observación
+        for obs in self.x_v:
+            win = []
+            # para cada feature
+            for feat in obs:
+                # concatena como columnas los vectores de window x feature
+                win = win + feat.tolist()
+            # concatena como filas los vectores de features
+            x_v_2d.append(win)
+            
+        np.savetxt("output_obs.csv", np.array(x_v_2d), delimiter=",")
         #with open('output_obs.csv' , 'w', newline='') as myfile:
         #    wr = csv.writer(myfile)
         #    wr.writerows(self.x_v)

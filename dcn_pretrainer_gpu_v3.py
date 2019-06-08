@@ -205,6 +205,8 @@ class QPretrainer():
         #if signal == 0:
         #    print("Validation set self.x_v = ",self.x_v)
         # predict the class of in the validation set
+        np.set_printoptions(threshold=sys.maxsize)
+        print("self.x_v[0] = ", self.x_v[0])
         y_rbf = self.svr_rbf.predict(self.x_v)
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
         print("self.x_v.shape = ", self.x_v.shape)

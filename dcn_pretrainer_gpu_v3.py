@@ -205,11 +205,24 @@ class QPretrainer():
         #if signal == 0:
         #    print("Validation set self.x_v = ",self.x_v)
         # predict the class of in the validation set
+        
         np.set_printoptions(threshold=sys.maxsize)
         print("self.x_v[0] = ", self.x_v[0])
         y_rbf = self.svr_rbf.predict(self.x_v)
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
-        print("self.x_v.shape = ", self.x_v.shape)
+        print("self.x_v[0].shape = ", self.x_v[0].shape)
+        print("self.y_rbf[0] = ", self.x_v[0].shape)
+        
+        print("self.x_v[1] = ", self.x_v[1])
+        # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
+        print("self.x_v[1].shape = ", self.x_v[1].shape)
+        print("self.y_rbf[1] = ", self.x_v[1].shape)
+       
+        print("self.x_v[2] = ", self.x_v[2])
+        # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
+        print("self.x_v[2].shape = ", self.x_v[2].shape)
+        print("self.y_rbf[2] = ", self.x_v[2].shape)
+        
         x_v_2d = []
         # para cada observación
         for obs in self.x_v:

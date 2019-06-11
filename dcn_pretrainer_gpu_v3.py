@@ -211,17 +211,17 @@ class QPretrainer():
         y_rbf = self.svr_rbf.predict(self.x_v)
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
         print("self.x_v[0].shape = ", self.x_v[0].shape)
-        print("self.y_rbf[0] = ", self.x_v[0].shape)
+        print("self.y_rbf[0] = ", self.y_rbf[0])
         
         print("self.x_v[1] = ", self.x_v[1])
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
         print("self.x_v[1].shape = ", self.x_v[1].shape)
-        print("self.y_rbf[1] = ", self.x_v[1].shape)
+        print("self.y_rbf[1] = ", sself.y_rbf[1])
        
         print("self.x_v[2] = ", self.x_v[2])
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
         print("self.x_v[2].shape = ", self.x_v[2].shape)
-        print("self.y_rbf[2] = ", self.x_v[2].shape)
+        print("self.y_rbf[2] = ", self.y_rbf[2])
         
         x_v_2d = []
         # para cada observación

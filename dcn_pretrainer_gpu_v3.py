@@ -146,14 +146,14 @@ class QPretrainer():
         num_rows = len(data)
         # counter of rows of data array
         c_row = self.window_size - 1
-        while c_row < num_rows-1:
+        while c_row < num_rows:
             # invert the order of the observations, in the first element is the newest value
             obs_cell = []
             for j in range(0,self.window_size):
                 # create an array of size num_features 
                 obs_frame = []
                 for k in range(0,self.num_features):
-                    obs_frame.append(data_p[c_row - j, k * self.num_features])
+                    obs_frame.append(data_p[c_row - j, k*self.window_size + j ])
                 # obs_cell contains window_size rows with num_features columns with the newest observation in cell[0]
                 obs_cell.append(copy.deepcopy(obs_frame))
             # obs_matrix contains files with observations of size (window_Size, num_features)

@@ -134,7 +134,8 @@ class QPretrainer():
     
 
     ## Generate DCN  input matrix with the data_format='channels_last' (steps, channels)
-    # the input data has the following format: (timesteps, self.num_f = num_features*window_size)
+    # parameters: data = array of size (num_observations, num_features*window_size) 
+    # return: obsmatrix = array of size (num_observations, window_size, num_features)
     def dcn_input(self, data):
         #obs_matrix = np.array([np.array([0.0] * self.num_features)]*len(data), dtype=object)
         obs_matrix = []
@@ -145,20 +146,21 @@ class QPretrainer():
         data_p = np.array(data)
         num_rows = len(data)
         # counter of rows of data array
-        c_row = self.window_size - 1
+        c_row = 0
         while c_row < num_rows:
             # invert the order of the observations, in the first element is the newest value
-            obs_cell = []
+            obs_frame = []
             for j in range(0,self.window_size):
                 # create an array of size num_features 
-                obs_frame = []
+                obs_row = []
                 for k in range(0,self.num_features):
-                    obs_frame.append(data_p[c_row - j, k*self.window_size + j ])
-                # obs_cell contains window_size rows with num_features columns with the newest observation in cell[0]
-                obs_cell.append(copy.deepcopy(obs_frame))
+                    obs_row.append(data_p[c_row, k*self.window_size + j ])
+                # obs_frame contains window_size rows with num_features columns with the newest observation in cell[0]
+                obs_frame.append(copy.deepcopy(obs_row))
             # obs_matrix contains files with observations of size (window_Size, num_features)
-            obs_matrix.append(copy.deepcopy(obs_cell))
+            obs_matrix.append(copy.deepcopy(obs_frame))
             c_row = c_row + 1
+        print("Formating of data for DCN input performed succesfully.")
         return np.array(obs_matrix)
         
     ## Train SVMs with the training dataset using cross-validation error estimation
@@ -171,7 +173,7 @@ class QPretrainer():
         # TODO: BBORRAR hasta print
         #print("self.x_pre[0:30, self.num_f-1] = ", self.x_pre[0:30, self.num_f-1])
         self.x = self.dcn_input(self.x_pre)
-        self.y = self.ts[0:,self.num_f + signal]         
+        self.y = self.ts[0 :,self.num_f + signal]         
         #print("signal = ",signal,"   self.y = ", self.y)         
         # TODO: Cambiar var svr_rbf por p_model
         # setup the DCN model

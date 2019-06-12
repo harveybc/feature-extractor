@@ -134,10 +134,12 @@ class QPretrainer():
     
 
     ## Generate DCN  input matrix with the data_format='channels_last' (steps, channels)
-    # the input data has the following format: (timesteps, self.num_f)
+    # the input data has the following format: (timesteps, self.num_f = num_features*window_size)
     def dcn_input(self, data):
         #obs_matrix = np.array([np.array([0.0] * self.num_features)]*len(data), dtype=object)
         obs_matrix = []
+        obs_row = []
+        obs_frame = []
         obs = np.array([np.array([0.0] * self.num_features)] * self.window_size)
         # for each observation
         data_p = np.array(data)
@@ -146,10 +148,16 @@ class QPretrainer():
         c_row = self.window_size - 1
         while c_row < num_rows:
             # invert the order of the observations, in the first element is the newest value
+            obs_cell = []
             for j in range(0,self.window_size):
-                obs[j] = data_p[c_row - j, :]
+                # create an array of size num_features 
+                obs_frame = []
+                for k in range(0,self.num_features):
+                    obs_frame.append(data_p[c_row - j, k * self.num_features])
+                # obs_cell contains window_size rows with num_features columns with the newest observation in cell[0]
+                obs_cell.append(copy.deepcopy(obs_frame))
             # obs_matrix contains files with observations of size (window_Size, num_features)
-            obs_matrix.append(obs.copy())
+            obs_matrix.append(copy.deepcopy(obs_cell))
             c_row = c_row + 1
         return np.array(obs_matrix)
         

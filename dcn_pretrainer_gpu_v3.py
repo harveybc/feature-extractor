@@ -27,8 +27,8 @@ from keras.utils import multi_gpu_model
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 from keras.layers import LSTM
-import csv 
-
+import csv
+import copy
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
@@ -132,21 +132,25 @@ class QPretrainer():
         #y_v = vs_n[0:,self.num_f + 0]         
         #print("y_v = ", y_v)
     
-    ## Generate DCN  input matrix
+
+    ## Generate DCN  input matrix with the data_format='channels_last' (steps, channels)
+    # the input data has the following format: (timesteps, self.num_f)
     def dcn_input(self, data):
         #obs_matrix = np.array([np.array([0.0] * self.num_features)]*len(data), dtype=object)
         obs_matrix = []
-        obs = np.array([np.array([0.0] * self.window_size)] * self.num_features)
+        obs = np.array([np.array([0.0] * self.num_features)] * self.window_size)
         # for each observation
         data_p = np.array(data)
-        for i, ob in enumerate(data):
-            # for each feature, add an array of window_size elements
-            for j in range(0,self.num_features):
-                #print("obs=",obs)
-                #print("data_p=",data_p[i, j * self.window_size : (j+1) * self.window_size])
-                obs[j] = data_p[i, j * self.window_size : (j+1) * self.window_size]
-                #obs[j] = ob[0]
+        num_rows = len(data)
+        # counter of rows of data array
+        c_row = self.window_size - 1
+        while c_row < num_rows:
+            # invert the order of the observations, in the first element is the newest value
+            for j in range(0,self.window_size):
+                obs[j] = data_p[c_row - j, :]
+            # obs_matrix contains files with observations of size (window_Size, num_features)
             obs_matrix.append(obs.copy())
+            c_row = c_row + 1
         return np.array(obs_matrix)
         
     ## Train SVMs with the training dataset using cross-validation error estimation

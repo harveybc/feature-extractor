@@ -146,7 +146,7 @@ class QPretrainer():
         num_rows = len(data)
         # counter of rows of data array
         c_row = self.window_size - 1
-        while c_row < num_rows:
+        while c_row < num_rows-1:
             # invert the order of the observations, in the first element is the newest value
             obs_cell = []
             for j in range(0,self.window_size):

@@ -77,7 +77,7 @@ class QPretrainer():
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # for observation[19][48], 19 vectors of 128-dimensional vectors,input_shape = (19, 48)
-        model.add(Conv1D(512, 5, strides=2,use_bias=False, input_shape=(self.num_features,self.window_size))) 
+        model.add(Conv1D(512, 5, strides=2,use_bias=False, input_shape=(self.num_features,self.window_size), data_format='channels_first')) 
         model.add(BatchNormalization())  
         model.add(Activation('relu'))        
         model.add(Conv1D(256, 3, use_bias=False)) 
@@ -249,7 +249,7 @@ class QPretrainer():
         lw = 0.5
         x_seq = list(range(0, self.vs.shape[0])) 
         # 0 = Buy/CloseSell/nopCloseBuy
-        print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v) )
+        print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v))
         fig=plt.figure()
         plt.plot(x_seq, self.y_v, color='darkorange', lw=lw, label='data')
         plt.plot(x_seq, y_rbf, color='navy', lw=lw, label='RBF model')

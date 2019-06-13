@@ -66,7 +66,7 @@ class QPretrainer():
         # 0.0002 = 0.127
         # 0.0005 = 0.142
         # mejor leaning rate sin batch normalization + 0.0002
-        self.learning_rate = 0.00001
+        self.learning_rate = 0.00003
         #epocsh 400, ava3 = TODO
         #epocsh 1200, ava3 = 0.66, loss=0.169
         self.epochs = 30 

@@ -88,7 +88,7 @@ class QPretrainer():
         #model.add(Conv1D(8, 3, use_bias=False))
         #model.add(BatchNormalization())
         #model.add(Activation('relu'))        
-        model.add(LSTM(units = 512, input_shape=(self.window_size, self.num_features), return_sequences = True )) 
+        model.add(LSTM(units = 512, input_shape=(self.window_size, self.num_features) )) 
         model.add(BatchNormalization()) 
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        

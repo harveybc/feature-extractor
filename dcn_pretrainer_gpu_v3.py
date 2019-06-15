@@ -183,7 +183,7 @@ class QPretrainer():
         #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251(0.241) cada epoca tardaba: 3s con 580us/step
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
-        #self.x.reshape(-1, self.num_features, self.window_size, 1)
+        self.x.reshape(-1, 1, self.window_size, self.num_features)
         
         history = self.svr_rbf.fit(self.x, self.y, validation_split=0.25, batch_size=1024, epochs=self.epochs, verbose=1)
         # list all data in history
@@ -225,7 +225,7 @@ class QPretrainer():
         
         print("self.x_v[0] = ", self.x_v[0])
         
-        #self.x_v.reshape(-1, self.num_features, self.window_size, 1)
+        self.x_v.reshape(-1, 1, self.window_size, self.num_features)
          
         y_rbf = self.svr_rbf.predict(self.x_v)
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn

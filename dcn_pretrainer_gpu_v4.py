@@ -1,7 +1,7 @@
 # svm_pretrainer: Trains a dcn for each action, exports predicted results as csv,
 #                 prints nmse and exports svm pre-trained models to be used in a 
 #                 q-agent.
-# v2 uses both classification and regression signals and decide using both of them
+# v4 do not use time distributed and uses (num_features, window_size) as inpud dimensions, since it worked better that way
 
 
 import os
@@ -79,8 +79,9 @@ class QPretrainer():
         # input shape (<num_timesteps>, <num_features>) in the default data_format='channel_last'
         model.add(Conv1D(512, 5, strides = 2, use_bias = False, activation = 'relu', input_shape=(self.num_features, self.window_size)))
         model.add(BatchNormalization())       
-        model.add(Conv1D(256, 3, use_bias=False, activation = 'relu')) 
-        model.add(BatchNormalization()) 
+        model.add(Conv1D(256, 3, use_bias=False, activation = 'relu'))
+        model.add(BatchNormalization())
+        
         #model.add(TimeDistributed(Flatten()))
         #model.add(Dropout(0.6))
         #model.add(Conv1D(8, 3, use_bias=False))
@@ -184,7 +185,7 @@ class QPretrainer():
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
         self.x = np.swapaxes(self.x, 1, 2)
-        self.x = self.x.reshape(-1, 2, self.num_features//2, self.window_size)
+        #self.x = self.x.reshape(-1, 2, self.num_features//2, self.window_size)
         
         print("self.x.shape = ", self.x.shape)
         
@@ -229,7 +230,7 @@ class QPretrainer():
         print("self.x_v[0] = ", self.x_v[0])
         
         self.x_v = np.swapaxes(self.x_v, 1, 2)
-        self.x_v = self.x_v.reshape(-1, 2, self.num_features//2, self.window_size)
+        #self.x_v = self.x_v.reshape(-1, 2, self.num_features//2, self.window_size)
          
         y_rbf = self.svr_rbf.predict(self.x_v)
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn

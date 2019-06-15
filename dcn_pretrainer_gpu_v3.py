@@ -77,7 +77,7 @@ class QPretrainer():
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # input shape (<num_timesteps>, <num_features>) in the default data_format='channel_last'
-        model.add(TimeDistributed(Conv1D(512, 5, strides = 2, use_bias = False, activation = 'relu'), input_shape=(self.window_size/3, self.num_features))) 
+        model.add(TimeDistributed(Conv1D(512, 5, strides = 2, use_bias = False, activation = 'relu'), input_shape=(3, self.window_size/3, self.num_features))) 
         model.add(TimeDistributed(BatchNormalization()))        
         model.add(TimeDistributed(Conv1D(256, 3, use_bias=False, activation = 'relu'))) 
         model.add(TimeDistributed(BatchNormalization()))  

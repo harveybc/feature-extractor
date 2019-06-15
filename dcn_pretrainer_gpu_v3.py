@@ -184,6 +184,7 @@ class QPretrainer():
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
         self.x.reshape(-1, 1, self.window_size, self.num_features)
+        
         print("self.x.shape = ", self.x.shape)
         
         history = self.svr_rbf.fit(self.x, self.y, validation_split=0.25, batch_size=1024, epochs=self.epochs, verbose=1)

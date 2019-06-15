@@ -77,16 +77,16 @@ class QPretrainer():
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # input shape (<num_timesteps>, <num_features>) in the default data_format='channel_last'
-        model.add(TimeDistributed(Conv1D(512, 5, strides = 2, use_bias = False, activation = 'relu'), input_shape=(1, self.num_features, self.window_size))) 
+        model.add(TimeDistributed(Conv1D(512, 5, strides = 2, use_bias = False, activation = 'relu'), input_shape=(5, self.num_features//5, self.window_size))) 
         model.add(TimeDistributed(BatchNormalization()))        
         model.add(TimeDistributed(Conv1D(256, 3, use_bias=False, activation = 'relu'))) 
         model.add(TimeDistributed(BatchNormalization()))  
-        model.add(TimeDistributed(Flatten()))
+        #model.add(TimeDistributed(Flatten()))
         #model.add(Dropout(0.6))
         #model.add(Conv1D(8, 3, use_bias=False))
         #model.add(BatchNormalization())
         #model.add(Activation('relu'))        
-        model.add(LSTM(units = 512 )) 
+        model.add(LSTM(units = 512)) 
         model.add(BatchNormalization()) 
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        
@@ -184,7 +184,7 @@ class QPretrainer():
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
         self.x = np.swapaxes(self.x, 1, 2)
-        self.x = self.x.reshape(-1, 1, self.num_features, self.window_size)
+        self.x = self.x.reshape(-1, 5, self.num_features//5, self.window_size)
         
         print("self.x.shape = ", self.x.shape)
         
@@ -229,7 +229,7 @@ class QPretrainer():
         print("self.x_v[0] = ", self.x_v[0])
         
         self.x_v = np.swapaxes(self.x_v, 1, 2)
-        self.x_v = self.x_v.reshape(-1, 1, self.num_features, self.window_size)
+        self.x_v = self.x_v.reshape(-1, 5, self.num_features//5, self.window_size)
          
         y_rbf = self.svr_rbf.predict(self.x_v)
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn

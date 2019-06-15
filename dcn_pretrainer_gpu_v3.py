@@ -81,7 +81,7 @@ class QPretrainer():
         model.add(TimeDistributed(BatchNormalization()))        
         model.add(TimeDistributed(Conv1D(256, 3, use_bias=False, activation = 'relu'))) 
         model.add(TimeDistributed(BatchNormalization()))  
-        
+        model.add(TimeDistributed(Flatten()))
         #model.add(Dropout(0.6))
         #model.add(Conv1D(8, 3, use_bias=False))
         #model.add(BatchNormalization())

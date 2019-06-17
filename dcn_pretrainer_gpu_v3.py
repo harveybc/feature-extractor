@@ -269,7 +269,7 @@ class QPretrainer():
         #if signal == 0:
         #    print("Validation set y_rbf = ",y_rbf)
         # plot original and predicted data of the validation dataset
-        lw = 0.5
+        lw = 0.1
         x_seq = list(range(0, self.vs.shape[0])) 
         # 0 = Buy/CloseSell/nopCloseBuy
         print("x_seq.len = ", len(x_seq) , "y.len = " ,len(self.y_v))
@@ -280,7 +280,7 @@ class QPretrainer():
         plt.ylabel('target')
         plt.title('Signal ' + str(signal))
         plt.legend()
-        fig.savefig('predict_' + str(signal) + '.png', dpi=1000)
+        fig.savefig('predict_' + str(signal) + '.png', dpi=3000)
         return mean_squared_error(self.y_v, y_rbf)
  
     ## Export the trained models and the predicted validation set predictions, print statistics 

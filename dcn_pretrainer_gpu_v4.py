@@ -3,11 +3,20 @@
 #                 q-agent.
 # v4 do not use time distributed and uses (num_features, window_size) as inpud dimensions, since it worked better that way
 
+# seed numpy random number generator to enable reproducible results
+print("Seed numpy random number generator")
+from numpy.random import seed
+seed(1)
+print("Seed tensorflow random number generator")
+from tensorflow import set_random_seed
+set_random_seed(2)
 
+# set the cuda device to be used
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
+# imports
 import sys
 from sklearn import svm
 from sklearn.model_selection import GridSearchCV
@@ -29,6 +38,8 @@ from tensorflow.python.client import device_lib
 from keras.layers import LSTM
 import csv
 import copy
+
+
 
 ## \class QPretrainer
 ## \brief Trains a SVM with data generated with q-datagen and export predicted data and model data.
@@ -66,7 +77,7 @@ class QPretrainer():
         # 0.0002 = 0.127
         # 0.0005 = 0.142
         # mejor leaning rate sin batch normalization + 0.0002
-        self.learning_rate = 0.0001 
+        self.learning_rate = 0.00003 
         #epocsh 400, ava3 = TODO
         #epocsh 1200, ava3 = 0.66, loss=0.169
         self.epochs = 30 
@@ -291,7 +302,7 @@ class QPretrainer():
 # main function 
 if __name__ == '__main__':
     #print(device_lib.list_local_devices())
-    print("TRAINING")
+    print("Training Started")
     pt = QPretrainer()
     pt.load_datasets()
     error = pt.num_s*[0.0] 

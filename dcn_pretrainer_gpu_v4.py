@@ -77,7 +77,7 @@ class QPretrainer():
         # 0.0002 = 0.127
         # 0.0005 = 0.142
         # mejor leaning rate sin batch normalization + 0.0002
-        self.learning_rate = 0.00003 
+        self.learning_rate = 0.00005 
         #epocsh 400, ava3 = TODO
         #epocsh 1200, ava3 = 0.66, loss=0.169
         self.epochs = 30 
@@ -106,11 +106,11 @@ class QPretrainer():
         #model.add(BatchNormalization()) 
         model.add(Dense(640)) 
         model.add(BatchNormalization())
-        model.add(Activation('hard_sigmoid'))
+        model.add(Activation('sigmoid'))
         #model.add(Dropout(0.2))
         model.add(Dense(320)) 
         model.add(BatchNormalization())
-        model.add(Activation('hard_sigmoid'))
+        model.add(Activation('sigmoid'))
         #model.add(Dropout(0.2))
         model.add(Dense(1, activation = 'linear')) 
         # use SGD optimizer

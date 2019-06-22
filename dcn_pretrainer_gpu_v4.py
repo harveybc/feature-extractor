@@ -77,7 +77,7 @@ class QPretrainer():
         # 0.0002 = 0.127
         # 0.0005 = 0.142
         # mejor leaning rate sin batch normalization + 0.0002
-        self.learning_rate = 0.005 
+        self.learning_rate = 0.00003
         #epocsh 400, ava3 = TODO
         #epocsh 1200, ava3 = 0.66, loss=0.169
         self.epochs = 100 
@@ -98,7 +98,13 @@ class QPretrainer():
         #model.add(Conv1D(8, 3, use_bias=False))
         #model.add(BatchNormalization())
         #model.add(Activation('relu'))        
-        model.add(LSTM(units = 64)) 
+        model.add(LSTM(units = 128)) 
+        model.add(BatchNormalization()) 
+        model.add(LSTM(units = 32)) 
+        model.add(BatchNormalization()) 
+        model.add(LSTM(units = 32)) 
+        model.add(BatchNormalization()) 
+        model.add(LSTM(units = 128)) 
         model.add(BatchNormalization()) 
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        

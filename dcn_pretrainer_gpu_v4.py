@@ -88,7 +88,7 @@ class QPretrainer():
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # input shape (<num_timesteps>, <num_features>) in the default data_format='channel_last'
-        model.add(Conv1D(512, 5, strides = 2, use_bias = False, input_shape=(self.window_size,self.num_features)))
+        model.add(Conv1D(512, 5, strides = 2, use_bias = False, input_shape=(self.num_features, self.window_size)))
         model.add(BatchNormalization())       
         #model.add(TimeDistributed(Flatten()))
         #model.add(Dropout(0.6))
@@ -194,7 +194,7 @@ class QPretrainer():
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
         #self.x = self.x.reshape(-1, 2, self.num_features//2, self.window_size)
         
-        #self.x = np.swapaxes(self.x, 1, 2)
+        self.x = np.swapaxes(self.x, 1, 2)
         
         print("self.x.shape = ", self.x.shape)
         
@@ -238,7 +238,7 @@ class QPretrainer():
         
         print("self.x_v[0] = ", self.x_v[0])
         
-        #self.x_v = np.swapaxes(self.x_v, 1, 2)
+        self.x_v = np.swapaxes(self.x_v, 1, 2)
         #self.x_v = self.x_v.reshape(-1, 2, self.num_features//2, self.window_size)
          
         y_rbf = self.svr_rbf.predict(self.x_v)

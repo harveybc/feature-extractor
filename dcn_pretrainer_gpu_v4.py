@@ -30,7 +30,7 @@ from sklearn import preprocessing
 from sklearn.metrics import confusion_matrix
 from keras.models import Sequential
 from keras.layers import Conv2D,Conv1D, MaxPooling2D, MaxPooling1D
-from keras.layers import Activation, Dropout, Flatten, Dense, BatchNormalization, TimeDistributed
+from keras.layers import Activation, Dropout, Flatten, Dense, BatchNormalization, TimeDistributed, Bidirectional
 from keras.optimizers import SGD, Adamax
 from keras.utils import multi_gpu_model
 import tensorflow as tf
@@ -99,7 +99,7 @@ class QPretrainer():
         #model.add(Conv1D(8, 3, use_bias=False))
         #model.add(BatchNormalization())
         #model.add(Activation('relu'))        
-        model.add(LSTM(units = 128, return_sequences = True)) 
+        model.add(LSTM(units = 128))
         model.add(BatchNormalization()) 
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        

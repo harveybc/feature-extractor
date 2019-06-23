@@ -96,7 +96,7 @@ class QPretrainer():
         model.add(BatchNormalization()) 
         #model.add(Activation('relu'))   
         
-        model.add(Flatten())
+        #model.add(Flatten())
         
         model.add(LSTM(units = 128))
         model.add(BatchNormalization()) 
@@ -232,32 +232,32 @@ class QPretrainer():
         
         # TEST, remve 1 and replace by self.num_f
         self.y_v = self.vs[0:,self.num_f + signal]
-        print("signal = ",signal,"   self.y_v = ", self.y_v)
+        #print("signal = ",signal,"   self.y_v = ", self.y_v)
         #if signal == 0:
         #    print("Validation set self.x_v = ",self.x_v)
         # predict the class of in the validation set
         
         np.set_printoptions(threshold=sys.maxsize)
         
-        print("self.x_v[0] = ", self.x_v[0])
+        #print("self.x_v[0] = ", self.x_v[0])
         
         self.x_v = np.swapaxes(self.x_v, 1, 2)
         #self.x_v = self.x_v.reshape(-1, 2, self.num_features//2, self.window_size)
          
         y_rbf = self.svr_rbf.predict(self.x_v)
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
-        print("self.x_v[0].shape = ", self.x_v[0].shape)
-        print("self.y_rbf[0] = ", y_rbf[0])
+        #print("self.x_v[0].shape = ", self.x_v[0].shape)
+        #print("self.y_rbf[0] = ", y_rbf[0])
         
-        print("self.x_v[1] = ", self.x_v[1])
+        #print("self.x_v[1] = ", self.x_v[1])
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
-        print("self.x_v[1].shape = ", self.x_v[1].shape)
-        print("self.y_rbf[1] = ", y_rbf[1])
+        #print("self.x_v[1].shape = ", self.x_v[1].shape)
+        #print("self.y_rbf[1] = ", y_rbf[1])
        
-        print("self.x_v[2] = ", self.x_v[2])
+        #print("self.x_v[2] = ", self.x_v[2])
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
-        print("self.x_v[2].shape = ", self.x_v[2].shape)
-        print("self.y_rbf[2] = ", y_rbf[2])
+        #print("self.x_v[2].shape = ", self.x_v[2].shape)
+        #print("self.y_rbf[2] = ", y_rbf[2])
         
         x_v_2d = []
         # para cada observación
@@ -310,7 +310,7 @@ if __name__ == '__main__':
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     # for i in range(10, 11):
-    for i in range(8,9):
+    for i in range(0,9):
         print('Training model '+str(i))
         for j in range(0,pt.num_tests):
             print('test: ',j+1,'/',pt.num_tests)

@@ -88,18 +88,14 @@ class QPretrainer():
         # Deep Convolutional Neural Network for Regression
         model = Sequential()
         # input shape (<num_timesteps>, <num_features>) in the default data_format='channel_last'
-        model.add(Conv1D(512, 5, strides = 2, use_bias = False, activation = 'relu', input_shape=(self.num_features, self.window_size)))
+        model.add(Conv1D(512, 5, strides = 2, use_bias = False, activation = 'relu', input_shape=(self.window_size,self.num_features)))
         model.add(BatchNormalization())       
         #model.add(TimeDistributed(Flatten()))
         #model.add(Dropout(0.6))
         #model.add(Conv1D(8, 3, use_bias=False))
         #model.add(BatchNormalization())
         #model.add(Activation('relu'))        
-        model.add(Bidirectional(LSTM(units = 128, return_sequences = True)))
-        model.add(BatchNormalization()) 
-        model.add(Bidirectional(LSTM(units = 64, return_sequences = True)))
-        model.add(BatchNormalization()) 
-        model.add(Bidirectional(LSTM(units = 32)))
+        model.add(Bidirectional(LSTM(units = 128)))
         model.add(BatchNormalization()) 
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        
@@ -196,8 +192,9 @@ class QPretrainer():
         #con batch size=512(64*8): , daba: loss=0.243 vs_e=0.251(0.241) cada epoca tardaba: 3s con 580us/step
         #con batch size=1024(128*8): , daba: loss=0.1787(0.251) vs_e=0.229 cada epoca tardaba: 3s con 540us/step
         #con batch size=2048(256*8): , daba: loss=0.27 vs_e=0.26 cada epoca tardaba: 3s con 540/step
-        self.x = np.swapaxes(self.x, 1, 2)
         #self.x = self.x.reshape(-1, 2, self.num_features//2, self.window_size)
+        
+        #self.x = np.swapaxes(self.x, 1, 2)
         
         print("self.x.shape = ", self.x.shape)
         

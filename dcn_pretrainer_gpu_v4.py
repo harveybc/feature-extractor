@@ -77,10 +77,10 @@ class QPretrainer():
         # 0.0002 = 0.127
         # 0.0005 = 0.142
         # mejor leaning rate sin batch normalization + 0.0002
-        self.learning_rate = 0.00003
+        self.learning_rate = 0.00004
         #epocsh 400, ava3 = TODO
         #epocsh 1200, ava3 = 0.66, loss=0.169
-        self.epochs = 100 
+        self.epochs = 30 
         # number of validation tests to avarage during each training
         self.num_tests = 1
 
@@ -90,21 +90,16 @@ class QPretrainer():
         # input shape (<num_timesteps>, <num_features>) in the default data_format='channel_last'
         model.add(Conv1D(512, 5, strides = 2, use_bias = False, activation = 'relu', input_shape=(self.num_features, self.window_size)))
         model.add(BatchNormalization())       
+        model.add(Conv1D(32, 3, use_bias=False, activation = 'relu'))
+        model.add(BatchNormalization())
         model.add(Conv1D(256, 3, use_bias=False, activation = 'relu'))
         model.add(BatchNormalization())
-        
         #model.add(TimeDistributed(Flatten()))
         #model.add(Dropout(0.6))
         #model.add(Conv1D(8, 3, use_bias=False))
         #model.add(BatchNormalization())
         #model.add(Activation('relu'))        
         model.add(LSTM(units = 128, return_sequences = True)) 
-        model.add(BatchNormalization()) 
-        model.add(LSTM(units = 32, return_sequences = True)) 
-        model.add(BatchNormalization()) 
-        model.add(LSTM(units = 32, return_sequences = True)) 
-        model.add(BatchNormalization()) 
-        model.add(LSTM(units = 128)) 
         model.add(BatchNormalization()) 
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        

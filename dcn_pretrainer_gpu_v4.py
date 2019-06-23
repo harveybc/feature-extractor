@@ -238,7 +238,7 @@ class QPretrainer():
         
         print("self.x_v[0] = ", self.x_v[0])
         
-        self.x_v = np.swapaxes(self.x_v, 1, 2)
+        #self.x_v = np.swapaxes(self.x_v, 1, 2)
         #self.x_v = self.x_v.reshape(-1, 2, self.num_features//2, self.window_size)
          
         y_rbf = self.svr_rbf.predict(self.x_v)

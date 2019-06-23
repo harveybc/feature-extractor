@@ -92,7 +92,7 @@ class QPretrainer():
         model.add(BatchNormalization())       
         #model.add(TimeDistributed(Flatten()))
         #model.add(Dropout(0.6))
-        model.add(Conv1D(256, 3, use_bias=False))
+        model.add(Conv1D(256, 3, use_bias=False)) 
         model.add(BatchNormalization())
         #model.add(Activation('relu'))        
         model.add(LSTM(units = 128))

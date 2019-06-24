@@ -275,7 +275,7 @@ class QPretrainer():
         #    wr = csv.writer(myfile)
         #    wr.writerows(self.x_v)
         print("Finished generating validation set observations.")
-        with open('output_act.csv' , 'w', newline='') as myfile:
+        with open('output_act_'+ str(signal) +'.csv' , 'w', newline='') as myfile:
             wr = csv.writer(myfile)
             wr.writerows(y_rbf)
         print("Finished generating validation set actions per observation.") 

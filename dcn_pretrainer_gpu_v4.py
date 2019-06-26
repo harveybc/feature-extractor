@@ -98,7 +98,7 @@ class QPretrainer():
         
         #model.add(Flatten())
         
-        model.add(LSTM(units = 128))
+        model.add(Bidirectional(LSTM(units = 128)))
         model.add(BatchNormalization()) 
         #model.add(LSTM(units = 32, return_sequences = True, dropout = 0.4,  input_shape=(self.num_features,self.window_size)))            
         #model.add(LSTM(units = 16, return_sequences = True, dropout = 0.4, input_shape=(self.num_features,self.window_size)))                        

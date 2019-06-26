@@ -1,7 +1,9 @@
 # svm_pretrainer: Trains a dcn for each action, exports predicted results as csv,
 #                 prints nmse and exports svm pre-trained models to be used in a 
 #                 q-agent.
-# v4 do not use time distributed and uses (num_features, window_size) as inpud dimensions, since it worked better that way
+# v5 produces a 10 output dcn, one for each action signal TODO in V6: cambiar 10 num_output por 
+# valor configurable en salida de el encoder (feature extractor) de un autoencoder
+# que alimenta una DCN/LSTM que produce las salidas reales normalizadas (dir/nop/stop, sl,tp, vol)
 
 # seed numpy random number generator to enable reproducible results
 print("Seed numpy random number generator")

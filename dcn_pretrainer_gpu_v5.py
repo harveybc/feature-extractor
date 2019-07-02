@@ -114,7 +114,7 @@ class QPretrainer():
         model.add(BatchNormalization())
         model.add(Activation('sigmoid'))
         #model.add(Dropout(0.2))
-        model.add(Dense(10, activation = 'linear')) 
+        model.add(Dense(1, activation = 'linear')) 
         # use SGD optimizer
         opt = Adamax(lr=self.learning_rate)
         #paralell_model = multi_gpu_model(model, gpus=2)

@@ -176,7 +176,7 @@ class QPretrainer():
         print("Formating of data for DCN input performed succesfully.")
         return np.array(obs_matrix)
         
-    ## Train SVMs with the training dataset using cross-validation error estimation
+    ## Train SVMs with the training dataset using c ross-validation error estimation
     ## Returns best parameterse
     def train_model(self, signal):
         #converts to nparray
@@ -312,7 +312,7 @@ if __name__ == '__main__':
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     # for i in range(10, 11):
-    for i in range(0,10):
+    for i in range(0,2):
         print('Training model '+str(i))
         for j in range(0,pt.num_tests):
             print('test: ',j+1,'/',pt.num_tests)

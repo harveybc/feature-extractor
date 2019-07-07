@@ -312,7 +312,7 @@ if __name__ == '__main__':
     error_ant = pt.num_s*[0.0]
     error_accum = pt.num_s*[0.0]
     # for i in range(10, 11):
-    for i in [0,1,2,3,4,5,6,7,8]:
+    for i in [0,1,3,4]:
         print('Training model '+str(i))
         for j in range(0,pt.num_tests):
             print('test: ',j+1,'/',pt.num_tests)

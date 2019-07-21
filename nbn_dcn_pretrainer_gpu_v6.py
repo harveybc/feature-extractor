@@ -212,6 +212,9 @@ class QPretrainer():
         
         print("layer_output.shape = ",layer_output.shape)
         print("layer_output = ", layer_output)
+        
+        # TODO: generar csv de layer_output para luego concatenarlo con los datos del dataset usado en el gym-forex-NEAT 
+        
         # list all data in history
         print(history.history.keys())
         # summarize history for accuracy

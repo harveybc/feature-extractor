@@ -214,8 +214,8 @@ class QPretrainer():
         self.layer_output = get_3rd_layer_output([self.x])[0]
         np.savetxt("layer_output.csv", self.layer_output, delimiter=",")
         
-        print("layer_output.shape = ",layer_output.shape)
-        print("layer_output = ", layer_output)
+        print("layer_output.shape = ",self.layer_output.shape)
+        print("layer_output = ", self.layer_output)
         
         # TODO: generar csv de layer_output para luego concatenarlo con los datos del dataset usado en el gym-forex-NEAT 
         

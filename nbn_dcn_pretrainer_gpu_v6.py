@@ -85,6 +85,9 @@ class QPretrainer():
         self.epochs = 30 
         # number of validation tests to avarage during each training
         self.num_tests = 1
+        self.layer_output = []
+        self.layer_output_v = []
+        
 
     def set_dcn_model_r(self):
         # Deep Convolutional Neural Network for Regression
@@ -208,7 +211,8 @@ class QPretrainer():
         # get the bottleneck features 
         get_3rd_layer_output = K.function([self.svr_rbf.layers[0].input],
                                   [self.svr_rbf.layers[7].output])
-        layer_output = get_3rd_layer_output([self.x])[0]
+        self.layer_output = get_3rd_layer_output([self.x])[0]
+        np.savetxt("layer_output.csv", self.layer_output, delimiter=",")
         
         print("layer_output.shape = ",layer_output.shape)
         print("layer_output = ", layer_output)
@@ -258,6 +262,11 @@ class QPretrainer():
         #self.x_v = self.x_v.reshape(-1, 2, self.num_features//2, self.window_size)
          
         y_rbf = self.svr_rbf.predict(self.x_v)
+        # get the bottleneck features 
+        get_3rd_layer_output = K.function([self.svr_rbf.layers[0].input],
+                                  [self.svr_rbf.layers[7].output])
+        self.layer_output_v = get_3rd_layer_output([self.x_v])[0]
+        np.savetxt("layer_output_v.csv", self.layer_output_v, delimiter=",")
         # TODO: test, quitar cuando x_v sea igual a obs de agend_dcn
         #print("self.x_v[0].shape = ", self.x_v[0].shape)
         #print("self.y_rbf[0] = ", y_rbf[0])

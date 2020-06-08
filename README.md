@@ -1,6 +1,6 @@
 # Feature Extractor 
 
-Plug-in based feature extractor, includes modules for a configurable model trainer, evaluator and a training visualizer with Web interface and serverless database. __Work In Progress, NOT USABLE YET__.
+Plug-in based feature extractor, includes modules for a configurable model trainer, evaluator and a training/evaluation visualizer with Web interface and serverless database. __Work In Progress, NOT USABLE YET__.
 
 [![Build Status](https://travis-ci.org/harveybc/feature-eng.svg?branch=master)](https://travis-ci.org/harveybc/feature-eng)
 [![Documentation Status](https://readthedocs.org/projects/docs/badge/?version=latest)](https://harveybc-feature-eng.readthedocs.io/en/latest/)
@@ -10,20 +10,19 @@ Plug-in based feature extractor, includes modules for a configurable model train
 ## Description
 
 Implements modular components for feature extraction, it can be expanded by installing plugins for each module, there are 3 modules implemented:
-* Trainer: load the data to be processed
-* Evaluator: perform feature engineering operations on loaded data 
-* Visualizer: save the results of the feature engineering operations
+* Trainer: Trains a machine learning model and saves the pre-trained model.
+* Evaluator: Transforms an input dataset using a pre-trained model.
+* Visualizer: Uses a Web UI to visualize plots or statistics with the data generated during training or evaluation (i.e. some error measurement).
 
 There are also three types of plugins:
-* Input plugins: load the data to be processed
-* Operations plugins: perform feature engineering operations on loaded data 
-* Output plugins: save the results of the feature engineering operations
+* Input plugins: load the data to be processed.
+* Operations plugins: perform feature extraction operations on loaded data. 
+* Output plugins: save the results of the feature engineering operations.
+* Visualization plugins: save data to be plotted by the visualizer module during training or evaluation.
 
-It includes some pre-installed plugins:
-* Heuristic training signal generator
-* MSSA decomposer
-* MSSA predictor
-* CSV file input and output plugins
+It includes some pre-installed plugins (feature extractors):
+* Keras hybrid 1D DeepConv/LSTM trainer and evaluator.
+* Keras autoencoder trainer and encoder evaluator.
 
 Usable both from command line and from class methods library.
 

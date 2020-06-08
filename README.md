@@ -1,6 +1,6 @@
 # Feature Extractor 
 
-Plug-in based feature extractor, includes a configurable model trainer ,model evaluator and a training visualizer with Web interface and serverless database. __Work In Progress, NOT USABLE YET__.
+Plug-in based feature extractor, includes modules for a configurable model trainer, evaluator and a training visualizer with Web interface and serverless database. __Work In Progress, NOT USABLE YET__.
 
 [![Build Status](https://travis-ci.org/harveybc/feature-eng.svg?branch=master)](https://travis-ci.org/harveybc/feature-eng)
 [![Documentation Status](https://readthedocs.org/projects/docs/badge/?version=latest)](https://harveybc-feature-eng.readthedocs.io/en/latest/)
@@ -9,7 +9,12 @@ Plug-in based feature extractor, includes a configurable model trainer ,model ev
 
 ## Description
 
-Implements modular components for feature engineering, it can be expanded by installing plugins, there are three types of plugins:
+Implements modular components for feature extraction, it can be expanded by installing plugins for each module, there are 3 modules implemented:
+* Trainer: load the data to be processed
+* Evaluator: perform feature engineering operations on loaded data 
+* Visualizer: save the results of the feature engineering operations
+
+There are also three types of plugins:
 * Input plugins: load the data to be processed
 * Operations plugins: perform feature engineering operations on loaded data 
 * Output plugins: save the results of the feature engineering operations

@@ -64,13 +64,13 @@ Each module is implemented as a console command:
 
 ### Command-Line Parameters
 
-Parameters of the trainer module:
+Parameters of the trainer and evaluator modules:
 
 * __--list_plugins__: Shows a list of available plugins.
-* __--core_plugin <ops_plugin_name>__: Feature engineering core operations plugin to process an input dataset.
+* __--core_plugin <core_plugin_name>__: Feature engineering core operations plugin to process an input dataset.
 * __--input_plugin <input_lugin_name>__: Input dataset importing plugin. Defaults to csv_input.
 * __--output_plugin <output_plugin_name>__: Output dataset exporting plugin. Defaults to csv_output.
-* __--visualizer_plugin <output_plugin_name>__: Output dataset exporting plugin. Defaults to csv_output.
+* __--visualizer_plugin <visualizer_plugin_name>__: Output dataset exporting plugin. Defaults to csv_output.
 * __--help, -h__: Shows help.
 
 ## Examples of usage
@@ -79,11 +79,11 @@ The following examples show both the class method and command line uses for one 
 
 ### Example: Usage via CLI to list installed plugins
 
-> feature_eng --list_plugins
+> fe-trainer --list_plugins
 
 ### Example: Usage via CLI to execute an installed plugin with its parameters
 
-> feature_eng --plugin heuristic_ts --input_file "tests/data/test_input.csv"
+> fe-trainer --core_plugin conv_lstm_trainer  --input_file "tests/data/test_input.csv"
 
 ### Example: Usage via Class Methods (HeuristicTS plugin)
 

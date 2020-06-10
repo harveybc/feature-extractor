@@ -75,7 +75,7 @@ Parameters of the trainer and evaluator modules:
 
 ## Examples of usage
 
-The following examples show both the class method and command line uses for one module, for examples of other plugins, please see the specific module´s documentation.
+The following examples show both the class method and command line uses for the trainer module, for examples of other plugins, please see the specific module´s documentation.
 
 ### Example: Usage via CLI to list installed plugins
 

@@ -1,6 +1,6 @@
 # FeatureExtractor: Visualizer
 
-Uses a Web UI to visualize plots or statistics with the data generated during training or evaluation (i.e. some error measurement).
+Uses a Web UI to visualize plots and statistics with the data generated during feaure-extractor training or evaluation.
 
 [![Build Status](https://travis-ci.org/harveybc/feature_eng.svg?branch=master)](https://travis-ci.org/harveybc/feature_eng)
 [![Documentation Status](https://readthedocs.org/projects/docs/badge/?version=latest)](https://harveybc-feature_eng.readthedocs.io/en/latest/)
@@ -9,9 +9,11 @@ Uses a Web UI to visualize plots or statistics with the data generated during tr
 
 ## Description
 
-Performs MSSA decomposition of an input dataset, uses a configurable number of output channels and a configurable window size, dividing the generate a prediction for each input feature and the output dataset has num_rows = input_num_rows-(window_size+forward_ticks).
+Visualize via Web, data obtained from an input plugin, the data obtained via the input plugin may contain batch or real-time results of multiple feature-extractor trainers or evaluators (from now on called processes).  By default uses a Sqlite input plugin.  
 
-Optionally, this plugin calculate the error (MSE) between the input dataset and the output dataset. 
+It uses multiple output visualization plugins, each of which generate a new element in the feature-extractor dashboard views of the feature-extractor processes.  By default uses output plugins for: real-time MSE visualization during training and batch calculated MSE from the evaluation of a pre-trained feature-extractor on a validation dataset. 
+
+The visualizer uses a JSON configuration file for setting the Web service parameters and the configuration of the input and output plugins.
 
 ## Installation
 

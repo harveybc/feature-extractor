@@ -1,6 +1,6 @@
-# FeatureEng: MSSA-Predictor
+# FeatureExtractor: Visualizer
 
-Performs sliding window, tick by tick Multivariate Singular Spectrum Analysis (MSSA) of an input dataset and make a prediction of a configurable number of ticks forward for each feature of the input dataset.
+Uses a Web UI to visualize plots or statistics with the data generated during training or evaluation (i.e. some error measurement).
 
 [![Build Status](https://travis-ci.org/harveybc/feature_eng.svg?branch=master)](https://travis-ci.org/harveybc/feature_eng)
 [![Documentation Status](https://readthedocs.org/projects/docs/badge/?version=latest)](https://harveybc-feature_eng.readthedocs.io/en/latest/)
@@ -19,7 +19,7 @@ The plugin is pre-installed with the feature_eng package, the instructions are d
 
 ### Command-Line Execution
 
-The plugin's core method can be executed by loading the plugin by instantiating a FeatureEng class with plugin-specific configuration parameters and also, it can be used from the console command feature_eng, available after installing the [feature_eng package](../master/README.md):
+The plugin's core method can be executed by loading the plugin by instantiating a FeatureExtractor class with plugin-specific configuration parameters and also, it can be used from the console command feature_eng, available after installing the [feature_eng package](../master/README.md):
 > feature_eng --core_plugin mssa_predictor --input_file <input_dataset> <optional_parameters>
 
 ### Command-Line Parameters
@@ -37,7 +37,7 @@ The plugin's core method can be executed by loading the plugin by instantiating 
 The following example show how to configure and execute the core plugin.
 
 ```python
-from feature_eng.feature_eng import FeatureEng
+from feature_eng.feature_eng import FeatureExtractor
 # configure parameters (same variable names as command-line parameters)
 class Conf:
     def __init__(self):
@@ -47,7 +47,7 @@ class Conf:
 conf = Conf()
 # initialize and execute the core plugin, loading the dataset with the default feature_eng 
 # input plugin (load_csv), and saving the results using the default output plugin (store_csv). 
-fe = FeatureEng(conf)
+fe = FeatureExtractor(conf)
 ```
 
 

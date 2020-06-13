@@ -2,17 +2,17 @@
 
 Plug-in based feature extractor, includes modules for a configurable model trainer, evaluator and a training/evaluation visualizer with Web interface and serverless database. __Work In Progress, NOT USABLE YET__.
 
-[![Build Status](https://travis-ci.org/harveybc/feature-eng.svg?branch=master)](https://travis-ci.org/harveybc/feature-eng)
-[![Documentation Status](https://readthedocs.org/projects/docs/badge/?version=latest)](https://harveybc-feature-eng.readthedocs.io/en/latest/)
-[![BCH compliance](https://bettercodehub.com/edge/badge/harveybc/feature-eng?branch=master)](https://bettercodehub.com/)
-[![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/harveybc/feature-eng/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/harveybc/feature-extractor.svg?branch=master)](https://travis-ci.org/harveybc/feature-extractor)
+[![Documentation Status](https://readthedocs.org/projects/docs/badge/?version=latest)](https://harveybc-feature-extractor.readthedocs.io/en/latest/)
+[![BCH compliance](https://bettercodehub.com/edge/badge/harveybc/feature-extractor?branch=master)](https://bettercodehub.com/)
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/harveybc/feature-extractor/blob/master/LICENSE)
 
 ## Description
 
 Implements modular components for feature extraction, it can be expanded by installing plugins for each module, there are 3 modules implemented:
-* Trainer: Trains a machine learning model and saves the pre-trained model (feature-extractor).
-* Evaluator: Transforms an input dataset using a pre-trained model.
-* Visualizer: Uses a Web UI to visualize plots or statistics with the data generated during training or evaluation (i.e. some error measurement).
+* [Trainer Readme](../master/README_trainer.md): Trains a machine learning model and saves the pre-trained model (feature-extractor).
+* [Evaluator Readme](../master/README_evaluator.md): Transforms an input dataset using a pre-trained model.
+* [Visualizer Readme](../master/README_visualizer.md): Uses a Web UI to visualize plots or statistics with the data generated during training or evaluation (i.e. some error measurement).
 
 There are also three types of plugins:
 * Input plugins: load the data to be processed.
@@ -85,84 +85,20 @@ The following examples show both the class method and command line uses for the 
 
 > fe-trainer --core_plugin conv_lstm_trainer  --input_file "tests/data/test_input.csv"
 
-### Example: Usage via Class Methods (HeuristicTS plugin)
+### Example: Usage via Class Methods conv_lstm_trainer plugin)
 
-The following example show how to configure and execute the core plugin.
+The following example show how to configure and execute the core plugin of the trainer.
 
 ```python
-from feature_eng.feature_eng import FeatureEng
+from feature_extractor.feature_extractor import FeatureExtractor
 # configure parameters (same variable names as command-line parameters)
 class Conf:
     def __init__(self):
-        self.core_plugin = "heuristic_ts"
+        self.core_plugin = "conv_lstm_trainer"
         self.input_file = "tests/data/test_input.csv"
 # initialize instance of the Conf configuration class
 conf = Conf()
-# initialize and execute the core plugin, loading the dataset with the default feature_eng 
+# initialize and execute the core plugin, loading the dataset with the default feature_extractor 
 # input plugin (load_csv), and saving the results using the default output plugin (store_csv). 
-fe = FeatureEng(conf)
-```re()
+fe = FeatureExtractor(conf)
 ```
-
-## Pre-Installed Plugins
-
-All the plugin modules and their CLI commands are installed with the feature-eng package, the following sections describe each module briefly and link to each module's basic documentation. 
-
-Additional detailed Sphinix documentation for all modules can be generated in HTML format with the optional step 7 of the installation process, it contains documentation of the classes and methods of all modules in the feature-eng package. 
-
-## Heuristic Training Signal Generator
-
-Generates an ideal training signal for trading using EMA_fast forwarded a number of ticks minus current EMA_slow as buy signal.
-
-See [heuristic_ts Readme](../master/README_heuristic_ts.md) for detailed description and usage instructions.
-
-## Multivariate Singular Spectrum Analysis (MSSA) Decomposer. 
-
-Performs MSSA decomposition, save the output dataset containing a configurable number of components per feature or the sum of a configurable number of components.
-
-See [MSSA Decomposer Readme](../master/README_mssa_decomposer.md) for detailed description and usage instructions.
-
-## MSSA Predictor
-
-Performs MSSA prediction for a configurable number of forward ticks, save the .output dataset containing the prediction for a configurable number of channels or its sum.
-
-See [MSSA Predictor Readme](../master/README_mssa_predictor.md) for detailed description and usage instructions.
-
-
-## Plugin Creation and Installation
-
-To create a plugin, there are two ways, the first one allows to install the plugin from an external python package using setuptools and is useful for testing your plugins, the second way is to add a new pre-installed plugin to the feature-eng package by making a pull request to my repo so i can review it and merge it. Both methods are described in the following sections.
-
-### External Plugins
-
-The following procedure allows to create a plugin as a python package with setuptools, install it, verify that is installed and use the plugin.
-
-1. Create a new package with the same directory structure of the [standardizer plugin example](../master/examples/standardizer/)
-2. Edit the setup.py or setup.cfg and add your package name as a feature_eng plugin (with a correspondent plugin name) in the entry_points section as follows:
-> setup(
->     ...
->     entry_points={'feature_eng.plugins': '<PLUGIN_NAME> = <YOUR_PACKAGE_NAME>'},
->     ...
-> )
-3. Install your package as usual
-> python setup.py install
-4. Verify that your plugin was registered
-> feature_eng --list_plugins
-Check that <PLUGIN_NAME> appears in the list of installed plugins.
-5. Use your newly installed plugin
-> feature_eng --core_plugin <PLUGIN_NAME> --plugin_option1 --plugin_option2 ...
-
-### Internal Plugins 
-
-The following procedure allows to contribute to the feature_eng repository by creating a new plugin to be included in the pre-installed plugins.
-1. Fork the feature_eng repository via the github homepage 
-2. Clone your fork using github Desktop or via command line into a local directory
-3. Create a new branch called with the name of the new plugin using github Desktop and select it
-4. Cd to the feature_eng fork directory
-5. Create the new module implementation inside the plugins directory, following the structure of the existing plugins
-6. Create the new module tests inside the tests directory, following the structure of the existing tests
-7. Make a commit and push to save your changes to github
-8. Make a Pull Request to the master branch of my feature_eng repo so i can review the changes and merge them with my existing code.
-
-More detailed collaboration instructions soon.
-

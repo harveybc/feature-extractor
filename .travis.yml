@@ -22,6 +22,8 @@ install:
 before_script:
   - git config --global user.email "harveybc@ingeni-us.com"
   - git config --global user.name "harveybc"
+  - git clone https://github.com/harveybc/pymssa
+
 script:
   - python setup.py develop
   - tox

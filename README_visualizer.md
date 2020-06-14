@@ -23,7 +23,7 @@ The component is pre-installed with the feature_extractor package, the instructi
 
 The plugin's core method can be executed by loading the plugin by instantiating a FeatureExtractor class with plugin-specific configuration parameters and also, it can be used from the console command fe_visualizer, available after installing the [feature_extractor package](../master/README.md):
 
-> fe_visualizer --config <JSON_configuration_file>
+> fe_visualizer --config_file <JSON_configuration_file>
 
 ### Command-Line Parameters
 

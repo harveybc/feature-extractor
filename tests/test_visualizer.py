@@ -5,7 +5,7 @@ import csv
 import sys
 import os
 from filecmp import cmp
-from feature_eng.feature_eng import FeatureEng
+from feature_extractor.feature_extractor import FeatureExtractor
 import matplotlib.pyplot as plt
 
 __author__ = "Harvey Bastidas"
@@ -13,7 +13,7 @@ __copyright__ = "Harvey Bastidas"
 __license__ = "mit"
 
 class Conf:
-    """ This method initialize the configuration variables for a plugin """
+    """ This method initialize the configuration variables for the visualization module  """
     
     def __init__(self):
         """ Component Tests Constructor """

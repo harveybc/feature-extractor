@@ -7,6 +7,7 @@ import os
 from filecmp import cmp
 from feature_extractor.feature_extractor import FeatureExtractor
 import matplotlib.pyplot as plt
+import requests
 
 __author__ = "Harvey Bastidas"
 __copyright__ = "Harvey Bastidas"
@@ -32,5 +33,9 @@ class TestMSSAPredictor:
         os.system("fe_visualizer --config_file "
             + self.conf.config_file
         )
-        # assertion
-        assert (cols_o == self.cols_d) and (rows_o == self.rows_d-(2*(self.conf.window_size+self.conf.forward_ticks)))
+        # assert if after the command is executed, a curl of the landing page returns code 200 and size > nbytes.
+        response = requests.get('localhost:7777')
+        print ("response.code", response.status_code)
+        print ("response.content", response.content)
+        print ("len(response.content)", response.content)
+        assert (response.status = 200)

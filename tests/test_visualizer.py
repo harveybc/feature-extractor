@@ -28,12 +28,9 @@ class TestMSSAPredictor:
 
     def test_C05T01_cmdline(self):
         """ Assess if a page can be downloaded and its size is bigger than the error page """
+        # os.spawnl(os.P_DETACH, 'some_long_running_command')
         os.system("fe_visualizer --config_file "
             + self.conf.config_file
         )
-        # get the size of the output dataset
-        rows_d, cols_d = self.get_size_csv(self.conf.input_file)
-        # get the size of the output dataset
-        rows_o, cols_o = self.get_size_csv(self.conf.output_file)
         # assertion
         assert (cols_o == self.cols_d) and (rows_o == self.rows_d-(2*(self.conf.window_size+self.conf.forward_ticks)))

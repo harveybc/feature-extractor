@@ -3,7 +3,7 @@
 This File contains the LoadCSV class plugin. 
 """
 
-from feature_eng.plugin_base import PluginBase
+from feature_extractor.plugin_base import PluginBase
 from numpy import genfromtxt
 from sys import exit
 
@@ -12,7 +12,7 @@ __copyright__ = "Harvey Bastidas"
 __license__ = "mit"
 
 class LoadCSV(PluginBase): 
-    """ input plugin for the FeatureEng class, after initialization, the input_ds attribute is set """
+    """ input plugin for the FeatureExtractor class, after initialization, the input_ds attribute is set """
     
     def __init__(self, conf):
         """ Initializes PluginBase. Do NOT delete the following line whether you have initialization code or not. """

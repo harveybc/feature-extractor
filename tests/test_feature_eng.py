@@ -5,7 +5,7 @@ import csv
 import sys
 import os 
 from filecmp import cmp
-from feature_eng.feature_eng import FeatureEng
+from feature_extractor.feature_extractor import FeatureExtractor
 
 __author__ = "Harvey Bastidas"
 __copyright__ = "Harvey Bastidas"
@@ -29,7 +29,7 @@ class Conf:
         self.forward_ticks = 5    
         self.use_current = False  
 
-class TestFeatureEng:
+class TestFeatureExtractor:
     """ Component Tests  """
 
     def setup_method(self, test_method):
@@ -58,14 +58,14 @@ class TestFeatureEng:
     def test_C01T01_list_plugins(self):
         """ Asses that plugin list has more than zero installed plugins """
         self.conf.list_plugins = True
-        self.fe = FeatureEng(self.conf)
-        """ FeatureEng instance """
+        self.fe = FeatureExtractor(self.conf)
+        """ FeatureExtractor instance """
         # assertion
         assert (len(self.fe.discovered_core_plugins) > 0)
 
     def test_C01T02_plugin_load(self):
         """ Loads HeuristicTS using parameters from setup_method() and Asses that output file has 1 column and num_ticks - forward_ticks """
-        self.fe = FeatureEng(self.conf)
+        self.fe = FeatureExtractor(self.conf)
         # get the number of rows and cols from out_file
         rows_o, cols_o = self.get_size_csv(self.conf.output_file)
         # assertion
@@ -73,7 +73,7 @@ class TestFeatureEng:
 
     def test_C01T03_cmdline_plugin_load(self):
         """ same as C01T02, but via command-line """
-        os.system("feature_eng --core_plugin heuristic_ts --input_file "
+        os.system("feature_extractor --core_plugin heuristic_ts --input_file "
             + self.conf.input_file
             + " --output_file "
             + self.conf.output_file

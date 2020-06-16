@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" This File contains the FeatureEng class, has methods for listing and loading plugins and execute their entry point. """
+""" This File contains the FeatureExtractor class, has methods for listing and loading plugins and execute their entry point. """
 
 import argparse
 import sys
@@ -7,9 +7,9 @@ import logging
 import numpy as np
 import csv
 import pkg_resources
-from feature_eng.feature_eng_base import FeatureEngBase
+from feature_extractor.feature_extractor_base import FeatureExtractorBase
 
-# from feature_eng import __version__
+# from feature_extractor import __version__
 
 __author__ = "Harvey Bastidas"
 __copyright__ = "Harvey Bastidas"
@@ -18,15 +18,15 @@ __license__ = "mit"
 _logger = logging.getLogger(__name__)
 
 
-class FeatureEng(FeatureEngBase):
+class FeatureExtractor(FeatureExtractorBase):
     """ Base class. """
 
     def __init__(self, conf):
-        """ Initializes FeatureEngBase.  """
+        """ Initializes FeatureExtractorBase.  """
         super().__init__(conf)
         
     def main(self, args):
-        """ Starts an instance via command line parameters, uses the FeatureEngBase.core() method.
+        """ Starts an instance via command line parameters, uses the FeatureExtractorBase.core() method.
             Starts logging, parse command line arguments and start core.
 
         Args:
@@ -43,7 +43,7 @@ class FeatureEng(FeatureEngBase):
                 _logger.debug("Printing plugins.")
                 self.print_plugins()
             else: 
-                _logger.debug("Error: No core plugin provided. for help, use feature_eng --help")
+                _logger.debug("Error: No core plugin provided. for help, use feature_extractor --help")
         _logger.info("Script end.")
 
     def find_plugins(self):
@@ -51,17 +51,17 @@ class FeatureEng(FeatureEngBase):
         self.discovered_input_plugins = {
             entry_point.name: entry_point.load()
             for entry_point
-            in pkg_resources.iter_entry_points('feature_eng.plugins_input')
+            in pkg_resources.iter_entry_points('feature_extractor.plugins_input')
         }
         self.discovered_output_plugins = {
             entry_point.name: entry_point.load()
             for entry_point
-            in pkg_resources.iter_entry_points('feature_eng.plugins_output')
+            in pkg_resources.iter_entry_points('feature_extractor.plugins_output')
         }
         self.discovered_core_plugins = {
             entry_point.name: entry_point.load()
             for entry_point
-            in pkg_resources.iter_entry_points('feature_eng.plugins_core')
+            in pkg_resources.iter_entry_points('feature_extractor.plugins_core')
         }
 
     def load_plugins(self):
@@ -104,8 +104,8 @@ class FeatureEng(FeatureEngBase):
         
 def run(args):
     """ Entry point for console_scripts """
-    feature_eng = FeatureEng(None)
-    feature_eng.main(args)
+    feature_extractor = FeatureExtractor(None)
+    feature_extractor.main(args)
 
 if __name__ == "__main__":
     run(sys.argv)

@@ -3,7 +3,7 @@
 This File contains the MSSADecomposer class plugin.
 """
 
-from feature_eng.plugin_base import PluginBase
+from feature_extractor.plugin_base import PluginBase
 import numpy as np
 from sys import exit
 from pymssa import MSSA
@@ -17,7 +17,7 @@ __copyright__ = "Harvey Bastidas"
 __license__ = "mit"
 
 class MSSADecomposer(PluginBase):
-    """ Core plugin for the FeatureEng class, after initialization, saves the data and after calling the store_data method """
+    """ Core plugin for the FeatureExtractor class, after initialization, saves the data and after calling the store_data method """
 
     def __init__(self, conf):
         """ Initializes PluginBase. Do NOT delete the following line whether you have initialization code or not. """

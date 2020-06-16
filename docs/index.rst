@@ -1,5 +1,5 @@
 ============
-FeatureEng
+FeatureExtractor
 ============
 
 Implements modular components for dataset preprocessing: a data-trimmer, a standardizer, a feature selector and a sliding window data generator.

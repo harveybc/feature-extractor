@@ -13,8 +13,8 @@ from pkg_resources import VersionConflict, require
 from setuptools import setup
 from setuptools import find_packages
 
-# sys.path.append('feature_eng\\')
-# from feature_eng.heuristic_ts.heuristic_ts import HeuristicTS
+# sys.path.append('feature_extractor\\')
+# from feature_extractor.heuristic_ts.heuristic_ts import HeuristicTS
 
 try:
     require("setuptools>=38.3")

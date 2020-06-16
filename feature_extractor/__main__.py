@@ -1,5 +1,5 @@
 import sys
-import feature_eng.feature_eng as fe
+import feature_extractor.feature_extractor as fe
 
 def main(args=None):
     """The main routine."""

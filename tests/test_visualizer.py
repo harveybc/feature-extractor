@@ -37,5 +37,5 @@ class TestMSSAPredictor:
         response = requests.get('localhost:7777')
         print ("response.code", response.status_code)
         print ("response.content", response.content)
-        print ("len(response.content)", response.content)
+        print ("len(response.content)", len(response.content))
         assert (response.status = 200)

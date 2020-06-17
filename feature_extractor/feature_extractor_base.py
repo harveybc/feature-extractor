@@ -22,8 +22,7 @@ class FeatureExtractorBase():
     def __init__(self, conf):
         """ Constructor """
         self.conf = conf
- 
-            
+
         if conf != None:
          
             if not hasattr(conf, "args"):

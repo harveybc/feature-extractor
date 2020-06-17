@@ -13,5 +13,6 @@
 # Remember to also add them in setup.cfg but unpinned.
 # Example:
 numpy==1.13.3
+flask
 # scipy==1.0
 #

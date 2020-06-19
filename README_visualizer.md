@@ -19,21 +19,29 @@ The visualizer uses a JSON configuration file for setting the Web service parame
 
 The component is pre-installed with the feature_extractor package, the instructions are described in the [feature_extractor README](../master/README.md).
 
+Additionally, environment variables must be set:
+
+* For Linux and Mac:
+
+> export FLASK_APP=feature_extractor/visualizer
+> export FLASK_ENV=development
+
+* For Windows:
+
+> set FLASK_APP=feature_extractor\\visualizer
+> set FLASK_ENV=development
+
 ### Command-Line Execution
 
-The plugin's core method can be executed by loading the plugin by instantiating a FeatureExtractor class with plugin-specific configuration parameters and also, it can be used from the console command fe_visualizer, available after installing the [feature_extractor package](../master/README.md):
+For now, the execution is made vá the following commands (in the future a WSGI server line waitress will be used):
 
-> fe_visualizer --config_file <JSON_configuration_file>
+> flask run
 
-### Command-Line Parameters
+### Configuration File
 
-* __--config <filename>__: The only mandatory parameter, is the filename for the input dataset for the default feature_extractor input plugin (load_csv).
-* __--list_plugins__: Shows a list of isntalled visualization plugins.
+The visualizer uses a configuration file located in the feature_extractor/visualizer directory that sets the Web service parameters and the configuration of the input and output plugins.
 
-## Examples of usage
-
-The following example shows the contents of a basic configuration file for a visualizer.
-
+The following is the default JSON configuration file:
 
 # TODO: PEGAR CONFIG FILE CUANDO ESTÉ LISTO
 

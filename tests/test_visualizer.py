@@ -21,7 +21,7 @@ class Conf:
         self.config_file = os.path.join(os.path.dirname(__file__), "data/test_C05_config.JSON")
         
 class TestMSSAPredictor:
-    """ Component Tests  """
+    """ Component Tests """
 
     def setup_method(self, test_method):
         """ Component Tests Constructor """

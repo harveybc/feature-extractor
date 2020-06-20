@@ -43,8 +43,32 @@ The visualizer uses a configuration file located in the feature_extractor/visual
 
 The following is the default JSON configuration file:
 
-# TODO: PEGAR CONFIG FILE CUANDO ESTÉ LISTO
 
+# TODO: PEGAR CONFIG FILE CUANDO ESTÉ LISTO
+{
+  "service_port": "7777",
+  "input_plugin": "vis_input_sqlite",
+  "output_plugins": true,
+  "age": 27,
+  "address": {
+    "streetAddress": "21 2nd Street",
+    "city": "New York",
+    "state": "NY",
+    "postalCode": "10021-3100"
+  },
+  "phoneNumbers": [
+    {
+      "type": "home",
+      "number": "212 555-1234"
+    },
+    {
+      "type": "office",
+      "number": "646 555-4567"
+    }
+  ],
+  "children": [],
+  "spouse": null
+}
 
 
 

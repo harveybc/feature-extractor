@@ -45,32 +45,14 @@ The following is the default JSON configuration file:
 
 
 # TODO: PEGAR CONFIG FILE CUANDO ESTÉ LISTO
-
 {
-  "service_port": 7777,
+  "service_port": "7777",
   "input_plugin": "vis_input_sqlite",
-  "input_plugin_config": {
-    "filename": "test/db/plots.sqlite",
-    "tables": [
-	    {
-			"table_name": "training_test",
-			"online":  true,
-			"fields": [
-				"mse",
-				"mae",
-				"r2"
-			]
-		},
-		{
-			"table_name": "evaluation_test",
-			"online":  false,
-			"fields": [
-				"mse",
-				"mae",
-				"r2"
-			]
-		},
-	],
+  "output_plugins": true,
+  "age": 27,
+  "address": {
+    "streetAddress": "21 2nd Street",
+    "city": "New York",
     "state": "NY",
     "postalCode": "10021-3100"
   },

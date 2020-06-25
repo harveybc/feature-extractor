@@ -1,4 +1,4 @@
-from flaskr import create_app
+from feature_extractor.visualizer import create_app
 
 
 def test_config():

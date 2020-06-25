@@ -3,9 +3,9 @@ import tempfile
 
 import pytest
 
-from flaskr import create_app
-from flaskr.db import get_db
-from flaskr.db import init_db
+from feature_extractor.visualizer import create_app
+from feature_extractor.visualizer.db import get_db
+from feature_extractor.visualizer.db import init_db
 
 # read in SQL for populating test data
 with open(os.path.join(os.path.dirname(__file__), "data/visualizer_test_data.sql"), "rb") as f:

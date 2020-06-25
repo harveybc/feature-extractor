@@ -38,4 +38,4 @@ class TestMSSAPredictor:
         print ("response.code", response.status_code)
         print ("response.content", response.content)
         print ("len(response.content)", len(response.content))
-        assert (response.status = 200)
+        assert (response.status == 200)

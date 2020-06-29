@@ -10,9 +10,9 @@ Plug-in based feature extractor, includes modules for a configurable model train
 ## Description
 
 Implements modular components for feature extraction, it can be expanded by installing plugins for each module, there are 3 modules implemented:
-* [Trainer Readme](../master/README_trainer.md): Trains a machine learning model and saves the pre-trained model (feature-extractor).
-* [Evaluator Readme](../master/README_evaluator.md): Transforms an input dataset using a pre-trained model.
-* [Visualizer Readme](../master/README_visualizer.md): Uses a Web UI to visualize plots or statistics with the data generated during training or evaluation (i.e. some error measurement).
+* [Trainer](../master/README_trainer.md): Trains a machine learning model and saves the pre-trained model (feature-extractor).
+* [Evaluator](../master/README_evaluator.md): Transforms an input dataset using a pre-trained model.
+* [Visualizer](../master/README_visualizer.md): Uses a Web UI to visualize plots or statistics with the data generated during training or evaluation (i.e. some error measurement).
 
 There are also three types of plugins:
 * Input plugins: load the data to be processed.

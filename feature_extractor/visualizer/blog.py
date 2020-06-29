@@ -12,24 +12,24 @@ from feature_extractor.visualizer.db import get_db
 
 bp = Blueprint("blog", __name__)
 
- 
+
 @bp.route("/")
 def index():
     """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
     db = get_db()
-    training_precess = db.execute(
-        "SELECT p.id, title, body, created, author_id, username"
-        " FROM post p JOIN user u ON p.author_id = u.id"
+    training_progress = db.execute(
+        "SELECT *"
+        " FROM training_progress t JOIN processes p ON t.process_id = p.id"
         " ORDER BY created DESC"
     ).fetchall()
     validation_plots = db.execute(
-        "SELECT p.id, title, body, created, author_id, username"
-        " FROM post p JOIN user u ON p.author_id = u.id"
+        "SELECT *"
+        " FROM validation_plots t JOIN processes p ON t.process_id = p.id"
         " ORDER BY created DESC"
     ).fetchall()
     validation_stats = db.execute(
-        "SELECT p.id, title, body, created, author_id, username"
-        " FROM post p JOIN user u ON p.author_id = u.id"
+        "SELECT *"
+        " FROM validation_stats t JOIN processes p ON t.process_id = p.id"
         " ORDER BY created DESC"
     ).fetchall()
     

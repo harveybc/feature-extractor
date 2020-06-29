@@ -19,7 +19,9 @@ The visualizer uses a JSON configuration file for setting the Web service parame
 
 The component is pre-installed with the feature_extractor package, the instructions are described in the [feature_extractor README](../master/README.md).
 
-Additionally, environment variables must be set:
+### Command-Line Execution
+
+Environment variables must be set:
 
 * For Linux and Mac:
 
@@ -33,9 +35,7 @@ Additionally, environment variables must be set:
 
 > set FLASK_ENV=development
 
-### Command-Line Execution
-
-For now, the execution is made vá the following commands (in the future a WSGI server line waitress will be used):
+For now, the execution is made via the following commands (in the future a WSGI server line waitress will be used):
 
 > flask run
 

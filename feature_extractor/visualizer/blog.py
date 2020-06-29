@@ -12,7 +12,7 @@ from feature_extractor.visualizer.db import get_db
 
 bp = Blueprint("blog", __name__)
 
-
+ 
 @bp.route("/")
 def index():
     """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""

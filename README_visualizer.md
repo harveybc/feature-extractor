@@ -24,11 +24,13 @@ Additionally, environment variables must be set:
 * For Linux and Mac:
 
 > export FLASK_APP=feature_extractor/visualizer
+
 > export FLASK_ENV=development
 
 * For Windows:
 
 > set FLASK_APP=feature_extractor\\visualizer
+
 > set FLASK_ENV=development
 
 ### Command-Line Execution

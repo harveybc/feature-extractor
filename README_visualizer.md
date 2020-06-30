@@ -35,9 +35,20 @@ Environment variables must be set:
 
 > set FLASK_ENV=development
 
-For now, the execution is made via the following commands (in the future a WSGI server line waitress will be used):
+The execution is made via the following commands (in the future a WSGI server line waitress will be used):
 
 > flask run
+
+For ease of use, a script for setting the environment variables and executing the app is included, it must be executed in the root feature-extractor directory, where the scripts are located:
+
+* For Linux and Mac:
+
+> visualizer.sh
+
+* For Windows:
+
+> visualizer.bat
+
 
 ### Configuration File
 

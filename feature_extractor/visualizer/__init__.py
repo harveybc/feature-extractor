@@ -10,9 +10,8 @@ def create_app(test_config=None):
         # a default secret that should be overridden by instance config
         SECRET_KEY="dev",
         # store the database in the instance folder
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        
-        DATABASE = os.path.join(BASE_DIR, "test.sqlite")
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__)),
+        DATABASE=os.path.join(BASE_DIR, "test.sqlite")
     )
 
     if test_config is None:

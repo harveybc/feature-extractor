@@ -1,5 +1,4 @@
 {
-    "service_port": 7777,
     "input_plugin": "vis_input_sqlite",
     "input_plugin_config": {
         "filename": "test/db/plots.sqlite",

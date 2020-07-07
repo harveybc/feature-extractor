@@ -7,8 +7,8 @@ from flask import request
 from flask import url_for
 from werkzeug.exceptions import abort
 
-from visualizer.auth import login_required
-from visualizer.db import get_db
+from feature_extractor.visualizer.auth import login_required
+from feature_extractor.visualizer.db import get_db
 
 bp = Blueprint("blog", __name__)
 

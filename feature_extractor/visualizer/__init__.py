@@ -31,12 +31,12 @@ def create_app(test_config=None):
         return "Hello, World!"
 
     # register the database commands
-    from visualizer import db
+    from feature_extractor.visualizer import db
 
     db.init_app(app)
 
     # apply the blueprints to the app
-    from visualizer import auth, blog
+    from feature_extractor.visualizer import auth, blog
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(blog.bp)

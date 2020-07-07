@@ -35,7 +35,7 @@ def index():
         " ORDER BY created DESC"
     ).fetchall()
     
-    return render_template("index.html", training_progress=training_progress)
+    return render_template("visualizer/index.html", training_progress=training_progress)
 
 
 def get_post(id, check_author=True):

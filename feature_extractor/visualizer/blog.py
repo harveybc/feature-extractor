@@ -14,6 +14,7 @@ bp = Blueprint("blog", __name__)
 
 
 @bp.route("/")
+@login_required
 def index():
  #TODO: Lee config y envía como param el número de divs y un arreglo con los campos de configuración de cada div 
     """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""

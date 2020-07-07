@@ -15,14 +15,26 @@ bp = Blueprint("blog", __name__)
 
 @bp.route("/")
 def index():
-    """Show all the posts, most recent first."""
+ #TODO: Lee config y envía como param el número de divs y un arreglo con los campos de configuración de cada div 
+    """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
     db = get_db()
-    posts = db.execute(
-        "SELECT p.id, title, body, created, author_id, username"
-        " FROM post p JOIN user u ON p.author_id = u.id"
+    training_progress = db.execute(
+        "SELECT *"
+        " FROM training_progress t JOIN processes p ON t.process_id = p.id"
         " ORDER BY created DESC"
     ).fetchall()
-    return render_template("blog/index.html", posts=posts)
+    validation_plots = db.execute(
+        "SELECT *"
+        " FROM validation_plots t JOIN processes p ON t.process_id = p.id"
+        " ORDER BY created DESC"
+    ).fetchall()
+    validation_stats = db.execute(
+        "SELECT *"
+        " FROM validation_stats t JOIN processes p ON t.process_id = p.id"
+        " ORDER BY created DESC"
+    ).fetchall()
+    
+    return render_template("index.html", training_progress=training_progress)
 
 
 def get_post(id, check_author=True):

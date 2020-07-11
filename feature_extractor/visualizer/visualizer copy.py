@@ -10,13 +10,15 @@ from werkzeug.exceptions import abort
 from feature_extractor.visualizer.auth import login_required
 from feature_extractor.visualizer.db import get_db
 
-bp = Blueprint("blog", __name__)
+bp = Blueprint("visualizer", __name__)
 
 
 @bp.route("/")
 @login_required
 def index():
- #TODO: Lee config y envía como param el número de divs y un arreglo con los campos de configuración de cada div 
+ # TODO: Lee config
+ # TODO: Carga input plugin y genra variable p_data que se pasa al core plugin para que lo pase a su template
+ # TODO: envía como param el número de divs y un arreglo con los campos de configuración de cada div 
     """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
     db = get_db()
     training_progress = db.execute(
@@ -35,7 +37,7 @@ def index():
         " ORDER BY created DESC"
     ).fetchall()
     
-    return render_template("visualizer/index.html", training_progress=training_progress)
+    return render_template("visualizer/index.html", p_data = p_data)
 
 
 def get_post(id, check_author=True):
@@ -91,9 +93,9 @@ def create():
                 (title, body, g.user["id"]),
             )
             db.commit()
-            return redirect(url_for("blog.index"))
+            return redirect(url_for("visualizer.index"))
 
-    return render_template("blog/create.html")
+    return render_template("visualizer/create.html")
 
 
 @bp.route("/<int:id>/update", methods=("GET", "POST"))
@@ -118,9 +120,9 @@ def update(id):
                 "UPDATE post SET title = ?, body = ? WHERE id = ?", (title, body, id)
             )
             db.commit()
-            return redirect(url_for("blog.index"))
+            return redirect(url_for("visualizer.index"))
 
-    return render_template("blog/update.html", post=post)
+    return render_template("visualizer/update.html", post=post)
 
 
 @bp.route("/<int:id>/delete", methods=("POST",))
@@ -135,4 +137,4 @@ def delete(id):
     db = get_db()
     db.execute("DELETE FROM post WHERE id = ?", (id,))
     db.commit()
-    return redirect(url_for("blog.index"))
+    return redirect(url_for("visualizer.index"))

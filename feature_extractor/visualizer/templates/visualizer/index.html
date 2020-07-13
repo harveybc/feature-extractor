@@ -12,16 +12,13 @@
 {% endblock %}
 
 {% block content %}
-  {% for post in p_config %}
+  {% for pc in p_config['input_plugin_config']['tables']  %}
     <article class="post">
       <header>
         <div>
-          <h1>{{ post['title'] }}</h1>
-          <div class="about">by {{ post['username'] }} on {{ post['created'].strftime('%Y-%m-%d') }}</div>
+          <h1>{{ pc['title'] }}</h1>
+          <div class="about">{{ pc['table_name'] }} }}</div>
         </div>
-        {% if g.user['id'] == post['author_id'] %}
-          <a class="action" href="{{ url_for('visualizer.update.update', id=post['id']) }}">Edit</a>
-        {% endif %}
       </header>
       <p class="body">{{ post['body'] }}</p>
     </article>

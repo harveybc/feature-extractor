@@ -20,7 +20,7 @@ def index():
  # TODO: Lee config
  # TODO: Carga input plugin y genera variable p_data que se pasa al core_plugin para que lo pase a su template
     """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
-    print current_app.config['P_CONFIG']
+    print ("current_app.config['P_CONFIG'] = ", current_app.config['P_CONFIG'])
     db = get_db()
     training_progress = db.execute(
         "SELECT *"

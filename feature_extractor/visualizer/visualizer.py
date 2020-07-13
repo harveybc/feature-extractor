@@ -9,6 +9,7 @@ from werkzeug.exceptions import abort
 
 from feature_extractor.visualizer.auth import login_required
 from feature_extractor.visualizer.db import get_db
+from flask import current_app
 
 bp = Blueprint("visualizer", __name__)
 
@@ -19,6 +20,7 @@ def index():
  # TODO: Lee config
  # TODO: Carga input plugin y genera variable p_data que se pasa al core_plugin para que lo pase a su template
     """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
+    print current_app.config['P_CONFIG']
     db = get_db()
     training_progress = db.execute(
         "SELECT *"

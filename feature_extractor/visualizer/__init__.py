@@ -1,7 +1,18 @@
 import os
+import json
 
 from flask import Flask
 
+def read_plugin_config(vis_config_file=None):
+    """ Read the pulgin configuration JSON file from a path, if its None, uses a default configuration """
+    if vis_config_file != None:
+        file_path = vis_config_file
+    else:
+        file_path = os.path.dirname(os.path.abspath(__file__)) + visualizer.json
+    
+    with open(file_path) as f:
+        data = json.load(f)
+    return data
 
 def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
@@ -12,6 +23,8 @@ def create_app(test_config=None):
         SECRET_KEY="dev",
         # store the database in the instance folder
         DATABASE=os.path.join(BASE_DIR, "test.sqlite"),
+        # read plugin configuration JSON file
+        P_CONFIG = read_plugin_config()
     )
 
     if test_config is None:

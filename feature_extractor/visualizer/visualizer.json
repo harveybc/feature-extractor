@@ -1,0 +1,88 @@
+{
+    "input_plugin": "vis_input_sqlite",
+    "input_plugin_config": {
+        "filename": "test/db/plots.sqlite",
+        "tables": [
+            {
+                "table_name": "training_progress",
+                "fields": [
+                    "mse",
+                    "mae",
+                    "r2"
+                ]
+            },
+            {
+                "table_name": "validation_stats",
+                "fields": [
+                    "mse",
+                    "mae",
+                    "r2"
+                ]
+            },
+            {
+                "table_name": "validation_plots",
+                "fields": [
+                    "original",
+                    "predicted"
+                ]
+            }
+        ]
+    },
+    "output_plugin": "vis_output",
+    "output_plugin_config": {
+        "dashboard": [
+            {
+                "table_name": "training_progress",
+                "online": true,
+                "delay": 3,
+                "points": 800,
+                "title": "Progress of Last Training Process",
+                "fields": [
+                    "mse"
+                ]
+            },
+            {
+                "table_name": "validation_plots",
+                "title": "Validation Data Plot"
+            },
+            {
+                "table_name": "validation_stats",
+                "title": "List of Feature Extractor Stats on Validation Data"
+            }
+        ],
+        "views": [
+            {
+                "table_name": "training_progress",
+                "title": "Progress of Training Process",
+                "online": true,
+                "delay": 3,
+                "points": 1600,
+                "fields": [
+                    "mse",
+                    "mae",
+                    "r2"
+                ]
+            },
+            {
+                "table_name": "validation_plots",
+                "title": "Validation Data Plot",
+                "online":  false,
+                "fields": [
+                    "original",
+                    "predicted"
+                ]
+            },
+            {
+                "table_name": "validation_stats",
+                "title": "Feature Extractor Stats on Validation Data",
+                "online": false,
+                "fields": [
+                    "mse",
+                    "mae",
+                    "r2"
+                ]
+            }
+        ]
+    }
+}
+  

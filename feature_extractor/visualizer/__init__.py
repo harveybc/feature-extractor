@@ -8,7 +8,7 @@ def read_plugin_config(vis_config_file=None):
     if vis_config_file != None:
         file_path = vis_config_file
     else:
-        file_path = os.path.dirname(os.path.abspath(__file__)) + "visualizer.json"
+        file_path = os.path.dirname(os.path.abspath(__file__)) + "//visualizer.json"
     
     with open(file_path) as f:
         data = json.load(f)

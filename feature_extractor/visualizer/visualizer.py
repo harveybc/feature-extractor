@@ -21,6 +21,7 @@ def index():
  # TODO: Carga input plugin y genera variable p_data que se pasa al core_plugin para que lo pase a su template
     """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
     print ("current_app.config['P_CONFIG'] = ", current_app.config['P_CONFIG'])
+    p_config = current_app.config['P_CONFIG']
     db = get_db()
     training_progress = db.execute(
         "SELECT *"
@@ -37,8 +38,7 @@ def index():
         " FROM validation_stats t JOIN process p ON t.process_id = p.id"
         " ORDER BY created DESC"
     ).fetchall()
-    
-    return render_template("visualizer/index.html", p_data = p_data)
+    return render_template("visualizer/index.html", p_config = p_config)
 
 
 def get_post(id, check_author=True):

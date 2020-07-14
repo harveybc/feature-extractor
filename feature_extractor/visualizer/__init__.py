@@ -1,7 +1,7 @@
 import os
 import json
-
 from flask import Flask
+from feature_eng.feature_extractor import FeatureExtractor
 
 
 def read_plugin_config(vis_config_file=None):
@@ -10,7 +10,6 @@ def read_plugin_config(vis_config_file=None):
         file_path = vis_config_file
     else:
         file_path = os.path.dirname(os.path.abspath(__file__)) + "//visualizer.json"
-    
     with open(file_path) as f:
         data = json.load(f)
     return data
@@ -27,7 +26,6 @@ def create_app(test_config=None):
         # read plugin configuration JSON file
         P_CONFIG = read_plugin_config()
     )
-
     if test_config is None:
         # load the instance config, if it exists, when not testing
         app.config.from_pyfile("config.py", silent=True)

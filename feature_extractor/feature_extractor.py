@@ -48,6 +48,11 @@ class FeatureExtractor(FeatureExtractorBase):
 
     def find_plugins(self):
         """" Populate the discovered plugin lists """
+
+        # TODO: make the iter_entry_points configurable to be used by the 3 fe modules
+        
+
+
         self.discovered_input_plugins = {
             entry_point.name: entry_point.load()
             for entry_point

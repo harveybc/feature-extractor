@@ -14,6 +14,9 @@ def read_plugin_config(vis_config_file=None):
         data = json.load(f)
     return data
 
+def load_plugins():
+
+
 def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__, instance_relative_config=True)
@@ -25,6 +28,11 @@ def create_app(test_config=None):
         DATABASE=os.path.join(BASE_DIR, "test.sqlite"),
         # read plugin configuration JSON file
         P_CONFIG = read_plugin_config()
+        # initialize FeatureExtractor
+        fe = FeatureExtractor()
+
+        # load the input plugin 
+        EP_INPUT = fe.load_plugins()
     )
     if test_config is None:
         # load the instance config, if it exists, when not testing

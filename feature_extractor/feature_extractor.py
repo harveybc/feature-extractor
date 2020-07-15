@@ -11,8 +11,7 @@ from feature_extractor.feature_extractor_base import FeatureExtractorBase
 
 # from feature_extractor import __version__
 
-__author__ = "Harvey Bastidas"
-__copyright__ = "Harvey Bastidas"
+__author__ = "Harvey Bastidas"__copyright__ = "Harvey Bastidas"
 __license__ = "mit"
 
 _logger = logging.getLogger(__name__)
@@ -47,7 +46,7 @@ class FeatureExtractor(FeatureExtractorBase):
         _logger.info("Script end.")
 
     def find_plugins(self, ep_search):
-        """" Populate the discovered plugin lists """
+        """" Populate the discovered plu gin lists """
 
         # TODO: make the iter_entry_points configurable to be used by the 3 fe modules
 

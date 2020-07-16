@@ -3,7 +3,6 @@ import json
 from flask import Flask
 from feature_eng.feature_extractor import FeatureExtractor
 
-
 def read_plugin_config(vis_config_file=None):
     """ Read the pulgin configuration JSON file from a path, if its None, uses a default configuration """
     if vis_config_file != None:
@@ -13,10 +12,7 @@ def read_plugin_config(vis_config_file=None):
     with open(file_path) as f:
         data = json.load(f)
     return data
-
-def load_plugins():
-
-
+	
 def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__, instance_relative_config=True)
@@ -29,7 +25,7 @@ def create_app(test_config=None):
         # read plugin configuration JSON file
         P_CONFIG = read_plugin_config()
         # initialize FeatureExtractor
-        fe = FeatureExtractor()
+        fe = FeatureExtractor(conf)
 
         # load the input plugin 
         EP_INPUT = fe.load_plugins()

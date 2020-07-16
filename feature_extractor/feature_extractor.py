@@ -46,11 +46,9 @@ class FeatureExtractor(FeatureExtractorBase):
         _logger.info("Script end.")
 
     def find_plugins(self, ep_search):
-        """" Populate the discovered plu gin lists """
+        """" Populate the discovered plugin lists """
 
         # TODO: make the iter_entry_points configurable to be used by the 3 fe modules
-
-
 
         self.discovered_input_plugins = {
             entry_point.name: entry_point.load()

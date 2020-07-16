@@ -1,7 +1,7 @@
 import os
 import json
 from flask import Flask
-from feature_eng.feature_extractor import FeatureExtractor
+from feature_xtractor.feature_extractor import FeatureExtractor
 
 def read_plugin_config(vis_config_file=None):
     """ Read the pulgin configuration JSON file from a path, if its None, uses a default configuration """
@@ -23,12 +23,11 @@ def create_app(test_config=None):
         # store the database in the instance folder
         DATABASE=os.path.join(BASE_DIR, "test.sqlite"),
         # read plugin configuration JSON file
-        P_CONFIG = read_plugin_config()
+        P_CONFIG = read_plugin_config(),
         # initialize FeatureExtractor
-        fe = FeatureExtractor(conf)
-
+        fe = FeatureExtractor(conf), 
         # load the input plugin 
-        EP_INPUT = fe.load_plugins()
+        EP_INPUT = fe
     )
     if test_config is None:
         # load the instance config, if it exists, when not testing

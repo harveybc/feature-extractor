@@ -16,17 +16,20 @@ def read_plugin_config(vis_config_file=None):
 def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__, instance_relative_config=True)
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    # read plugin configuration JSON file
+    p_config = read_plugin_config()
+    # initialize FeatureExtractor
+    fe = FeatureExtractor(p_config)
+    # set flask app parameters
     app.config.from_mapping(
         # a default secret that should be overridden by instance config
         SECRET_KEY="dev",
         # store the database in the instance folder
         DATABASE=os.path.join(BASE_DIR, "test.sqlite"),
-        # read plugin configuration JSON file
-        P_CONFIG = read_plugin_config(),
-        # initialize FeatureExtractor
-        fe = FeatureExtractor(conf), 
-        # load the input plugin 
+        # plugin configuration from visualizer.json
+        P_CONFIG = p_config, 
+        # feature_extractor instance with plugins already loaded
         EP_INPUT = fe
     )
     if test_config is None:

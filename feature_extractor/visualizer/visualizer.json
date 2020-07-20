@@ -28,7 +28,7 @@
             }
         ]
     },
-    "output_plugin": "vis_output",
+    "output_plugin": "vis_output_html",
     "output_plugin_config": {
         "dashboard": [
             {

@@ -30,14 +30,14 @@ def create_app(test_config=None):
         # plugin configuration from visualizer.json
         P_CONFIG = p_config, 
         # feature_extractor instance with plugins already loaded
-        EP_INPUT = fe
+        FE = fe
     )
     if test_config is None:
         # load the instance config, if it exists, when not testing
         app.config.from_pyfile("config.py", silent=True)
     else:
         # load the test config if passed in
-        app.config.update(test_config)
+        app.config.update(test_config
 
     # ensure the instance folder exists
     try:

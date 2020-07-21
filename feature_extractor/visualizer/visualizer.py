@@ -1,3 +1,7 @@
+
+# This file contains the visualizer plugin, th input plugin can load all the data or starting from
+ # the last id.
+
 from flask import Blueprint
 from flask import flash
 from flask import g

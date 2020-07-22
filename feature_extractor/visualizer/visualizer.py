@@ -21,7 +21,8 @@ bp = Blueprint("visualizer", __name__)
 @bp.route("/")
 @login_required
 def index():
- # TODO: Lee config
+ # TODO:    Uses instance of FeatureExtractor current_app.config['FE'] that has pre-initialized 
+ #          plugin entry points loaded from config during  __init___
  # TODO: Carga input plugin y genera variable p_data que se pasa al core_plugin para que lo pase a su template
     """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
     p_config = current_app.config['P_CONFIG']

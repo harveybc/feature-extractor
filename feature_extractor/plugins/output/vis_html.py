@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This File contains the StoreCSV class plugin. 
+This File contains the HTML output visualizator plugin. 
 """
 
 from feature_extractor.plugin_base import PluginBase
@@ -11,7 +11,7 @@ __author__ = "Harvey Bastidas"
 __copyright__ = "Harvey Bastidas"
 __license__ = "mit"
 
-class StoreCSV(PluginBase): 
+class VisHtml(PluginBase): 
     """ Output plugin for the FeatureExtractor class, after initialization, saves the data and after calling the store_data method """
 
     def __init__(self, conf):

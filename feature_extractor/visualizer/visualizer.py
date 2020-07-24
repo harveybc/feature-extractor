@@ -24,25 +24,11 @@ def index():
  # TODO:    Uses instance of FeatureExtractor current_app.config['FE'] that has pre-initialized 
  #          plugin entry points loaded from config during  __init___
  # TODO: Carga input plugin y genera variable p_data que se pasa al core_plugin para que lo pase a su template
-    """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
-    p_config = current_app.config['P_CONFIG']
-    db = get_db()
-    training_progress = db.execute(
-        "SELECT *"
-        " FROM training_progress t JOIN process p ON t.process_id = p.id"
-        " ORDER BY created DESC"
-    ).fetchall()
-    validation_plots = db.execute(
-        "SELECT *"
-        " FROM validation_plots t JOIN process p ON t.process_id = p.id"
-        " ORDER BY created DESC"
-    ).fetchall()
-    validation_stats = db.execute(
-        "SELECT *"
-        " FROM validation_stats t JOIN process p ON t.process_id = p.id"
-        " ORDER BY created DESC"
-    ).fetchall()
 
+    # Feature extractor instance, preinitialized in __init__.py with input and output plugins entry points.
+    fe = current_app.config['FE']
+
+ # TODO:  the output plugin must hasve a method that returns BOTH the template path and  the configuration passed to the template 
     return render_template("visualizer/index.html", p_config = p_config)
 
 

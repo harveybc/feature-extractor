@@ -44,7 +44,7 @@ def get_post(id, check_author=True):
     :raise 404: if a post with the given id doesn't exist
     :raise 403: if the current user isn't the author
     """
-    post = (
+    results = (
         get_db()
         .execute(
             "SELECT p.id, title, body, created, author_id, username"
@@ -54,14 +54,11 @@ def get_post(id, check_author=True):
         )
         .fetchone()
     )
-
-    if post is None:
+    # verify if the query returned no results
+    if results is None:
         abort(404, "Post id {id} doesn't exist.")
-
-    if check_author and post["author_id"] != g.user["id"]:
-        abort(403)
-
-    return post
+        
+    return results
 
 
 @bp.route("/create", methods=("GET", "POST"))

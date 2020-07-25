@@ -26,30 +26,23 @@ class VisSqlite(PluginBase):
         return parser
     
     def load_data(self):
-        """ Load the input dataset """
-        self.input_ds = genfromtxt(self.conf.input_file, delimiter=",")
-
-
-    """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
-    p_config = current_app.config['P_CONFIG']
-    db = get_db()
-    training_progress = db.execute(
-        "SELECT *"
-        " FROM training_progress t JOIN process p ON t.process_id = p.id"
-        " ORDER BY created DESC"
-    ).fetchall()
-    validation_plots = db.execute(
-        "SELECT *"
-        " FROM validation_plots t JOIN process p ON t.process_id = p.id"
-        " ORDER BY created DESC"
-    ).fetchall()
-    validation_stats = db.execute(
-        "SELECT *"
-        " FROM validation_stats t JOIN process p ON t.process_id = p.id"
-        " ORDER BY created DESC"
-    ).fetchall()
-
-
-
+        """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
+        p_config = current_app.config['P_CONFIG']
+        db = get_db()
+        training_progress = db.execute(
+            "SELECT *"
+            " FROM training_progress t JOIN process p ON t.process_id = p.id"
+            " ORDER BY created DESC"
+        ).fetchall()
+        validation_plots = db.execute(
+            "SELECT *"
+            " FROM validation_plots t JOIN process p ON t.process_id = p.id"
+            " ORDER BY created DESC"
+        ).fetchall()
+        validation_stats = db.execute(
+            "SELECT *"
+            " FROM validation_stats t JOIN process p ON t.process_id = p.id"
+            " ORDER BY created DESC"
+        ).fetchall()
         return self.input_ds
         

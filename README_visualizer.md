@@ -49,6 +49,13 @@ For ease of use, a script for setting the environment variables and executing th
 
 > visualizer.bat
 
+## Usage
+
+The Web intreface can be accessed by default at:
+
+[localhost:5000](localhost:5000)
+
+The default port can be modified by setting the FLASK_RUN_PORT environment variable or bly using the --port argument to the flask run command.
 
 ### Configuration File
 
@@ -59,7 +66,6 @@ The following is the default JSON configuration file:
 
 ```
 {
-    "service_port": 7777,
     "input_plugin": "vis_input_sqlite",
     "input_plugin_config": {
         "filename": "test/db/plots.sqlite",

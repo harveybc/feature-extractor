@@ -22,12 +22,8 @@ class FeatureExtractorBase():
     def __init__(self, conf):
         """ Constructor """
         self.conf = conf
-
-        if conf != None:
-         
+        if conf != None:         
             if not hasattr(conf, "args"):
-               
-            
                 self.conf.args = None
                 self.setup_logging(logging.DEBUG) 
                 _logger.info("Starting feature_extractor via class constructor...")
@@ -38,15 +34,14 @@ class FeatureExtractorBase():
                     _logger.debug("Printing plugins.")
                     self.print_plugins()
                 # execute core operations
-                else: 
-                    
+                else:
                     # sets default values for plugins
                     if not hasattr(conf, "input_plugin"): 
                         self.conf.input_plugin = "load_csv"    
                     if not hasattr(conf, "output_plugin"): 
                         self.conf.output_plugin = "store_csv"
                     if not hasattr(conf, "core_plugin"): 
-                        self.conf.core_plugin = "heuristic_ts"
+                        self.conf.core_plugin = None
                     self.core()
 
     def parse_cmd(self, parser):
@@ -66,13 +61,14 @@ class FeatureExtractorBase():
         self.find_plugins()
         _logger.debug("Loading plugins.")
         self.load_plugins()
-        _logger.debug("Loading input dataset from the input plugin.")
-        self.input_ds = self.ep_input.load_data() 
-        _logger.debug("Performing core operations from the  core plugin.")
-        self.output_ds = self.ep_core.core(self.input_ds) 
-        _logger.debug("Storing results using the output plugin.")
-        self.ep_output.store_data(self.output_ds) 
-        _logger.info("feature_extractor finished.")
+        if self.conf.core_plugin != None:
+        	_logger.debug("Loading input dataset from the input plugin.")
+	        self.input_ds = self.ep_input.load_data() 
+	        _logger.debug("Performing core operations from the  core plugin.")
+	        self.output_ds = self.ep_core.core(self.input_ds) 
+		    logger.debug("Storing results using the output plugin.")
+	        self.ep_output.store_data(self.output_ds) 
+	        _logger.info("feature_extractor finished.")
     
     def setup_logging(self, loglevel):
         """Setup basic logging.

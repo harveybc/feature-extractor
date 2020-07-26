@@ -13,7 +13,7 @@ __license__ = "mit"
 
 class VisSqlite(PluginBase): 
     """ input plugin for the FeatureExtractor class, after initialization, the input_ds attribute is set """
-    
+
     def __init__(self, conf):
         """ Initializes PluginBase. Do NOT delete the following line whether you have initialization code or not. """
         super().__init__(conf)
@@ -26,6 +26,7 @@ class VisSqlite(PluginBase):
         return parser
     
     def load_data(self):
+        # TODO: CAMBIAR ESTA LISTA POR CONFIG:JSON
         """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
         p_config = current_app.config['P_CONFIG']
         db = get_db()
@@ -44,5 +45,11 @@ class VisSqlite(PluginBase):
             " FROM validation_stats t JOIN process p ON t.process_id = p.id"
             " ORDER BY created DESC"
         ).fetchall()
+        # return the query results as a list
+        self.input_ds = {
+            "training_progress":training_progress,
+            "validation_plots":validation_plots,
+            "validation_stats":validation_stats
+        }
         return self.input_ds
         

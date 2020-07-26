@@ -25,7 +25,7 @@ class VisSqlite(PluginBase):
         parser.add_argument("--input_file", help="Input dataset file to load including path.", required=True)
         return parser
     
-    def load_data(self):
+    def load_data(self, plugin_config):
         # TODO: CAMBIAR ESTA LISTA POR CONFIG:JSON
         """Show the mse plot for the last training process, also the last validation plot and a list of validation stats."""
         p_config = current_app.config['P_CONFIG']

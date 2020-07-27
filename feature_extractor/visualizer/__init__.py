@@ -1,7 +1,7 @@
 import os
 import json
 from flask import Flask
-from feature_xtractor.feature_extractor import FeatureExtractor
+from feature_extractor.feature_extractor import FeatureExtractor
 
 def read_plugin_config(vis_config_file=None):
     """ Read the pulgin configuration JSON file from a path, if its None, uses a default configuration """

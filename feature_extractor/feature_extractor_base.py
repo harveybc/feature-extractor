@@ -28,7 +28,7 @@ class FeatureExtractorBase():
                 self.setup_logging(logging.DEBUG) 
                 _logger.info("Starting feature_extractor via class constructor...")
                 # list available plugins
-                if self.conf.list_plugins == True:
+                if self.conf['list_plugins'] == True:
                     _logger.debug("Listing plugins.")
                     self.find_plugins()
                     _logger.debug("Printing plugins.")
@@ -37,11 +37,11 @@ class FeatureExtractorBase():
                 else:
                     # sets default values for plugins
                     if not hasattr(conf, "input_plugin"): 
-                        self.conf.input_plugin = "load_csv"    
+                        self.conf['input_plugin'] = "load_csv"    
                     if not hasattr(conf, "output_plugin"): 
-                        self.conf.output_plugin = "store_csv"
+                        self.conf['output_plugin'] = "store_csv"
                     if not hasattr(conf, "core_plugin"): 
-                        self.conf.core_plugin = None
+                        self.conf['core_plugin'] = None
                     self.core()
 
     def parse_cmd(self, parser):

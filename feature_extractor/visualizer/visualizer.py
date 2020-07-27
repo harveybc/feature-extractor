@@ -26,10 +26,10 @@ def index():
  # TODO: Carga input plugin y genera variable p_data que se pasa al core_plugin para que lo pase a su template
 
     # Feature extractor instance, preinitialized in __init__.py with input and output plugins entry points.
-    vis_data = current_app.config['FE'].load_data(p_config)
+    vis_data = current_app.config['FE'].load_data(p_config, process_id)
     template = current_app.config['FE'].template_path(p_config)
     # TODO:  the output plugin must hasve a method that returns BOTH the template path and  the configuration passed to the template 
-    return render_template("visualizer/index.html", p_config = p_config)
+    return render_template(template + "visualizer/index.html", p_config = p_config)
 
 
 def get_post(id, check_author=True):

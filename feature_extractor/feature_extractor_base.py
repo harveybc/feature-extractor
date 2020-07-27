@@ -62,13 +62,13 @@ class FeatureExtractorBase():
         _logger.debug("Loading plugins.")
         self.load_plugins()
         if self.conf.core_plugin != None:
-        	_logger.debug("Loading input dataset from the input plugin.")
-	        self.input_ds = self.ep_input.load_data() 
-	        _logger.debug("Performing core operations from the  core plugin.")
-	        self.output_ds = self.ep_core.core(self.input_ds) 
-		    logger.debug("Storing results using the output plugin.")
-	        self.ep_output.store_data(self.output_ds) 
-	        _logger.info("feature_extractor finished.")
+            _logger.debug("Loading input dataset from the input plugin.")
+            self.input_ds = self.ep_input.load_data() 
+            _logger.debug("Performing core operations from the  core plugin.")
+            self.output_ds = self.ep_core.core(self.input_ds) 
+            logger.debug("Executing the output plugin.")
+            self.ep_output.store_data(self.output_ds) 
+            _logger.info("feature_extractor finished.")
     
     def setup_logging(self, loglevel):
         """Setup basic logging.

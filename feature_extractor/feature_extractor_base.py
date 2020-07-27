@@ -28,11 +28,12 @@ class FeatureExtractorBase():
                 self.setup_logging(logging.DEBUG) 
                 _logger.info("Starting feature_extractor via class constructor...")
                 # list available plugins
-                if self.conf['list_plugins'] == True:
-                    _logger.debug("Listing plugins.")
-                    self.find_plugins()
-                    _logger.debug("Printing plugins.")
-                    self.print_plugins()
+                if hasattr(conf, "list_plugins"):
+                    if self.conf['list_plugins'] == True:
+                        _logger.debug("Listing plugins.")
+                        self.find_plugins()
+                        _logger.debug("Printing plugins.")
+                        self.print_plugins()
                 # execute core operations
                 else:
                     # sets default values for plugins

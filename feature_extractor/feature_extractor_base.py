@@ -24,7 +24,7 @@ class FeatureExtractorBase():
         self.conf = conf
         if conf != None:         
             if not hasattr(conf, "args"):
-                self.conf.args = None
+                self.conf['args'] = None
                 self.setup_logging(logging.DEBUG) 
                 _logger.info("Starting feature_extractor via class constructor...")
                 # list available plugins

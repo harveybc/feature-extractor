@@ -11,7 +11,8 @@ from feature_extractor.feature_extractor_base import FeatureExtractorBase
 
 # from feature_extractor import __version__
 
-__author__ = "Harvey Bastidas"__copyright__ = "Harvey Bastidas"
+__author__ = "Harvey Bastidas"
+__copyright__ = "Harvey Bastidas"
 __license__ = "mit"
 
 _logger = logging.getLogger(__name__)

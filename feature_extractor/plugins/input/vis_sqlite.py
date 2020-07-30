@@ -41,7 +41,7 @@ class VisSqlite(PluginBase):
                 fields = fields + f
                 c = c + 1
             query = db.execute(
-                "SELECT fields"
+                "SELECT " + fields +
                 " FROM " + table['table_name'] +
                 " t JOIN process p ON t.process_id = " + str(process_id) +
                 " ORDER BY created DESC"

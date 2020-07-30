@@ -74,8 +74,8 @@ class FeatureExtractor(FeatureExtractorBase):
         for i in self.conf:
             print(i, " => ", self.conf[i])
         if self.conf['input_plugin'] in self.discovered_input_plugins:
-            self.ep_i = self.discovered_input_plugins[self.conf.input_plugin]
-            if self.conf.args == None:
+            self.ep_i = self.]discovered_input_plugins[self.conf['input_plugin']]
+            if self.conf['args'] == None:
                 # TODO: QUITAR
                 _logger.debug("initializing input plugin via constructor.")
             else:
@@ -85,14 +85,14 @@ class FeatureExtractor(FeatureExtractorBase):
         else:
             print("Error: Input Plugin not found. Use option --list_plugins to show the list of available plugins.")
             sys.exit()
-        if self.conf.output_plugin in self.discovered_output_plugins:
-            self.ep_o = self.discovered_output_plugins[self.conf.output_plugin]
+        if self.conf['output_plugin'] in self.discovered_output_plugins:
+            self.ep_o = self.discovered_output_plugins[self.conf['output_plugin']]
             self.ep_output = self.ep_o(self.conf)
         else:
             print("Error: Output Plugin not found. Use option --list_plugins to show the list of available plugins.")
             sys.exit()
-        if self.conf.core_plugin in self.discovered_core_plugins:
-            self.ep_c = self.discovered_core_plugins[self.conf.core_plugin]
+        if self.conf['core_plugin'] in self.discovered_core_plugins:
+            self.ep_c = self.discovered_core_plugins[self.conf['core_plugin']]
             self.ep_core = self.ep_c(self.conf)
         else:
             print("Error: Core Plugin not found. Use option --list_plugins to show the list of available plugins.")

@@ -41,9 +41,11 @@ class FeatureExtractorBase():
                 else:
                     # sets default values for plugins
                     if not hasattr(conf, "input_plugin"): 
-                        self.conf['input_plugin'] = "load_csv"    
+                        self.conf['input_plugin'] = "load_csv"  
+                        _logger.debug("Warning: input plugin not found, using load_csv")
                     if not hasattr(conf, "output_plugin"): 
                         self.conf['output_plugin'] = "store_csv"
+                        _logger.debug("Warning: input plugin not found, using store_csv")
                     if not hasattr(conf, "core_plugin"): 
                         self.conf['core_plugin'] = None
                     self.core()

@@ -65,7 +65,7 @@ class FeatureExtractorBase():
         self.find_plugins()
         _logger.debug("Loading plugins.")
         self.load_plugins() 
-        if self.conf.core_plugin != None:
+        if self.conf['core_plugin'] != None:
             _logger.debug("Loading input dataset from the input plugin.")
             self.input_ds = self.ep_input.load_data() 
             _logger.debug("Performing core operations from the  core plugin.")
@@ -102,7 +102,7 @@ class FeatureExtractorBase():
         parser = self.parse_cmd(parser)
         self.conf, self.unknown = parser.parse_known_args(args)
         # assign as arguments, the unknown arguments from the parser
-        self.conf.args = self.unknown
+        self.conf['args'] = self.unknown
 
 
         

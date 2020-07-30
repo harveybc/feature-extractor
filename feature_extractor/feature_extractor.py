@@ -72,7 +72,7 @@ class FeatureExtractor(FeatureExtractorBase):
     def load_plugins(self):
         """ Loads plugin entry points into class attributes"""
         for i in self.conf:
-            print i, self.conf[i]
+            print(i, " => ", self.conf[i])
         if self.conf.input_plugin in self.discovered_input_plugins:
             self.ep_i = self.discovered_input_plugins[self.conf.input_plugin]
             if self.conf.args == None:

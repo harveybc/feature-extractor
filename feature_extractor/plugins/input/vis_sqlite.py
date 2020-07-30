@@ -32,7 +32,7 @@ class VisSqlite(PluginBase):
         p_config = current_app.config['P_CONFIG']
         db = get_db()
         self.input_ds = []
-        for table in p_config.input_plugin_config.tables:
+        for table in p_config['input_plugin_config']['tables']:
             c = 0
             fields = ""
             for f in table.fields:

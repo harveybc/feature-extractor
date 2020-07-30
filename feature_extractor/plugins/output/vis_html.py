@@ -28,6 +28,6 @@ class VisHtml(PluginBase):
 
     def template_path(self, output_ds):
         """ return this module's path """
-        return os.path.abspath(__file__)
+        return os.path.dirname(__file__)
             
     

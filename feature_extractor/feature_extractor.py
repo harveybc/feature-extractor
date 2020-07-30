@@ -95,8 +95,8 @@ class FeatureExtractor(FeatureExtractorBase):
             self.ep_c = self.discovered_core_plugins[self.conf['core_plugin']]
             self.ep_core = self.ep_c(self.conf)
         else:
-            print("Error: Core Plugin not found. Use option --list_plugins to show the list of available plugins.")
-            sys.exit()
+            print("Warning: Core Plugin not found. Ignore this warning if using the visuzlizer. Use option --list_plugins to show the list of available plugins.")
+            self.ep_core = None
     
     def print_plugins(self):
         print("Discovered input plugins:")

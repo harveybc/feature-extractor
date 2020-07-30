@@ -35,7 +35,7 @@ class VisSqlite(PluginBase):
         for table in p_config['input_plugin_config']['tables']:
             c = 0
             fields = ""
-            for f in table.fields:
+            for f in table['fields']:
                 if c > 0:
                     fields = fields + ","
                 fields = fields + f

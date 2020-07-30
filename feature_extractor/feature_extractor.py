@@ -22,13 +22,15 @@ class FeatureExtractor(FeatureExtractorBase):
     """ Base class. """
 
     def __init__(self, conf):
-        """ Initializes FeatureExtractorBase.  """
+        """ Initializes FeatureExtractorBase with the configurationloaded from a JSON file. 
+        Args:
+        conf (JSON): plugin configuration loaded from configuration file.
+        """
         super().__init__(conf)
         
     def main(self, args):
         """ Starts an instance via command line parameters, uses the FeatureExtractorBase.core() method.
             Starts logging, parse command line arguments and start core.
-
         Args:
         args ([str]): command line parameter list
         """

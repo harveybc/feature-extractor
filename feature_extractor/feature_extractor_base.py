@@ -20,7 +20,10 @@ class FeatureExtractorBase():
     """ Base class For FeatureExtractor. """
     
     def __init__(self, conf):
-        """ Constructor """
+        """ Initializes FeatureExtractorBase with the configuration loaded from a JSON file. 
+        Args:
+        conf (JSON): plugin configuration loaded from configuration file.
+        """
         self.conf = conf
         if conf != None:         
             if not hasattr(conf, "args"):
@@ -61,7 +64,7 @@ class FeatureExtractorBase():
         _logger.debug("Finding Plugins.")
         self.find_plugins()
         _logger.debug("Loading plugins.")
-        self.load_plugins()
+        self.load_plugins() 
         if self.conf.core_plugin != None:
             _logger.debug("Loading input dataset from the input plugin.")
             self.input_ds = self.ep_input.load_data() 

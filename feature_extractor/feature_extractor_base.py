@@ -26,12 +26,12 @@ class FeatureExtractorBase():
         """
         self.conf = conf
         if conf != None:         
-            if not hasattr(conf, "args"):
+            if 'args' not in conf:
                 self.conf['args'] = None
                 self.setup_logging(logging.DEBUG) 
                 _logger.info("Starting feature_extractor via class constructor...")
                 # list available plugins
-                if hasattr(conf, "list_plugins"):
+                if 'list_plugins' in conf:
                     if self.conf['list_plugins'] == True:
                         _logger.debug("Listing plugins.")
                         self.find_plugins()
@@ -40,14 +40,13 @@ class FeatureExtractorBase():
                 # execute core operations
                 else:
                     # sets default values for plugins
-                    if not hasattr(conf, "input_plugin"): 
+                    if 'input_plugin' not in conf: 
                         self.conf['input_plugin'] = "load_csv"  
                         _logger.debug("Warning: input plugin not found, using load_csv")
-                        print (self.conf)
-                    if not hasattr(conf, "output_plugin"): 
+                    if 'output_plugin' not in conf: 
                         self.conf['output_plugin'] = "store_csv"
                         _logger.debug("Warning: input plugin not found, using store_csv")
-                    if not hasattr(conf, "core_plugin"): 
+                    if 'core_plugin' not in conf: 
                         self.conf['core_plugin'] = None
                     self.core()
 

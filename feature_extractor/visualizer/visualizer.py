@@ -26,7 +26,7 @@ def index():
     vis_data = current_app.config['FE'].ep_input.load_data(current_app.config['P_CONFIG'], 0)
     template = current_app.config['FE'].ep_output.template_path(current_app.config['P_CONFIG'])
     # TODO:  the output plugin must hasve a method that returns BOTH the template path and  the configuration passed to the template 
-    return render_template(template + "/templates/visualizer/index.html", p_config = current_app.config['P_CONFIG'])
+    return render_template(template + "\\templates\\visualizer\\index.html", p_config = current_app.config['P_CONFIG'])
 
 
 def get_post(id, check_author=True):

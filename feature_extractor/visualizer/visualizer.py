@@ -21,13 +21,10 @@ bp = Blueprint("visualizer", __name__)
 @bp.route("/")
 @login_required
 def index():
- # TODO:    Uses instance of FeatureExtractor current_app.config['FE'] that has pre-initialized 
- #          plugin entry points loaded from config during  __init___
- # TODO: Carga input plugin y genera variable p_data que se pasa al core_plugin para que lo pase a su template
-
+    # TODO: replace 0 in vis_data by process_id, obtained as the first process_id belonging to the current user.
     # Feature extractor instance, preinitialized in __init__.py with input and output plugins entry points.
-    vis_data = current_app.config['FE'].ep_input.load_data(p_config, process_id)
-    template = current_app.config['FE'].ep_output.template_path(p_config)
+    vis_data = current_app.config['FE'].ep_input.load_data(current_app.config['P_CONFIG'], 0)
+    template = current_app.config['FE'].ep_output.template_path(current_app.config['P_CONFIG'])
     # TODO:  the output plugin must hasve a method that returns BOTH the template path and  the configuration passed to the template 
     return render_template(template + "visualizer/index.html", p_config = p_config)
 

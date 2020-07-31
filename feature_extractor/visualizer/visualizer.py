@@ -14,8 +14,17 @@ from werkzeug.exceptions import abort
 from feature_extractor.visualizer.auth import login_required
 from feature_extractor.visualizer.db import get_db
 from flask import current_app
+from . import app
 
-  
+with app.app_context():
+    # read the data to be visualized using the using the Feature extractor instance, preinitialized in __init__.py with input and output plugins entry points.
+    vis_data = current_app.config['FE'].ep_input.load_data(current_app.config['P_CONFIG'], 0)
+    # use the output plugin entry point to get the path of the template for the visualizer blueprint
+    plugin_folder = current_app.config['FE'].ep_output.template_path(current_app.config['P_CONFIG'])
+
+# construct the visualizer blueprint using the plugin folder as template folder
+bp = Blueprint("visualizer", __name__,  template_folder=plugin_folder)
+# TODO: replace 0 in vis_data by process_id, obtained as the first process_id belonging to the current user.    
 
 @bp.route("/")
 @login_required

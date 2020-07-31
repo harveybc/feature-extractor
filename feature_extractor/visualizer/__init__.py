@@ -15,7 +15,7 @@ def read_plugin_config(vis_config_file=None):
 	
 def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
-    app = Flask(__name__, instance_relative_config=True, template_folder='../plugins/output/templates')
+    app = Flask(__name__, instance_relative_config=True)
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     # read plugin configuration JSON file
     p_config = read_plugin_config()

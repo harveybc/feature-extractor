@@ -1,6 +1,7 @@
 import os
 import json
 from flask import Flask
+from flask import Blueprint
 from feature_extractor.feature_extractor import FeatureExtractor
 
 def read_plugin_config(vis_config_file=None):

@@ -2,15 +2,12 @@
 
 {% block header %}
     <b>{% block title %}
-    
-       InputPlugin</b>:{{ p_config['input_plugin'] }}
-     - <b>Output Plugin</b>:{{ p_config['output_plugin'] }}
-    
+       Input Plugin</b>:{{ p_config['input_plugin'] }}, <b>Output Plugin</b>:{{ p_config['output_plugin'] }}
     {% endblock %}
 {% endblock %}
 
 {% block content %}
-  {% for pc in p_config['input_plugin_config']['tables']  %}
+  {% for pc in p_config['output_plugin_config']['dashboard']  %}
     <article class="post">
       <header>
         <div>

@@ -3,7 +3,8 @@
 {% block header %}
   <h1>{% block title %}
     
-    {{ p_config['input_plugin'] }}
+    Input Plugin:{{ p_config['input_plugin'] }}
+    Output Plugin:{{ p_config['output_plugin'] }}
     
     {% endblock %}</h1>
   {% if g.user %}

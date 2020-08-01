@@ -27,7 +27,7 @@ def visualizer_blueprint(plugin_folder):
         # read the data to be visualized using the using the Feature extractor instance, preinitialized in __init__.py with input and output plugins entry points.
         # TODO: replace 0 in vis_data by process_id, obtained as the first process_id belonging to the current user.    
         vis_data = current_app.config['FE'].ep_input.load_data(current_app.config['P_CONFIG'], 0)
-        return render_template("/templates/visualizer/index.html", p_config = current_app.config['P_CONFIG'], vis_data =  vis_data)
+        return render_template("/plugin_templates/visualizer/index.html", p_config = current_app.config['P_CONFIG'], vis_data =  vis_data)
 
 
     def get_post(id, check_author=True):

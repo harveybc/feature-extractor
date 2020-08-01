@@ -19,7 +19,7 @@ from flask import current_app
 def visualizer_blueprint(plugin_folder):
 
     # construct the visualizer blueprint using the plugin folder as template folder
-    bp = Blueprint("visualizer", __name__,  template_folder=plugin_folder+"/templates/")
+    bp = Blueprint("visualizer", __name__,  template_folder=plugin_folder)
     
     @bp.route("/")
     @login_required
@@ -27,7 +27,7 @@ def visualizer_blueprint(plugin_folder):
         # read the data to be visualized using the using the Feature extractor instance, preinitialized in __init__.py with input and output plugins entry points.
         # TODO: replace 0 in vis_data by process_id, obtained as the first process_id belonging to the current user.    
         vis_data = current_app.config['FE'].ep_input.load_data(current_app.config['P_CONFIG'], 0)
-        return render_template("visualizer/index.html", p_config = current_app.config['P_CONFIG'], vis_data =  vis_data)
+        return render_template("/templates/visualizer/index.html", p_config = current_app.config['P_CONFIG'], vis_data =  vis_data)
 
 
     def get_post(id, check_author=True):

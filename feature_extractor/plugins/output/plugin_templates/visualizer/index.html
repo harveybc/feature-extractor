@@ -1,16 +1,13 @@
 {% extends '/plugin_templates/base.html' %}
 
 {% block header %}
-    <h3>{% block title %}
+    <b>{% block title %}
     
        Using Input Plugin:{{ p_config['input_plugin'] }}
         , Output Plugin:{{ p_config['output_plugin'] }}
     
     {% endblock %}
-    </h3>
-  {% if g.user %}
-    <a class="action" href="{{ url_for('visualizer.create') }}">New</a>
-  {% endif %}
+    </b>
 {% endblock %}
 
 {% block content %}
@@ -23,6 +20,9 @@
         </div>
       </header>
       <p class="body">{{ pc['fields'] }}</p>
+      {% if g.user %}
+      <a class="action" href="{{ url_for('visualizer.create') }}">New</a>
+    {% endif %}
     </article>
     {% if not loop.last %}
       <hr> 

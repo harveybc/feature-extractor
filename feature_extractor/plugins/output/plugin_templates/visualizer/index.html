@@ -1,0 +1,27 @@
+{% extends '/plugin_templates/base.html' %}
+
+{% block header %}
+    <b>{% block title %}
+       Input Plugin</b>:{{ p_config['input_plugin'] }}, <b>Output Plugin</b>:{{ p_config['output_plugin'] }}
+    {% endblock %}
+{% endblock %}
+
+{% block content %}
+  {% for pc in p_config['output_plugin_config']['dashboard']  %}
+    <article class="post">
+      <header>
+        <div>
+          <h1>{{ pc['title'] }}</h1>
+          <div class="about">{{ pc['table_name'] }} }}</div>
+        </div>
+      </header>
+      <p class="body">{{ pc['fields'] }}</p>
+      {% if g.user %}
+      <a class="action" href="{{ url_for('visualizer.create') }}">New</a>
+    {% endif %}
+    </article>
+    {% if not loop.last %}
+      <hr> 
+    {% endif %}
+  {% endfor %}
+{% endblock %}

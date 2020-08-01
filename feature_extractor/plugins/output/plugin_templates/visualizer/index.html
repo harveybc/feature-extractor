@@ -1,12 +1,13 @@
 {% extends '/plugin_templates/base.html' %}
 
 {% block header %}
-  <h1>{% block title %}
+    <h3>{% block title %}
     
-    Input Plugin:{{ p_config['input_plugin'] }}
-    Output Plugin:{{ p_config['output_plugin'] }}
+       Using Input Plugin:{{ p_config['input_plugin'] }}
+        , Output Plugin:{{ p_config['output_plugin'] }}
     
-    {% endblock %}</h1>
+    {% endblock %}
+    </h3>
   {% if g.user %}
     <a class="action" href="{{ url_for('visualizer.create') }}">New</a>
   {% endif %}

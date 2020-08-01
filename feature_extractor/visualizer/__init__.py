@@ -55,7 +55,6 @@ def create_app(test_config=None):
 
     db.init_app(app)
 
-
     # apply the blueprints to the app
     from feature_extractor.visualizer import auth, visualizer
     

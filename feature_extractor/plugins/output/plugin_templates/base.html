@@ -1,0 +1,13 @@
+<!doctype html>
+<title>Feature Extractor - Visualizer</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<nav>
+  <h1><a href="{{ url_for('index') }}">Dashboard - Feature Extractor Visualizer</a></h1>
+
+</nav>
+<section class="content">
+  <header>
+    {% block header %}{% endblock %}
+  </header>
+  {% block content %}{% endblock %}
+</section>

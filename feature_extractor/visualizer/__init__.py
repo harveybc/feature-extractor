@@ -1,7 +1,8 @@
 import os
 import json
 from flask import Flask
-from feature_xtractor.feature_extractor import FeatureExtractor
+from flask import Blueprint
+from feature_extractor.feature_extractor import FeatureExtractor
 
 def read_plugin_config(vis_config_file=None):
     """ Read the pulgin configuration JSON file from a path, if its None, uses a default configuration """
@@ -37,7 +38,7 @@ def create_app(test_config=None):
         app.config.from_pyfile("config.py", silent=True)
     else:
         # load the test config if passed in
-        app.config.update(test_config
+        app.config.update(test_config)
 
     # ensure the instance folder exists
     try:
@@ -45,9 +46,9 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    @app.route("/hello")
-    def hello():
-        return "Hello, World!"
+    #@app.route("/hello")
+    #def hello():
+    #    return "Hello, World!"
 
     # register the database commands
     from feature_extractor.visualizer import db
@@ -56,9 +57,15 @@ def create_app(test_config=None):
 
     # apply the blueprints to the app
     from feature_extractor.visualizer import auth, visualizer
-
+    
+    # get the output plugin template folder
+    plugin_folder = fe.ep_output.template_path(p_config)
+    # construct the blueprint 
+    vis_bp = visualizer.visualizer_blueprint(plugin_folder)
+    
+    # register the blueprints
     app.register_blueprint(auth.bp)
-    app.register_blueprint(visualizer.bp) 
+    app.register_blueprint(vis_bp) 
 
     # make url_for('index') == url_for('blog.index')
     # in another app, you might define a separate main index here with

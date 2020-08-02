@@ -16,12 +16,12 @@ class PluginBase():
 
     def __init__(self, conf):
         """ Constructor using command line arguments in the conf.args attribute """
-        if conf.args != None:
+        if conf['args'] != None:
             parser = argparse.ArgumentParser(
                 description="PluginBase: Base class for FeatureExtractor plugins."
             )
             parser = self.parse_cmd(parser)
-            self.conf, self.unknown = parser.parse_known_args(conf.args)
+            self.conf, self.unknown = parser.parse_known_args(conf['args'])
         else:
             self.conf = conf
 

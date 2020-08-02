@@ -6,6 +6,7 @@ This File contains the HTML output visualizator plugin.
 from feature_extractor.plugin_base import PluginBase
 from numpy import savetxt
 from sys import exit
+import os
 
 __author__ = "Harvey Bastidas"
 __copyright__ = "Harvey Bastidas"
@@ -25,8 +26,8 @@ class VisHtml(PluginBase):
         parser.add_argument("--output_file", help="Output file to store the processed data.", default="output.csv")
         return parser
 
-    def store_data(self, output_ds):
-        """ Save preprocessed data """
-        savetxt(self.conf.output_file, output_ds, delimiter=",")
+    def template_path(self, output_ds):
+        """ return this module's path """
+        return os.path.dirname(__file__)
             
     

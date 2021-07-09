@@ -1,11 +1,11 @@
 import sys
-import data_logger as fe
+import feature_extractor as fe
 
 def main(args=None):
     """The main routine."""
     if args is None:
         args = sys.argv[1:]
-    # you want your project to do.
+    # execute feature extractor 
     fe.run(args)
 
 if __name__ == "__main__":

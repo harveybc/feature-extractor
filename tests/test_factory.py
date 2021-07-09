@@ -1,4 +1,4 @@
-from feature_extractor.visualizer import create_app
+from data_logger import create_app
 
 
 def test_config():

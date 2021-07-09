@@ -1,5 +1,5 @@
 import sys
-import feature_extractor.feature_extractor as fe
+import data_logger as fe
 
 def main(args=None):
     """The main routine."""

@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-from feature_extractor.visualizer.db import get_db
+from data_logger.db import get_db
 
 
 def test_get_close_db(app):
@@ -23,7 +23,7 @@ def test_init_db_command(runner, monkeypatch):
     def fake_init_db():
         Recorder.called = True
 
-    monkeypatch.setattr("feature_extractor.visualizer.db.init_db", fake_init_db)
+    monkeypatch.setattr("data_logger.db.init_db", fake_init_db)
     result = runner.invoke(args=["init-db"])
     assert "Initialized" in result.output
     assert Recorder.called

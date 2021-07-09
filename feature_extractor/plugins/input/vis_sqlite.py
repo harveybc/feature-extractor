@@ -3,11 +3,11 @@
 This File contains the LoadCSV class plugin. 
 """
 
-from feature_extractor.plugin_base import PluginBase
+from data_logger.plugin_base import PluginBase
 from numpy import genfromtxt
 from sys import exit
 from flask import current_app
-from feature_extractor.visualizer.db import get_db
+from data_logger.db import get_db
 
 __author__ = "Harvey Bastidas"
 __copyright__ = "Harvey Bastidas"

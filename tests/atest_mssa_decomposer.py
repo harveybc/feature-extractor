@@ -5,7 +5,7 @@ import csv
 import sys
 import os
 from filecmp import cmp
-from feature_extractor.feature_extractor import FeatureExtractor
+from data_logger import FeatureExtractor
 
 __author__ = "Harvey Bastidas"
 __copyright__ = "Harvey Bastidas"
@@ -65,7 +65,7 @@ class TestMSSADecomposer:
 
     def test_C03T02_cmdline(self):
         """ same as C03T02, but via command-line """
-        os.system("feature_extractor --core_plugin mssa_decomposer --input_file "
+        os.system("data_logger --core_plugin mssa_decomposer --input_file "
             + self.conf.input_file
             + " --output_file "
             + self.conf.output_file
@@ -81,7 +81,7 @@ class TestMSSADecomposer:
 
     def test_C03T03_group_file(self):
         """ assert if there are 3 groups per feature in the output dataset """
-        os.system("feature_extractor --core_plugin mssa_decomposer --input_file "
+        os.system("data_logger --core_plugin mssa_decomposer --input_file "
             + self.conf.input_file
             + " --output_file "
             + self.conf.output_file
@@ -99,7 +99,7 @@ class TestMSSADecomposer:
 
     def test_C03T04_w_prefix(self):
         """ assert if there are 3 groups per feature in the output dataset """
-        os.system("feature_extractor --core_plugin mssa_decomposer --input_file "
+        os.system("data_logger --core_plugin mssa_decomposer --input_file "
             + self.conf.input_file
             + " --output_file "
             + self.conf.output_file
@@ -118,7 +118,7 @@ class TestMSSADecomposer:
     
     def test_C03T05_w_prefix_group_file(self):
         """ assert if there are 4 groups per feature in the output dataset """
-        os.system("feature_extractor --core_plugin mssa_decomposer --input_file "
+        os.system("data_logger --core_plugin mssa_decomposer --input_file "
             + self.conf.input_file
             + " --output_file "
             + self.conf.output_file
@@ -139,7 +139,7 @@ class TestMSSADecomposer:
 
     def test_C03T06_plot_prefix(self):
         """  """
-        os.system("feature_extractor --core_plugin mssa_decomposer --input_file "
+        os.system("data_logger --core_plugin mssa_decomposer --input_file "
             + self.conf.input_file
             + " --output_file "
             + self.conf.output_file
@@ -158,7 +158,7 @@ class TestMSSADecomposer:
     
     def test_C03T07_svht_plot_w_prefix(self):
         """  """
-        os.system("feature_extractor --core_plugin mssa_decomposer --input_file "
+        os.system("data_logger --core_plugin mssa_decomposer --input_file "
             + self.conf.input_file
             + " --output_file "
             + self.conf.output_file
@@ -178,7 +178,7 @@ class TestMSSADecomposer:
 
     def test_C03T08_svht_plot_w_prefix_group(self):
         """ assert if there are 4 groups per feature in the output dataset """
-        os.system("feature_extractor --core_plugin mssa_decomposer --input_file "
+        os.system("data_logger --core_plugin mssa_decomposer --input_file "
             + self.conf.input_file
             + " --output_file "
             + self.conf.output_file
@@ -200,7 +200,7 @@ class TestMSSADecomposer:
 
     def test_C03T09_svht_multi(self):
         """ assert if there are 4 groups per feature in the output dataset """
-        os.system("feature_extractor --core_plugin mssa_decomposer --input_file "
+        os.system("data_logger --core_plugin mssa_decomposer --input_file "
             + os.path.join(os.path.dirname(__file__), "data/test_input.csv")
             + " --output_file "
             + self.conf.output_file

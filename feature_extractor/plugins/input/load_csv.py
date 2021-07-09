@@ -3,7 +3,7 @@
 This File contains the LoadCSV class plugin. 
 """
 
-from feature_extractor.plugin_base import PluginBase
+from data_logger.plugin_base import PluginBase
 from numpy import genfromtxt
 from sys import exit
 

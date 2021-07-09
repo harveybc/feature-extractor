@@ -1,6 +1,6 @@
 import pytest
 
-from feature_extractor.visualizer.db import get_db
+from data_logger.db import get_db
 
 
 def test_index(client, auth):

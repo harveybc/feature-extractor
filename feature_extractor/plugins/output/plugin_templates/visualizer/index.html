@@ -17,7 +17,7 @@
       </header>
       <p class="body">{{ pc['fields'] }}</p>
       {% if g.user %}
-      <a class="action" href="{{ url_for('visualizer.create') }}">New</a>
+      <a class="action" href="{{ url_for('data_logger.create') }}">New</a>
     {% endif %}
     </article>
     {% if not loop.last %}

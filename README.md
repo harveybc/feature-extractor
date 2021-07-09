@@ -1,6 +1,6 @@
 # Feature Extractor 
 
-Plug-in based feature extractor, includes modules for a configurable keras model trainer, evaluator and a training/evaluation visualizer with Web interface and serverless database. __Work In Progress, NOT USABLE YET__.
+Plug-in based feature extractor, includes modules for a configurable keras model trainer, evaluator and a training/evaluation data_logger with Web interface and serverless database. __Work In Progress, NOT USABLE YET__.
 
 [![Build Status](https://travis-ci.org/harveybc/feature-extractor.svg?branch=master)](https://travis-ci.org/harveybc/feature-extractor)
 [![Documentation Status](https://readthedocs.org/projects/docs/badge/?version=latest)](https://harveybc-feature-extractor.readthedocs.io/en/latest/)
@@ -12,13 +12,13 @@ Plug-in based feature extractor, includes modules for a configurable keras model
 Implements modular components for feature extraction, it can be expanded by installing plugins for each module, there are 3 modules implemented:
 * [Trainer](../master/README_trainer.md): Trains a machine learning model and saves the pre-trained model (feature-extractor).
 * [Evaluator](../master/README_evaluator.md): Transforms an input dataset using a pre-trained model.
-* [Visualizer](../master/README_visualizer.md): Uses a Web UI to visualize plots or statistics with the data generated during training or evaluation (i.e. some error measurement).
+* [data_logger](../master/README_data_logger.md): Uses a Web UI to visualize plots or statistics with the data generated during training or evaluation (i.e. some error measurement).
 
 There are also three types of plugins:
 * Input plugins: load the data to be processed.
 * Operations plugins: perform feature extraction operations on loaded data: training or evaluation. 
 * Output plugins: save the results of the feature extraction operations: the pre-trained model (feature-extractor) for the trainer module and an output dataset (feature-extracted data) for the evaluator.
-* Visualization plugins: save data to be plotted by the visualizer module during training or evaluation.
+* Visualization plugins: save data to be plotted by the data_logger module during training or evaluation.
 
 It includes some pre-installed plugins (feature extractors):
 * Keras hybrid 1D DeepConv/LSTM trainer and evaluator.
@@ -59,8 +59,8 @@ Each module is implemented as a console command:
 > fe-trainer --core_plugin conv_lstm_trainer --input_file <input_dataset> <optional_parameters>
 * Evaluator: 
 > fe-evaluator --core_plugin conv_lstm_evaluator --input_file <input_dataset> --model <pretrained_model> <optional_parameters>
-* Visualizer: 
-> visualizer --core_plugin sqlite --input_file <input_dataset> <optional_parameters>
+* data_logger: 
+> data_logger --core_plugin sqlite --input_file <input_dataset> <optional_parameters>
 
 ### Command-Line Parameters
 
@@ -70,7 +70,7 @@ Parameters of the trainer and evaluator modules:
 * __--core_plugin <core_plugin_name>__: Feature engineering core operations plugin to process an input dataset.
 * __--input_plugin <input_lugin_name>__: Input dataset importing plugin. Defaults to csv_input.
 * __--output_plugin <output_plugin_name>__: Output dataset exporting plugin. Defaults to csv_output.
-* __--visualizer_plugin <visualizer_plugin_name>__: Output dataset exporting plugin. Defaults to csv_output.
+* __--data_logger_plugin <data_logger_plugin_name>__: Output dataset exporting plugin. Defaults to csv_output.
 * __--help, -h__: Shows help.
 
 ## Examples of usage
@@ -90,7 +90,7 @@ The following examples show both the class method and command line uses for the 
 The following example show how to configure and execute the core plugin of the trainer.
 
 ```python
-from feature_extractor.feature_extractor import FeatureExtractor
+from data_logger import FeatureExtractor
 # configure parameters (same variable names as command-line parameters)
 class Conf:
     def __init__(self):
@@ -98,7 +98,7 @@ class Conf:
         self.input_file = "tests/data/test_input.csv"
 # initialize instance of the Conf configuration class
 conf = Conf()
-# initialize and execute the core plugin, loading the dataset with the default feature_extractor 
+# initialize and execute the core plugin, loading the dataset with the default data_logger 
 # input plugin (load_csv), and saving the results using the default output plugin (store_csv). 
 fe = FeatureExtractor(conf)
 ```

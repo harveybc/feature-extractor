@@ -49,7 +49,7 @@ MANIFEST
 
 # Per-project virtualenvs
 .venv*/
-.vs/feature_extractor/v16/.suo
+.vs/data_logger/v16/.suo
 .vs/ProjectSettings.json
 .vs/slnx.sqlite
 .vs/VSWorkspaceState.json

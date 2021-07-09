@@ -39,7 +39,7 @@ except ImportError:
     from sphinx import apidoc
 
 output_dir = os.path.join(__location__, "api")
-module_dir = os.path.join(__location__, "../feature_extractor")
+module_dir = os.path.join(__location__, "../data_logger")
 try:
     shutil.rmtree(output_dir)
 except FileNotFoundError:
@@ -94,7 +94,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"feature_extractor"
+project = u"data_logger"
 copyright = u"2020, Harvey Bastidas"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -161,7 +161,7 @@ html_theme_options = {"sidebar_width": "300px", "page_width": "1200px"}
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 try:
-    from feature_extractor import __version__ as version
+    from data_logger import __version__ as version
 except ImportError:
     pass
 else:
@@ -226,7 +226,7 @@ html_static_path = ["_static"]
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "feature_extractor-doc"
+htmlhelp_basename = "data_logger-doc"
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -246,7 +246,7 @@ latex_documents = [
     (
         "index",
         "user_guide.tex",
-        u"feature_extractor Documentation",
+        u"data_logger Documentation",
         u"Harvey Bastidas",
         "manual",
     )

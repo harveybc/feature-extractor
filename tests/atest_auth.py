@@ -2,7 +2,7 @@ import pytest
 from flask import g
 from flask import session
 
-from feature_extractor.visualizer.db import get_db
+from data_logger.db import get_db
 
 
 def test_register(client, app):

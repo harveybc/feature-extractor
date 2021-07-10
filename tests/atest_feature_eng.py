@@ -5,7 +5,7 @@ import csv
 import sys
 import os 
 from filecmp import cmp
-from data_logger import FeatureExtractor
+from feature_extractor import FeatureExtractor
 
 __author__ = "Harvey Bastidas"
 __copyright__ = "Harvey Bastidas"
@@ -73,7 +73,7 @@ class TestFeatureExtractor:
 
     def test_C01T03_cmdline_plugin_load(self):
         """ same as C01T02, but via command-line """
-        os.system("data_logger --core_plugin heuristic_ts --input_file "
+        os.system("feature_extractor --core_plugin heuristic_ts --input_file "
             + self.conf.input_file
             + " --output_file "
             + self.conf.output_file

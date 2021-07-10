@@ -3,7 +3,7 @@
 This File contains the HeuristicTS class plugin. 
 """
 
-from data_logger.plugin_base import PluginBase
+from feature_extractor.plugin_base import PluginBase
 import numpy as np
 from sys import exit
 

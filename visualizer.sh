@@ -1,3 +1,3 @@
-export FLASK_APP=data_logger/data_logger
+export FLASK_APP=feature_extractor/feature_extractor
 export FLASK_ENV=development
 flask run

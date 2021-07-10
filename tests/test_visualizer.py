@@ -5,7 +5,7 @@ import csv
 import sys
 import os
 from filecmp import cmp
-from data_logger import FeatureExtractor
+from feature_extractor import FeatureExtractor
 import matplotlib.pyplot as plt
 import requests
 
@@ -30,7 +30,7 @@ class TestMSSAPredictor:
     def test_C05T01_cmdline(self):
         """ Assess if a page can be downloaded and its size is bigger than the error page """
         # os.spawnl(os.P_DETACH, 'some_long_running_command')
-        os.system("fe_data_logger --config_file "
+        os.system("fe_feature_extractor --config_file "
             + self.conf.config_file
         )
         # assert if after the command is executed, a curl of the landing page returns code 200 and size > nbytes.

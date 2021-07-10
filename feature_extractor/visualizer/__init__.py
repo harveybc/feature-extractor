@@ -2,7 +2,7 @@ import os
 import json
 from flask import Flask
 from flask import Blueprint
-from data_logger import FeatureExtractor
+from feature_extractor import FeatureExtractor
 from flask_migrate import Migrate
 
 def read_plugin_config(vis_config_file=None):
@@ -10,7 +10,7 @@ def read_plugin_config(vis_config_file=None):
     if vis_config_file != None:
         file_path = vis_config_file
     else:
-        file_path = os.path.dirname(os.path.abspath(__file__)) + "//data_logger.json"
+        file_path = os.path.dirname(os.path.abspath(__file__)) + "//feature_extractor.json"
     with open(file_path) as f:
         data = json.load(f)
     return data
@@ -29,9 +29,9 @@ def create_app(test_config=None):
         SECRET_KEY="dev",
         # store the database in the instance folder
         DATABASE=os.path.join(BASE_DIR, "test.sqlite"),
-        # plugin configuration from data_logger.json
+        # plugin configuration from feature_extractor.json
         P_CONFIG = p_config, 
-        # data_logger instance with plugins already loaded
+        # feature_extractor instance with plugins already loaded
         FE = fe
     )
     if test_config is None:
@@ -52,17 +52,17 @@ def create_app(test_config=None):
     #    return "Hello, World!"
 
     # register the database commands
-    from data_logger import db
+    from feature_extractor import db
 
     db.init_app(app)
 
     # apply the blueprints to the app
-    from data_logger import auth, data_logger
+    from feature_extractor import auth, feature_extractor
     
     # get the output plugin template folder
     plugin_folder = fe.ep_output.template_path(p_config)
     # construct the blueprint 
-    vis_bp = data_logger_blueprint(plugin_folder)
+    vis_bp = feature_extractor_blueprint(plugin_folder)
     
     # register the blueprints
     app.register_blueprint(auth.bp)

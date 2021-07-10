@@ -3,7 +3,7 @@
 This File contains the MSSAPredictor class plugin.
 """
 
-from data_logger.plugin_base import PluginBase
+from feature_extractor.plugin_base import PluginBase
 import numpy as np
 import sys
 from pymssa import MSSA

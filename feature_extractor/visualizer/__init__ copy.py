@@ -32,15 +32,15 @@ def create_app(test_config=None):
         return "Hello, World!"
 
     # register the database commands
-    from data_logger import db
+    from feature_extractor import db
 
     db.init_app(app)
 
     # apply the blueprints to the app
-    from data_logger import auth, data_logger
+    from feature_extractor import auth, feature_extractor
 
     app.register_blueprint(auth.bp)
-    app.register_blueprint(data_logger.bp)
+    app.register_blueprint(feature_extractor.bp)
 
     # make url_for('index') == url_for('blog.index')
     # in another app, you might define a separate main index here with

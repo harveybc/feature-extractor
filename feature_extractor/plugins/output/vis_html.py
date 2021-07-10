@@ -3,7 +3,7 @@
 This File contains the HTML output visualizator plugin. 
 """
 
-from data_logger.plugin_base import PluginBase
+from feature_extractor.plugin_base import PluginBase
 from numpy import savetxt
 from sys import exit
 import os

@@ -5,7 +5,7 @@ import csv
 import sys
 import os
 from filecmp import cmp
-from data_logger import FeatureExtractor
+from feature_extractor import FeatureExtractor
 
 __author__ = "Harvey Bastidas"
 __copyright__ = "Harvey Bastidas"
@@ -68,7 +68,7 @@ class TestHeuristicTS:
 
     def test_C02T02_cmdline(self):
         """ same as C01T02, but via command-line """
-        os.system("data_logger --core_plugin heuristic_ts --input_file "
+        os.system("feature_extractor --core_plugin heuristic_ts --input_file "
             + self.conf.input_file
             + " --output_file "
             + self.conf.output_file
@@ -84,7 +84,7 @@ class TestHeuristicTS:
 
     def test_C02T03_cmdline_current(self):
         """ same as C01T02, but via command-line """
-        os.system("data_logger --core_plugin heuristic_ts --input_file "
+        os.system("feature_extractor --core_plugin heuristic_ts --input_file "
             + self.conf.input_file
             + " --output_file "
             + os.path.join(os.path.dirname(__file__), "data/test_c02_t03_output.csv")
@@ -101,7 +101,7 @@ class TestHeuristicTS:
 
     def test_C02T04_cmdline_current_10k(self):
         """ generate 10k registers """
-        os.system("data_logger --core_plugin heuristic_ts --input_file "
+        os.system("feature_extractor --core_plugin heuristic_ts --input_file "
             + os.path.join(os.path.dirname(__file__), "data/test_input_10k.csv")
             + " --output_file "
             + os.path.join(os.path.dirname(__file__), "data/test_c02_t04_output.csv")   

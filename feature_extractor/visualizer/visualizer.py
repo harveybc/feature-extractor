@@ -1,5 +1,5 @@
 
-# This file contains the data_logger plugin, th input plugin can load all the data or starting from
+# This file contains the feature_extractor plugin, th input plugin can load all the data or starting from
  # the last id.
 
 from flask import Blueprint
@@ -11,15 +11,15 @@ from flask import request
 from flask import url_for
 from werkzeug.exceptions import abort
 
-from data_logger.auth import login_required
-from data_logger.db import get_db
+from feature_extractor.auth import login_required
+from feature_extractor.db import get_db
 from flask import current_app
 
 
-def data_logger_blueprint(plugin_folder):
+def feature_extractor_blueprint(plugin_folder):
 
-    # construct the data_logger blueprint using the plugin folder as template folder
-    bp = Blueprint("data_logger", __name__,  template_folder=plugin_folder)
+    # construct the feature_extractor blueprint using the plugin folder as template folder
+    bp = Blueprint("feature_extractor", __name__,  template_folder=plugin_folder)
     
     @bp.route("/")
     @login_required
@@ -27,7 +27,7 @@ def data_logger_blueprint(plugin_folder):
         # read the data to be visualized using the using the Feature extractor instance, preinitialized in __init__.py with input and output plugins entry points.
         # TODO: replace 0 in vis_data by process_id, obtained as the first process_id belonging to the current user.    
         vis_data = current_app.config['FE'].ep_input.load_data(current_app.config['P_CONFIG'], 0)
-        return render_template("/plugin_templates/data_logger/index.html", p_config = current_app.config['P_CONFIG'], vis_data =  vis_data)
+        return render_template("/plugin_templates/feature_extractor/index.html", p_config = current_app.config['P_CONFIG'], vis_data =  vis_data)
 
 
     def get_post(id, check_author=True):
@@ -80,9 +80,9 @@ def data_logger_blueprint(plugin_folder):
                     (title, body, g.user["id"]),
                 )
                 db.commit()
-                return redirect(url_for("data_logger.index"))
+                return redirect(url_for("feature_extractor.index"))
 
-        return render_template("data_logger/create.html")
+        return render_template("feature_extractor/create.html")
 
 
     @bp.route("/<int:id>/update", methods=("GET", "POST"))
@@ -107,9 +107,9 @@ def data_logger_blueprint(plugin_folder):
                     "UPDATE post SET title = ?, body = ? WHERE id = ?", (title, body, id)
                 )
                 db.commit()
-                return redirect(url_for("data_logger.index"))
+                return redirect(url_for("feature_extractor.index"))
 
-        return render_template("data_logger/update.html", post=post)
+        return render_template("feature_extractor/update.html", post=post)
 
 
     @bp.route("/<int:id>/delete", methods=("POST",))
@@ -124,6 +124,6 @@ def data_logger_blueprint(plugin_folder):
         db = get_db()
         db.execute("DELETE FROM post WHERE id = ?", (id,))
         db.commit()
-        return redirect(url_for("data_logger.index"))
+        return redirect(url_for("feature_extractor.index"))
     
     return bp

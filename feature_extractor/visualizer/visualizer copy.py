@@ -7,10 +7,10 @@ from flask import request
 from flask import url_for
 from werkzeug.exceptions import abort
 
-from data_logger.auth import login_required
-from data_logger.db import get_db
+from feature_extractor.auth import login_required
+from feature_extractor.db import get_db
 
-bp = Blueprint("data_logger", __name__)
+bp = Blueprint("feature_extractor", __name__)
 
 
 @bp.route("/")
@@ -37,7 +37,7 @@ def index():
         " ORDER BY created DESC"
     ).fetchall()
     
-    return render_template("data_logger/index.html", p_data = p_data)
+    return render_template("feature_extractor/index.html", p_data = p_data)
 
 
 def get_post(id, check_author=True):
@@ -93,9 +93,9 @@ def create():
                 (title, body, g.user["id"]),
             )
             db.commit()
-            return redirect(url_for("data_logger.index"))
+            return redirect(url_for("feature_extractor.index"))
 
-    return render_template("data_logger/create.html")
+    return render_template("feature_extractor/create.html")
 
 
 @bp.route("/<int:id>/update", methods=("GET", "POST"))
@@ -120,9 +120,9 @@ def update(id):
                 "UPDATE post SET title = ?, body = ? WHERE id = ?", (title, body, id)
             )
             db.commit()
-            return redirect(url_for("data_logger.index"))
+            return redirect(url_for("feature_extractor.index"))
 
-    return render_template("data_logger/update.html", post=post)
+    return render_template("feature_extractor/update.html", post=post)
 
 
 @bp.route("/<int:id>/delete", methods=("POST",))
@@ -137,4 +137,4 @@ def delete(id):
     db = get_db()
     db.execute("DELETE FROM post WHERE id = ?", (id,))
     db.commit()
-    return redirect(url_for("data_logger.index"))
+    return redirect(url_for("feature_extractor.index"))

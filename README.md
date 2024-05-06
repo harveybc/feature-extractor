@@ -90,6 +90,59 @@ python -m app.main data/sample.csv -ee outputs/encoder_evaluation.txt
 ```bash
 python -m app.main data/sample.csv -em custom_encoder_plugin
 ```
+## Project Directory Structure
+
+feature-extractor/
+│
+├── app/                           # Main application package
+│   ├── __init__.py                    # Initializes the Python package
+│   ├── main.py                        # Entry point for the application
+│   ├── config.py                      # Configuration settings for the app
+│   ├── cli.py                         # Command line interface handling
+│   ├── data_handler.py                # Module to handle data loading
+│   ├── encoder.py                     # Default encoder logic
+│   ├── decoder.py                     # Default decoder logic
+│   └── plugins/                       # Plugin directory
+│       ├── __init__.py                # Makes plugins a Python package
+│       ├── encoder_plugin_example.py  # Example encoder plugin
+│       └── decoder_plugin_example.py  # Example decoder plugin
+│
+├── tests/                             # Test modules for your application
+│   ├── __init__.py                    # Initializes the Python package for tests
+│   ├── test_encoder.py                # Tests for encoder functionality
+│   └── test_decoder.py                # Tests for decoder functionality
+│
+├── setup.py                           # Setup file for the package installation
+├── README.md                          # Project description and instructions
+├── requirements.txt                   # External packages needed
+└── .gitignore                         # Specifies intentionally untracked files to ignore
+
+### File Descriptions
+
+- yourapp/main.py: This is the main entry script where the application logic is handled based on command line arguments. It decides whether to train, evaluate the encoder, or evaluate the decoder based on input flags.
+
+- yourapp/config.py: Contains configuration settings, like paths and parameters that might be used throughout the application.
+
+- yourapp/cli.py: Handles parsing and validation of command line arguments using libraries such as argparse.
+
+- yourapp/data_handler.py: Responsible for loading and potentially preprocessing the CSV data.
+
+- yourapp/encoder.py and decoder.py: These files contain the default implementation of the encoder and decoder using Keras. They define simple artificial neural networks as starting points.
+
+- yourapp/plugins/init.py: Makes the plugins folder a package that can dynamically load plugins.
+
+- yourapp/plugins/encoder_plugin_example.py and decoder_plugin_example.py: Example plugins demonstrating how third-party plugins can be structured.
+
+- tests/: Contains unit tests for the encoder, decoder, and other components of the application to ensure reliability and correctness.
+
+- setup.py: Script for setting up the project installation, including entry points for plugin detection.
+
+- README.md: Provides an overview of the project, installation instructions, and usage examples.
+
+- requirements.txt: Lists dependencies required by the project which can be installed via pip.
+
+- .gitignore: Lists files and directories that should be ignored by Git, such as __pycache__, environment-specific files, etc.
+
 
 ## Contributing
 

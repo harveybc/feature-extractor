@@ -1,34 +1,31 @@
 from keras.models import Model
-from keras.layers import Input, Conv1D, MaxPooling1D, Flatten, Dense
+from keras.layers import Input, LSTM, Dense
 from keras.optimizers import Adam
 
-class ExampleEncoderPlugin:
+class LSTMEncoderPlugin:
     """
-    An encoder plugin using 1D convolutional layers, suitable for time series data,
+    An LSTM-based encoder plugin suitable for time series data,
     with dynamically configurable output size.
     """
     def __init__(self):
         """
-        Initializes the ExampleEncoderPlugin without a fixed architecture.
+        Initializes the LSTMEncoderPlugin without a fixed architecture.
         """
         self.model = None
 
     def configure_size(self, input_length, input_features, latent_dim):
         """
-        Configure the encoder model architecture dynamically based on the size of the input data and the desired latent dimension.
+        Configure the encoder model architecture dynamically based on the desired output size.
 
         Args:
-            input_length (int): The length of the input sequences.
+            input_length (int): The number of timesteps in each input sequence.
             input_features (int): The number of features per timestep.
             latent_dim (int): The desired size of the output latent dimension.
         """
         input_layer = Input(shape=(input_length, input_features))
-        x = Conv1D(32, 3, activation='relu', padding='same')(input_layer)
-        x = MaxPooling1D(2, padding='same')(x)
-        x = Conv1D(32, 3, activation='relu', padding='same')(x)
-        x = MaxPooling1D(2, padding='same')(x)
-        x = Flatten()(x)
-        x = Dense(latent_dim, activation='relu')(x)  # Adjusts the latent space dimension dynamically
+        x = LSTM(64, return_sequences=True)(input_layer)
+        x = LSTM(32, return_sequences=False)(x)
+        x = Dense(latent_dim, activation='relu')(x)  # Controls the size of the output encoding
 
         self.model = Model(inputs=input_layer, outputs=x)
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')

@@ -1,1 +1,0 @@
-This folder contains output plots from feature-eng plugin tests

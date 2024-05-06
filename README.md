@@ -3,7 +3,9 @@
 
 ## Description
 
-Feature Extractor is a Python application designed for processing CSV data through customizable encoding and decoding workflows. The application supports dynamic plugin integration, allowing users to extend its capabilities by adding custom encoder and decoder models. This feature makes it particularly suitable for tasks that require specialized data processing, such as machine learning model training and evaluation.
+Feature Extractor is a Python application designed for processing CSV data through customizable encoding and decoding workflows. The application supports dynamic plugin integration, allowing users to extend its capabilities by adding custom encoder and decoder models. 
+
+This feature makes it particularly suitable for tasks that require specialized data processing, such as machine learning model training and evaluation. It Includes plugins for RNN, CNN, LSTM, and Transformer-based architectures.
 
 ## Installation
 
@@ -13,7 +15,7 @@ Follow these steps to install and set up the application:
 - Python 3.8 or newer
 - pip (Python package installer)
 
-### Setting Up a Virtual Environment
+### Setting Up a Virtual Environment (optional)
 It's recommended to use a virtual environment to manage dependencies:
 
 ```bash
@@ -31,14 +33,9 @@ source venv/bin/activate
 Clone the repository and install the required dependencies:
 
 ```bash
-# Clone the repository
-git clone https://github.com/harveybc/feature-extractor.git
-cd yourproject
-
-# Install dependencies
+git clone https://github.com/your-github/feature-extractor.git
+cd feature-extractor
 pip install -r requirements.txt
-
-# Install the application (optional)
 python setup.py install
 ```
 
@@ -47,7 +44,7 @@ python setup.py install
 The application supports several command line arguments to control its behavior:
 
 ```
-usage: python -m yourapp.main [-h] [-ds SAVE_ENCODER] [-dl LOAD_DECODER_PARAMS]
+usage: python -m app.main [-h] [-ds SAVE_ENCODER] [-dl LOAD_DECODER_PARAMS]
                               [-el LOAD_ENCODER_PARAMS] [-ee EVALUATE_ENCODER]
                               [-de EVALUATE_DECODER] [-em ENCODER_PLUGIN]
                               [-dm DECODER_PLUGIN]
@@ -56,40 +53,28 @@ usage: python -m yourapp.main [-h] [-ds SAVE_ENCODER] [-dl LOAD_DECODER_PARAMS]
 
 ### Command Line Arguments
 - `csv_file`: The path to the CSV file to process.
-- `-ds, --save_encoder`: Filename to save the trained encoder.
-- `-dl, --load_decoder_params`: Load decoder parameters from a file.
-- `-el, --load_encoder_params`: Load encoder parameters from a file.
-- `-ee, --evaluate_encoder`: Filename for outputting encoder evaluation results.
-- `-de, --evaluate_decoder`: Filename for outputting decoder evaluation results.
-- `-em, --encoder_plugin`: Specify the encoder plugin to use.
-- `-dm, --decoder_plugin`: Specify the decoder plugin to use.
-- `-me, --minimum_error`: Minimum MSE error to stop the training process and export the trained encoder.
+- `--encoder_plugin <name>`: Selects the encoder plugin. Available options include `rnn`, `cnn`, `lstm`, and `transformer`.
+- `--decoder_plugin <name>`: Selects the decoder plugin. Corresponds to the encoders listed above.
+- `--save_encoder <filename>`: Specifies the filename to save the trained encoder model.
+- `--load_decoder_params <filename>`: Loads decoder parameters from a file.
+- `--evaluate_encoder <filename>`: Outputs encoder evaluation results to a file.
+- `--evaluate_decoder <filename>`: Outputs decoder evaluation results to a file.
+- `--window_size <size>`: Defines the size of the sliding window used for processing the time series data.
+- `--max_error <error>`: Sets the maximum mean squared error threshold for stopping the training.
+- `--initial_size <size>`: Initial size of the encoder output/input of the decoder.
+- `--step_size <size>`: Step size for reducing the size of the encoder/decoder interface.
+
 
 ### Examples of Use
 
-**Load and Process a CSV File**
-
-```bash
-python -m app.main data/sample.csv
-```
-
 **Train Encoder and Save Model**
 
-```bash
-python -m app.main data/sample.csv -ds saved_models/encoder.model
-```
-
-**Evaluate Encoder and Output Results**
+To train an encoder using an RNN model on your data with a sliding window size of 10:
 
 ```bash
-python -m app.main data/sample.csv -ee outputs/encoder_evaluation.txt
+python -m app.main --encoder_plugin rnn --csv_file path/to/your/data.csv --window_size 10 --save_encoder rnn_encoder.model
 ```
 
-**Use a Custom Plugin for Encoding**
-
-```bash
-python -m app.main data/sample.csv -em custom_encoder_plugin
-```
 ## Project Directory Structure
 
 feature-extractor/
@@ -104,8 +89,14 @@ feature-extractor/
 │   ├── decoder.py                     # Default decoder logic
 │   └── plugins/                       # Plugin directory
 │       ├── __init__.py                # Makes plugins a Python package
-│       ├── encoder_plugin_example.py  # Example encoder plugin
-│       └── decoder_plugin_example.py  # Example decoder plugin
+│       ├── encoder_plugin_rnn.py
+│       ├── encoder_plugin_transformer.py
+│       ├── encoder_plugin_lstm.py
+│       ├── encoder_plugin_cnn.py
+│       ├── decoder_plugin_rnn.py
+│       ├── decoder_plugin_transformer.py
+│       ├── decoder_plugin_lstm.py
+│       ├── decoder_plugin_cnn.py
 │
 ├── tests/                             # Test modules for your application
 │   ├── __init__.py                    # Initializes the Python package for tests
@@ -119,19 +110,19 @@ feature-extractor/
 
 ### File Descriptions
 
-- yourapp/main.py: This is the main entry script where the application logic is handled based on command line arguments. It decides whether to train, evaluate the encoder, or evaluate the decoder based on input flags.
+- app/main.py: This is the main entry script where the application logic is handled based on command line arguments. It decides whether to train, evaluate the encoder, or evaluate the decoder based on input flags.
 
-- yourapp/config.py: Contains configuration settings, like paths and parameters that might be used throughout the application.
+- app/config.py: Contains configuration settings, like paths and parameters that might be used throughout the application.
 
-- yourapp/cli.py: Handles parsing and validation of command line arguments using libraries such as argparse.
+- app/cli.py: Handles parsing and validation of command line arguments using libraries such as argparse.
 
-- yourapp/data_handler.py: Responsible for loading and potentially preprocessing the CSV data.
+- app/data_handler.py: Responsible for loading and potentially preprocessing the CSV data.
 
-- yourapp/encoder.py and decoder.py: These files contain the default implementation of the encoder and decoder using Keras. They define simple artificial neural networks as starting points.
+- app/encoder.py and decoder.py: These files contain the default implementation of the encoder and decoder using Keras. They define simple artificial neural networks as starting points.
 
-- yourapp/plugins/init.py: Makes the plugins folder a package that can dynamically load plugins.
+- app/plugins/init.py: Makes the plugins folder a package that can dynamically load plugins.
 
-- yourapp/plugins/encoder_plugin_example.py and decoder_plugin_example.py: Example plugins demonstrating how third-party plugins can be structured.
+- app/plugins/encoder_plugin_cnn.py and decoder_plugin_cnn.py: Example plugins demonstrating how third-party plugins can be structured.
 
 - tests/: Contains unit tests for the encoder, decoder, and other components of the application to ensure reliability and correctness.
 

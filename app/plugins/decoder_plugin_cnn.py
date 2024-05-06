@@ -1,5 +1,5 @@
 from keras.models import Model
-from keras.layers import Input, Conv1DTranspose, Dense
+from keras.layers import Input, Conv1DTranspose, Conv1D, Dense
 from keras.optimizers import Adam
 
 class ExampleDecoderPlugin:

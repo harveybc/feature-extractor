@@ -1,9 +1,10 @@
-from keras.models import Sequential, Model
-from keras.layers import Input, Conv1D, UpSampling1D
+from keras.models import Model
+from keras.layers import Input, Conv1DTranspose, Conv1D
+from keras.optimizers import Adam
 
 class ExampleDecoderPlugin:
     """
-    An example decoder plugin using 1D convolutional layers, suitable for time series data,
+    An example decoder plugin using 1D convolutional transpose layers, suitable for time series data,
     with dynamically configurable input size.
     """
     def __init__(self):
@@ -13,22 +14,21 @@ class ExampleDecoderPlugin:
         """
         self.model = None
 
-    def configure_size(self, input_length, input_filters):
+    def configure_size(self, input_length, input_filters, output_filters):
         """
         Configure the decoder model architecture dynamically based on the size of the encoded output.
 
         Args:
             input_length (int): The length of the input sequences.
             input_filters (int): The number of filters (or features) in the input encoded data.
+            output_filters (int): The number of filters in the output layer.
         """
         input_layer = Input(shape=(input_length, input_filters))
-        x = Conv1D(32, 3, activation='relu', padding='same')(input_layer)
-        x = UpSampling1D(2)(x)
-        x = Conv1D(16, 3, activation='relu', padding='same')(x)
-        x = UpSampling1D(2)(x)
-        output_layer = Conv1D(1, 3, activation='sigmoid', padding='same')(x)
+        x = Conv1DTranspose(32, 3, strides=2, activation='relu', padding='same')(input_layer)
+        x = Conv1DTranspose(16, 3, strides=2, activation='relu', padding='same')(x)
+        output_layer = Conv1D(output_filters, 3, activation='sigmoid', padding='same')(x)
         self.model = Model(inputs=input_layer, outputs=output_layer)
-        self.model.compile(optimizer='adam', loss='mean_squared_error')
+        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
     def train(self, encoded_data, original_data, epochs=50, batch_size=256):
         """

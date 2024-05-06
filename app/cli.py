@@ -22,8 +22,9 @@ def parse_args():
     parser.add_argument('-de', '--evaluate_decoder', type=str, help='Filename for outputting decoder evaluation results.')
 
     # Optional arguments for selecting plugins
-    parser.add_argument('-em', '--encoder_plugin', type=str, help='Name of the encoder plugin to use.')
-    parser.add_argument('-dm', '--decoder_plugin', type=str, help='Name of the decoder plugin to use.')
+    parser.add_argument('-ep', '--encoder_plugin', type=str, default='default_encoder', help='Name of the encoder plugin to use.')
+    parser.add_argument('-dp', '--decoder_plugin', type=str, default='default_decoder', help='Name of the decoder plugin to use.')
+
 
     # Optional argument for specifying the sliding window size
     parser.add_argument('-ws', '--window_size', type=int, help='Sliding window size to use for processing time series data.')

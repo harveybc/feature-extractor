@@ -12,9 +12,13 @@ DEFAULT_DECODER_PLUGIN = 'basic_decoder'         # Default decoder plugin name
 TRAINING_BATCH_SIZE = 32                         # Default batch size for model training
 EPOCHS = 10                                      # Default number of epochs for training
 
-# Performance thresholds
-MINIMUM_MSE_THRESHOLD = 0.01                     # Default minimum MSE for stopping training
+# Sliding window size for time series processing
+WINDOW_SIZE = 10                                 # Default window size for sliding window technique
+
+# Autoencoder configuration
+INITIAL_ENCODING_DIM = 100                       # Initial encoding dimension for the encoder
+ENCODING_STEP_SIZE = 10                          # Step size to reduce the encoding dimension
+MAXIMUM_MSE_THRESHOLD = 0.01                     # Maximum MSE threshold for stopping training
 
 # Plugin configurations
 PLUGIN_DIRECTORY = 'app/plugins/'                # Directory containing all plugins
-

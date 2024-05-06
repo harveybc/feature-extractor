@@ -1,25 +1,33 @@
 import numpy as np
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense
+from keras.optimizers import Adam
 
 class DefaultEncoder:
     """
-    A simple neural network based encoder using Keras.
+    A simple neural network based encoder using Keras, with dynamically configurable size.
     """
-    def __init__(self, input_dim=100, encoding_dim=50):
+    def __init__(self):
         """
-        Initializes the DefaultEncoder with a simple feedforward architecture.
+        Initializes the DefaultEncoder without a fixed architecture, to be configured later.
+        """
+        self.model = None
+
+    def configure_size(self, input_dim, encoding_dim):
+        """
+        Configure the encoder model architecture based on input and encoding dimensions.
 
         Args:
             input_dim (int): The number of input features.
             encoding_dim (int): The size of the encoding layer.
         """
+        # Initialize the model architecture
         self.model = Sequential([
             Dense(encoding_dim, input_shape=(input_dim,), activation='relu'),
-            Dense(int(encoding_dim / 2), activation='relu'),  # Further compression
-            Dense(encoding_dim, activation='relu')  # Output layer
+            Dense(int(encoding_dim / 2), activation='relu'),  # Intermediate compression
+            Dense(input_dim, activation='sigmoid')  # Output layer to reconstruct the input
         ])
-        self.model.compile(optimizer='adam', loss='mean_squared_error')
+        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
     def train(self, data, epochs=50, batch_size=256):
         """
@@ -42,7 +50,10 @@ class DefaultEncoder:
         Returns:
             np.array: Encoded data.
         """
-        return self.model.predict(data)
+        # Assuming the encoding layer is the second layer in the model
+        encoder_layer = self.model.layers[1]
+        encoder_function = K.function([self.model.input], [encoder_layer.output])
+        return encoder_function([data])[0]
 
     def save(self, file_path):
         """
@@ -60,5 +71,17 @@ class DefaultEncoder:
         Args:
             file_path (str): Path where the model is stored.
         """
-        from keras.models import load_model
         self.model = load_model(file_path)
+
+    def calculate_mse(self, original_data, reconstructed_data):
+        """
+        Calculates the mean squared error between the original data and the reconstructed data.
+
+        Args:
+            original_data (np.array): The original data.
+            reconstructed_data (np.array): The data after being encoded and then decoded.
+
+        Returns:
+            float: The mean squared error.
+        """
+        return np.mean(np.square(original_data - reconstructed_data))

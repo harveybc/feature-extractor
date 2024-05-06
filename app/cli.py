@@ -25,8 +25,13 @@ def parse_args():
     parser.add_argument('-em', '--encoder_plugin', type=str, help='Name of the encoder plugin to use.')
     parser.add_argument('-dm', '--decoder_plugin', type=str, help='Name of the decoder plugin to use.')
 
-    # Optional argument for specifying minimum MSE to stop training and export the model
-    parser.add_argument('-me', '--min_mse', type=float, help='Minimum MSE error to stop the training process and export the model.')
+    # Optional argument for specifying the sliding window size
+    parser.add_argument('-ws', '--window_size', type=int, help='Sliding window size to use for processing time series data.')
+
+    # Arguments related to autoencoder configuration and training
+    parser.add_argument('-me', '--max_error', type=float, help='Maximum MSE error to stop the training process.')
+    parser.add_argument('-is', '--initial_size', type=int, help='Initial size of the output of the encoder/input of the decoder.')
+    parser.add_argument('-ss', '--step_size', type=int, help='Step size to reduce the size of the encoder/decoder interface on each iteration.')
 
     return parser.parse_args()
 

@@ -1,104 +1,145 @@
+
 # Feature Extractor 
-
-Plug-in based feature extractor, includes modules for a configurable keras model trainer, evaluator and a training/evaluation visualizer with Web interface and serverless database. __Work In Progress, NOT USABLE YET__.
-
-[![Build Status](https://travis-ci.org/harveybc/feature-extractor.svg?branch=master)](https://travis-ci.org/harveybc/feature-extractor)
-[![Documentation Status](https://readthedocs.org/projects/docs/badge/?version=latest)](https://harveybc-feature-extractor.readthedocs.io/en/latest/)
-[![BCH compliance](https://bettercodehub.com/edge/badge/harveybc/feature-extractor?branch=master)](https://bettercodehub.com/)
-[![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/harveybc/feature-extractor/blob/master/LICENSE)
 
 ## Description
 
-Implements modular components for feature extraction, it can be expanded by installing plugins for each module, there are 3 modules implemented:
-* [Trainer](../master/README_trainer.md): Trains a machine learning model and saves the pre-trained model (feature-extractor).
-* [Evaluator](../master/README_evaluator.md): Transforms an input dataset using a pre-trained model.
-* [Visualizer](../master/README_visualizer.md): Uses a Web UI to visualize plots or statistics with the data generated during training or evaluation (i.e. some error measurement).
+Feature Extractor is a Python application designed for processing CSV data through customizable encoding and decoding workflows. The application supports dynamic plugin integration, allowing users to extend its capabilities by adding custom encoder and decoder models. 
 
-There are also three types of plugins:
-* Input plugins: load the data to be processed.
-* Operations plugins: perform feature extraction operations on loaded data: training or evaluation. 
-* Output plugins: save the results of the feature extraction operations: the pre-trained model (feature-extractor) for the trainer module and an output dataset (feature-extracted data) for the evaluator.
-* Visualization plugins: save data to be plotted by the visualizer module during training or evaluation.
-
-It includes some pre-installed plugins (feature extractors):
-* Keras hybrid 1D DeepConv/LSTM trainer and evaluator.
-* Keras autoencoder trainer and encoder evaluator.
-* TODO: Neuroevolved autoencoder (cuando esté re-implementado NEAT optimizer)
-* TODO: Multi-level optimization autoencoder (cuando esté re-implementado singularity)
-
-Usable both from command line and from class methods library.
+This feature makes it particularly suitable for tasks that require specialized data processing, such as machine learning model training and evaluation. It Includes plugins for RNN, CNN, LSTM, and Transformer-based architectures.
 
 ## Installation
 
-To install the package via PIP, use the following command:
+Follow these steps to install and set up the application:
 
-> pip install -i https://test.pypi.org/simple/ feature-extractor
+### Prerequisites
+- Python 3.8 or newer
+- pip (Python package installer)
 
-Also, the installation can be made by clonning the github repo and manually installing it as in the following instructions.
+### Setting Up a Virtual Environment (optional)
+It's recommended to use a virtual environment to manage dependencies:
 
-### Github Installation Steps
-1. Clone the GithHub repo:   
-> git clone https://github.com/harveybc/feature-extractor
-2. Change to the repo folder:
-> cd feature-extractor
-3. Install requirements.
-> pip install -r requirements.txt
-4. Install python package (also installs the console command data-trimmer)
-> python setup.py install
-5. Add the repo folder to the environment variable PYTHONPATH
-6. (Optional) Perform tests
-> python setup.py test
-7. (Optional) Generate Sphinx Documentation
-> python setup.py docs
+```bash
+# Create a virtual environment
+python -m venv venv
 
-### Command-Line Execution
-
-Each module is implemented as a console command:
-
-* Trainer: 
-> fe-trainer --core_plugin conv_lstm_trainer --input_file <input_dataset> <optional_parameters>
-* Evaluator: 
-> fe-evaluator --core_plugin conv_lstm_evaluator --input_file <input_dataset> --model <pretrained_model> <optional_parameters>
-* Visualizer: 
-> visualizer --core_plugin sqlite --input_file <input_dataset> <optional_parameters>
-
-### Command-Line Parameters
-
-Parameters of the trainer and evaluator modules:
-
-* __--list_plugins__: Shows a list of available plugins.
-* __--core_plugin <core_plugin_name>__: Feature engineering core operations plugin to process an input dataset.
-* __--input_plugin <input_lugin_name>__: Input dataset importing plugin. Defaults to csv_input.
-* __--output_plugin <output_plugin_name>__: Output dataset exporting plugin. Defaults to csv_output.
-* __--visualizer_plugin <visualizer_plugin_name>__: Output dataset exporting plugin. Defaults to csv_output.
-* __--help, -h__: Shows help.
-
-## Examples of usage
-
-The following examples show both the class method and command line uses for the trainer module, for examples of other plugins, please see the specific module´s documentation.
-
-### Example: Usage via CLI to list installed plugins
-
-> fe-trainer --list_plugins
-
-### Example: Usage via CLI to execute an installed plugin with its parameters
-
-> fe-trainer --core_plugin conv_lstm_trainer  --input_file "tests/data/test_input.csv"
-
-### Example: Usage via Class Methods conv_lstm_trainer plugin)
-
-The following example show how to configure and execute the core plugin of the trainer.
-
-```python
-from feature_extractor.feature_extractor import FeatureExtractor
-# configure parameters (same variable names as command-line parameters)
-class Conf:
-    def __init__(self):
-        self.core_plugin = "conv_lstm_trainer"
-        self.input_file = "tests/data/test_input.csv"
-# initialize instance of the Conf configuration class
-conf = Conf()
-# initialize and execute the core plugin, loading the dataset with the default feature_extractor 
-# input plugin (load_csv), and saving the results using the default output plugin (store_csv). 
-fe = FeatureExtractor(conf)
+# Activate the virtual environment
+# On Windows:
+venv\Scripts\activate
+# On Unix or MacOS:
+source venv/bin/activate
 ```
+
+### Install the Application
+Clone the repository and install the required dependencies:
+
+```bash
+git clone https://github.com/your-github/feature-extractor.git
+cd feature-extractor
+pip install -r requirements.txt
+python setup.py install
+```
+
+## Usage
+
+The application supports several command line arguments to control its behavior:
+
+```
+usage: python -m app.main [-h] [-ds SAVE_ENCODER] [-dl LOAD_DECODER_PARAMS]
+                              [-el LOAD_ENCODER_PARAMS] [-ee EVALUATE_ENCODER]
+                              [-de EVALUATE_DECODER] [-em ENCODER_PLUGIN]
+                              [-dm DECODER_PLUGIN]
+                              csv_file
+```
+
+### Command Line Arguments
+- `csv_file`: The path to the CSV file to process.
+- `--encoder_plugin <name>`: Selects the encoder plugin. Available options include `rnn`, `cnn`, `lstm`, and `transformer`.
+- `--decoder_plugin <name>`: Selects the decoder plugin. Corresponds to the encoders listed above.
+- `--save_encoder <filename>`: Specifies the filename to save the trained encoder model.
+- `--load_decoder_params <filename>`: Loads decoder parameters from a file.
+- `--evaluate_encoder <filename>`: Outputs encoder evaluation results to a file.
+- `--evaluate_decoder <filename>`: Outputs decoder evaluation results to a file.
+- `--window_size <size>`: Defines the size of the sliding window used for processing the time series data.
+- `--max_error <error>`: Sets the maximum mean squared error threshold for stopping the training.
+- `--initial_size <size>`: Initial size of the encoder output/input of the decoder.
+- `--step_size <size>`: Step size for reducing the size of the encoder/decoder interface.
+
+
+### Examples of Use
+
+**Train Encoder and Save Model**
+
+To train an encoder using an RNN model on your data with a sliding window size of 10:
+
+```bash
+python -m app.main --encoder_plugin rnn --csv_file path/to/your/data.csv --window_size 10 --save_encoder rnn_encoder.model
+```
+
+## Project Directory Structure
+
+feature-extractor/
+│
+├── app/                           # Main application package
+│   ├── __init__.py                    # Initializes the Python package
+│   ├── main.py                        # Entry point for the application
+│   ├── config.py                      # Configuration settings for the app
+│   ├── cli.py                         # Command line interface handling
+│   ├── data_handler.py                # Module to handle data loading
+│   ├── encoder.py                     # Default encoder logic
+│   ├── decoder.py                     # Default decoder logic
+│   └── plugins/                       # Plugin directory
+│       ├── __init__.py                # Makes plugins a Python package
+│       ├── encoder_plugin_rnn.py
+│       ├── encoder_plugin_transformer.py
+│       ├── encoder_plugin_lstm.py
+│       ├── encoder_plugin_cnn.py
+│       ├── decoder_plugin_rnn.py
+│       ├── decoder_plugin_transformer.py
+│       ├── decoder_plugin_lstm.py
+│       ├── decoder_plugin_cnn.py
+│
+├── tests/                             # Test modules for your application
+│   ├── __init__.py                    # Initializes the Python package for tests
+│   ├── test_encoder.py                # Tests for encoder functionality
+│   └── test_decoder.py                # Tests for decoder functionality
+│
+├── setup.py                           # Setup file for the package installation
+├── README.md                          # Project description and instructions
+├── requirements.txt                   # External packages needed
+└── .gitignore                         # Specifies intentionally untracked files to ignore
+
+### File Descriptions
+
+- app/main.py: This is the main entry script where the application logic is handled based on command line arguments. It decides whether to train, evaluate the encoder, or evaluate the decoder based on input flags.
+
+- app/config.py: Contains configuration settings, like paths and parameters that might be used throughout the application.
+
+- app/cli.py: Handles parsing and validation of command line arguments using libraries such as argparse.
+
+- app/data_handler.py: Responsible for loading and potentially preprocessing the CSV data.
+
+- app/encoder.py and decoder.py: These files contain the default implementation of the encoder and decoder using Keras. They define simple artificial neural networks as starting points.
+
+- app/plugins/init.py: Makes the plugins folder a package that can dynamically load plugins.
+
+- app/plugins/encoder_plugin_cnn.py and decoder_plugin_cnn.py: Example plugins demonstrating how third-party plugins can be structured.
+
+- tests/: Contains unit tests for the encoder, decoder, and other components of the application to ensure reliability and correctness.
+
+- setup.py: Script for setting up the project installation, including entry points for plugin detection.
+
+- README.md: Provides an overview of the project, installation instructions, and usage examples.
+
+- requirements.txt: Lists dependencies required by the project which can be installed via pip.
+
+- .gitignore: Lists files and directories that should be ignored by Git, such as __pycache__, environment-specific files, etc.
+
+
+## Contributing
+
+Contributions to the project are welcome! Please refer to the `CONTRIBUTING.md` file for guidelines on how to make contributions.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+

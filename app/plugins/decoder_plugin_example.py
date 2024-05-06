@@ -1,32 +1,32 @@
 from keras.models import Model
-from keras.layers import Input, Conv1DTranspose, Conv1D
+from keras.layers import Input, Conv1DTranspose, Dense
 from keras.optimizers import Adam
 
 class ExampleDecoderPlugin:
     """
     An example decoder plugin using 1D convolutional transpose layers, suitable for time series data,
-    with dynamically configurable input size.
+    with dynamically configurable output size.
     """
     def __init__(self):
         """
         Initializes the ExampleDecoderPlugin without a fixed architecture.
-        The model will be created dynamically based on the input configuration.
         """
         self.model = None
 
-    def configure_size(self, input_length, input_filters, output_filters):
+    def configure_size(self, input_length, latent_dim, output_features):
         """
         Configure the decoder model architecture dynamically based on the size of the encoded output.
 
         Args:
-            input_length (int): The length of the input sequences.
-            input_filters (int): The number of filters (or features) in the input encoded data.
-            output_filters (int): The number of filters in the output layer.
+            input_length (int): The length of the input sequences to be reconstructed.
+            latent_dim (int): The size of the input latent dimension from the encoder.
+            output_features (int): The number of features per timestep in the output sequence.
         """
-        input_layer = Input(shape=(input_length, input_filters))
+        input_layer = Input(shape=(input_length, latent_dim))
         x = Conv1DTranspose(32, 3, strides=2, activation='relu', padding='same')(input_layer)
         x = Conv1DTranspose(16, 3, strides=2, activation='relu', padding='same')(x)
-        output_layer = Conv1D(output_filters, 3, activation='sigmoid', padding='same')(x)
+        output_layer = Conv1D(output_features, 3, activation='sigmoid', padding='same')(x)
+
         self.model = Model(inputs=input_layer, outputs=output_layer)
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

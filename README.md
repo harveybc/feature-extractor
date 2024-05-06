@@ -74,40 +74,6 @@ To train an encoder using an RNN model on your data with a sliding window size o
 ```bash
 python -m app.main --encoder_plugin rnn --csv_file path/to/your/data.csv --window_size 10 --save_encoder rnn_encoder.model
 ```
-
-## Project Directory Structure
-
-feature-extractor/
-│
-├── app/                           # Main application package
-│   ├── __init__.py                    # Initializes the Python package
-│   ├── main.py                        # Entry point for the application
-│   ├── config.py                      # Configuration settings for the app
-│   ├── cli.py                         # Command line interface handling
-│   ├── data_handler.py                # Module to handle data loading
-│   ├── encoder.py                     # Default encoder logic
-│   ├── decoder.py                     # Default decoder logic
-│   └── plugins/                       # Plugin directory
-│       ├── __init__.py                # Makes plugins a Python package
-│       ├── encoder_plugin_rnn.py
-│       ├── encoder_plugin_transformer.py
-│       ├── encoder_plugin_lstm.py
-│       ├── encoder_plugin_cnn.py
-│       ├── decoder_plugin_rnn.py
-│       ├── decoder_plugin_transformer.py
-│       ├── decoder_plugin_lstm.py
-│       ├── decoder_plugin_cnn.py
-│
-├── tests/                             # Test modules for your application
-│   ├── __init__.py                    # Initializes the Python package for tests
-│   ├── test_encoder.py                # Tests for encoder functionality
-│   └── test_decoder.py                # Tests for decoder functionality
-│
-├── setup.py                           # Setup file for the package installation
-├── README.md                          # Project description and instructions
-├── requirements.txt                   # External packages needed
-└── .gitignore                         # Specifies intentionally untracked files to ignore
-
 ### File Descriptions
 
 - app/main.py: This is the main entry script where the application logic is handled based on command line arguments. It decides whether to train, evaluate the encoder, or evaluate the decoder based on input flags.

@@ -2,7 +2,7 @@ from keras.models import Model
 from keras.layers import Input, Conv1DTranspose, Conv1D, Dense
 from keras.optimizers import Adam
 
-class ExampleDecoderPlugin:
+class CNNDecoderPlugin:
     """
     An example decoder plugin using 1D convolutional transpose layers, suitable for time series data,
     with dynamically configurable output size.

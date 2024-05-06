@@ -2,7 +2,7 @@ from keras.models import Model
 from keras.layers import Input, Conv1D, MaxPooling1D, Flatten, Dense
 from keras.optimizers import Adam
 
-class ExampleEncoderPlugin:
+class CNNEncoderPlugin:
     """
     An encoder plugin using 1D convolutional layers, suitable for time series data,
     with dynamically configurable output size.

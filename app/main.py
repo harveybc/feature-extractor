@@ -3,6 +3,7 @@ from app.cli import parse_args
 from app.config import MODEL_SAVE_PATH, MODEL_LOAD_PATH, OUTPUT_PATH, MINIMUM_MSE_THRESHOLD
 from app.data_handler import load_csv
 import pkg_resources
+import requests
 
 def load_plugin(plugin_group, plugin_name):
     """
@@ -27,12 +28,15 @@ def train_autoencoder(encoder, data, max_error, initial_size, step_size):
         encoded_data = encoder.encode(data)
         decoded_data = encoder.decode(encoded_data)
         current_mse = encoder.calculate_mse(data, decoded_data)
-        print(f"Current MSE: {current_mse} at size: {current_size}")
+        print(f"Current MSE: {current_mse} at interface size: {current_size}")
         if current_mse <= max_error:
             print("Desired MSE reached. Stopping training.")
             break
         current_size -= step_size
-
+        # Connect to data-logger on localhost:60500 via HTTP POST request with basic authentication using 
+        # username 'test' and password 'pass', and send the current_mse and current_size as form data
+        response = requests.post('http://localhost:60500/feature_extractor/fe_training_error', auth=('test', 'pass'), data={'mse': current_mse, 'interface_size': current_size, 'config_id': 1})
+        print(f"Response from data-logger: {response.text}")
     return encoder
 
 def main():

@@ -51,19 +51,28 @@ usage: python -m app.main [-h] [-ds SAVE_ENCODER] [-dl LOAD_DECODER_PARAMS]
                               csv_file
 ```
 
-### Command Line Arguments
-- `csv_file`: The path to the CSV file to process.
-- `--encoder_plugin <name>`: Selects the encoder plugin. Available options include `rnn`, `cnn`, `lstm`, and `transformer`.
-- `--decoder_plugin <name>`: Selects the decoder plugin. Corresponds to the encoders listed above.
-- `--save_encoder <filename>`: Specifies the filename to save the trained encoder model.
-- `--load_decoder_params <filename>`: Loads decoder parameters from a file.
-- `--evaluate_encoder <filename>`: Outputs encoder evaluation results to a file.
-- `--evaluate_decoder <filename>`: Outputs decoder evaluation results to a file.
-- `--window_size <size>`: Defines the size of the sliding window used for processing the time series data.
-- `--max_error <error>`: Sets the maximum mean squared error threshold for stopping the training.
-- `--initial_size <size>`: Initial size of the encoder output/input of the decoder.
-- `--step_size <size>`: Step size for reducing the size of the encoder/decoder interface.
 
+### Command Line Arguments
+
+#### Required Arguments:
+- `csv_file`: Path to the CSV file to process. This is a required positional argument for specifying the CSV file that the feature-extractor tool will process.
+
+#### Optional Arguments:
+- `-se`, `--save_encoder`: Filename to save the trained encoder model. Specify this argument to set the filename for saving the encoder's parameters after training.
+- `-sd`, `--save_decoder`: Filename to save the trained decoder model. Specify this argument to set the filename for saving the decoder's parameters after training.
+- `-le`, `--load_encoder`: Filename to load encoder parameters from. Use this option to specify the file from which the encoder parameters should be loaded.
+- `-ld`, `--load_decoder`: Filename to load decoder parameters from. Use this option to specify the file from which the decoder parameters should be loaded.
+- `-ee`, `--evaluate_encoder`: Filename for outputting encoder evaluation results. This option sets the output file for storing the results of the encoder evaluation.
+- `-ed`, `--evaluate_decoder`: Filename for outputting decoder evaluation results. This option sets the output file for storing the results of the decoder evaluation.
+- `-ep`, `--encoder_plugin`: Name of the encoder plugin to use. Defaults to 'default_encoder'. This argument allows users to specify which encoder plugin the tool should use.
+- `-dp`, `--decoder_plugin`: Name of the decoder plugin to use. Defaults to 'default_decoder'. This argument allows users to specify which decoder plugin the tool should use.
+- `-ws`, `--window_size`: Sliding window size to use for processing time series data. Defaults to 10. This option sets the window size for processing the data.
+- `-me`, `--max_error`: Maximum MSE error to stop the training process. Specify this option to set a threshold for the maximum mean squared error at which training should be terminated.
+- `-is`, `--initial_size`: Initial size of the encoder/decoder interface. This parameter sets the starting size for the interface between the encoder and decoder during training.
+- `-ss`, `--step_size`: Step size to reduce the size of the encoder/decoder interface on each iteration. This parameter determines how much to decrease the interface size after each training iteration.
+- `-rl`, `--remote_log`: URL of a remote data-logger API endpoint. Specify this option to set the endpoint for remote logging and monitoring of the training process.
+- `-rc`, `--remote_config`: URL of a remote JSON configuration file to download and execute. Use this argument to specify a remote configuration that should be automatically downloaded and applied.
+- `-qm`, `--quiet_mode`: Do not show results on the console. Defaults to 0 (disabled). Set this to 1 to enable quiet mode, which suppresses output to the console during processing.
 
 ### Examples of Use
 

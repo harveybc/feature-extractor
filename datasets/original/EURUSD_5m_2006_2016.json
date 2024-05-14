@@ -1,0 +1,44 @@
+{
+    "name" : "EurUSD forex pair 5min 2002 to 2019",
+    "url" : "https://www.kaggle.com/datasets/stijnvanleeuwen/eurusd-forex-pair-15min-2002-2019/download?datasetVersionNumber=1",
+    "format" : "csv",
+    "description" : "This dataset contains 15 minute data for the EURUSD forex pair from 2002 to 2019. The data is stored in a CSV file. The columns are: Date, Time, Open, High, Low, Close, Volume. The data is stored in a CSV file. The columns are: DateTime, Open, High, Low, Close, Volume.",
+    "license" : "Unknown",
+    "transformations": [],
+    "headers" : false,
+    "columns" : [
+        {
+            "name" : "DateTime",
+            "type" : "String",
+            "description" : "The date and time of the data point."
+        },
+        {
+            "name" : "Open",
+            "type" : "Float",
+            "description" : "The opening price of the data point."
+        },
+        {
+            "name" : "High",
+            "type" : "Float",
+            "description" : "The highest price of the data point."
+        },
+        {
+            "name" : "Low",
+            "type" : "Float",
+            "description" : "The lowest price of the data point."
+        },
+        {
+            "name" : "Close",
+            "type" : "Float",
+            "description" : "The closing price of the data point."
+        },
+        {
+            "name" : "Volume",
+            "type" : "Int",
+            "description" : "The volume of transactions the data point."
+        }
+    ]
+
+    
+
+}

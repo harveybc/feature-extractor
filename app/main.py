@@ -40,7 +40,7 @@ def train_autoencoder(encoder, data, max_error, initial_size, step_size):
     return encoder
 
 def main():
-    # Parse command line arguments
+    # Parse command line arguments and remore configurations
     args = parse_args()
 
     # Load the CSV data

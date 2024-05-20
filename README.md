@@ -81,11 +81,19 @@ usage: python -m app.main [-h] [-ds SAVE_ENCODER] [-dl LOAD_DECODER_PARAMS]
 To train an encoder using an RNN model on your data with a sliding window size of 10:
 
 ```bash
+python -m app.main --encoder_plugin rnn --decoder_plugin rnn --csv_file path/to/your/data.csv --window_size 10 --save_encoder rnn_encoder.model
+```
+
+**Train Encoder and Save Model**
+
+To train an encoder using an RNN model on your data with a sliding window size of 10:
+
+```bash
 python -m app.main --encoder_plugin rnn --csv_file path/to/your/data.csv --window_size 10 --save_encoder rnn_encoder.model
 ```
 
 ## Project Directory Structure
-
+```md
 feature-extractor/
 │
 ├── app/                           # Main application package
@@ -116,6 +124,7 @@ feature-extractor/
 ├── README.md                          # Project description and instructions
 ├── requirements.txt                   # External packages needed
 └── .gitignore                         # Specifies intentionally untracked files to ignore
+```
 
 ### File Descriptions
 

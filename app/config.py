@@ -1,10 +1,10 @@
 # Configuration file for the feature-extractor application
 
 # Path configurations
-CSV_INPUT_PATH = 'path/to/default/csv_input.csv'  # Default path for CSV input if not specified
-MODEL_SAVE_PATH = 'path/to/save/models/'          # Default directory to save trained models
-MODEL_LOAD_PATH = 'path/to/load/models/'          # Default directory to load models from
-OUTPUT_PATH = 'path/to/output/'                   # Default directory for saving outputs
+CSV_INPUT_PATH = './csv_input.csv'  # Default path for CSV input if not specified
+MODEL_SAVE_PATH = './model_out'          # Default directory to save trained models
+MODEL_LOAD_PATH = './model_in'          # Default directory to load models from
+OUTPUT_PATH = './csv_output.csv'                   # Default directory for saving outputs
 
 # Model and training configurations
 DEFAULT_ENCODER_PLUGIN = 'basic_encoder'         # Default encoder plugin name

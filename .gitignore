@@ -128,7 +128,7 @@ venv.bak/
 
 # VS Code
 .vscode/
-
+!tests/data/*.csv
 # Data files
 data/
 *.csv

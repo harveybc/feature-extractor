@@ -132,6 +132,7 @@ venv.bak/
 # Data files
 data/
 *.csv
+!tests/data/*.csv
 
 # Log files
 *.log

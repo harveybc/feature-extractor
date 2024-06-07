@@ -1,14 +1,9 @@
 import pytest
 from unittest.mock import patch, MagicMock
 import json
-import sys
-import requests
+import numpy as np
 import pandas as pd
 from app.main import main
-from app.cli import parse_args
-from app.config_handler import load_config, save_config, save_debug_info, merge_config, load_remote_config, save_remote_config, log_remote_data
-from app.data_handler import load_csv, write_csv
-from app.data_processor import process_data
 
 @pytest.fixture
 def config():
@@ -108,7 +103,8 @@ def test_main_no_csv_file(mock_merge_config, mock_load_config, mock_parse_args, 
 
     # Capture the output
     with patch('sys.stderr', new_callable=lambda: MagicMock()) as mock_stderr:
-        main()
+        with pytest.raises(SystemExit):
+            main()
 
     # Verify output
     output = "".join([call[0][0] for call in mock_stderr.write.call_args_list])
@@ -135,7 +131,8 @@ def test_main_invalid_csv(mock_load_csv, mock_merge_config, mock_load_config, mo
 
     # Capture the output
     with patch('sys.stderr', new_callable=lambda: MagicMock()) as mock_stderr:
-        main()
+        with pytest.raises(SystemExit):
+            main()
 
     # Verify output
     output = "".join([call[0][0] for call in mock_stderr.write.call_args_list])

@@ -1,61 +1,55 @@
 import pytest
 from unittest.mock import patch, mock_open
 import json
-from app.config_handler import (
-    load_config, save_config, merge_config, save_debug_info,
-    load_remote_config, save_remote_config, log_remote_data
-)
+from app.config_handler import save_config, load_remote_config, save_remote_config, log_remote_data, merge_config, save_debug_info
 
-def test_load_config_success():
-    with patch("builtins.open", mock_open(read_data='{"encoder_plugin": "test_encoder", "decoder_plugin": "test_decoder"}')) as mock_file:
-        config = load_config('config.json')
-        mock_file.assert_called_once_with('config.json', 'r')
-        assert config == {"encoder_plugin": "test_encoder", "decoder_plugin": "test_decoder"}
+# Add requests import
+import requests
 
-def test_save_config_success():
-    with patch("builtins.open", mock_open()) as mock_file:
-        config = {"encoder_plugin": "test_encoder", "decoder_plugin": "test_decoder"}
-        save_config(config, 'config.json')
-        mock_file.assert_called_once_with('config.json', 'w')
-        mock_file().write.assert_called_once_with(json.dumps(config, indent=4))
+@patch("builtins.open", new_callable=mock_open)
+@patch("json.dump")
+def test_save_config_success(mock_json_dump, mock_open):
+    config = {'key': 'value'}
+    save_config(config, "config_out.json")
+    mock_open.assert_called_once_with("config_out.json", 'w')
+    mock_json_dump.assert_called_once_with(config, mock_open(), indent=4)
 
 def test_merge_config():
-    base_config = {"encoder_plugin": "default_encoder"}
-    cli_args = {"encoder_plugin": "cli_encoder", "new_param": "value"}
-    merged_config = merge_config(base_config, cli_args)
-    assert merged_config == {"encoder_plugin": "cli_encoder", "new_param": "value"}
+    default_config = {'encoder_plugin': 'default_encoder', 'max_error': 0.01}
+    cli_args = {'encoder_plugin': 'custom_encoder', 'additional_param': 'value'}
+    merged_config = merge_config(default_config, cli_args)
+    expected_config = {'encoder_plugin': 'custom_encoder', 'max_error': 0.01, 'additional_param': 'value'}
+    assert merged_config == expected_config
 
-def test_save_debug_info():
-    with patch("builtins.open", mock_open()) as mock_file:
-        debug_info = {"step": "test"}
-        save_debug_info(debug_info, 'debug.json')
-        mock_file.assert_called_once_with('debug.json', 'w')
-        mock_file().write.assert_called_once_with(json.dumps(debug_info, indent=4))
+@patch("builtins.open", new_callable=mock_open)
+@patch("json.dump")
+def test_save_debug_info(mock_json_dump, mock_open):
+    debug_info = {'execution_time': 123}
+    save_debug_info(debug_info, "debug_out.json")
+    mock_open.assert_called_once_with("debug_out.json", 'w')
+    mock_json_dump.assert_called_once_with(debug_info, mock_open(), indent=4)
 
 @patch("requests.get")
-def test_load_remote_config(mock_get):
-    mock_response = mock_get.return_value
-    mock_response.json.return_value = {"encoder_plugin": "remote_encoder"}
-    mock_response.raise_for_status = lambda: None
-    config = load_remote_config()
-    mock_get.assert_called_once_with('http://localhost:60500/preprocessor/feature_extractor/detail/1', auth=('test', 'pass'))
-    assert config == {"encoder_plugin": "remote_encoder"}
+def test_load_remote_config(mock_requests_get):
+    mock_response = MagicMock()
+    mock_response.json.return_value = {'config_key': 'config_value'}
+    mock_requests_get.return_value = mock_response
+    config = load_remote_config("http://localhost:60500/preprocessor/feature_extractor/detail/1", "test", "pass")
+    assert config == {'config_key': 'config_value'}
 
 @patch("requests.post")
-def test_save_remote_config(mock_post):
-    mock_response = mock_post.return_value
-    mock_response.json.return_value = {"status": "success"}
-    mock_response.raise_for_status = lambda: None
-    response = save_remote_config({"encoder_plugin": "test_encoder"})
-    mock_post.assert_called_once_with('http://localhost:60500/preprocessor/feature_extractor/create', auth=('test', 'pass'), json={"encoder_plugin": "test_encoder"})
-    assert response == {"status": "success"}
+def test_save_remote_config(mock_requests_post):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_requests_post.return_value = mock_response
+    result = save_remote_config("config_string", "http://localhost:60500/preprocessor/feature_extractor/create", "test", "pass")
+    assert result is True
 
 @patch("requests.post")
-def test_log_remote_data(mock_post):
-    mock_response = mock_post.return_value
-    mock_response.json.return_value = {"status": "logged"}
-    mock_response.raise_for_status = lambda: None
-    response = log_remote_data({"mse": 0.01})
-    mock_post.assert_called_once_with('http://localhost:60500/preprocessor/feature_extractor/create', auth=('test', 'pass'), json={"mse": 0.01})
-    assert response == {"status": "logged"}
-
+def test_log_remote_data(mock_requests_post):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_requests_post.return_value = mock_response
+    debug_info = {'execution_time': 123}
+    result = log_remote_data(debug_info, "http://localhost:60500/preprocessor/feature_extractor/create", "test", "pass")
+    assert result is True

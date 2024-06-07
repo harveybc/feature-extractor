@@ -37,3 +37,6 @@ def test_sliding_window():
     ])]
     for r, e in zip(result, expected_result):
         np.testing.assert_array_equal(r, e)
+
+if __name__ == "__main__":
+    pytest.main()

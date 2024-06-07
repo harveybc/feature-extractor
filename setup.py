@@ -5,6 +5,9 @@ setup(
     version='0.1.0',
     packages=find_packages(),
     entry_points={
+            'console_scripts': [
+            'feature_extractor=app.main:main'
+        ],
         'feature_extractor.encoders': [
             'default_encoder=app.plugins.encoder_plugin_ann:Plugin',
             'rnn=app.plugins.encoder_plugin_rnn:Plugin',

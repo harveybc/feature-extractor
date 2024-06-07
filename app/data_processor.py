@@ -1,7 +1,7 @@
 import sys
 import requests
 from app.data_handler import load_csv, write_csv, sliding_window
-from app.plugin_loader import load_plugin
+from app.plugin_loader import load_encoder_decoder_plugins
 
 def train_autoencoder(encoder, data, max_error, initial_size, step_size):
     """
@@ -40,7 +40,7 @@ def train_autoencoder(encoder, data, max_error, initial_size, step_size):
 
 def process_data(config):
     """
-    Process the data using the specified encoder plugin.
+    Process the data using the specified encoder and decoder plugins.
 
     Args:
         config (dict): Configuration dictionary.
@@ -55,9 +55,14 @@ def process_data(config):
 
     debug_info = {}
 
+    encoder_name = config.get('encoder_plugin', 'default_encoder')
+    decoder_name = config.get('decoder_plugin', 'default_decoder')
+    Encoder, encoder_params, Decoder, decoder_params = load_encoder_decoder_plugins(encoder_name, decoder_name)
+
+    encoder = Encoder()
+    decoder = Decoder()
+
     for index, series_data in enumerate(windowed_data):
-        Encoder = load_plugin('feature_extractor.encoders', config.get('encoder_plugin', 'default_encoder'))
-        encoder = Encoder()
         trained_encoder = train_autoencoder(encoder, series_data, config['max_error'], config['initial_size'], config['step_size'])
 
         model_filename = f"{config['save_encoder']}_{index}.h5"
@@ -65,7 +70,7 @@ def process_data(config):
         print(f"Model saved as {model_filename}")
 
         encoded_data = trained_encoder.encode(series_data)
-        decoded_data = trained_encoder.model.predict(encoded_data)
+        decoded_data = decoder.decode(encoded_data)
 
         mse = encoder.calculate_mse(series_data, decoded_data)
         print(f"Mean Squared Error: {mse}")
@@ -74,7 +79,7 @@ def process_data(config):
         trained_encoder.add_debug_info(debug_info)
 
         output_filename = f"{config['output_file']}_{index}.csv"
-        write_csv(output_filename, pd.DataFrame(decoded_data), include_date=config['force_date'], headers=config['headers'])
+        write_csv(output_filename, decoded_data, include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")
 
         if config['remote_log']:

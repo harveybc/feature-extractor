@@ -2,16 +2,60 @@ import numpy as np
 from keras.models import Sequential, load_model
 from keras.layers import Dense
 from keras.optimizers import Adam
+import keras.backend as K
 
-class DefaultEncoder:
+class Plugin:
     """
-    A simple neural network based encoder using Keras, with dynamically configurable size.
+    An encoder plugin using a simple neural network based on Keras, with dynamically configurable size.
     """
+
+    # Define the parameters for this plugin and their default values
+    plugin_params = {
+        'input_dim': None,
+        'encoding_dim': 32,
+        'epochs': 50,
+        'batch_size': 256
+    }
+
+    # Define the debug variables for this plugin
+    plugin_debug_vars = ['input_dim', 'encoding_dim', 'epochs', 'batch_size']
+
     def __init__(self):
         """
-        Initializes the DefaultEncoder without a fixed architecture, to be configured later.
+        Initialize the Plugin with default parameters.
         """
+        self.params = self.plugin_params.copy()
         self.model = None
+
+    def set_params(self, **kwargs):
+        """
+        Set the parameters for the plugin.
+
+        Args:
+            **kwargs: Arbitrary keyword arguments for plugin parameters.
+        """
+        for key, value in kwargs.items():
+            if key in self.params:
+                self.params[key] = value
+
+    def get_debug_info(self):
+        """
+        Get debug information for the plugin.
+
+        Returns:
+            dict: Debug information including input_dim, encoding_dim, epochs, and batch_size.
+        """
+        return {var: self.params[var] for var in self.plugin_debug_vars}
+
+    def add_debug_info(self, debug_info):
+        """
+        Add plugin-specific debug information to the existing debug info.
+
+        Args:
+            debug_info (dict): The existing debug information dictionary.
+        """
+        plugin_debug_info = self.get_debug_info()
+        debug_info.update(plugin_debug_info)
 
     def configure_size(self, input_dim, encoding_dim):
         """
@@ -21,7 +65,9 @@ class DefaultEncoder:
             input_dim (int): The number of input features.
             encoding_dim (int): The size of the encoding layer.
         """
-        # Initialize the model architecture
+        self.params['input_dim'] = input_dim
+        self.params['encoding_dim'] = encoding_dim
+
         self.model = Sequential([
             Dense(encoding_dim, input_shape=(input_dim,), activation='relu'),
             Dense(int(encoding_dim / 2), activation='relu'),  # Intermediate compression
@@ -29,16 +75,14 @@ class DefaultEncoder:
         ])
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
-    def train(self, data, epochs=50, batch_size=256):
+    def train(self, data):
         """
         Trains the encoder model on provided data.
 
         Args:
             data (np.array): Training data.
-            epochs (int): Number of epochs to train for.
-            batch_size (int): Batch size for training.
         """
-        self.model.fit(data, data, epochs=epochs, batch_size=batch_size)
+        self.model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'])
 
     def encode(self, data):
         """
@@ -50,8 +94,7 @@ class DefaultEncoder:
         Returns:
             np.array: Encoded data.
         """
-        # Assuming the encoding layer is the second layer in the model
-        encoder_layer = self.model.layers[1]
+        encoder_layer = self.model.layers[0]
         encoder_function = K.function([self.model.input], [encoder_layer.output])
         return encoder_function([data])[0]
 

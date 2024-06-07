@@ -1,4 +1,5 @@
 import pkg_resources
+import sys
 
 def load_plugin(plugin_group, plugin_name):
     """
@@ -42,3 +43,13 @@ def get_plugin_params(plugin_group, plugin_name):
     except Exception as e:
         print(f"Failed to get plugin params for {plugin_name} from group {plugin_group}, Error: {e}")
         return {}
+
+# Ensure this is compatible with older versions of pkg_resources
+def safe_get_metadata_lines(dist, name):
+    try:
+        return pkg_resources.get_distribution(dist).get_metadata_lines(name)
+    except UnicodeDecodeError:
+        with open(pkg_resources.get_distribution(dist).get_metadata_path(name), encoding='utf-8') as f:
+            return f.readlines()
+
+pkg_resources.get_metadata_lines = safe_get_metadata_lines

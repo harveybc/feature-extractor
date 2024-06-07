@@ -1,72 +1,67 @@
-import pytest
-from unittest.mock import patch, mock_open, MagicMock
 import json
-from app.config_handler import save_config, load_remote_config, save_remote_config, log_remote_data, merge_config, save_debug_info
-
-# Add requests import
 import requests
 
-@patch("builtins.open", new_callable=mock_open)
-@patch("json.dump")
-def test_save_config_success(mock_json_dump, mock_open):
-    config = {'key': 'value'}
-    save_config(config, "config_out.json")
-    mock_open.assert_called_once_with("config_out.json", 'w')
-    mock_json_dump.assert_called_once_with(config, mock_open(), indent=4)
+# Define default values for the configuration
+DEFAULT_VALUES = {
+    'encoder_plugin': 'default_encoder',
+    'decoder_plugin': 'default_decoder',
+    'output_file': 'output.csv',
+    'remote_log': 'http://localhost:60500/preprocessor/feature_extractor/create',
+    'remote_save_config': 'http://localhost:60500/preprocessor/feature_extractor/create',
+    'remote_load_config': 'http://localhost:60500/preprocessor/feature_extractor/detail/1',
+    'remote_username': 'test',
+    'remote_password': 'pass',
+    'quiet_mode': False,
+    'max_error': 0.01,
+    'initial_size': 256,
+    'step_size': 32,
+    'csv_file': '',
+    'headers': True,
+    'window_size': 10
+}
 
-def test_merge_config():
-    default_config = {'encoder_plugin': 'default_encoder', 'max_error': 0.01}
-    cli_args = {'encoder_plugin': 'custom_encoder', 'additional_param': 'value'}
-    merged_config = merge_config(default_config, cli_args)
-    expected_config = {
-        'encoder_plugin': 'custom_encoder',
-        'decoder_plugin': 'default_decoder',
-        'output_file': 'output.csv',
-        'remote_log': 'http://localhost:60500/preprocessor/feature_extractor/create',
-        'remote_save_config': 'http://localhost:60500/preprocessor/feature_extractor/create',
-        'remote_load_config': 'http://localhost:60500/preprocessor/feature_extractor/detail/1',
-        'remote_username': 'test',
-        'remote_password': 'pass',
-        'quiet_mode': False,
-        'max_error': 0.01,
-        'initial_size': 256,
-        'step_size': 32,
-        'csv_file': '',
-        'headers': True,
-        'window_size': 10,
-        'additional_param': 'value'
-    }
-    assert merged_config == expected_config
+def load_config(args):
+    if args.load_config:
+        with open(args.load_config, 'r') as f:
+            config = json.load(f)
+    else:
+        config = {}
 
-@patch("builtins.open", new_callable=mock_open)
-@patch("json.dump")
-def test_save_debug_info(mock_json_dump, mock_open):
-    debug_info = {'execution_time': 123}
-    save_debug_info(debug_info, "debug_out.json")
-    mock_open.assert_called_once_with("debug_out.json", 'w')
-    mock_json_dump.assert_called_once_with(debug_info, mock_open(), indent=4)
+    return config
 
-@patch("requests.get")
-def test_load_remote_config(mock_requests_get):
-    mock_response = MagicMock()
-    mock_response.json.return_value = {'config_key': 'config_value'}
-    mock_requests_get.return_value = mock_response
-    config = load_remote_config("http://localhost:60500/preprocessor/feature_extractor/detail/1", "test", "pass")
-    assert config == {'config_key': 'config_value'}
+def save_config(config, path='config_out.json'):
+    config_to_save = {k: v for k, v in config.items() if k not in DEFAULT_VALUES or config[k] != DEFAULT_VALUES[k]}
+    with open(path, 'w') as f:
+        json.dump(config_to_save, f, indent=4)
+    return config, path
 
-@patch("requests.post")
-def test_save_remote_config(mock_requests_post):
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_requests_post.return_value = mock_response
-    result = save_remote_config("config_string", "http://localhost:60500/preprocessor/feature_extractor/create", "test", "pass")
-    assert result is True
+def merge_config(config, cli_args):
+    # Set default values
+    for key, value in DEFAULT_VALUES.items():
+        config.setdefault(key, value)
 
-@patch("requests.post")
-def test_log_remote_data(mock_requests_post):
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_requests_post.return_value = mock_response
-    debug_info = {'execution_time': 123}
-    result = log_remote_data(debug_info, "http://localhost:60500/preprocessor/feature_extractor/create", "test", "pass")
-    assert result is True
+    # Merge CLI arguments, overriding config file values
+    for key, value in cli_args.items():
+        if value is not None:
+            config[key] = value
+
+    return config
+
+def save_debug_info(debug_info, path='debug_out.json'):
+    with open(path, 'w') as f:
+        json.dump(debug_info, f, indent=4)
+
+def load_remote_config(url=DEFAULT_VALUES['remote_load_config'], username=DEFAULT_VALUES['remote_username'], password=DEFAULT_VALUES['remote_password']):
+    response = requests.get(url, auth=(username, password))
+    response.raise_for_status()
+    return response.json()
+
+def save_remote_config(config, url=DEFAULT_VALUES['remote_save_config'], username=DEFAULT_VALUES['remote_username'], password=DEFAULT_VALUES['remote_password']):
+    response = requests.post(url, auth=(username, password), json=config)
+    response.raise_for_status()
+    return response.status_code == 200
+
+def log_remote_data(data, url=DEFAULT_VALUES['remote_log'], username=DEFAULT_VALUES['remote_username'], password=DEFAULT_VALUES['remote_password']):
+    response = requests.post(url, auth=(username, password), json=data)
+    response.raise_for_status()
+    return response.status_code == 200

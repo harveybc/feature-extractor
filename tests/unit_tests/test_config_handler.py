@@ -1,7 +1,7 @@
 import pytest
 import json
 import requests
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, call
 from app.config_handler import load_config, save_config, save_debug_info, merge_config, load_remote_config, save_remote_config, log_remote_data
 
 def test_load_config():
@@ -12,16 +12,18 @@ def test_load_config():
 
 def test_save_config():
     config = {'encoder_plugin': 'default_encoder', 'max_error': 0.01}
+    expected_json = json.dumps(config, indent=4)
     with patch("builtins.open", mock_open()) as mock_file:
         config_str, path = save_config(config, "mock_path")
-        mock_file().write.assert_called_once_with(json.dumps(config, indent=4))
+        mock_file().write.assert_called_once_with(expected_json)
         assert path == "mock_path"
 
 def test_save_debug_info():
     debug_info = {"execution_time": 0.123, "input_rows": 100}
+    expected_json = json.dumps(debug_info, indent=4)
     with patch("builtins.open", mock_open()) as mock_file:
         save_debug_info(debug_info, "mock_debug_path")
-        mock_file().write.assert_called_once_with(json.dumps(debug_info, indent=4))
+        mock_file().write.assert_called_once_with(expected_json)
 
 def test_merge_config():
     default_config = {'encoder_plugin': 'default_encoder', 'max_error': 0.01}

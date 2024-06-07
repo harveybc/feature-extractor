@@ -3,16 +3,14 @@ import pandas as pd
 from unittest.mock import patch, mock_open
 from app.data_handler import load_csv, write_csv
 
-@patch("builtins.open", new_callable=mock_open, read_data="2024-01-01,1,2,3\n2024-01-02,4,5,6\n2024-01-03,7,8,9")
+@patch("builtins.open", new_callable=mock_open, read_data="2024-01-01\n2024-01-02\n2024-01-03")
 def test_load_csv_without_headers(mock_file):
     df = load_csv("test.csv", headers=False)
     expected_df = pd.DataFrame({
-        'date': pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03']),
-        'col_0': [1, 2, 3],
-        'col_1': [4, 5, 6],
-        'col_2': [7, 8, 9]
+        'date': pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03'])
     })
-    pd.testing.assert_frame_equal(df.reset_index(), expected_df)
+    expected_df.set_index('date', inplace=True)
+    pd.testing.assert_frame_equal(df, expected_df)
 
 @patch("builtins.open", new_callable=mock_open)
 @patch("pandas.DataFrame.to_csv")

@@ -1,16 +1,6 @@
-# __init__.py for the app package
+# Initialize the app package
+import os
+import sys
 
-# Import the main components to make them available when the package is imported
-from .cli import parse_args
-from .config import *
-from .encoder import Encoder
-from .decoder import Decoder
-from .data_handler import load_csv
-
-# Optional: Setup logging or other package-wide configurations here
-import logging
-
-# Configure logging for the application
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# You can also include any initialization code that should be executed when the package is imported
+# Add the plugins directory to the system path to ensure plugins can be dynamically loaded
+sys.path.append(os.path.join(os.path.dirname(__file__), 'plugins'))

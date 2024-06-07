@@ -1,67 +1,105 @@
-import json
-import requests
+import pandas as pd
+import numpy as np
 
-# Define default values for the configuration
-DEFAULT_VALUES = {
-    'encoder_plugin': 'default_encoder',
-    'decoder_plugin': 'default_decoder',
-    'output_file': 'output.csv',
-    'remote_log': 'http://localhost:60500/preprocessor/feature_extractor/create',
-    'remote_save_config': 'http://localhost:60500/preprocessor/feature_extractor/create',
-    'remote_load_config': 'http://localhost:60500/preprocessor/feature_extractor/detail/1',
-    'remote_username': 'test',
-    'remote_password': 'pass',
-    'quiet_mode': False,
-    'max_error': 0.01,
-    'initial_size': 256,
-    'step_size': 32,
-    'csv_file': '',
-    'headers': True,
-    'window_size': 10
-}
+def sliding_window(file_path, window_size, data):
+    """
+    Load a CSV file and process it using a sliding window technique.
 
-def load_config(file_path):
-    with open(file_path, 'r') as f:
-        config = json.load(f)
-    return config
+    Args:
+        file_path (str): The path to the CSV file to be loaded.
+        window_size (int): The size of the sliding window to apply.
 
-def save_config(config, path='config_out.json'):
-    config_to_save = {k: v for k, v in config.items() if k not in DEFAULT_VALUES or config[k] != DEFAULT_VALUES[k]}
-    with open(path, 'w') as f:
-        json.dump(config_to_save, f, indent=4)
-    return config, path
+    Returns:
+        list of np.array: A list of arrays, each containing sliding window data for one column.
+    """
+    try:
+        series_list = []
+        for column in data.columns:
+            # Extract the column as array
+            column_data = data[column].values
+            # Apply sliding window
+            windows = np.array([column_data[i:(i + window_size)] for i in range(len(column_data) - window_size + 1)])
+            series_list.append(windows)
+        return series_list
+    except FileNotFoundError:
+        print(f"Error: The file {file_path} does not exist.")
+        raise
+    except pd.errors.EmptyDataError:
+        print("Error: The file is empty.")
+        raise
+    except pd.errors.ParserError:
+        print("Error: Error parsing the file.")
+        raise
+    except Exception as e:
+        print(f"An error occurred while loading and processing the CSV: {e}")
+        raise
 
-def merge_config(config, cli_args, plugin_params):
-    # Set default values
-    for key, value in DEFAULT_VALUES.items():
-        config.setdefault(key, value)
+def load_csv(file_path, headers=False):
+    """
+    Load a CSV file into a pandas DataFrame, handling date columns and correct numeric parsing.
 
-    # Merge CLI arguments, overriding config file values
-    for key, value in cli_args.items():
-        if value is not None:
-            config[key] = value
+    Args:
+        file_path (str): The path to the CSV file to be loaded.
+        headers (bool): Whether the CSV file has headers.
 
-    # Merge plugin-specific arguments
-    for key, value in plugin_params.items():
-        config[key] = value
+    Returns:
+        pd.DataFrame: The loaded data as a pandas DataFrame.
+    """
+    try:
+        if headers:
+            data = pd.read_csv(file_path, sep=',', parse_dates=[0], dayfirst=True)
+        else:
+            # Read the file without headers
+            data = pd.read_csv(file_path, header=None, sep=',', parse_dates=False)
+            first_col = data.iloc[:, 0]
 
-    return config
+            # Attempt to parse the first column as dates
+            try:
+                data[0] = pd.to_datetime(first_col, dayfirst=True, errors='coerce')
+                if data[0].notna().all():
+                    data.columns = ['date']
+                    data.set_index('date', inplace=True)
+                else:
+                    raise ValueError("First column is not entirely dates.")
+            except (ValueError, pd.errors.ParserError):
+                # If parsing fails, treat the column as numeric
+                data.columns = [f'col_{i}' for i in range(len(data.columns))]
+                for col in data.columns:
+                    data[col] = pd.to_numeric(data[col], errors='coerce')
 
-def save_debug_info(debug_info, path='debug_out.json'):
-    with open(path, 'w') as f:
-        json.dump(debug_info, f, indent=4)
+    except FileNotFoundError:
+        print(f"Error: The file {file_path} does not exist.")
+        raise
+    except pd.errors.EmptyDataError:
+        print("Error: The file is empty.")
+        raise
+    except pd.errors.ParserError:
+        print("Error: Error parsing the file.")
+        raise
+    except Exception as e:
+        print(f"An error occurred while loading the CSV: {e}")
+        raise
 
-def load_remote_config(url, username, password):
-    response = requests.get(url, auth=(username, password))
-    response.raise_for_status()
-    return response.json()
+    return data
 
-def save_remote_config(config, url, username, password):
-    response = requests.post(url, auth=(username, password), json=config)
-    response.raise_for_status()
-    return response.status_code == 200
+def write_csv(file_path, data, include_date=True, headers=True):
+    """
+    Write a pandas DataFrame to a CSV file.
 
-def log_remote_data(data, url, username, password):
-    response = requests.post(url, auth=(username, password), json=data)
-    response.raise_for_status()
-    return response.status_code == 200
+    Args:
+        file_path (str): The path to the CSV file to be written.
+        data (pd.DataFrame): The data to be written to the CSV file.
+        include_date (bool): Whether to include the date column in the output.
+        headers (bool): Whether to include headers in the output.
+
+    Returns:
+        None
+    """
+    try:
+        if include_date and 'date' in data.columns:
+            data.to_csv(file_path, index=True, header=headers)
+        else:
+            data.to_csv(file_path, index=False, header=headers)
+    except Exception as e:
+        print(f"An error occurred while writing the CSV: {e}")
+        raise

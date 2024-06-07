@@ -1,59 +1,109 @@
 import sys
-from app.cli import parse_args
-from app.config import MODEL_SAVE_PATH, MODEL_LOAD_PATH, OUTPUT_PATH, MINIMUM_MSE_THRESHOLD
-from app.data_handler import load_csv
-import pkg_resources
+import json
+import time
 import requests
-
-def load_plugin(plugin_group, plugin_name):
-    """
-    Load a plugin based on the group and name specified.
-    """
-    try:
-        entry_point = next(pkg_resources.iter_entry_points(plugin_group, plugin_name))
-        return entry_point.load()
-    except StopIteration:
-        print(f"Plugin {plugin_name} not found in group {plugin_group}.", file=sys.stderr)
-        sys.exit(1)
-
-def train_autoencoder(encoder, data, max_error, initial_size, step_size):
-    """
-    Train an autoencoder with decreasing interface size until the max_error is reached.
-    """
-    current_size = initial_size
-    current_mse = float('inf')
-    while current_size > 0 and current_mse > max_error:
-        encoder.configure_size(current_size)
-        encoder.train(data)
-        encoded_data = encoder.encode(data)
-        decoded_data = encoder.decode(encoded_data)
-        current_mse = encoder.calculate_mse(data, decoded_data)
-        print(f"Current MSE: {current_mse} at interface size: {current_size}")
-        if current_mse <= max_error:
-            print("Desired MSE reached. Stopping training.")
-            break
-        current_size -= step_size
-        # Connect to data-logger on localhost:60500 via HTTP POST request with basic authentication using 
-        # username 'test' and password 'pass', and send the current_mse and current_size as form data
-        response = requests.post('http://localhost:60500/feature_extractor/fe_training_error', auth=('test', 'pass'), data={'mse': current_mse, 'interface_size': current_size, 'config_id': 1})
-        print(f"Response from data-logger: {response.text}")
-    return encoder
+from app.plugin_loader import load_plugin
+from app.cli import parse_args
+from app.config_handler import load_config, save_config, save_debug_info, merge_config, load_remote_config, save_remote_config, log_remote_data
+from app.data_handler import load_csv, write_csv
+from app.data_processor import process_data
 
 def main():
-    # Parse command line arguments and remore configurations
-    args = parse_args()
+    print("Parsing initial arguments...")
+    args, unknown_args = parse_args()
+    print(f"Initial args: {args}")
+    print(f"Unknown args: {unknown_args}")
 
-    # Load the CSV data
-    data_series = load_csv(args.csv_file, args.window_size)
+    cli_args = vars(args)
+    print(f"CLI arguments: {cli_args}")
 
-    # Train a separate autoencoder for each time series column
-    for index, series_data in enumerate(data_series):
-        Encoder = load_plugin('feature_extractor.encoders', args.encoder_plugin if args.encoder_plugin else 'default_encoder')
-        encoder = Encoder()
-        trained_encoder = train_autoencoder(encoder, series_data, args.max_error, args.initial_size, args.step_size)
-        model_filename = f"{MODEL_SAVE_PATH}{args.save_encoder}_{index}.h5"
-        trained_encoder.save(model_filename)
-        print(f"Model saved as {model_filename}")
+    # Convert unknown args to a dictionary
+    unknown_args_dict = {}
+    current_key = None
+    for arg in unknown_args:
+        if arg.startswith('--'):
+            if current_key:
+                unknown_args_dict[current_key] = True  # Flags without values are treated as True
+            current_key = arg[2:]
+        else:
+            if current_key:
+                unknown_args_dict[current_key] = arg
+                current_key = None
+
+    if current_key:
+        unknown_args_dict[current_key] = True
+
+    print(f"Unknown args as dict: {unknown_args_dict}")
+
+    # Specific handling for --range argument
+    if 'range' in unknown_args_dict:
+        range_str = unknown_args_dict['range']
+        try:
+            unknown_args_dict['range'] = tuple(map(int, range_str.strip("()").split(',')))
+        except ValueError:
+            print(f"Error: Invalid format for --range argument: {range_str}", file=sys.stderr)
+            return
+
+    print("Loading configuration...")
+    config = load_config(args.config) if args.config else {}
+    print(f"Initial loaded config: {config}")
+
+    print("Merging configuration with CLI arguments...")
+    config = merge_config(config, cli_args)
+    print(f"Config after merging with CLI args: {config}")
+
+    # Merge plugin-specific arguments
+    config.update(unknown_args_dict)
+    print(f"Final merged config: {config}")
+
+    debug_info = {
+        "execution_time": "",
+        "input_rows": 0,
+        "output_rows": 0,
+        "input_columns": 0,
+        "output_columns": 0
+    }
+
+    start_time = time.time()
+
+    if not config.get('csv_file'):
+        print("Error: No CSV file specified.", file=sys.stderr)
+        return
+
+    data = load_csv(config['csv_file'], headers=config['headers'])
+    debug_info["input_rows"] = len(data)
+    debug_info["input_columns"] = len(data.columns)
+
+    # Process data with encoder and decoder plugins
+    decoded_data, debug_info = process_data(config)
+
+    debug_info["output_rows"] = len(decoded_data)
+    debug_info["output_columns"] = len(decoded_data[0].columns)
+
+    config_str, config_filename = save_config(config)
+    print(f"Configuration saved to {config_filename}")
+
+    execution_time = time.time() - start_time
+    debug_info["execution_time"] = execution_time
+
+    if 'debug_file' not in config or not config['debug_file']:
+        config['debug_file'] = 'debug_out.json'
+
+    save_debug_info(debug_info, config['debug_file'])
+    print(f"Debug info saved to {config['debug_file']}")
+    print(f"Execution time: {execution_time} seconds")
+
+    if config['remote_save_config']:
+        if save_remote_config(config, config['remote_save_config'], config['remote_username'], config['remote_password']):
+            print(f"Configuration successfully saved to remote URL {config['remote_save_config']}")
+        else:
+            print(f"Failed to save configuration to remote URL {config['remote_save_config']}")
+
+    if config['remote_log']:
+        if log_remote_data(debug_info, config['remote_log'], config['remote_username'], config['remote_password']):
+            print(f"Debug information successfully logged to remote URL {config['remote_log']}")
+        else:
+            print(f"Failed to log debug information to remote URL {config['remote_log']}")
 
 if __name__ == '__main__':
     main()

@@ -69,12 +69,8 @@ def main():
         print(f"Loaded remote config: {remote_config}")
 
     print("Merging configuration with CLI arguments...")
-    config = merge_config(config, cli_args)
+    config = merge_config(config, cli_args, unknown_args_dict)
     print(f"Config after merging with CLI args: {config}")
-
-    # Merge plugin-specific arguments
-    config.update(unknown_args_dict)
-    print(f"Final merged config: {config}")
 
     debug_info = {
         "execution_time": "",
@@ -112,19 +108,9 @@ def main():
     execution_time = time.time() - start_time
     debug_info["execution_time"] = execution_time
 
-    if args.debug_file:
-        save_debug_info(debug_info, args.debug_file)
-        print(f"Debug info saved to {args.debug_file}")
-
+    save_debug_info(debug_info, args.debug_file)
+    print(f"Debug info saved to {args.debug_file}")
     print(f"Execution time: {execution_time} seconds")
-
-    if args.remote_save_encoder:
-        save_remote_model(config['save_encoder'], args.remote_save_encoder, args.remote_username, args.remote_password)
-        print(f"Encoder model successfully saved to remote URL {args.remote_save_encoder}")
-
-    if args.remote_save_decoder:
-        save_remote_model(config['save_decoder'], args.remote_save_decoder, args.remote_username, args.remote_password)
-        print(f"Decoder model successfully saved to remote URL {args.remote_save_decoder}")
 
     if args.remote_save_config:
         if save_remote_config(config, args.remote_save_config, args.remote_username, args.remote_password):
@@ -132,11 +118,16 @@ def main():
         else:
             print(f"Failed to save configuration to remote URL {args.remote_save_config}")
 
-    if args.remote_log:
-        if log_remote_data(debug_info, args.remote_log, args.remote_username, args.remote_password):
-            print(f"Debug information successfully logged to remote URL {args.remote_log}")
+    if config.get('remote_log'):
+        if log_remote_data(debug_info, config['remote_log'], config['remote_username'], config['remote_password']):
+            print(f"Debug information successfully logged to remote URL {config['remote_log']}")
         else:
-            print(f"Failed to log debug information to remote URL {args.remote_log}")
+            print(f"Failed to log debug information to remote URL {config['remote_log']}")
+
+    if args.remote_save_encoder:
+        save_remote_model(config['save_encoder'], args.remote_save_encoder, args.remote_username, args.remote_password)
+    if args.remote_save_decoder:
+        save_remote_model(config['save_decoder'], args.remote_save_decoder, args.remote_username, args.remote_password)
 
 if __name__ == '__main__':
     main()

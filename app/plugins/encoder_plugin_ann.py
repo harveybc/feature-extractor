@@ -1,6 +1,6 @@
 import numpy as np
-from keras.models import Sequential, load_model
-from keras.layers import Dense
+from keras.models import Sequential, load_model, Model
+from keras.layers import Dense, Input
 from keras.optimizers import Adam
 import keras.backend as K
 
@@ -26,6 +26,7 @@ class Plugin:
         """
         self.params = self.plugin_params.copy()
         self.model = None
+        self.encoder_model = None
 
     def set_params(self, **kwargs):
         """
@@ -68,11 +69,13 @@ class Plugin:
         self.params['input_dim'] = input_dim
         self.params['encoding_dim'] = encoding_dim
 
-        self.model = Sequential([
-            Dense(encoding_dim, input_shape=(input_dim,), activation='relu'),
-            Dense(int(encoding_dim / 2), activation='relu'),  # Intermediate compression
-            Dense(input_dim, activation='sigmoid')  # Output layer to reconstruct the input
-        ])
+        input_layer = Input(shape=(input_dim,))
+        encoded = Dense(encoding_dim, activation='relu')(input_layer)
+        encoded = Dense(int(encoding_dim / 2), activation='relu')(encoded)  # Intermediate compression
+        decoded = Dense(input_dim, activation='sigmoid')(encoded)  # Output layer to reconstruct the input
+
+        self.model = Model(inputs=input_layer, outputs=decoded)
+        self.encoder_model = Model(inputs=input_layer, outputs=self.model.layers[1].output)
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
     def train(self, data):
@@ -94,8 +97,7 @@ class Plugin:
         Returns:
             np.array: Encoded data.
         """
-        get_encoded_layer_output = K.function([self.model.input], [self.model.layers[0].output])
-        return get_encoded_layer_output([data])[0]
+        return self.encoder_model.predict(data)
 
     def save(self, file_path):
         """
@@ -114,6 +116,7 @@ class Plugin:
             file_path (str): Path where the model is stored.
         """
         self.model = load_model(file_path)
+        self.encoder_model = Model(inputs=self.model.input, outputs=self.model.layers[1].output)
 
     def calculate_mse(self, original_data, reconstructed_data):
         """

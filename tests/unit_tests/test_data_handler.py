@@ -1,5 +1,6 @@
 import pytest
 import pandas as pd
+from unittest.mock import patch, mock_open
 from app.data_handler import load_csv, write_csv
 
 def test_load_csv_without_headers():

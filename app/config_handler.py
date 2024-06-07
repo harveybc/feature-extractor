@@ -41,7 +41,7 @@ def merge_config(config, cli_args, plugin_params):
         if value is not None:
             config[key] = value
 
-    # Merge plugin-specific parameters
+    # Merge plugin-specific arguments
     for key, value in plugin_params.items():
         config[key] = value
 
@@ -51,17 +51,17 @@ def save_debug_info(debug_info, path='debug_out.json'):
     with open(path, 'w') as f:
         json.dump(debug_info, f, indent=4)
 
-def load_remote_config(url, username, password):
+def load_remote_config(url=DEFAULT_VALUES['remote_load_config'], username=DEFAULT_VALUES['remote_username'], password=DEFAULT_VALUES['remote_password']):
     response = requests.get(url, auth=(username, password))
     response.raise_for_status()
     return response.json()
 
-def save_remote_config(config, url, username, password):
+def save_remote_config(config, url=DEFAULT_VALUES['remote_save_config'], username=DEFAULT_VALUES['remote_username'], password=DEFAULT_VALUES['remote_password']):
     response = requests.post(url, auth=(username, password), json=config)
     response.raise_for_status()
     return response.status_code == 200
 
-def log_remote_data(data, url, username, password):
+def log_remote_data(data, url=DEFAULT_VALUES['remote_log'], username=DEFAULT_VALUES['remote_username'], password=DEFAULT_VALUES['remote_password']):
     response = requests.post(url, auth=(username, password), json=data)
     response.raise_for_status()
     return response.status_code == 200

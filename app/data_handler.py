@@ -55,10 +55,12 @@ def load_csv(file_path, headers=False):
 
             # Attempt to parse the first column as dates
             try:
-                data[0] = pd.to_datetime(first_col, dayfirst=True)
+                data[0] = pd.to_datetime(first_col, dayfirst=True, errors='coerce')
                 if data[0].notna().all():
                     data.columns = ['date']
                     data.set_index('date', inplace=True)
+                else:
+                    raise ValueError("First column is not entirely dates.")
             except (ValueError, pd.errors.ParserError):
                 # If parsing fails, treat the column as numeric
                 data.columns = [f'col_{i}' for i in range(len(data.columns))]

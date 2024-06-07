@@ -93,13 +93,13 @@ def main():
     print(f"Debug info saved to {config['debug_file']}")
     print(f"Execution time: {execution_time} seconds")
 
-    if config['remote_save_config']:
+    if config.get('remote_save_config'):
         if save_remote_config(config, config['remote_save_config'], config['remote_username'], config['remote_password']):
             print(f"Configuration successfully saved to remote URL {config['remote_save_config']}")
         else:
             print(f"Failed to save configuration to remote URL {config['remote_save_config']}")
 
-    if config['remote_log']:
+    if config.get('remote_log'):
         if log_remote_data(debug_info, config['remote_log'], config['remote_username'], config['remote_password']):
             print(f"Debug information successfully logged to remote URL {config['remote_log']}")
         else:

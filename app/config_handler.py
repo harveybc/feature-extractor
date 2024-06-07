@@ -20,13 +20,9 @@ DEFAULT_VALUES = {
     'window_size': 10
 }
 
-def load_config(args):
-    if args.load_config:
-        with open(args.load_config, 'r') as f:
-            config = json.load(f)
-    else:
-        config = {}
-
+def load_config(file_path):
+    with open(file_path, 'r') as f:
+        config = json.load(f)
     return config
 
 def save_config(config, path='config_out.json'):
@@ -35,7 +31,7 @@ def save_config(config, path='config_out.json'):
         json.dump(config_to_save, f, indent=4)
     return config, path
 
-def merge_config(config, cli_args):
+def merge_config(config, cli_args, plugin_params):
     # Set default values
     for key, value in DEFAULT_VALUES.items():
         config.setdefault(key, value)
@@ -45,23 +41,27 @@ def merge_config(config, cli_args):
         if value is not None:
             config[key] = value
 
+    # Merge plugin-specific parameters
+    for key, value in plugin_params.items():
+        config[key] = value
+
     return config
 
 def save_debug_info(debug_info, path='debug_out.json'):
     with open(path, 'w') as f:
         json.dump(debug_info, f, indent=4)
 
-def load_remote_config(url=DEFAULT_VALUES['remote_load_config'], username=DEFAULT_VALUES['remote_username'], password=DEFAULT_VALUES['remote_password']):
+def load_remote_config(url, username, password):
     response = requests.get(url, auth=(username, password))
     response.raise_for_status()
     return response.json()
 
-def save_remote_config(config, url=DEFAULT_VALUES['remote_save_config'], username=DEFAULT_VALUES['remote_username'], password=DEFAULT_VALUES['remote_password']):
+def save_remote_config(config, url, username, password):
     response = requests.post(url, auth=(username, password), json=config)
     response.raise_for_status()
     return response.status_code == 200
 
-def log_remote_data(data, url=DEFAULT_VALUES['remote_log'], username=DEFAULT_VALUES['remote_username'], password=DEFAULT_VALUES['remote_password']):
+def log_remote_data(data, url, username, password):
     response = requests.post(url, auth=(username, password), json=data)
     response.raise_for_status()
     return response.status_code == 200

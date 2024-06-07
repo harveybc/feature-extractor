@@ -1,8 +1,10 @@
 import pytest
 import json
 import pandas as pd
+import numpy as np
 from unittest.mock import patch, mock_open, MagicMock
 from app.main import main
+from app.config_handler import load_config, save_config, save_debug_info, merge_config, load_remote_config, save_remote_config, log_remote_data
 
 @pytest.fixture
 def mock_parse_args():
@@ -30,8 +32,8 @@ def test_load_and_merge_config(mock_parse_args):
                                         'csv_file': 'tests/data/csv_sel_unb_norm_512.csv',
                                         'headers': True,
                                         'window_size': 10,
-                                        'max_error': 0.05,  # From config file
-                                        'initial_size': 128,  # From config file
+                                        'max_error': 0.05,
+                                        'initial_size': 128,
                                         'step_size': 32,
                                         'save_encoder': 'encoder_model.h5',
                                         'save_decoder': 'decoder_model.h5',
@@ -59,8 +61,8 @@ def test_save_final_config(mock_parse_args):
                                         'csv_file': 'tests/data/csv_sel_unb_norm_512.csv',
                                         'headers': True,
                                         'window_size': 10,
-                                        'max_error': 0.05,  # From config file
-                                        'initial_size': 128,  # From config file
+                                        'max_error': 0.05,
+                                        'initial_size': 128,
                                         'step_size': 32,
                                         'save_encoder': 'encoder_model.h5',
                                         'save_decoder': 'decoder_model.h5',
@@ -72,7 +74,6 @@ def test_save_final_config(mock_parse_args):
                                         'encoder_plugin': 'default_encoder',
                                         'decoder_plugin': 'default_decoder'
                                     }, 'tests/data/config_out.json')
-
 
 def test_save_debug_info(mock_parse_args):
     with patch("app.cli.parse_args", return_value=mock_parse_args):
@@ -92,7 +93,6 @@ def test_save_debug_info(mock_parse_args):
                                         'output_columns': 10
                                     }, 'debug_out.json')
 
-                                    
 def test_remote_config_load_and_save(mock_parse_args):
     with patch("app.cli.parse_args", return_value=mock_parse_args):
         with patch("app.config_handler.load_config", return_value={}):

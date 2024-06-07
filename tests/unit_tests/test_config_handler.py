@@ -1,113 +1,60 @@
 import pytest
 import json
-import pandas as pd
-from unittest.mock import patch, mock_open, MagicMock
-from app.main import main
+import requests
+from unittest.mock import patch, mock_open, call
+from app.config_handler import load_config, save_config, save_debug_info, merge_config, load_remote_config, save_remote_config, log_remote_data
 
-@pytest.fixture
-def mock_parse_args():
-    return MagicMock(
-        load_config='tests/data/config.json',
-        remote_load_config=None,
-        save_config='tests/data/config_out.json',
-        debug_file='debug_out.json',
-        csv_file='tests/data/csv_sel_unb_norm_512.csv',
-        remote_load_encoder=None,
-        remote_load_decoder=None
-    ), []
+def test_load_config():
+    mock_file_data = '{"encoder_plugin": "default_encoder", "max_error": 0.01}'
+    with patch("builtins.open", mock_open(read_data=mock_file_data)):
+        config = load_config("mock_path")
+        assert config == json.loads(mock_file_data)
 
-def test_load_and_merge_config(mock_parse_args):
-    with patch("app.cli.parse_args", return_value=mock_parse_args):
-        with patch("app.config_handler.load_config", return_value={'max_error': 0.05, 'initial_size': 128}):
-            with patch("app.config_handler.save_config") as mock_save_config:
-                with patch("app.config_handler.save_debug_info"):
-                    with patch("app.config_handler.merge_config", side_effect=lambda config, cli_args, plugin_params: {**config, **cli_args, **plugin_params}):
-                        with patch("app.data_handler.load_csv", return_value=pd.read_csv('tests/data/csv_sel_unb_norm_512.csv')):
-                            with patch("app.data_processor.process_data", return_value=(pd.DataFrame(np.random.rand(10, 10)), {'execution_time': 0})):
-                                with patch("requests.post"):
-                                    main()
-                                    expected_config = {
-                                        'csv_file': 'tests/data/csv_sel_unb_norm_512.csv',
-                                        'headers': True,
-                                        'window_size': 10,
-                                        'max_error': 0.05,  # From config file
-                                        'initial_size': 128,  # From config file
-                                        'step_size': 32,
-                                        'save_encoder': 'encoder_model.h5',
-                                        'save_decoder': 'decoder_model.h5',
-                                        'output_file': 'output.csv',
-                                        'force_date': False,
-                                        'remote_log': 'http://localhost:60500/preprocessor/feature_extractor/create',
-                                        'remote_username': 'test',
-                                        'remote_password': 'pass',
-                                        'encoder_plugin': 'default_encoder',
-                                        'decoder_plugin': 'default_decoder'
-                                    }
-                                    mock_save_config.assert_called_once_with(expected_config, 'tests/data/config_out.json')
+def test_save_config():
+    config = {'encoder_plugin': 'default_encoder', 'max_error': 0.01}
+    expected_json = json.dumps(config, indent=4)
+    with patch("builtins.open", mock_open()) as mock_file:
+        config_str, path = save_config(config, "mock_path")
+        handle = mock_file()
+        handle.write.assert_called_once_with(expected_json)
+        assert path == "mock_path"
 
-def test_save_final_config(mock_parse_args):
-    with patch("app.cli.parse_args", return_value=mock_parse_args):
-        with patch("app.config_handler.load_config", return_value={'max_error': 0.05, 'initial_size': 128}):
-            with patch("app.config_handler.save_config") as mock_save_config:
-                with patch("app.config_handler.save_debug_info"):
-                    with patch("app.config_handler.merge_config", side_effect=lambda config, cli_args, plugin_params: {**config, **cli_args, **plugin_params}):
-                        with patch("app.data_handler.load_csv", return_value=pd.read_csv('tests/data/csv_sel_unb_norm_512.csv')):
-                            with patch("app.data_processor.process_data", return_value=(pd.DataFrame(np.random.rand(10, 10)), {'execution_time': 0})):
-                                with patch("requests.post"):
-                                    main()
-                                    mock_save_config.assert_called_once_with({
-                                        'csv_file': 'tests/data/csv_sel_unb_norm_512.csv',
-                                        'headers': True,
-                                        'window_size': 10,
-                                        'max_error': 0.05,  # From config file
-                                        'initial_size': 128,  # From config file
-                                        'step_size': 32,
-                                        'save_encoder': 'encoder_model.h5',
-                                        'save_decoder': 'decoder_model.h5',
-                                        'output_file': 'output.csv',
-                                        'force_date': False,
-                                        'remote_log': 'http://localhost:60500/preprocessor/feature_extractor/create',
-                                        'remote_username': 'test',
-                                        'remote_password': 'pass',
-                                        'encoder_plugin': 'default_encoder',
-                                        'decoder_plugin': 'default_decoder'
-                                    }, 'tests/data/config_out.json')
+def test_save_debug_info():
+    debug_info = {"execution_time": 0.123, "input_rows": 100}
+    expected_json = json.dumps(debug_info, indent=4)
+    with patch("builtins.open", mock_open()) as mock_file:
+        save_debug_info(debug_info, "mock_debug_path")
+        handle = mock_file()
+        handle.write.assert_called_once_with(expected_json)
 
+def test_merge_config():
+    default_config = {'encoder_plugin': 'default_encoder', 'max_error': 0.01}
+    cli_args = {'encoder_plugin': 'custom_encoder', 'additional_param': 'value'}
+    plugin_params = {'input_dim': 128, 'epochs': 100}
+    merged_config = merge_config(default_config, cli_args, plugin_params)
+    assert merged_config['encoder_plugin'] == 'custom_encoder'
+    assert merged_config['max_error'] == 0.01
+    assert merged_config['additional_param'] == 'value'
+    assert merged_config['input_dim'] == 128
+    assert merged_config['epochs'] == 100
 
-def test_save_debug_info(mock_parse_args):
-    with patch("app.cli.parse_args", return_value=mock_parse_args):
-        with patch("app.config_handler.load_config", return_value={'max_error': 0.05, 'initial_size': 128}):
-            with patch("app.config_handler.save_config"):
-                with patch("app.config_handler.save_debug_info") as mock_save_debug_info:
-                    with patch("app.config_handler.merge_config", side_effect=lambda config, cli_args, plugin_params: {**config, **cli_args, **plugin_params}):
-                        with patch("app.data_handler.load_csv", return_value=pd.read_csv('tests/data/csv_sel_unb_norm_512.csv')):
-                            with patch("app.data_processor.process_data", return_value=(pd.DataFrame(np.random.rand(10, 10)), {'execution_time': 0})):
-                                with patch("requests.post"):
-                                    main()
-                                    mock_save_debug_info.assert_called_once_with({
-                                        'execution_time': 0,
-                                        'input_rows': 512,  # Assuming the mock CSV has 512 rows
-                                        'input_columns': 5,  # Assuming the mock CSV has 5 columns
-                                        'output_rows': 10,
-                                        'output_columns': 10
-                                    }, 'debug_out.json')
+@patch("requests.get")
+def test_load_remote_config(mock_get):
+    mock_get.return_value.json.return_value = {'encoder_plugin': 'remote_encoder', 'max_error': 0.02}
+    mock_get.return_value.raise_for_status = lambda: None
+    config = load_remote_config("mock_url", "user", "pass")
+    assert config == {'encoder_plugin': 'remote_encoder', 'max_error': 0.02}
 
-                                    
-def test_remote_config_load_and_save(mock_parse_args):
-    with patch("app.cli.parse_args", return_value=mock_parse_args):
-        with patch("app.config_handler.load_config", return_value={}):
-            with patch("app.config_handler.save_config"):
-                with patch("app.config_handler.save_debug_info"):
-                    with patch("app.config_handler.merge_config", side_effect=lambda config, cli_args, plugin_params: {**config, **cli_args, **plugin_params}):
-                        with patch("app.config_handler.load_remote_config", return_value={'max_error': 0.05, 'initial_size': 128}) as mock_load_remote_config:
-                            with patch("app.config_handler.save_remote_config") as mock_save_remote_config:
-                                with patch("app.data_handler.load_csv", return_value=pd.read_csv('tests/data/csv_sel_unb_norm_512.csv')):
-                                    with patch("app.data_processor.process_data", return_value=(pd.DataFrame(np.random.rand(10, 10)), {'execution_time': 0})):
-                                        with patch("requests.post"):
-                                            main()
-                                            mock_load_remote_config.assert_called_once_with(
-                                                'http://localhost:60500/preprocessor/feature_extractor/detail/1',
-                                                'test',
-                                                'pass'
-                                            )
-                                            mock_save_remote_config.assert_called_once()
+@patch("requests.post")
+def test_save_remote_config(mock_post):
+    mock_post.return_value.status_code = 200
+    mock_post.return_value.raise_for_status = lambda: None
+    result = save_remote_config({'encoder_plugin': 'remote_encoder'}, "mock_url", "user", "pass")
+    assert result == True
+
+@patch("requests.post")
+def test_log_remote_data(mock_post):
+    mock_post.return_value.status_code = 200
+    mock_post.return_value.raise_for_status = lambda: None
+    result = log_remote_data({'execution_time': 0.123}, "mock_url", "user", "pass")
+    assert result == True

@@ -18,7 +18,24 @@ def test_merge_config():
     default_config = {'encoder_plugin': 'default_encoder', 'max_error': 0.01}
     cli_args = {'encoder_plugin': 'custom_encoder', 'additional_param': 'value'}
     merged_config = merge_config(default_config, cli_args)
-    expected_config = {'encoder_plugin': 'custom_encoder', 'max_error': 0.01, 'additional_param': 'value'}
+    expected_config = {
+        'encoder_plugin': 'custom_encoder',
+        'decoder_plugin': 'default_decoder',
+        'output_file': 'output.csv',
+        'remote_log': 'http://localhost:60500/preprocessor/feature_extractor/create',
+        'remote_save_config': 'http://localhost:60500/preprocessor/feature_extractor/create',
+        'remote_load_config': 'http://localhost:60500/preprocessor/feature_extractor/detail/1',
+        'remote_username': 'test',
+        'remote_password': 'pass',
+        'quiet_mode': False,
+        'max_error': 0.01,
+        'initial_size': 256,
+        'step_size': 32,
+        'csv_file': '',
+        'headers': True,
+        'window_size': 10,
+        'additional_param': 'value'
+    }
     assert merged_config == expected_config
 
 @patch("builtins.open", new_callable=mock_open)

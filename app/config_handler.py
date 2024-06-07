@@ -22,8 +22,7 @@ DEFAULT_VALUES = {
 
 def load_config(file_path):
     with open(file_path, 'r') as f:
-        config = json.load(f)
-    return config
+        return json.load(f)
 
 def save_config(config, path='config_out.json'):
     config_to_save = {k: v for k, v in config.items() if k not in DEFAULT_VALUES or config[k] != DEFAULT_VALUES[k]}
@@ -32,20 +31,8 @@ def save_config(config, path='config_out.json'):
     return config, path
 
 def merge_config(config, cli_args, plugin_params):
-    # Set default values
-    for key, value in DEFAULT_VALUES.items():
-        config.setdefault(key, value)
-
-    # Merge CLI arguments, overriding config file values
-    for key, value in cli_args.items():
-        if value is not None:
-            config[key] = value
-
-    # Merge plugin-specific arguments
-    for key, value in plugin_params.items():
-        config[key] = value
-
-    return config
+    merged_config = {**DEFAULT_VALUES, **config, **cli_args, **plugin_params}
+    return merged_config
 
 def save_debug_info(debug_info, path='debug_out.json'):
     with open(path, 'w') as f:

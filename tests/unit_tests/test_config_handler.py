@@ -15,7 +15,8 @@ def test_save_config():
     expected_json = json.dumps(config, indent=4)
     with patch("builtins.open", mock_open()) as mock_file:
         config_str, path = save_config(config, "mock_path")
-        mock_file().write.assert_called_once_with(expected_json)
+        handle = mock_file()
+        handle.write.assert_called_once_with(expected_json)
         assert path == "mock_path"
 
 def test_save_debug_info():

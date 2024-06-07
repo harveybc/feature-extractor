@@ -50,15 +50,17 @@ def load_csv(file_path, headers=False):
             data = pd.read_csv(file_path, sep=',', parse_dates=[0], dayfirst=True)
         else:
             # Read the file without headers
-            data = pd.read_csv(file_path, header=None, sep=',')
-            # Check if the first column is a date column
+            data = pd.read_csv(file_path, header=None, sep=',', parse_dates=False)
             first_col = data.iloc[:, 0]
-            if pd.to_datetime(first_col, errors='coerce').notna().all():
-                data.columns = ['date'] + [f'col_{i-1}' for i in range(1, len(data.columns))]
-                data['date'] = pd.to_datetime(data['date'], dayfirst=True)
-                data.set_index('date', inplace=True)
-            else:
-                # Manually set column names if the first column is not a date
+
+            # Attempt to parse the first column as dates
+            try:
+                data[0] = pd.to_datetime(first_col, dayfirst=True)
+                if data[0].notna().all():
+                    data.columns = ['date']
+                    data.set_index('date', inplace=True)
+            except (ValueError, pd.errors.ParserError):
+                # If parsing fails, treat the column as numeric
                 data.columns = [f'col_{i}' for i in range(len(data.columns))]
                 for col in data.columns:
                     data[col] = pd.to_numeric(data[col], errors='coerce')

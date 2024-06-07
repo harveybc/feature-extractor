@@ -10,7 +10,7 @@ from app.data_processor import process_data
 @patch("app.plugin_loader.load_plugin")
 @patch("requests.post")
 def test_process_data(mock_requests_post, mock_load_plugin, mock_sliding_window, mock_write_csv, mock_load_csv):
-    mock_load_csv.return_value = pd.DataFrame(np.random.rand(100, 10))
+    mock_load_csv.return_value = pd.read_csv('tests/data/csv_sel_unb_norm_512.csv')
     mock_sliding_window.return_value = [np.random.rand(90, 10)]
     mock_encoder = MagicMock()
     mock_encoder.encode.return_value = np.random.rand(90, 256)
@@ -19,7 +19,7 @@ def test_process_data(mock_requests_post, mock_load_plugin, mock_sliding_window,
     mock_requests_post.return_value.text = "Logged"
 
     config = {
-        'csv_file': 'test.csv',
+        'csv_file': 'tests/data/csv_sel_unb_norm_512.csv',
         'headers': True,
         'window_size': 10,
         'max_error': 0.01,

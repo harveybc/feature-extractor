@@ -1,8 +1,9 @@
 import pytest
 from unittest.mock import patch, MagicMock
 import numpy as np
-from keras.models import Sequential
-from keras.layers import Dense
+from keras.models import Sequential, load_model, save_model
+from keras.layers import Dense, Input
+from keras.models import Model
 from app.plugins.encoder_plugin_ann import Plugin
 
 @pytest.fixture

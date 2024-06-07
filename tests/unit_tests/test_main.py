@@ -44,7 +44,7 @@ def debug_info():
 def test_main(mock_requests_post, mock_process_data, mock_load_csv, mock_merge_config, mock_save_debug_info, mock_save_config, mock_load_config, mock_parse_args, config, debug_info):
     # Mock parse_args
     mock_parse_args.return_value = MagicMock(), []
-    
+
     # Mock load_config
     mock_load_config.return_value = config
 
@@ -64,9 +64,11 @@ def test_main(mock_requests_post, mock_process_data, mock_load_csv, mock_merge_c
     # Mock requests.post
     mock_requests_post.return_value.text = "Logged"
 
-    # Capture the output
-    with patch('sys.stdout', new_callable=lambda: MagicMock()) as mock_stdout:
-        main()
+    # Mock sys.argv to control the command-line arguments
+    with patch('sys.argv', ['main.py', 'test.csv']):
+        # Capture the output
+        with patch('sys.stdout', new_callable=lambda: MagicMock()) as mock_stdout:
+            main()
 
     # Assertions
     mock_parse_args.assert_called_once()
@@ -101,14 +103,16 @@ def test_main_no_csv_file(mock_merge_config, mock_load_config, mock_parse_args, 
     # Mock merge_config
     mock_merge_config.return_value = {}
 
-    # Capture the output
-    with patch('sys.stderr', new_callable=lambda: MagicMock()) as mock_stderr:
-        with pytest.raises(SystemExit):
-            main()
+    # Mock sys.argv to control the command-line arguments
+    with patch('sys.argv', ['main.py']):
+        # Capture the output
+        with patch('sys.stderr', new_callable=lambda: MagicMock()) as mock_stderr:
+            with pytest.raises(SystemExit):
+                main()
 
-    # Verify output
-    output = "".join([call[0][0] for call in mock_stderr.write.call_args_list])
-    assert "Error: No CSV file specified." in output
+        # Verify output
+        output = "".join([call[0][0] for call in mock_stderr.write.call_args_list])
+        assert "Error: No CSV file specified." in output
 
 @patch("app.cli.parse_args")
 @patch("app.config_handler.load_config")
@@ -129,11 +133,13 @@ def test_main_invalid_csv(mock_load_csv, mock_merge_config, mock_load_config, mo
     # Mock load_csv to raise FileNotFoundError
     mock_load_csv.side_effect = FileNotFoundError
 
-    # Capture the output
-    with patch('sys.stderr', new_callable=lambda: MagicMock()) as mock_stderr:
-        with pytest.raises(SystemExit):
-            main()
+    # Mock sys.argv to control the command-line arguments
+    with patch('sys.argv', ['main.py', 'invalid.csv']):
+        # Capture the output
+        with patch('sys.stderr', new_callable=lambda: MagicMock()) as mock_stderr:
+            with pytest.raises(SystemExit):
+                main()
 
-    # Verify output
-    output = "".join([call[0][0] for call in mock_stderr.write.call_args_list])
-    assert "Error: The file invalid.csv does not exist." in output
+        # Verify output
+        output = "".join([call[0][0] for call in mock_stderr.write.call_args_list])
+        assert "Error: The file invalid.csv does not exist." in output

@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock
 import json
 from app.config_handler import save_config, load_remote_config, save_remote_config, log_remote_data, merge_config, save_debug_info
 

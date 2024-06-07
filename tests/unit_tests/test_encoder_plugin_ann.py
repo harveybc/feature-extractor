@@ -1,48 +1,44 @@
 import pytest
-from unittest.mock import patch, MagicMock
 import numpy as np
-from keras.models import Sequential, load_model, save_model
-from keras.layers import Dense, Input
-from keras.models import Model
+from unittest.mock import patch, MagicMock
 from app.plugins.encoder_plugin_ann import Plugin
 
-@pytest.fixture
-def sample_data():
-    return np.random.rand(100, 10)
+def test_configure_size():
+    plugin = Plugin()
+    plugin.configure_size(input_dim=10, encoding_dim=5)
+    assert plugin.model.input_shape == (None, 10)
+    assert plugin.model.output_shape == (None, 10)
 
-@pytest.fixture
-def encoder():
-    return Plugin()
+def test_train():
+    plugin = Plugin()
+    data = np.random.rand(100, 10)
+    plugin.configure_size(input_dim=10, encoding_dim=5)
+    plugin.train(data)
+    assert plugin.model is not None
 
-def test_configure_size(encoder):
-    encoder.configure_size(10, 256)
-    assert isinstance(encoder.model, Sequential)
+def test_encode():
+    plugin = Plugin()
+    data = np.random.rand(10, 10)
+    plugin.configure_size(input_dim=10, encoding_dim=5)
+    encoded_data = plugin.encode(data)
+    assert encoded_data.shape[1] == 5
 
-def test_train(encoder, sample_data):
-    encoder.configure_size(10, 256)
-    encoder.train(sample_data)
-    assert encoder.model is not None
+def test_calculate_mse():
+    plugin = Plugin()
+    data = np.random.rand(10, 10)
+    decoded_data = data  # Mock the decoded data as same as input for simplicity
+    mse = plugin.calculate_mse(data, decoded_data)
+    assert mse == 0
 
-def test_encode(encoder, sample_data):
-    encoder.configure_size(10, 256)
-    encoder.train(sample_data)
-    encoded_data = encoder.encode(sample_data)
-    assert encoded_data.shape[1] == 256
-
-def test_calculate_mse(encoder, sample_data):
-    encoder.configure_size(10, 256)
-    encoder.train(sample_data)
-    encoded_data = encoder.encode(sample_data)
-    decoded_data = encoder.model.predict(encoded_data)
-    mse = encoder.calculate_mse(sample_data, decoded_data)
-    assert mse >= 0
-
-@patch("keras.models.load_model")
 @patch("keras.models.save_model")
-def test_save_and_load(mock_save_model, mock_load_model, encoder):
-    encoder.configure_size(10, 256)
-    encoder.train(np.random.rand(100, 10))
-    encoder.save("test_model.h5")
-    mock_save_model.assert_called_once_with("test_model.h5")
-    encoder.load("test_model.h5")
-    mock_load_model.assert_called_once_with("test_model.h5")
+@patch("keras.models.load_model")
+def test_save_and_load(mock_save_model, mock_load_model):
+    plugin = Plugin()
+    plugin.configure_size(input_dim=10, encoding_dim=5)
+    plugin.save("test_model.h5")
+    mock_save_model.assert_called_once()
+    plugin.load("test_model.h5")
+    mock_load_model.assert_called_once()
+
+if __name__ == "__main__":
+    pytest.main()

@@ -94,9 +94,8 @@ class Plugin:
         Returns:
             np.array: Encoded data.
         """
-        encoder_layer = self.model.layers[0]
-        encoder_function = K.function([self.model.input], [encoder_layer.output])
-        return encoder_function([data])[0]
+        get_encoded_layer_output = K.function([self.model.input], [self.model.layers[0].output])
+        return get_encoded_layer_output([data])[0]
 
     def save(self, file_path):
         """

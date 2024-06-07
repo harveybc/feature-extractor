@@ -1,5 +1,5 @@
 import numpy as np
-from keras.models import Sequential, load_model, Model
+from keras.models import Sequential, load_model, Model, save_model
 from keras.layers import Dense, Input
 from keras.optimizers import Adam
 import keras.backend as K
@@ -106,7 +106,7 @@ class Plugin:
         Args:
             file_path (str): Path to save the model.
         """
-        self.model.save(file_path)
+        save_model(self.model, file_path)
 
     def load(self, file_path):
         """

@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from unittest.mock import patch, MagicMock
 from app.main import main
+import json
 
 @patch("app.cli.parse_args")
 @patch("app.config_handler.load_config")

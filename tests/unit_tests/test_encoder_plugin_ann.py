@@ -20,6 +20,7 @@ def test_encode():
     plugin = Plugin()
     data = np.random.rand(10, 10)
     plugin.configure_size(input_dim=10, encoding_dim=5)
+    plugin.train(data)
     encoded_data = plugin.encode(data)
     assert encoded_data.shape[1] == 5
 
@@ -35,9 +36,9 @@ def test_calculate_mse():
 def test_save_and_load(mock_save_model, mock_load_model):
     plugin = Plugin()
     plugin.configure_size(input_dim=10, encoding_dim=5)
-    plugin.save("test_model.h5")
+    plugin.save("test_model.keras")
     mock_save_model.assert_called_once()
-    plugin.load("test_model.h5")
+    plugin.load("test_model.keras")
     mock_load_model.assert_called_once()
 
 if __name__ == "__main__":

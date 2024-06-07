@@ -1,5 +1,6 @@
 import pytest
-import json
+import pandas as pd
+import numpy as np
 import requests
 from unittest.mock import patch, MagicMock
 from app.main import main

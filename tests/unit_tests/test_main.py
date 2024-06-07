@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 from unittest.mock import patch, MagicMock
 from app.main import main
-import json
 
 @patch("app.cli.parse_args")
 @patch("app.config_handler.load_config")
@@ -15,7 +14,7 @@ import json
 @patch("requests.post")
 def test_main(mock_requests_post, mock_process_data, mock_load_csv, mock_merge_config, mock_save_debug_info, mock_save_config, mock_load_config, mock_parse_args):
     # Mock parse_args
-    mock_parse_args.return_value = MagicMock(load_config=None, remote_load_config=None, save_config=None, debug_file=None, csv_file='tests/data/csv_sel_unb_norm_512.csv', remote_load_encoder=None, remote_load_decoder=None), []
+    mock_parse_args.return_value = MagicMock(load_config=None, remote_load_config=None, save_config=None, debug_file='debug_out.json', csv_file='tests/data/csv_sel_unb_norm_512.csv', remote_load_encoder=None, remote_load_decoder=None), []
 
     # Mock load_config
     mock_load_config.return_value = {}

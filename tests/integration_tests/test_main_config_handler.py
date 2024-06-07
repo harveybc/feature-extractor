@@ -2,9 +2,8 @@ import pytest
 import json
 import pandas as pd
 import numpy as np
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, MagicMock
 from app.main import main
-from app.config_handler import load_config, save_config, save_debug_info, merge_config, load_remote_config, save_remote_config, log_remote_data
 
 @pytest.fixture
 def mock_parse_args():

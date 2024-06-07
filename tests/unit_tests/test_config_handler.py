@@ -23,7 +23,8 @@ def test_save_debug_info():
     expected_json = json.dumps(debug_info, indent=4)
     with patch("builtins.open", mock_open()) as mock_file:
         save_debug_info(debug_info, "mock_debug_path")
-        mock_file().write.assert_called_once_with(expected_json)
+        handle = mock_file()
+        handle.write.assert_called_once_with(expected_json)
 
 def test_merge_config():
     default_config = {'encoder_plugin': 'default_encoder', 'max_error': 0.01}

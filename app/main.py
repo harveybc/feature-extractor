@@ -8,6 +8,19 @@ from app.config_handler import load_config, save_config, save_debug_info, merge_
 from app.data_handler import load_csv, write_csv
 from app.data_processor import process_data
 
+def load_remote_model(url, username, password):
+    response = requests.get(url, auth=(username, password))
+    response.raise_for_status()
+    with open("temp_model.h5", "wb") as f:
+        f.write(response.content)
+    return "temp_model.h5"
+
+def save_remote_model(file_path, url, username, password):
+    with open(file_path, "rb") as f:
+        response = requests.post(url, auth=(username, password), files={"file": f})
+    response.raise_for_status()
+    return response.text
+
 def main():
     print("Parsing initial arguments...")
     args, unknown_args = parse_args()
@@ -45,8 +58,15 @@ def main():
             return
 
     print("Loading configuration...")
-    config = load_config(args.config) if args.config else {}
+    config = {}
+    if args.load_config:
+        config.update(load_config(args.load_config))
     print(f"Initial loaded config: {config}")
+
+    if args.remote_load_config:
+        remote_config = load_remote_config(args.remote_load_config, args.remote_username, args.remote_password)
+        config.update(remote_config)
+        print(f"Loaded remote config: {remote_config}")
 
     print("Merging configuration with CLI arguments...")
     config = merge_config(config, cli_args)
@@ -70,6 +90,11 @@ def main():
         print("Error: No CSV file specified.", file=sys.stderr)
         return
 
+    if args.remote_load_encoder:
+        config['load_encoder'] = load_remote_model(args.remote_load_encoder, args.remote_username, args.remote_password)
+    if args.remote_load_decoder:
+        config['load_decoder'] = load_remote_model(args.remote_load_decoder, args.remote_username, args.remote_password)
+
     data = load_csv(config['csv_file'], headers=config['headers'])
     debug_info["input_rows"] = len(data)
     debug_info["input_columns"] = len(data.columns)
@@ -80,30 +105,38 @@ def main():
     debug_info["output_rows"] = len(decoded_data)
     debug_info["output_columns"] = len(decoded_data[0].columns)
 
-    config_str, config_filename = save_config(config)
-    print(f"Configuration saved to {config_filename}")
+    if args.save_config:
+        config_str, config_filename = save_config(config, args.save_config)
+        print(f"Configuration saved to {config_filename}")
 
     execution_time = time.time() - start_time
     debug_info["execution_time"] = execution_time
 
-    if 'debug_file' not in config or not config['debug_file']:
-        config['debug_file'] = 'debug_out.json'
+    if args.debug_file:
+        save_debug_info(debug_info, args.debug_file)
+        print(f"Debug info saved to {args.debug_file}")
 
-    save_debug_info(debug_info, config['debug_file'])
-    print(f"Debug info saved to {config['debug_file']}")
     print(f"Execution time: {execution_time} seconds")
 
-    if config.get('remote_save_config'):
-        if save_remote_config(config, config['remote_save_config'], config['remote_username'], config['remote_password']):
-            print(f"Configuration successfully saved to remote URL {config['remote_save_config']}")
-        else:
-            print(f"Failed to save configuration to remote URL {config['remote_save_config']}")
+    if args.remote_save_encoder:
+        save_remote_model(config['save_encoder'], args.remote_save_encoder, args.remote_username, args.remote_password)
+        print(f"Encoder model successfully saved to remote URL {args.remote_save_encoder}")
 
-    if config.get('remote_log'):
-        if log_remote_data(debug_info, config['remote_log'], config['remote_username'], config['remote_password']):
-            print(f"Debug information successfully logged to remote URL {config['remote_log']}")
+    if args.remote_save_decoder:
+        save_remote_model(config['save_decoder'], args.remote_save_decoder, args.remote_username, args.remote_password)
+        print(f"Decoder model successfully saved to remote URL {args.remote_save_decoder}")
+
+    if args.remote_save_config:
+        if save_remote_config(config, args.remote_save_config, args.remote_username, args.remote_password):
+            print(f"Configuration successfully saved to remote URL {args.remote_save_config}")
         else:
-            print(f"Failed to log debug information to remote URL {config['remote_log']}")
+            print(f"Failed to save configuration to remote URL {args.remote_save_config}")
+
+    if args.remote_log:
+        if log_remote_data(debug_info, args.remote_log, args.remote_username, args.remote_password):
+            print(f"Debug information successfully logged to remote URL {args.remote_log}")
+        else:
+            print(f"Failed to log debug information to remote URL {args.remote_log}")
 
 if __name__ == '__main__':
     main()

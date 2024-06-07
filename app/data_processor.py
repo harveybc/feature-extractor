@@ -49,7 +49,7 @@ def process_data(config):
         tuple: Processed data and debug information.
     """
     data = load_csv(config['csv_file'], headers=config['headers'])
-    windowed_data = sliding_window(data, config['window_size'])
+    windowed_data = sliding_window(config['csv_file'], config['window_size'], data)
 
     print("Loaded data:\n", data.head())
 
@@ -74,7 +74,7 @@ def process_data(config):
         trained_encoder.add_debug_info(debug_info)
 
         output_filename = f"{config['output_file']}_{index}.csv"
-        write_csv(output_filename, decoded_data, include_date=config['force_date'], headers=config['headers'])
+        write_csv(output_filename, pd.DataFrame(decoded_data), include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")
 
         if config['remote_log']:

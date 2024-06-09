@@ -1,4 +1,17 @@
+import pandas as pd
 import numpy as np
+
+def load_csv(file_path, headers=True):
+    if headers:
+        data = pd.read_csv(file_path)
+    else:
+        data = pd.read_csv(file_path, header=None)
+    return data
+
+def write_csv(file_path, data, include_date=False, headers=None):
+    data = pd.DataFrame(data)
+    data.to_csv(file_path, index=False, header=headers)
+    print(f"Data written to {file_path}")
 
 def sliding_window(data, window_size):
     print(f"Applying sliding window of size: {window_size}")

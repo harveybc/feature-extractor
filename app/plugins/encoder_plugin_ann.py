@@ -11,7 +11,7 @@ class Plugin:
     # Define the parameters for this plugin and their default values
     plugin_params = {
         'input_dim': None,
-        'encoding_dim': 4,
+        'encoding_dim': None,
         'epochs': 10,
         'batch_size': 256
     }

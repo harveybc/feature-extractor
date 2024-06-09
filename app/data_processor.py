@@ -52,7 +52,14 @@ def process_data(config):
     for col_index in range(data.shape[1]):
         print(f"Processing column: {col_index}")
         column_data = data.iloc[:, col_index].values.reshape(-1, 1)
-        windowed_data = sliding_window(column_data, config['window_size'])
+        
+        if config['window_size'] > len(column_data):
+            print(f"Warning: Window size {config['window_size']} is larger than the data length {len(column_data)}. Adjusting window size to {len(column_data)}.")
+            window_size = len(column_data)
+        else:
+            window_size = config['window_size']
+            
+        windowed_data = sliding_window(column_data, window_size)
         print(f"Windowed data shape: {windowed_data.shape}")
 
         encoder_name = config.get('encoder_plugin', 'default')

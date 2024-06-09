@@ -110,34 +110,13 @@ def process_data(config):
         print(f"Mean Squared Error for column {column}: {mse}")
         debug_info[f'mean_squared_error_{column}'] = mse
 
-        # Reconstruct the original time series from the decoded windowed data
-        reconstructed_data = np.zeros((len(data), 1))
-        counts = np.zeros((len(data), 1))
-
-        for i in range(len(windowed_data)):
-            reconstructed_data[i:i+config['window_size']] += decoded_data[i].reshape(-1, 1)
-            counts[i:i+config['window_size']] += 1
-
-        reconstructed_data /= counts
-
-        # Scale the data back to the range -1 to 1 if necessary
-        # Assuming the data was scaled from -1 to 1 to 0 to 1
-        # Correcting the scaling process
-        original_min = -1
-        original_max = 1
-        reconstructed_data = (reconstructed_data - 0.5) * 2 * (original_max - original_min) + original_min
-
-        # Debugging messages to check the reshaped data
-        print(f"Reconstructed data shape: {reconstructed_data.shape}")
-        print(f"First 5 rows of reconstructed data: {reconstructed_data[:5]}")
-        print(f"First 5 rows of original data: {data[[column]].values[:5]}")
-
+        # Directly use the decoded data for output without further transformations
         output_filename = f"{config['csv_output_path']}_{column}.csv"
-        write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'])
+        write_csv(output_filename, decoded_data, include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")
 
         # Print the encoder and decoder dimensions
         print(f"Encoder Dimensions: {trained_encoder.model.input_shape} -> {trained_encoder.model.output_shape}")
         print(f"Decoder Dimensions: {trained_decoder.model.input_shape} -> {trained_decoder.model.output_shape}")
 
-    return reconstructed_data, debug_info
+    return decoded_data, debug_info

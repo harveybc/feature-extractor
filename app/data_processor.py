@@ -1,6 +1,7 @@
 import sys
 import requests
 import numpy as np
+import pandas as pd
 from app.data_handler import load_csv, write_csv, sliding_window
 from app.plugin_loader import load_encoder_decoder_plugins
 
@@ -43,57 +44,64 @@ def process_data(config):
     data = data.apply(pd.to_numeric, errors='coerce')
     print(f"Data types:\n{data.dtypes}")
 
-    print("Creating windowed data...")
-    windowed_data = sliding_window(data, config['window_size'])
-    print(f"Data loaded and windowed. Number of windows: {len(windowed_data)}.")
-
-    print("Using encoder plugin:", config['encoder_plugin'])
-    print("Using decoder plugin:", config['decoder_plugin'])
-
-    Encoder, encoder_params, Decoder, decoder_params = load_encoder_decoder_plugins(config['encoder_plugin'], config['decoder_plugin'])
-
-    encoder = Encoder()
-    decoder = Decoder()
-
     debug_info = {}
 
-    for index, series_data in enumerate(windowed_data):
-        print(f"Training autoencoder for window {index}...")
-        
-        # Ensure all data is numerical for each window
-        series_data = np.asarray(series_data).astype(np.float32)
-        print(f"Window data types:\n{series_data.dtype}")
+    for col in data.columns:
+        column_data = data[[col]]
+        print(f"Processing column: {col}")
+        windowed_data = sliding_window(column_data, config['window_size'])
+        print(f"Data loaded and windowed for column {col}. Number of windows: {len(windowed_data)}.")
 
-        trained_encoder, trained_decoder = train_autoencoder(encoder, decoder, series_data, config['max_error'], config['initial_size'], config['step_size'])
+        encoder_name = config.get('encoder_plugin', 'default')
+        decoder_name = config.get('decoder_plugin', 'default')
+        Encoder, encoder_params, Decoder, decoder_params = load_encoder_decoder_plugins(encoder_name, decoder_name)
 
-        model_filename = f"{config['save_encoder']}_{index}.h5"
-        print(f"Saving encoder model to {model_filename}...")
-        trained_encoder.save(model_filename)
+        encoder = Encoder()
+        decoder = Decoder()
 
-        model_filename = f"{config['save_decoder']}_{index}.h5"
-        print(f"Saving decoder model to {model_filename}...")
-        trained_decoder.save(model_filename)
+        for index, series_data in enumerate(windowed_data):
+            print(f"Training autoencoder for window {index} on column {col}...")
+            
+            # Ensure all data is numerical for each window
+            series_data = np.asarray(series_data).astype(np.float32)
+            print(f"Window data types for column {col}:\n{series_data.dtype}")
 
-        encoded_data = trained_encoder.encode(series_data)
-        decoded_data = trained_decoder.decode(encoded_data)
+            trained_encoder, trained_decoder = train_autoencoder(encoder, decoder, series_data, config['max_error'], config['initial_size'], config['step_size'])
 
-        mse = encoder.calculate_mse(series_data, decoded_data)
-        print(f"Mean Squared Error for window {index}: {mse}")
-        debug_info[f'mean_squared_error_{index}'] = mse
+            if col == data.columns[0]:
+                encoder_filename = config['save_encoder']
+                decoder_filename = config['save_decoder']
+            else:
+                encoder_filename = f"{config['save_encoder']}_{col}"
+                decoder_filename = f"{config['save_decoder']}_{col}"
 
-        trained_encoder.add_debug_info(debug_info)
-        trained_decoder.add_debug_info(debug_info)
+            print(f"Saving encoder model to {encoder_filename}...")
+            trained_encoder.save(encoder_filename)
 
-        output_filename = f"{config['csv_output_path']}_{index}.csv"
-        print(f"Writing decoded data to {output_filename}...")
-        write_csv(output_filename, decoded_data, include_date=config['force_date'], headers=config['headers'])
+            print(f"Saving decoder model to {decoder_filename}...")
+            trained_decoder.save(decoder_filename)
 
-        if config['remote_log']:
-            log_response = requests.post(
-                config['remote_log'],
-                auth=(config['remote_username'], config['remote_password']),
-                json=debug_info
-            )
-            print(f"Remote log response: {log_response.text}")
+            encoded_data = trained_encoder.encode(series_data)
+            decoded_data = trained_decoder.decode(encoded_data)
+
+            mse = encoder.calculate_mse(series_data, decoded_data)
+            print(f"Mean Squared Error for window {index} on column {col}: {mse}")
+            debug_info[f'mean_squared_error_{index}_{col}'] = mse
+
+            trained_encoder.add_debug_info(debug_info)
+            trained_decoder.add_debug_info(debug_info)
+
+            output_filename = f"{config['csv_output_path']}_{index}_{col}.csv"
+            print(f"Writing decoded data to {output_filename}...")
+            write_csv(output_filename, decoded_data, include_date=config['force_date'], headers=config['headers'])
+
+            if config['remote_log']:
+                log_response = requests.post(
+                    config['remote_log'],
+                    auth=(config['remote_username'], config['remote_password']),
+                    json=debug_info
+                )
+                print(f"Remote log response: {log_response.text}")
 
     return decoded_data, debug_info
+

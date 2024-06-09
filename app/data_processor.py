@@ -1,5 +1,6 @@
 import sys
 import requests
+import numpy as np
 from app.data_handler import load_csv, write_csv, sliding_window
 from app.plugin_loader import load_encoder_decoder_plugins
 
@@ -36,6 +37,11 @@ def process_data(config):
     print(f"Loading data from {config['csv_file']}...")
     data = load_csv(config['csv_file'], headers=config['headers'])
     print(f"Data loaded: {len(data)} rows and {data.shape[1]} columns.")
+    
+    # Ensure all data is numerical
+    print("Converting data to float...")
+    data = data.apply(pd.to_numeric, errors='coerce')
+    print(f"Data types:\n{data.dtypes}")
 
     print("Creating windowed data...")
     windowed_data = sliding_window(data, config['window_size'])
@@ -53,6 +59,11 @@ def process_data(config):
 
     for index, series_data in enumerate(windowed_data):
         print(f"Training autoencoder for window {index}...")
+        
+        # Ensure all data is numerical for each window
+        series_data = np.asarray(series_data).astype(np.float32)
+        print(f"Window data types:\n{series_data.dtype}")
+
         trained_encoder, trained_decoder = train_autoencoder(encoder, decoder, series_data, config['max_error'], config['initial_size'], config['step_size'])
 
         model_filename = f"{config['save_encoder']}_{index}.h5"

@@ -1,40 +1,41 @@
 import numpy as np
 
-def reconstruct_from_windows(windowed_data, original_length, window_size):
+def reconstruct_series_from_windows(windowed_data, original_length, window_size):
     """
-    Reconstruct the original timeseries from the windowed data by averaging the overlapping windows.
-
+    Reconstruct the original time series from windowed data by averaging the overlapping windows.
+    
     Args:
-        windowed_data (np.array): The windowed data from the autoencoder.
-        original_length (int): The length of the original timeseries.
-        window_size (int): The size of the window used for sliding.
-
+        windowed_data (np.array): The windowed data, shape (num_windows, window_size).
+        original_length (int): The original length of the time series.
+        window_size (int): The size of each window.
+    
     Returns:
-        np.array: The reconstructed original timeseries.
+        np.array: The reconstructed time series of the original length.
     """
-    reconstructed_data = np.zeros((original_length, 1))
-    counts = np.zeros((original_length, 1))
+    num_windows = len(windowed_data)
+    overlap = window_size - 1
+    
+    reconstructed_series = np.zeros(original_length)
+    window_counts = np.zeros(original_length)
+    
+    for i in range(num_windows):
+        start_idx = i * overlap
+        end_idx = start_idx + window_size
+        reconstructed_series[start_idx:end_idx] += windowed_data[i, :]
+        window_counts[start_idx:end_idx] += 1
+    
+    # Avoid division by zero
+    window_counts[window_counts == 0] = 1
+    
+    reconstructed_series /= window_counts
+    
+    return reconstructed_series
 
-    for i in range(windowed_data.shape[0]):
-        for j in range(window_size):
-            if i + j < original_length:
-                reconstructed_data[i + j] += windowed_data[i, j]
-                counts[i + j] += 1
+# Example usage
+windowed_data = ... # Your windowed data (num_windows, window_size)
+original_length = 73841  # Length of the original time series
+window_size = 512  # Size of each window
 
-    reconstructed_data = reconstructed_data / counts
-    return reconstructed_data
-
-# Debug function to test reconstruction
-def test_reconstruct():
-    windowed_data = np.array([
-        [1, 2, 3, 4, 5],
-        [2, 3, 4, 5, 6],
-        [3, 4, 5, 6, 7]
-    ])
-    original_length = 9
-    window_size = 5
-    reconstructed = reconstruct_from_windows(windowed_data, original_length, window_size)
-    print(f"Reconstructed data: {reconstructed.flatten()}")
-
-# Uncomment to run the test
-# test_reconstruct()
+reconstructed_series = reconstruct_series_from_windows(windowed_data, original_length, window_size)
+print(f"Reconstructed series shape: {reconstructed_series.shape}")
+print(f"First 5 rows of reconstructed series: {reconstructed_series[:5]}")

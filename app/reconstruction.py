@@ -29,7 +29,9 @@ def reconstruct_series_from_windows(windowed_data, original_length, window_size)
             windowed_segment = windowed_data[i, :(end_idx - start_idx)]
         else:
             windowed_segment = windowed_data[i, :]
-
+        
+        print(f"Window {i}: start_idx={start_idx}, end_idx={end_idx}, windowed_segment_shape={windowed_segment.shape}")
+        
         reconstructed_series[start_idx:end_idx] += windowed_segment
         window_counts[start_idx:end_idx] += 1
     

@@ -21,12 +21,14 @@ def sliding_window(data, window_size):
     data = np.array(data)  # Ensure data is a numpy array
     print(f"Data shape: {data.shape}")
     
+    # Check if window size is greater than data length
     if window_size > data.shape[0]:
         print(f"Warning: Window size {window_size} is larger than the data length {data.shape[0]}.")
         window_size = data.shape[0]
         
-    shape = data.shape[:-1] + (data.shape[-1] - window_size + 1, window_size)
-    strides = data.strides + (data.strides[-1],)
+    # Calculate the correct shape and strides
+    shape = (data.shape[0] - window_size + 1, window_size, data.shape[1])
+    strides = (data.strides[0], data.strides[0], data.strides[1])
     
     print(f"Shape for as_strided: {shape}")
     print(f"Strides for as_strided: {strides}")

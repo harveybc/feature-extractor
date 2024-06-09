@@ -19,6 +19,8 @@ def parse_args():
     parser.add_argument('-ss', '--step_size', type=int, default=DEFAULT_VALUES['encoding_step_size'], help='Step size to reduce the size of the encoder/decoder interface on each iteration.')
     parser.add_argument('-rl', '--remote_log', type=str, default=DEFAULT_VALUES['remote_log_url'], help='URL of a remote data-logger API endpoint.')
     parser.add_argument('-rc', '--remote_config', type=str, default=DEFAULT_VALUES['remote_config_url'], help='URL of a remote JSON configuration file to download and execute.')
+    parser.add_argument('-lc', '--load_config', type=str, help='Filename to load configuration parameters from.')
+    parser.add_argument('-sc', '--save_config', type=str, help='Filename to save configuration parameters to.')
     parser.add_argument('-qm', '--quiet_mode', type=bool, default=DEFAULT_VALUES['quiet_mode'], help='Do not show results on console.')
     parser.add_argument('-fd', '--force_date', type=bool, default=DEFAULT_VALUES['force_date'], help='Force date inclusion in output.')
 

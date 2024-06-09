@@ -65,8 +65,11 @@ def process_data(config):
     """
     print(f"Loading data from {config['csv_file']}...")
     data = load_csv(config['csv_file'], headers=config['headers'])
+    print("Loaded data:\n", data.head())
+    
+    print("Applying sliding window...")
     windowed_data = sliding_window(config['csv_file'], config['window_size'], data)
-    print("Data loaded and windowed.")
+    print(f"Windowed data length: {len(windowed_data)}")
 
     debug_info = {}
     decoded_data = None
@@ -80,6 +83,10 @@ def process_data(config):
 
     encoder = Encoder()
     decoder = Decoder()
+
+    if len(windowed_data) == 0:
+        print("No windowed data generated. Exiting process.")
+        sys.exit(1)
 
     for index, series_data in enumerate(windowed_data):
         print(f"Processing windowed data index: {index}")

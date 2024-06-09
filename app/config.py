@@ -8,14 +8,14 @@ DEFAULT_VALUES = {
     'config_load_path': './config_in.json',
     'encoder_plugin': 'default',
     'decoder_plugin': 'default',
-    'training_batch_size': 64,  # Updated batch size
-    'epochs': 20,  # Updated number of epochs
+    'training_batch_size': 128,  # Increased batch size for faster training
+    'epochs': 10,  # Reduced number of epochs
     'plugin_directory': 'app/plugins/',
     'remote_log_url': None,
     'remote_config_url': None,
-    'window_size': 128,  # Updated window size
-    'initial_encoding_dim': 4,  # Updated initial encoding dimension
-    'encoding_step_size': 4,  # Updated encoding step size
+    'window_size': 128,  # Smaller window size
+    'initial_encoding_dim': 4,  # Smaller initial encoding dimension
+    'encoding_step_size': 4,  # Smaller step size
     'mse_threshold': 0.3,  # Renamed parameter
     'quiet_mode': False,
     'remote_username': 'test',

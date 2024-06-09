@@ -70,7 +70,7 @@ def process_data(config):
     debug_info = {}
 
     encoder_name = config.get('encoder_plugin', 'default_encoder')
-    decoder_name = config.get('encoder_plugin', 'default_decoder')
+    decoder_name = config.get('decoder_plugin', 'default_decoder')
     Encoder, encoder_params, Decoder, decoder_params = load_encoder_decoder_plugins(encoder_name, decoder_name)
 
     for column in data.columns:

@@ -27,7 +27,7 @@ class Plugin:
                 self.params[key] = value
 
     def get_debug_info(self):
-        return {var: self.params[var] for var in self.plugin_debug_vars}
+        return {var: self.params[var] for var in the plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
         plugin_debug_info = self.get_debug_info()

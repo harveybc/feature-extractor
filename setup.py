@@ -5,7 +5,7 @@ setup(
     version='0.1.0',
     packages=find_packages(),
     entry_points={
-            'console_scripts': [
+        'console_scripts': [
             'feature_extractor=app.main:main'
         ],
         'feature_extractor.encoders': [
@@ -14,11 +14,11 @@ setup(
             'rnn=app.plugins.encoder_plugin_rnn:Plugin',
             'transformer=app.plugins.encoder_plugin_transformer:Plugin',
             'lstm=app.plugins.encoder_plugin_lstm:Plugin',
-            'cnn=app.plugins.encoder_plugin_cnn:Plugin'  
+            'cnn=app.plugins.encoder_plugin_cnn:Plugin'
         ],
         'feature_extractor.decoders': [
             'default=app.plugins.decoder_plugin_ann:Plugin',
-            'ann=app.plugins.decoder_plugin_ann:Plugin'  
+            'ann=app.plugins.decoder_plugin_ann:Plugin',
             'rnn=app.plugins.decoder_plugin_rnn:Plugin',
             'transformer=app.plugins.decoder_plugin_transformer:Plugin',
             'lstm=app.plugins.decoder_plugin_lstm:Plugin',

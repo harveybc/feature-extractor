@@ -3,10 +3,10 @@ from app.data_handler import load_csv, write_csv, sliding_window
 from app.plugin_loader import load_encoder_decoder_plugins
 import requests
 
-def train_autoencoder(encoder, decoder, data, max_error, initial_size, step_size):
+def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_size, incremental_search):
     current_size = initial_size
     current_mse = float('inf')
-    while current_size > 0 and current_mse > max_error:
+    while current_size > 0 and current_mse > mse_threshold and current_size < data.shape[1]:
         print(f"Configuring encoder and decoder with interface size {current_size}...")
         encoder.configure_size(input_dim=data.shape[1], encoding_dim=current_size)
         decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[1])
@@ -22,11 +22,14 @@ def train_autoencoder(encoder, decoder, data, max_error, initial_size, step_size
         current_mse = encoder.calculate_mse(data, decoded_data)
         print(f"Current MSE: {current_mse} at interface size: {current_size}")
 
-        if current_mse <= max_error:
+        if current_mse <= mse_threshold:
             print("Desired MSE reached. Stopping training.")
             break
 
-        current_size -= step_size
+        if incremental_search:
+            current_size += step_size
+        else:
+            current_size -= step_size
 
         response = requests.post(
             'http://localhost:60500/feature_extractor/fe_training_error',
@@ -73,7 +76,7 @@ def process_data(config):
         for window_index, series_data in enumerate(windowed_data):
             print(f"Training autoencoder for window {window_index + 1}/{total_windows}...")
             trained_encoder, trained_decoder = train_autoencoder(
-                encoder, decoder, series_data, config['max_error'], config['initial_size'], config['step_size']
+                encoder, decoder, series_data, config['mse_threshold'], config['initial_size'], config['step_size'], config['incremental_search']
             )
 
             encoder_filename = f"{config['save_encoder']}_{col_index}.h5" if col_index > 0 else config['save_encoder']

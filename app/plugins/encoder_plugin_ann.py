@@ -11,7 +11,7 @@ class Plugin:
     # Define the parameters for this plugin and their default values
     plugin_params = {
         'input_dim': None,
-        'encoding_dim': 4,  # Updated default encoding dimension
+        'encoding_dim': 4,
         'epochs': 10,
         'batch_size': 256
     }
@@ -71,7 +71,7 @@ class Plugin:
         input_layer = Input(shape=(input_dim,))
         encoded = Dense(encoding_dim, activation='relu')(input_layer)
         encoded = Dense(int(encoding_dim / 2), activation='relu')(encoded)  # Intermediate compression
-        decoded = Dense(input_dim, activation='sigmoid')(encoded)  # Output layer to reconstruct the input
+        decoded = Dense(input_dim, activation='tanh')(encoded)  # Output layer to reconstruct the input
 
         self.model = Model(inputs=input_layer, outputs=decoded)
         self.encoder_model = Model(inputs=self.model.input, outputs=self.model.layers[1].output)

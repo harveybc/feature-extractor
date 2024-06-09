@@ -24,7 +24,7 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
     current_mse = float('inf')
     print(f"Training autoencoder with initial size {current_size}...")
     
-    while current_size > 0 and current_mse > mse_threshold if not incremental_search else current_mse < mse_threshold:
+    while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
         encoder.configure_size(input_dim=data.shape[1], encoding_dim=current_size)
         decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[1])
         encoder.train(data)
@@ -102,5 +102,9 @@ def process_data(config):
         output_filename = f"{config['csv_output_path']}_{column}.csv"
         write_csv(output_filename, decoded_data, include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")
+
+        # Print the encoder and decoder dimensions
+        print(f"Encoder Dimensions: {trained_encoder.model.layers[1].input_shape}")
+        print(f"Decoder Dimensions: {trained_decoder.model.layers[-1].output_shape}")
 
     return decoded_data, debug_info

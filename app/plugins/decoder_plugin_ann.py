@@ -44,12 +44,12 @@ class Plugin:
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
     def train(self, encoded_data, original_data):
-        encoded_data = encoded_data.reshape(encoded_data.shape[0], -1)  # Flatten the data
-        original_data = original_data.reshape(original_data.shape[0], -1)  # Flatten the data
+        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))  # Flatten the data
+        original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
         self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
 
     def decode(self, encoded_data):
-        encoded_data = encoded_data.reshape(encoded_data.shape[0], -1)  # Flatten the data
+        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))  # Flatten the data
         return self.model.predict(encoded_data)
 
     def save(self, file_path):
@@ -59,6 +59,6 @@ class Plugin:
         self.model = load_model(file_path)
 
     def calculate_mse(self, original_data, reconstructed_data):
-        original_data = original_data.reshape(original_data.shape[0], -1)  # Flatten the data
-        reconstructed_data = reconstructed_data.reshape(original_data.shape[0], -1)  # Flatten the data
+        original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))  # Flatten the data
         return np.mean(np.square(original_data - reconstructed_data))

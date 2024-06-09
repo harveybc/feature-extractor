@@ -84,7 +84,9 @@ class Plugin:
         Args:
             data (np.array): Training data.
         """
+        print(f"Training data shape: {data.shape}")
         data = data.reshape(data.shape[0], -1)  # Flatten the data
+        print(f"Reshaped training data shape: {data.shape}")
         self.model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
 
     def encode(self, data):

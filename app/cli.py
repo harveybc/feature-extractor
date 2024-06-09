@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument('-dp', '--decoder_plugin', type=str, default='default_decoder', help='Name of the decoder plugin to use.')
 
     # Optional argument for specifying the sliding window size
-    parser.add_argument('-ws', '--window_size', type=int, default=10, help='Sliding window size to use for processing time series data.')
+    parser.add_argument('-ws', '--window_size', type=int, default=512, help='Sliding window size to use for processing time series data.')
     
     # Optional arguments related to autoencoder configuration and training
     parser.add_argument('-me', '--max_error', type=float, help='Maximum MSE error to stop the training process.')

@@ -46,10 +46,10 @@ def main():
 
     print("Loading configuration...")
     config = {}
-    if args.load_config:
+    if args.remote_config:
+        config = load_remote_config(args.remote_config, args.remote_username, args.remote_password)
+    elif args.load_config:
         config = load_config(args.load_config)
-    elif args.remote_load_config:
-        config = load_remote_config(args.remote_load_config, args.remote_username, args.remote_password)
     
     print(f"Initial loaded config: {config}")
 

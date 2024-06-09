@@ -39,8 +39,9 @@ def test_write_csv(tmp_path, sample_dataframe):
     
     # Test Case 2: Handle permission denied
     with pytest.raises(PermissionError):
-        # Simulate permission error by writing to a restricted directory (use OS-specific path)
-        write_csv("/root/restricted_test_write.csv", sample_dataframe.values, include_date=False, headers=sample_dataframe.columns)
+        # Simulate permission error by writing to a restricted directory
+        restricted_path = "Z:/restricted_test_write.csv"  # Update with an appropriate path
+        write_csv(restricted_path, sample_dataframe.values, include_date=False, headers=sample_dataframe.columns)
 
 def test_sliding_window():
     # Test Case 1: Simple sliding window

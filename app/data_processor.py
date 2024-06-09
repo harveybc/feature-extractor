@@ -25,8 +25,8 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
     print(f"Training autoencoder with initial size {current_size}...")
     
     while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
-        encoder.configure_size(input_dim=data.shape[1], encoding_dim=current_size)
-        decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[1])
+        encoder.configure_size(input_dim=data.shape[2], encoding_dim=current_size)
+        decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[2])
         encoder.train(data)
         encoded_data = encoder.encode(data)
         decoder.train(encoded_data, data)
@@ -42,7 +42,7 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
         
         if incremental_search:
             current_size += step_size
-            if current_size >= data.shape[1]:
+            if current_size >= data.shape[2]:
                 break
         else:
             current_size -= step_size
@@ -104,7 +104,11 @@ def process_data(config):
 
         # Scale the data back to the range -1 to 1 if necessary
         reshaped_decoded_data = 2 * (reshaped_decoded_data - 0.5)  # Assuming the data was scaled from -1 to 1 to 0 to 1
-        
+
+        # Debugging messages to check the reshaped data
+        print(f"Reshaped decoded data shape: {reshaped_decoded_data.shape}")
+        print(f"First 5 rows of reshaped decoded data: {reshaped_decoded_data[:5]}")
+
         output_filename = f"{config['csv_output_path']}_{column}.csv"
         write_csv(output_filename, reshaped_decoded_data, include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")

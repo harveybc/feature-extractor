@@ -11,8 +11,8 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
     print(f"Training autoencoder with initial size {current_size}...")
 
     while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
-        encoder.configure_size(input_dim=data.shape[2], encoding_dim=current_size)
-        decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[2])
+        encoder.configure_size(input_dim=data.shape[1], encoding_dim=current_size)
+        decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[1])
         encoder.train(data)
         encoded_data = encoder.encode(data)
         decoder.train(encoded_data, data)
@@ -28,7 +28,7 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
         
         if incremental_search:
             current_size += step_size
-            if current_size >= data.shape[2]:
+            if current_size >= data.shape[1]:
                 break
         else:
             current_size -= step_size
@@ -56,6 +56,9 @@ def process_data(config):
         windowed_data = sliding_window(column_data, config['window_size'])
         print(f"Windowed data shape: {windowed_data.shape}")
 
+        windowed_data = windowed_data.reshape(windowed_data.shape[0], windowed_data.shape[1])
+        print(f"Reshaped windowed data shape: {windowed_data.shape}")
+
         trained_encoder, trained_decoder = train_autoencoder(
             Encoder(), Decoder(), windowed_data, config['mse_threshold'], 
             config['initial_encoding_dim'], config['encoding_step_size'], 
@@ -76,10 +79,8 @@ def process_data(config):
         print(f"Mean Squared Error for column {column}: {mse}")
         debug_info[f'mean_squared_error_{column}'] = mse
 
-        # Reshape the decoded data back to the original shape
         reconstructed_data = reconstruct_series_from_windows(decoded_data, data.shape[0], config['window_size'])
 
-        # Debugging messages to check the reconstructed data
         print(f"Reconstructed data shape: {reconstructed_data.shape}")
         print(f"First 5 rows of reconstructed data: {reconstructed_data[:5]}")
 
@@ -87,7 +88,6 @@ def process_data(config):
         write_csv(output_filename, reconstructed_data.reshape(-1, 1), include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")
 
-        # Print the encoder and decoder dimensions
         print(f"Encoder Dimensions: {trained_encoder.model.input_shape} -> {trained_encoder.model.output_shape}")
         print(f"Decoder Dimensions: {trained_decoder.model.input_shape} -> {trained_decoder.model.output_shape}")
 

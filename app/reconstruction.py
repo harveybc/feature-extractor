@@ -13,7 +13,7 @@ def reconstruct_series_from_windows(windowed_data, original_length, window_size)
         np.array: The reconstructed time series of the original length.
     """
     num_windows = windowed_data.shape[0]
-    overlap = window_size - 1
+    overlap = window_size // 2
     
     reconstructed_series = np.zeros(original_length)
     window_counts = np.zeros(original_length)
@@ -21,12 +21,12 @@ def reconstruct_series_from_windows(windowed_data, original_length, window_size)
     for i in range(num_windows):
         start_idx = i * overlap
         end_idx = start_idx + window_size
-        reconstructed_series[start_idx:end_idx] += windowed_data[i, :]
+        if end_idx > original_length:
+            end_idx = original_length
+        reconstructed_series[start_idx:end_idx] += windowed_data[i, :end_idx - start_idx]
         window_counts[start_idx:end_idx] += 1
     
-    # Avoid division by zero
     window_counts[window_counts == 0] = 1
-    
     reconstructed_series /= window_counts
     
     return reconstructed_series

@@ -7,37 +7,75 @@ Feature Extractor is a Python application designed for processing CSV data throu
 
 This feature makes it particularly suitable for tasks that require specialized data processing, such as machine learning model training and evaluation. It Includes plugins for RNN, CNN, LSTM, and Transformer-based architectures.
 
-## Installation
+## Installation Instructions
 
-Follow these steps to install and set up the application:
+To install and set up the feature-extractor application, follow these steps:
 
-### Prerequisites
-- Python 3.8 or newer
-- pip (Python package installer)
+1. **Clone the Repository**:
+    ```bash
+    git clone https://github.com/harveybc/feature-extractor.git
+    cd feature-extractor
+    ```
 
-### Setting Up a Virtual Environment (optional)
-It's recommended to use a virtual environment to manage dependencies:
+2. **Create and Activate a Virtual Environment**:
+    - **Using `venv` (Python 3.3+)**:
+        ```bash
+        python -m venv env
+        source env/bin/activate  # On Windows use `env\Scripts\activate`
+        ```
 
-```bash
-# Create a virtual environment
-python -m venv venv
+    - **Using `conda`**:
+        ```bash
+        conda create --name feature-extractor_env python=3.9
+        conda activate feature-extractor_env
+        ```
 
-# Activate the virtual environment
-# On Windows:
-venv\Scripts\activate
-# On Unix or MacOS:
-source venv/bin/activate
-```
+3. **Install Dependencies**:
+    ```bash
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    ```
 
-### Install the Application
-Clone the repository and install the required dependencies:
+4. **Build the Package**:
+    ```bash
+    python -m build
+    ```
 
-```bash
-git clone https://github.com/your-github/feature-extractor.git
-cd feature-extractor
-pip install -r requirements.txt
-python setup.py install
-```
+5. **Install the Package**:
+    ```bash
+    pip install .
+    ```
+
+6. **Run the feature-extractor**:
+    - On Windows, run the following command to verify installation (it generates an example output file csv_output.csv):
+        ```bash
+        feature-extractor.bat tests\data\csv_sel_unb_norm_512.csv --plugin feature_selector --method select_single --single 0
+        ```
+
+    - On Linux, run:
+        ```bash
+        sh feature-extractor.sh tests\data\csv_sel_unb_norm_512.csv --plugin feature_selector --method select_single --single 0
+        ```
+
+7. **Run Tests (Optional, requires external repo)**:
+For pasing remote tests, requires an instance of [harveybc/data-logger](https://github.com/harveybc/data-logger)
+    - On Windows, run the following command to run the tests:
+        ```bash
+        set_env.bat
+        pytest
+        ```
+
+    - On Linux, run:
+        ```bash
+        sh ./set_env.sh
+        pytest
+        ```
+
+8. **Generate Documentation (Optional)**:
+    - Run the following command to generate code documentation in HTML format in the docs directory:
+        ```bash
+        pdoc --html -o docs app
+        ```
 
 ## Usage
 

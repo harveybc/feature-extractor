@@ -13,9 +13,9 @@ DEFAULT_VALUES = {
     'plugin_directory': 'app/plugins/',
     'remote_log_url': None,
     'remote_config_url': None,
-    'window_size': 512,
-    'initial_encoding_dim': 256,
-    'encoding_step_size': 32,
+    'window_size': 128,  # Updated window size
+    'initial_encoding_dim': 4,  # Updated initial encoding dimension
+    'encoding_step_size': 4,  # Updated encoding step size
     'mse_threshold': 0.3,  # Renamed parameter
     'quiet_mode': False,
     'remote_username': 'test',
@@ -24,5 +24,5 @@ DEFAULT_VALUES = {
     'save_decoder_path': './decoder_ann.keras',
     'force_date': False,
     'headers': False,  # Ensure this default value is set
-    'incremental_search': False  # New parameter for incremental search
+    'incremental_search': True  # New parameter for incremental search
 }

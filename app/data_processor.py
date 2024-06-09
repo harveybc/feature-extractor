@@ -104,7 +104,7 @@ def process_data(config):
         print(f"Output written to {output_filename}")
 
         # Print the encoder and decoder dimensions
-        print(f"Encoder Dimensions: {trained_encoder.model.layers[1].input_shape}")
-        print(f"Decoder Dimensions: {trained_decoder.model.layers[-1].output_shape}")
+        print(f"Encoder Dimensions: {trained_encoder.model.input_shape}")
+        print(f"Decoder Dimensions: {trained_decoder.model.output_shape}")
 
     return decoded_data, debug_info

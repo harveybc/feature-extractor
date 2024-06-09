@@ -27,6 +27,11 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
     while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
         encoder.configure_size(input_dim=data.shape[2], encoding_dim=current_size)
         decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[2])
+        
+        # Debugging information
+        print(f"Configured encoder with input_dim={data.shape[2]}, encoding_dim={current_size}")
+        print(f"Configured decoder with encoding_dim={current_size}, output_dim={data.shape[2]}")
+        
         encoder.train(data)
         encoded_data = encoder.encode(data)
         decoder.train(encoded_data, data)
@@ -79,8 +84,12 @@ def process_data(config):
         windowed_data = sliding_window(column_data, config['window_size'])
         print(f"Windowed data shape: {windowed_data.shape}")
 
+        # Reshape windowed_data for training
+        reshaped_windowed_data = windowed_data.reshape(windowed_data.shape[0], windowed_data.shape[1])
+        print(f"Reshaped windowed data shape: {reshaped_windowed_data.shape}")
+
         trained_encoder, trained_decoder = train_autoencoder(
-            Encoder(), Decoder(), windowed_data, config['mse_threshold'], 
+            Encoder(), Decoder(), reshaped_windowed_data, config['mse_threshold'], 
             config['initial_encoding_dim'], config['encoding_step_size'], 
             config['incremental_search'], config['epochs']
         )
@@ -92,10 +101,10 @@ def process_data(config):
         print(f"Saved encoder model to {encoder_model_filename}")
         print(f"Saved decoder model to {decoder_model_filename}")
 
-        encoded_data = trained_encoder.encode(windowed_data)
+        encoded_data = trained_encoder.encode(reshaped_windowed_data)
         decoded_data = trained_decoder.decode(encoded_data)
 
-        mse = trained_encoder.calculate_mse(windowed_data, decoded_data)
+        mse = trained_encoder.calculate_mse(reshaped_windowed_data, decoded_data)
         print(f"Mean Squared Error for column {column}: {mse}")
         debug_info[f'mean_squared_error_{column}'] = mse
 

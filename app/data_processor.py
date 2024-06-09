@@ -35,8 +35,11 @@ def train_autoencoder(encoder, decoder, data, max_error, initial_size, step_size
 def process_data(config):
     print(f"Loading data from {config['csv_file']}...")
     data = load_csv(config['csv_file'], headers=config['headers'])
-    print("Data loaded and windowed.")
+    print(f"Data loaded: {len(data)} rows and {data.shape[1]} columns.")
+
+    print("Creating windowed data...")
     windowed_data = sliding_window(data, config['window_size'])
+    print(f"Data loaded and windowed. Number of windows: {len(windowed_data)}.")
 
     print("Using encoder plugin:", config['encoder_plugin'])
     print("Using decoder plugin:", config['decoder_plugin'])

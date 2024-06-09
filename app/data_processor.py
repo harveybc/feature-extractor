@@ -3,23 +3,9 @@ import requests
 import numpy as np
 from app.data_handler import load_csv, write_csv, sliding_window
 from app.plugin_loader import load_encoder_decoder_plugins
+from app.reconstruction import reconstruct_from_windows
 
 def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
-    """
-    Train an autoencoder with decreasing interface size until the mse_threshold is reached.
-
-    Args:
-        encoder (object): The encoder plugin instance.
-        decoder (object): The decoder plugin instance.
-        data (np.array): The data to train on.
-        mse_threshold (float): Maximum mean squared error threshold.
-        initial_size (int): Initial size of the encoder/decoder interface.
-        step_size (int): Step size to adjust the interface size.
-        incremental_search (bool): If true, incrementally increase the interface size.
-
-    Returns:
-        object: Trained encoder and decoder instances.
-    """
     current_size = initial_size
     current_mse = float('inf')
     print(f"Training autoencoder with initial size {current_size}...")
@@ -56,15 +42,6 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
     return encoder, decoder
 
 def process_data(config):
-    """
-    Process the data using the specified encoder and decoder plugins.
-
-    Args:
-        config (dict): Configuration dictionary.
-
-    Returns:
-        tuple: Processed data and debug information.
-    """
     data = load_csv(config['csv_file'], headers=config['headers'])
     print(f"Data loaded: {data.shape[0]} rows and {data.shape[1]} columns.")
 
@@ -85,7 +62,6 @@ def process_data(config):
         windowed_data = sliding_window(column_data, config['window_size'])
         print(f"Windowed data shape: {windowed_data.shape}")
 
-        # Reshape windowed_data for training
         reshaped_windowed_data = windowed_data.reshape(windowed_data.shape[0], windowed_data.shape[1])
         print(f"Reshaped windowed data shape: {reshaped_windowed_data.shape}")
 
@@ -109,17 +85,8 @@ def process_data(config):
         print(f"Mean Squared Error for column {column}: {mse}")
         debug_info[f'mean_squared_error_{column}'] = mse
 
-        # Reconstruct the data to its original shape by averaging the overlapping windows
-        reconstructed_data = np.zeros((data.shape[0], 1))
-        counts = np.zeros((data.shape[0], 1))
-
-        for i in range(windowed_data.shape[0]):
-            for j in range(config['window_size']):
-                if i + j < data.shape[0]:
-                    reconstructed_data[i + j] += decoded_data[i, j]
-                    counts[i + j] += 1
-
-        reconstructed_data = reconstructed_data / counts
+        # Reconstruct the data to its original shape
+        reconstructed_data = reconstruct_from_windows(decoded_data, data.shape[0], config['window_size'])
         print(f"Reconstructed data shape: {reconstructed_data.shape}")
 
         # Debugging information

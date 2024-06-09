@@ -37,3 +37,6 @@ REMOTE_PASSWORD = 'pass'
 # Save paths for encoder and decoder
 SAVE_ENCODER_PATH = './encoder_ann.keras'  # Default path to save the encoder model
 SAVE_DECODER_PATH = './decoder_ann.keras'  # Default path to save the decoder model
+
+# Force date inclusion
+FORCE_DATE = False

@@ -3,7 +3,7 @@ import requests
 from app.data_handler import load_csv, write_csv, sliding_window
 from app.plugin_loader import load_encoder_decoder_plugins
 
-def train_autoencoder(encoder, decoder, data, max_error, initial_size, step_size):
+def train_autoencoder(encoder, decoder, data, max_error, initial_size, step_size, config):
     """
     Train an autoencoder with decreasing interface size until the max_error is reached.
 
@@ -14,6 +14,7 @@ def train_autoencoder(encoder, decoder, data, max_error, initial_size, step_size
         max_error (float): Maximum mean squared error threshold.
         initial_size (int): Initial size of the encoder/decoder interface.
         step_size (int): Step size to reduce the interface size.
+        config (dict): Configuration dictionary.
 
     Returns:
         tuple: Trained encoder and decoder instances.
@@ -24,25 +25,24 @@ def train_autoencoder(encoder, decoder, data, max_error, initial_size, step_size
         print(f"Configuring encoder and decoder with interface size: {current_size}")
         encoder.configure_size(input_dim=data.shape[1], encoding_dim=current_size)
         decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[1])
-        
+
         print(f"Training encoder with interface size: {current_size}")
         encoder.train(data)
         encoded_data = encoder.encode(data)
-        
+
         print(f"Training decoder with interface size: {current_size}")
         decoder.train(encoded_data, data)
         decoded_data = decoder.decode(encoded_data)
-        
+
         current_mse = encoder.calculate_mse(data, decoded_data)
         print(f"Current MSE: {current_mse} at interface size: {current_size}")
-        
+
         if current_mse <= max_error:
             print("Desired MSE reached. Stopping training.")
             break
-        
+
         current_size -= step_size
 
-        # Logging training error to remote server (if needed)
         if config['remote_log']:
             response = requests.post(
                 config['remote_log'],
@@ -66,7 +66,7 @@ def process_data(config):
     print(f"Loading data from {config['csv_file']}...")
     data = load_csv(config['csv_file'], headers=config['headers'])
     print("Loaded data:\n", data.head())
-    
+
     print("Applying sliding window...")
     windowed_data = sliding_window(config['csv_file'], config['window_size'], data)
     print(f"Windowed data length: {len(windowed_data)}")
@@ -91,7 +91,7 @@ def process_data(config):
     for index, series_data in enumerate(windowed_data):
         print(f"Processing windowed data index: {index}")
         trained_encoder, trained_decoder = train_autoencoder(
-            encoder, decoder, series_data, config['max_error'], config['initial_size'], config['step_size']
+            encoder, decoder, series_data, config['max_error'], config['initial_size'], config['step_size'], config
         )
 
         model_filename = f"{config['save_encoder']}_{index}.h5"

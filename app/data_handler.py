@@ -19,9 +19,22 @@ def write_csv(file_path, data, include_date=False, headers=False):
 def sliding_window(data, window_size):
     print(f"Applying sliding window of size: {window_size}")
     data = np.array(data)  # Ensure data is a numpy array
+    print(f"Data shape: {data.shape}")
     if window_size > data.shape[0]:
-        raise ValueError(f"Window size {window_size} is larger than the data length {data.shape[0]}.")
+        print(f"Window size {window_size} is larger than the data length {data.shape[0]}. Adjusting window size to {data.shape[0]}.")
+        window_size = data.shape[0]
     shape = data.shape[:-1] + (data.shape[-1] - window_size + 1, window_size)
     strides = data.strides + (data.strides[-1],)
-    windowed_data = np.lib.stride_tricks.as_strided(data, shape=shape, strides=strides)
-    return windowed_data
+    print(f"Calculated shape: {shape}")
+    print(f"Calculated strides: {strides}")
+    try:
+        windowed_data = np.lib.stride_tricks.as_strided(data, shape=shape, strides=strides)
+        print(f"Windowed data shape: {windowed_data.shape}")
+        return windowed_data
+    except ValueError as e:
+        print(f"Error in as_strided: {e}")
+        raise
+
+# Ensure this function matches the rest of your data pipeline
+def load_and_process_data(config):
+    data = load_csv(config['csv_file'], headers

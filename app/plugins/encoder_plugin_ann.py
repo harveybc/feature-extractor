@@ -84,6 +84,7 @@ class Plugin:
         Args:
             data (np.array): Training data.
         """
+        data = data.reshape(data.shape[0], -1)  # Flatten the data
         self.model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
 
     def encode(self, data):
@@ -96,6 +97,7 @@ class Plugin:
         Returns:
             np.array: Encoded data.
         """
+        data = data.reshape(data.shape[0], -1)  # Flatten the data
         return self.encoder_model.predict(data)
 
     def save(self, file_path):
@@ -128,6 +130,6 @@ class Plugin:
         Returns:
             float: The mean squared error.
         """
-        if original_data.shape != reconstructed_data.shape:
-            reconstructed_data = reconstructed_data.reshape(original_data.shape)
+        original_data = original_data.reshape(original_data.shape[0], -1)  # Flatten the data
+        reconstructed_data = reconstructed_data.reshape(original_data.shape[0], -1)  # Flatten the data
         return np.mean(np.square(original_data - reconstructed_data))

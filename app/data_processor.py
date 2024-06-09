@@ -109,8 +109,17 @@ def process_data(config):
         print(f"Mean Squared Error for column {column}: {mse}")
         debug_info[f'mean_squared_error_{column}'] = mse
 
-        # Reconstruct the data to its original shape
-        reconstructed_data = decoded_data.reshape(-1, 1)
+        # Reconstruct the data to its original shape by averaging the overlapping windows
+        reconstructed_data = np.zeros((data.shape[0], 1))
+        counts = np.zeros((data.shape[0], 1))
+
+        for i in range(windowed_data.shape[0]):
+            for j in range(config['window_size']):
+                if i + j < data.shape[0]:
+                    reconstructed_data[i + j] += decoded_data[i, j]
+                    counts[i + j] += 1
+
+        reconstructed_data = reconstructed_data / counts
         print(f"Reconstructed data shape: {reconstructed_data.shape}")
 
         # Debugging information

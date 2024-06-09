@@ -1,42 +1,65 @@
 import pytest
 import pandas as pd
 import numpy as np
-from unittest.mock import patch, mock_open
+import os
 from app.data_handler import load_csv, write_csv, sliding_window
 
-@patch("builtins.open", new_callable=mock_open, read_data="2024-01-01\n2024-01-02\n2024-01-03")
-def test_load_csv_without_headers(mock_file):
-    df = load_csv("test.csv", headers=False)
-    expected_df = pd.DataFrame({
-        'date': pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03'])
-    })
-    expected_df.set_index('date', inplace=True)
-    pd.testing.assert_frame_equal(df, expected_df)
+# Setup: Create a sample DataFrame for testing
+@pytest.fixture
+def sample_dataframe():
+    data = {
+        'A': [1, 2, 3, 4, 5],
+        'B': [5, 4, 3, 2, 1]
+    }
+    return pd.DataFrame(data)
 
-@patch("builtins.open", new_callable=mock_open)
-@patch("pandas.DataFrame.to_csv")
-def test_write_csv(mock_to_csv, mock_open):
-    data = pd.DataFrame({
-        'date': pd.date_range(start='2024-01-01', periods=3, freq='D'),
-        'col_0': [1, 4, 7],
-        'col_1': [2, 5, 8],
-        'col_2': [3, 6, 9]
-    })
-    write_csv("test_output.csv", data)
-    mock_to_csv.assert_called_once_with("test_output.csv", index=True, header=True)
+def test_load_csv(tmp_path, sample_dataframe):
+    # Test Case 1: Load a CSV file
+    test_csv_path = tmp_path / "test_load.csv"
+    sample_dataframe.to_csv(test_csv_path, index=False)
+    loaded_df = load_csv(test_csv_path, headers=True)
+    pd.testing.assert_frame_equal(loaded_df, sample_dataframe)
+    
+    # Test Case 2: Handle missing values
+    sample_dataframe.loc[2, 'A'] = np.nan
+    sample_dataframe.to_csv(test_csv_path, index=False)
+    loaded_df = load_csv(test_csv_path, headers=True)
+    assert loaded_df.isna().sum().sum() == 1  # Check for one missing value
+    
+    # Test Case 3: Non-existent file
+    with pytest.raises(FileNotFoundError):
+        load_csv("non_existent_file.csv", headers=True)
+
+def test_write_csv(tmp_path, sample_dataframe):
+    # Test Case 1: Write DataFrame to CSV and verify content
+    test_csv_path = tmp_path / "test_write.csv"
+    write_csv(test_csv_path, sample_dataframe.values, include_date=False, headers=sample_dataframe.columns)
+    loaded_df = pd.read_csv(test_csv_path)
+    pd.testing.assert_frame_equal(loaded_df, sample_dataframe)
+    
+    # Test Case 2: Handle permission denied
+    with pytest.raises(PermissionError):
+        # Simulate permission error by writing to a restricted directory (use OS-specific path)
+        write_csv("/root/restricted_test_write.csv", sample_dataframe.values, include_date=False, headers=sample_dataframe.columns)
 
 def test_sliding_window():
-    data = pd.DataFrame({
-        'col_0': [1, 2, 3, 4, 5]
-    })
-    result = sliding_window("test.csv", 3, data)
-    expected_result = [np.array([
-        [1, 2, 3],
-        [2, 3, 4],
-        [3, 4, 5]
-    ])]
-    for r, e in zip(result, expected_result):
-        np.testing.assert_array_equal(r, e)
+    # Test Case 1: Simple sliding window
+    arr = np.array([1, 2, 3, 4, 5])
+    window_size = 3
+    result = sliding_window(arr, window_size)
+    expected = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
+    np.testing.assert_array_equal(result, expected)
+    
+    # Test Case 2: Window size greater than array length
+    window_size = 6
+    result = sliding_window(arr, window_size)
+    assert result.size == 0  # Expect an empty array
+    
+    # Test Case 3: Overlapping windows
+    window_size = 2
+    result = sliding_window(arr, window_size)
+    expected = np.array([[1, 2], [2, 3], [3, 4], [4, 5]])
+    np.testing.assert_array_equal(result, expected)
 
 if __name__ == "__main__":
     pytest.main()

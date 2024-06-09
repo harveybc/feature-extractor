@@ -25,12 +25,14 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
     print(f"Training autoencoder with initial size {current_size}...")
     
     while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
-        encoder.configure_size(input_dim=data.shape[2], encoding_dim=current_size)
-        decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[2])
+        print(f"Training data shape: {data.shape}")  # Debugging message
+        input_dim = data.shape[-1]  # Fixing the shape indexing
+        encoder.configure_size(input_dim=input_dim, encoding_dim=current_size)
+        decoder.configure_size(encoding_dim=current_size, output_dim=input_dim)
         
         # Debugging information
-        print(f"Configured encoder with input_dim={data.shape[2]}, encoding_dim={current_size}")
-        print(f"Configured decoder with encoding_dim={current_size}, output_dim={data.shape[2]}")
+        print(f"Configured encoder with input_dim={input_dim}, encoding_dim={current_size}")
+        print(f"Configured decoder with encoding_dim={current_size}, output_dim={input_dim}")
         
         encoder.train(data)
         encoded_data = encoder.encode(data)
@@ -47,7 +49,7 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
         
         if incremental_search:
             current_size += step_size
-            if current_size >= data.shape[2]:
+            if current_size >= input_dim:
                 break
         else:
             current_size -= step_size

@@ -1,7 +1,6 @@
 import pytest
 import pandas as pd
 import numpy as np
-import os
 from app.data_handler import load_csv, write_csv, sliding_window
 
 # Setup: Create a sample DataFrame for testing
@@ -38,9 +37,9 @@ def test_write_csv(tmp_path, sample_dataframe):
     pd.testing.assert_frame_equal(loaded_df, sample_dataframe)
     
     # Test Case 2: Handle permission denied
+    restricted_path = tmp_path / "restricted_test_write.csv"
+    restricted_path.chmod(0o400)  # Make the file read-only to simulate permission error
     with pytest.raises(PermissionError):
-        # Simulate permission error by writing to a restricted directory
-        restricted_path = "Z:/restricted_test_write.csv"  # Update with an appropriate path
         write_csv(restricted_path, sample_dataframe.values, include_date=False, headers=sample_dataframe.columns)
 
 def test_sliding_window():

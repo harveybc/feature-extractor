@@ -6,7 +6,8 @@ import requests
 def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_size, incremental_search):
     current_size = initial_size
     current_mse = float('inf')
-    while current_size > 0 and current_mse > mse_threshold and current_size < data.shape[1]:
+
+    while (current_size > 0 and not incremental_search) or (current_size <= data.shape[1] and incremental_search):
         print(f"Configuring encoder and decoder with interface size {current_size}...")
         encoder.configure_size(input_dim=data.shape[1], encoding_dim=current_size)
         decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[1])
@@ -55,13 +56,13 @@ def process_data(config):
     for col_index in range(data.shape[1]):
         print(f"Processing column: {col_index}")
         column_data = data.iloc[:, col_index].values.reshape(-1, 1)
-        
+
         if config['window_size'] > len(column_data):
             print(f"Warning: Window size {config['window_size']} is larger than the data length {len(column_data)}. Adjusting window size to {len(column_data)}.")
             window_size = len(column_data)
         else:
             window_size = config['window_size']
-            
+
         windowed_data = sliding_window(column_data, window_size)
         print(f"Windowed data shape: {windowed_data.shape}")
 

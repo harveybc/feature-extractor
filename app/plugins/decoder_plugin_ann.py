@@ -1,9 +1,13 @@
 import numpy as np
-from keras.models import Sequential, load_model, Model, save_model
-from keras.layers import Dense, Input
+from keras.models import Sequential, load_model
+from keras.layers import Dense
 from keras.optimizers import Adam
 
 class Plugin:
+    """
+    A simple neural network-based decoder using Keras, with dynamically configurable size.
+    """
+
     plugin_params = {
         'encoding_dim': 32,
         'output_dim': None,
@@ -30,32 +34,25 @@ class Plugin:
         debug_info.update(plugin_debug_info)
 
     def configure_size(self, encoding_dim, output_dim):
-        print(f"Configuring decoder: encoding_dim={encoding_dim}, output_dim={output_dim}")
         self.params['encoding_dim'] = encoding_dim
         self.params['output_dim'] = output_dim
 
-        input_layer = Input(shape=(encoding_dim,))
-        decoded = Dense(int(encoding_dim * 2), activation='relu')(input_layer)
-        decoded = Dense(output_dim, activation='sigmoid')(decoded)
-
-        self.model = Model(inputs=input_layer, outputs=decoded)
+        self.model = Sequential([
+            Dense(int(encoding_dim * 2), input_shape=(encoding_dim,), activation='relu'),
+            Dense(output_dim, activation='sigmoid')
+        ])
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
     def train(self, encoded_data, original_data):
-        print(f"Training decoder: epochs={self.params['epochs']}, batch_size={self.params['batch_size']}")
-        history = self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
-        print(f"Decoder training completed. Loss history: {history.history['loss']}")
+        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=0)
 
     def decode(self, encoded_data):
-        print("Decoding data...")
         return self.model.predict(encoded_data)
 
     def save(self, file_path):
-        print(f"Saving decoder model to {file_path}...")
-        save_model(self.model, file_path)
+        self.model.save(file_path)
 
     def load(self, file_path):
-        print(f"Loading decoder model from {file_path}...")
         self.model = load_model(file_path)
 
     def calculate_mse(self, original_data, reconstructed_data):

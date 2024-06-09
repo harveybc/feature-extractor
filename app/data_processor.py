@@ -25,8 +25,7 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
     print(f"Training autoencoder with initial size {current_size}...")
 
     while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
-        print(f"Training data shape: {data.shape}")  # Debugging message
-        input_dim = data.shape[-1]  # Fixing the shape indexing
+        input_dim = data.shape[1]  # Use the window size as input dimension
         encoder.configure_size(input_dim=input_dim, encoding_dim=current_size)
         decoder.configure_size(encoding_dim=current_size, output_dim=input_dim)
 
@@ -110,13 +109,20 @@ def process_data(config):
         print(f"Mean Squared Error for column {column}: {mse}")
         debug_info[f'mean_squared_error_{column}'] = mse
 
-        # Directly use the decoded data for output without further transformations
+        # Reconstruct the data to its original shape
+        reconstructed_data = decoded_data.reshape(-1, 1)
+        print(f"Reconstructed data shape: {reconstructed_data.shape}")
+
+        # Debugging information
+        print(f"First 5 rows of reconstructed data: {reconstructed_data[:5]}")
+        print(f"First 5 rows of original data: {data[[column]].values[:5]}")
+
         output_filename = f"{config['csv_output_path']}_{column}.csv"
-        write_csv(output_filename, decoded_data, include_date=config['force_date'], headers=config['headers'])
+        write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")
 
         # Print the encoder and decoder dimensions
         print(f"Encoder Dimensions: {trained_encoder.model.input_shape} -> {trained_encoder.model.output_shape}")
         print(f"Decoder Dimensions: {trained_decoder.model.input_shape} -> {trained_decoder.model.output_shape}")
 
-    return decoded_data, debug_info
+    return reconstructed_data, debug_info

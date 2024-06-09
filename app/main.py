@@ -1,14 +1,10 @@
 import sys
-import json
-import time
-import requests
+import pandas as pd
 import numpy as np
-from app.plugin_loader import load_plugin, load_encoder_decoder_plugins
-from app.cli import parse_args
-from app.config_handler import load_config, save_config, save_debug_info, merge_config, load_remote_config, save_remote_config, log_remote_data
-from app.data_handler import load_csv, write_csv
-from app.data_processor import process_data
-import config
+from config_handler import load_config, save_config, merge_config, save_debug_info, load_remote_config, save_remote_config, log_remote_data
+from plugin_loader import load_encoder_decoder_plugins
+from cli import parse_args
+from data_handler import load_csv, write_csv
 
 def main():
     print("Parsing initial arguments...")
@@ -48,77 +44,72 @@ def main():
 
     print("Loading configuration...")
     config = {}
+    if args.load_config:
+        config = load_config(args.load_config)
+        print(f"Loaded config from {args.load_config}: {config}")
+
     if args.remote_config:
         config = load_remote_config(args.remote_config, args.remote_username, args.remote_password)
-    elif args.load_config:
-        config = load_config(args.load_config)
-    
-    print(f"Initial loaded config: {config}")
+        print(f"Loaded remote config from {args.remote_config}: {config}")
 
+    print(f"Initial loaded config: {config}")
     print("Merging configuration with CLI arguments...")
-    config = merge_config(config, cli_args, unknown_args_dict)
+    config = merge_config(config, cli_args, {})
     print(f"Config after merging with CLI args: {config}")
 
-    debug_info = {
-        "execution_time": "",
-        "input_rows": 0,
-        "output_rows": 0,
-        "input_columns": 0,
-        "output_columns": 0
-    }
+    print("Loading data...")
+    data = load_csv(config['csv_file'])
+    print(f"Loaded data from {config['csv_file']}")
 
-    start_time = time.time()
-
-    if not config.get('csv_file'):
-        print("Error: No CSV file specified.", file=sys.stderr)
-        return
-
-    data = load_csv(config['csv_file'], headers=config['headers'])
-    debug_info["input_rows"] = len(data)
-    debug_info["input_columns"] = len(data.columns)
-
+    print("Loading encoder and decoder plugins...")
     encoder_plugin, encoder_params, decoder_plugin, decoder_params = load_encoder_decoder_plugins(config['encoder_plugin'], config['decoder_plugin'])
-    # Set plugin params (add actual implementation as needed)
-    encoder_plugin.set_params(**{k: config[k] for k in encoder_params if k in config})
-    decoder_plugin.set_params(**{k: config[k] for k in decoder_params if k in config})
 
-    # Process data with encoder and decoder plugins
-    decoded_data, debug_info = process_data(config, encoder_plugin, decoder_plugin)
+    encoder_plugin = encoder_plugin()
+    decoder_plugin = decoder_plugin()
 
-    debug_info["output_rows"] = len(decoded_data)
-    debug_info["output_columns"] = len(decoded_data[0].columns)
+    print("Configuring encoder and decoder sizes...")
+    encoder_plugin.configure_size(data.shape[1], config['initial_size'])
+    decoder_plugin.configure_size(config['initial_size'], data.shape[1])
 
-    if args.save_encoder:
-        encoder_plugin.save(args.save_encoder)
+    current_size = config['initial_size']
+    while True:
+        print(f"Training encoder and decoder with interface size {current_size}...")
+        encoder_plugin.train(data)
+        encoded_data = encoder_plugin.encode(data)
+        decoder_plugin.train(encoded_data, data)
 
-    if args.save_decoder:
-        decoder_plugin.save(args.save_decoder)
+        reconstructed_data = decoder_plugin.decode(encoded_data)
+        mse = encoder_plugin.calculate_mse(data, reconstructed_data)
+        print(f"Reconstruction MSE: {mse}")
 
-    if args.save_config:
-        config_str, config_filename = save_config(config, args.save_config)
-        print(f"Configuration saved to {config_filename}")
+        if mse <= config['max_error']:
+            print(f"Reached acceptable error level: {mse} <= {config['max_error']}")
+            break
 
-    execution_time = time.time() - start_time
-    debug_info["execution_time"] = execution_time
+        current_size -= config['step_size']
+        if current_size <= 0:
+            print("Minimum interface size reached, stopping training.")
+            break
 
-    if 'debug_file' not in config or not config['debug_file']:
-        config['debug_file'] = args.debug_file
+        print(f"Reducing interface size to {current_size}...")
+        encoder_plugin.configure_size(data.shape[1], current_size)
+        decoder_plugin.configure_size(current_size, data.shape[1])
 
-    save_debug_info(debug_info, config['debug_file'])
-    print(f"Debug info saved to {config['debug_file']}")
-    print(f"Execution time: {execution_time} seconds")
+    print(f"Saving encoder to {config['save_encoder']}...")
+    encoder_plugin.save(config['save_encoder'])
 
-    if args.remote_save_config:
-        if save_remote_config(config, args.remote_save_config, args.remote_username, args.remote_password):
-            print(f"Configuration successfully saved to remote URL {args.remote_save_config}")
-        else:
-            print(f"Failed to save configuration to remote URL {args.remote_save_config}")
+    print(f"Saving decoder to {config['save_decoder']}...")
+    decoder_plugin.save(config['save_decoder'])
 
-    if args.remote_log:
-        if log_remote_data(debug_info, args.remote_log, args.remote_username, args.remote_password):
-            print(f"Debug information successfully logged to remote URL {args.remote_log}")
-        else:
-            print(f"Failed to log debug information to remote URL {args.remote_log}")
+    print(f"Saving final configuration to {config['save_config']}...")
+    save_config(config, config['save_config'])
 
-if __name__ == '__main__':
+    print("Saving debug info...")
+    encoder_debug_info = encoder_plugin.get_debug_info()
+    decoder_debug_info = decoder_plugin.get_debug_info()
+    save_debug_info({'encoder': encoder_debug_info, 'decoder': decoder_debug_info}, 'debug_out.json')
+
+    print(f"Final reconstruction MSE: {mse}")
+
+if __name__ == "__main__":
     main()

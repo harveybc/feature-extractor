@@ -9,7 +9,7 @@ setup(
             'feature_extractor=app.main:main'
         ],
         'feature_extractor.encoders': [
-            'default_encoder=app.plugins.encoder_plugin_ann:Plugin',
+            'default=app.plugins.encoder_plugin_ann:Plugin',
             'ann=app.plugins.encoder_plugin_ann:Plugin',
             'rnn=app.plugins.encoder_plugin_rnn:Plugin',
             'transformer=app.plugins.encoder_plugin_transformer:Plugin',
@@ -17,7 +17,7 @@ setup(
             'cnn=app.plugins.encoder_plugin_cnn:Plugin'  
         ],
         'feature_extractor.decoders': [
-            'default_decoder=app.plugins.decoder_plugin_ann:Plugin',
+            'default=app.plugins.decoder_plugin_ann:Plugin',
             'ann=app.plugins.decoder_plugin_ann:Plugin'  
             'rnn=app.plugins.decoder_plugin_rnn:Plugin',
             'transformer=app.plugins.decoder_plugin_transformer:Plugin',

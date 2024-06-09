@@ -69,6 +69,7 @@ def process_data(config):
     print("Data loaded and windowed.")
 
     debug_info = {}
+    decoded_data = None
 
     encoder_name = config.get('encoder_plugin', 'default')
     decoder_name = config.get('decoder_plugin', 'default')
@@ -115,5 +116,9 @@ def process_data(config):
                 json=debug_info
             )
             print(f"Remote log response: {log_response.text}")
+
+    if decoded_data is None:
+        print("No data processed. Check your configuration and input data.")
+        sys.exit(1)
 
     return decoded_data, debug_info

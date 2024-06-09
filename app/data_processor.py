@@ -69,8 +69,9 @@ def process_data(config):
         encoder = Encoder()
         decoder = Decoder()
 
+        total_windows = len(windowed_data)
         for window_index, series_data in enumerate(windowed_data):
-            print(f"Training autoencoder for window {window_index}...")
+            print(f"Training autoencoder for window {window_index + 1}/{total_windows}...")
             trained_encoder, trained_decoder = train_autoencoder(
                 encoder, decoder, series_data, config['max_error'], config['initial_size'], config['step_size']
             )
@@ -87,7 +88,7 @@ def process_data(config):
             decoded_data = trained_decoder.decode(encoded_data)
 
             mse = trained_encoder.calculate_mse(series_data, decoded_data)
-            print(f"Mean Squared Error for window {window_index} on column {col_index}: {mse}")
+            print(f"Mean Squared Error for window {window_index + 1}/{total_windows} on column {col_index}: {mse}")
             debug_info[f'mean_squared_error_{window_index}_{col_index}'] = mse
 
             trained_encoder.add_debug_info(debug_info)

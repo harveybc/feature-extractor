@@ -12,8 +12,8 @@ class Plugin:
     plugin_params = {
         'input_dim': None,
         'encoding_dim': 4,  # Updated default encoding dimension
-        'epochs': 20,
-        'batch_size': 64
+        'epochs': 10,
+        'batch_size': 256
     }
 
     # Define the debug variables for this plugin

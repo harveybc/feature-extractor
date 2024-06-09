@@ -9,9 +9,9 @@ class Plugin:
     """
 
     plugin_params = {
-        'encoding_dim': 32,
+        'encoding_dim': None,
         'output_dim': None,
-        'epochs': 50,
+        'epochs': 10,
         'batch_size': 256
     }
 

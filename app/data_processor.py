@@ -5,6 +5,7 @@ import pandas as pd
 from app.data_handler import load_csv, write_csv, sliding_window
 from app.plugin_loader import load_encoder_decoder_plugins
 from app.reconstruction import unwindow_data
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
     current_size = initial_size
@@ -74,9 +75,12 @@ def process_data(config):
         encoded_data = trained_encoder.encode(windowed_data)
         decoded_data = trained_decoder.decode(encoded_data)
 
-        mse = trained_encoder.calculate_mse(windowed_data, decoded_data)
+        mse = mean_squared_error(windowed_data, decoded_data)
+        mae = mean_absolute_error(windowed_data, decoded_data)
         print(f"Mean Squared Error for column {column}: {mse}")
+        print(f"Mean Absolute Error for column {column}: {mae}")
         debug_info[f'mean_squared_error_{column}'] = mse
+        debug_info[f'mean_absolute_error_{column}'] = mae
 
         reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
 

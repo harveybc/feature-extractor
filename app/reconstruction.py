@@ -21,7 +21,7 @@ def unwindow_data(windowed_df):
     count=0
     for row in range(num_rows):
         if count == percen_val:
-            print(f"{row//percen_val}% done")
+            print(f"{row//percen_val}% done", end="", flush=True)
             count = 0
         count += 1
         extended_row = np.zeros(total_rows_out-1)
@@ -34,7 +34,7 @@ def unwindow_data(windowed_df):
     print("calculateing averages in the second segment")
     for row in range(window_size - 2, total_rows_out - window_size):
         if count == percen_val:
-            print(f"{row//percen_val}% done")
+            print(f"{row//percen_val}% done", end="", flush=True)
             count = 0
         count += 1
         output_dataset.iloc[row] /= window_size

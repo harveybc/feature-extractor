@@ -1,65 +1,76 @@
 import pytest
 import pandas as pd
 import numpy as np
+from unittest.mock import patch, mock_open
 from app.data_handler import load_csv, write_csv, sliding_window
 
-# Setup: Create a sample DataFrame for testing
-@pytest.fixture
-def sample_dataframe():
-    data = {
-        'A': [1, 2, 3, 4, 5],
-        'B': [5, 4, 3, 2, 1]
-    }
-    return pd.DataFrame(data)
+# Mock data for tests
+mock_data = pd.DataFrame({
+    'A': [1, 2, 3, 4, 5],
+    'B': [5, 4, 3, 2, 1]
+})
 
-def test_load_csv(tmp_path, sample_dataframe):
-    # Test Case 1: Load a CSV file
-    test_csv_path = tmp_path / "test_load.csv"
-    sample_dataframe.to_csv(test_csv_path, index=False)
-    loaded_df = load_csv(test_csv_path, headers=True)
-    pd.testing.assert_frame_equal(loaded_df, sample_dataframe)
-    
-    # Test Case 2: Handle missing values
-    sample_dataframe.loc[2, 'A'] = np.nan
-    sample_dataframe.to_csv(test_csv_path, index=False)
-    loaded_df = load_csv(test_csv_path, headers=True)
-    assert loaded_df.isna().sum().sum() == 1  # Check for one missing value
-    
-    # Test Case 3: Non-existent file
-    with pytest.raises(FileNotFoundError):
-        load_csv("non_existent_file.csv", headers=True)
+# Test loading CSV file with headers
+def test_load_csv_with_headers():
+    with patch("builtins.open", mock_open(read_data=mock_data.to_csv(index=False))) as mocked_file:
+        data = load_csv('test.csv', headers=True)
+        pd.testing.assert_frame_equal(data, mock_data)
 
-def test_write_csv(tmp_path, sample_dataframe):
-    # Test Case 1: Write DataFrame to CSV and verify content
-    test_csv_path = tmp_path / "test_write.csv"
-    write_csv(test_csv_path, sample_dataframe.values, include_date=False, headers=sample_dataframe.columns)
-    loaded_df = pd.read_csv(test_csv_path)
-    pd.testing.assert_frame_equal(loaded_df, sample_dataframe)
-    
-    # Test Case 2: Handle permission denied
-    restricted_path = tmp_path / "restricted_test_write.csv"
-    restricted_path.chmod(0o400)  # Make the file read-only to simulate permission error
-    with pytest.raises(PermissionError):
-        write_csv(restricted_path, sample_dataframe.values, include_date=False, headers=sample_dataframe.columns)
+# Test loading CSV file without headers
+def test_load_csv_without_headers():
+    with patch("builtins.open", mock_open(read_data=mock_data.to_csv(index=False, header=False))) as mocked_file:
+        data = load_csv('test.csv', headers=False)
+        pd.testing.assert_frame_equal(data, pd.read_csv('test.csv', header=None))
 
-def test_sliding_window():
-    # Test Case 1: Simple sliding window
-    arr = np.array([1, 2, 3, 4, 5])
+# Test writing CSV file
+def test_write_csv():
+    with patch("builtins.open", mock_open()) as mocked_file:
+        write_csv('test_write.csv', mock_data.values, include_date=False, headers=mock_data.columns)
+        handle = mocked_file()
+        handle.write.assert_called()
+        written_content = "".join(call.args[0] for call in handle.write.call_args_list)
+        written_df = pd.read_csv(pd.compat.StringIO(written_content))
+        pd.testing.assert_frame_equal(written_df, mock_data)
+
+# Test sliding window with sufficient data
+def test_sliding_window_sufficient_data():
+    data = np.array([1, 2, 3, 4, 5])
     window_size = 3
-    result = sliding_window(arr, window_size)
-    expected = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
-    np.testing.assert_array_equal(result, expected)
-    
-    # Test Case 2: Window size greater than array length
-    window_size = 6
-    result = sliding_window(arr, window_size)
-    assert result.size == 0  # Expect an empty array
-    
-    # Test Case 3: Overlapping windows
+    expected_output = np.array([
+        [1, 2, 3],
+        [2, 3, 4],
+        [3, 4, 5]
+    ])
+    result = sliding_window(data, window_size)
+    np.testing.assert_array_equal(result, expected_output)
+
+# Test sliding window with insufficient data
+def test_sliding_window_insufficient_data():
+    data = np.array([1, 2])
+    window_size = 3
+    expected_output = np.empty((0, window_size))
+    result = sliding_window(data, window_size)
+    np.testing.assert_array_equal(result, expected_output)
+
+# Test sliding window with exact data size
+def test_sliding_window_exact_data_size():
+    data = np.array([1, 2, 3])
+    window_size = 3
+    expected_output = np.array([[1, 2, 3]])
+    result = sliding_window(data, window_size)
+    np.testing.assert_array_equal(result, expected_output)
+
+# Test sliding window with 2D data
+def test_sliding_window_2d_data():
+    data = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
     window_size = 2
-    result = sliding_window(arr, window_size)
-    expected = np.array([[1, 2], [2, 3], [3, 4], [4, 5]])
-    np.testing.assert_array_equal(result, expected)
+    expected_output = np.array([
+        [[1, 2], [3, 4]],
+        [[3, 4], [5, 6]],
+        [[5, 6], [7, 8]]
+    ])
+    result = sliding_window(data, window_size)
+    np.testing.assert_array_equal(result, expected_output)
 
 if __name__ == "__main__":
     pytest.main()

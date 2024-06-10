@@ -35,9 +35,10 @@ def test_load_config():
 def test_save_config():
     with patch("builtins.open", mock_open()) as mocked_file:
         config, path = save_config(mock_config, 'config_out.json')
-        mocked_file().write.assert_called()
         handle = mocked_file()
-        handle.write.assert_any_call(json.dumps(mock_config, indent=4))
+        handle.write.assert_called()
+        written_content = "".join(call.args[0] for call in handle.write.call_args_list)
+        assert json.loads(written_content) == mock_config
         assert config == mock_config
         assert path == 'config_out.json'
 
@@ -53,9 +54,10 @@ def test_merge_config():
 def test_save_debug_info():
     with patch("builtins.open", mock_open()) as mocked_file:
         save_debug_info(mock_debug_info, 'debug_out.json')
-        mocked_file().write.assert_called()
         handle = mocked_file()
-        handle.write.assert_any_call(json.dumps(mock_debug_info, indent=4))
+        handle.write.assert_called()
+        written_content = "".join(call.args[0] for call in handle.write.call_args_list)
+        assert json.loads(written_content) == mock_debug_info
 
 # Test loading remote configuration
 def test_load_remote_config():

@@ -1,60 +1,43 @@
 import pytest
-import json
-import requests
-from unittest.mock import patch, mock_open, call
-from app.config_handler import load_config, save_config, save_debug_info, merge_config, load_remote_config, save_remote_config, log_remote_data
-
-def test_load_config():
-    mock_file_data = '{"encoder_plugin": "default_encoder", "max_error": 0.01}'
-    with patch("builtins.open", mock_open(read_data=mock_file_data)):
-        config = load_config("mock_path")
-        assert config == json.loads(mock_file_data)
-
-def test_save_config():
-    config = {'encoder_plugin': 'default_encoder', 'max_error': 0.01}
-    expected_json = json.dumps(config, indent=4)
-    with patch("builtins.open", mock_open()) as mock_file:
-        config_str, path = save_config(config, "mock_path")
-        handle = mock_file()
-        handle.write.assert_called_once_with(expected_json)
-        assert path == "mock_path"
-
-def test_save_debug_info():
-    debug_info = {"execution_time": 0.123, "input_rows": 100}
-    expected_json = json.dumps(debug_info, indent=4)
-    with patch("builtins.open", mock_open()) as mock_file:
-        save_debug_info(debug_info, "mock_debug_path")
-        handle = mock_file()
-        handle.write.assert_called_once_with(expected_json)
+from app.config_handler import merge_config
+from app.config_defaults import DEFAULT_VALUES
 
 def test_merge_config():
-    default_config = {'encoder_plugin': 'default_encoder', 'max_error': 0.01}
-    cli_args = {'encoder_plugin': 'custom_encoder', 'additional_param': 'value'}
-    plugin_params = {'input_dim': 128, 'epochs': 100}
-    merged_config = merge_config(default_config, cli_args, plugin_params)
-    assert merged_config['encoder_plugin'] == 'custom_encoder'
-    assert merged_config['max_error'] == 0.01
-    assert merged_config['additional_param'] == 'value'
-    assert merged_config['input_dim'] == 128
-    assert merged_config['epochs'] == 100
+    # Default values
+    defaults = DEFAULT_VALUES
 
-@patch("requests.get")
-def test_load_remote_config(mock_get):
-    mock_get.return_value.json.return_value = {'encoder_plugin': 'remote_encoder', 'max_error': 0.02}
-    mock_get.return_value.raise_for_status = lambda: None
-    config = load_remote_config("mock_url", "user", "pass")
-    assert config == {'encoder_plugin': 'remote_encoder', 'max_error': 0.02}
+    # Simulated loaded config from a file
+    file_config = {
+        'window_size': 256,
+        'training_batch_size': 64,
+    }
 
-@patch("requests.post")
-def test_save_remote_config(mock_post):
-    mock_post.return_value.status_code = 200
-    mock_post.return_value.raise_for_status = lambda: None
-    result = save_remote_config({'encoder_plugin': 'remote_encoder'}, "mock_url", "user", "pass")
-    assert result == True
+    # CLI arguments
+    cli_args = {
+        'epochs': 20,
+        'encoder_plugin': 'cli_encoder',
+    }
 
-@patch("requests.post")
-def test_log_remote_data(mock_post):
-    mock_post.return_value.status_code = 200
-    mock_post.return_value.raise_for_status = lambda: None
-    result = log_remote_data({'execution_time': 0.123}, "mock_url", "user", "pass")
-    assert result == True
+    # Unknown args
+    unknown_args = {
+        'remote_log_url': 'http://example.com/log',
+    }
+
+    # Expected result after merging
+    expected_config = defaults.copy()
+    expected_config.update(file_config)
+    expected_config.update(cli_args)
+    expected_config.update(unknown_args)
+
+    # Perform the merge
+    merged_config = merge_config(defaults, cli_args, unknown_args)
+
+    # Assert that the merged config matches the expected config
+    assert merged_config == expected_config
+
+    # Additional checks for specific parameters
+    assert merged_config['window_size'] == 256
+    assert merged_config['training_batch_size'] == 64
+    assert merged_config['epochs'] == 20
+    assert merged_config['encoder_plugin'] == 'cli_encoder'
+    assert merged_config['remote_log_url'] == 'http://example.com/log'

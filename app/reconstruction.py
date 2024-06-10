@@ -24,7 +24,7 @@ def unwindow_data(windowed_df):
             print(f"{row//percen_val}% done")
             count = 0
         count += 1
-        extended_row = np.zeros(total_rows_out)
+        extended_row = np.zeros(total_rows_out-1)
         extended_row[row:row + window_size] = windowed_df.iloc[row].values
         output_dataset['Output'] += extended_row
     

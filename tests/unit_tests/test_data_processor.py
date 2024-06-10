@@ -3,9 +3,6 @@ import numpy as np
 import pandas as pd
 from unittest.mock import MagicMock, patch
 from app.data_processor import train_autoencoder, process_data
-from app.data_handler import load_csv, write_csv, sliding_window
-from app.plugin_loader import load_encoder_decoder_plugins
-from app.reconstruction import unwindow_data
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 # Sample data for tests
@@ -72,13 +69,13 @@ def mock_config():
         'csv_output_path': './output'
     }
 
-@patch('app.plugin_loader.load_encoder_decoder_plugins')
+@patch('app.plugin_loader.load_plugin')
 @patch('app.data_handler.load_csv')
 @patch('app.data_handler.write_csv')
 @patch('app.reconstruction.unwindow_data')
-def test_process_data(mock_unwindow_data, mock_write_csv, mock_load_csv, mock_load_plugins, mock_config):
+def test_process_data(mock_unwindow_data, mock_write_csv, mock_load_csv, mock_load_plugin, mock_config):
     mock_load_csv.return_value = sample_data
-    mock_load_plugins.return_value = (MockEncoder, None, MockDecoder, None)
+    mock_load_plugin.side_effect = [(MockEncoder, []), (MockDecoder, [])]
     mock_unwindow_data.return_value = pd.DataFrame({'Output': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]})
 
     reconstructed_data, debug_info = process_data(mock_config)

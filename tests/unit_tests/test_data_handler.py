@@ -42,7 +42,8 @@ def test_sliding_window_sufficient_data():
         [2, 3, 4],
         [3, 4, 5]
     ])
-    result = sliding_window(data, window_size).squeeze()
+    result = sliding_window(data, window_size)
+    result = result.reshape(result.shape[0], result.shape[1])
     np.testing.assert_array_equal(result, expected_output)
 
 # Test sliding window with insufficient data
@@ -58,7 +59,8 @@ def test_sliding_window_exact_data_size():
     data = np.array([1, 2, 3])
     window_size = 3
     expected_output = np.array([[1, 2, 3]])
-    result = sliding_window(data, window_size).squeeze()
+    result = sliding_window(data, window_size)
+    result = result.reshape(result.shape[0], result.shape[1])
     np.testing.assert_array_equal(result, expected_output)
 
 # Test sliding window with 2D data

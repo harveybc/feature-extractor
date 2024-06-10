@@ -12,8 +12,8 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
     print(f"Training autoencoder with initial size {current_size}...")
 
     while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
-        encoder.configure_size(input_dim=data.shape[2], encoding_dim=current_size)
-        decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[2])
+        encoder.configure_size(input_dim=data.shape[1], encoding_dim=current_size)
+        decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[1])
         encoder.train(data)
         encoded_data = encoder.encode(data)
         decoder.train(encoded_data, data)
@@ -29,7 +29,7 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
 
         if incremental_search:
             current_size += step_size
-            if current_size >= data.shape[2]:
+            if current_size >= data.shape[1]:
                 break
         else:
             current_size -= step_size
@@ -55,6 +55,7 @@ def process_data(config):
         print(f"Processing column: {column}")
         column_data = data[[column]].values.astype(np.float64)
         windowed_data = sliding_window(column_data, config['window_size'])
+        windowed_data = windowed_data.squeeze()  # Ensure correct shape for training
         print(f"Windowed data shape: {windowed_data.shape}")
 
         trained_encoder, trained_decoder = train_autoencoder(
@@ -77,7 +78,7 @@ def process_data(config):
         print(f"Mean Squared Error for column {column}: {mse}")
         debug_info[f'mean_squared_error_{column}'] = mse
 
-        reconstructed_data = unwindow_data(pd.DataFrame(decoded_data.squeeze()))
+        reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
 
         output_filename = f"{config['csv_output_path']}_{column}.csv"
         write_csv(output_filename, reconstructed_data.values, include_date=config['force_date'], headers=config['headers'])

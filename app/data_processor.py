@@ -1,94 +1,103 @@
-import sys
-import requests
+import pytest
 import numpy as np
 import pandas as pd
+from unittest.mock import MagicMock, patch
+from app.data_processor import train_autoencoder, process_data
 from app.data_handler import load_csv, write_csv, sliding_window
 from app.plugin_loader import load_encoder_decoder_plugins
 from app.reconstruction import unwindow_data
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
-    current_size = initial_size
-    current_mse = float('inf')
-    print(f"Training autoencoder with initial size {current_size}...")
+# Sample data for tests
+sample_data = pd.DataFrame({
+    'A': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+})
 
-    while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
-        encoder.configure_size(input_dim=data.shape[1], encoding_dim=current_size)
-        decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[1])
-        encoder.train(data)
-        encoded_data = encoder.encode(data)
-        decoder.train(encoded_data, data)
+# Mock Encoder and Decoder classes
+class MockEncoder:
+    def __init__(self):
+        self.model = MagicMock()
+        self.model.input_shape = (None, 512)
+        self.model.output_shape = (None, 4)
 
-        encoded_data = encoder.encode(data)
-        decoded_data = decoder.decode(encoded_data)
-        current_mse = encoder.calculate_mse(data, decoded_data)
-        print(f"Current MSE: {current_mse} at interface size: {current_size}")
+    def configure_size(self, input_dim, encoding_dim):
+        pass
 
-        if (incremental_search and current_mse >= mse_threshold) or (not incremental_search and current_mse <= mse_threshold):
-            print("Desired MSE reached. Stopping training.")
-            break
+    def train(self, data):
+        pass
 
-        if incremental_search:
-            current_size += step_size
-            if current_size >= data.shape[1]:
-                break
-        else:
-            current_size -= step_size
+    def encode(self, data):
+        return data
 
-    return encoder, decoder
+    def save(self, path):
+        pass
 
-def process_data(config):
-    data = load_csv(config['csv_file'], headers=config['headers'])
-    print(f"Data loaded: {data.shape[0]} rows and {data.shape[1]} columns.")
+    def calculate_mse(self, original_data, reconstructed_data):
+        return mean_squared_error(original_data, reconstructed_data)
 
-    if config['force_date']:
-        data.index = pd.to_datetime(data.index)
+class MockDecoder:
+    def __init__(self):
+        self.model = MagicMock()
+        self.model.input_shape = (None, 4)
+        self.model.output_shape = (None, 512)
 
-    print(f"Data types:\n {data.dtypes}")
+    def configure_size(self, encoding_dim, output_dim):
+        pass
 
-    debug_info = {}
+    def train(self, encoded_data, original_data):
+        pass
 
-    encoder_name = config.get('encoder_plugin', 'default_encoder')
-    decoder_name = config.get('decoder_plugin', 'default_decoder')
-    Encoder, encoder_params, Decoder, decoder_params = load_encoder_decoder_plugins(encoder_name, decoder_name)
+    def decode(self, encoded_data):
+        return encoded_data
 
-    for column in data.columns:
-        print(f"Processing column: {column}")
-        column_data = data[[column]].values.astype(np.float64)
-        windowed_data = sliding_window(column_data, config['window_size'])
-        windowed_data = windowed_data.squeeze()  # Ensure correct shape for training
-        print(f"Windowed data shape: {windowed_data.shape}")
+    def save(self, path):
+        pass
 
-        trained_encoder, trained_decoder = train_autoencoder(
-            Encoder(), Decoder(), windowed_data, config['mse_threshold'], 
-            config['initial_encoding_dim'], config['encoding_step_size'], 
-            config['incremental_search'], config['epochs']
-        )
+@pytest.fixture
+def mock_config():
+    return {
+        'csv_file': 'tests/data/csv_sel_unb_norm_512.csv',
+        'headers': False,
+        'force_date': False,
+        'encoder_plugin': 'mock_encoder',
+        'decoder_plugin': 'mock_decoder',
+        'window_size': 3,
+        'mse_threshold': 0.3,
+        'initial_encoding_dim': 4,
+        'encoding_step_size': 2,
+        'incremental_search': False,
+        'epochs': 10,
+        'save_encoder_path': './encoder',
+        'save_decoder_path': './decoder',
+        'csv_output_path': './output'
+    }
 
-        encoder_model_filename = f"{config['save_encoder_path']}_{column}.keras"
-        decoder_model_filename = f"{config['save_decoder_path']}_{column}.keras"
-        trained_encoder.save(encoder_model_filename)
-        trained_decoder.save(decoder_model_filename)
-        print(f"Saved encoder model to {encoder_model_filename}")
-        print(f"Saved decoder model to {decoder_model_filename}")
+@patch('app.plugin_loader.load_encoder_decoder_plugins')
+@patch('app.data_handler.load_csv')
+@patch('app.data_handler.write_csv')
+@patch('app.reconstruction.unwindow_data')
+def test_process_data(mock_unwindow_data, mock_write_csv, mock_load_csv, mock_load_plugins, mock_config):
+    mock_load_csv.return_value = sample_data
+    mock_load_plugins.return_value = (MockEncoder, None, MockDecoder, None)
+    mock_unwindow_data.return_value = pd.DataFrame({'Output': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]})
 
-        encoded_data = trained_encoder.encode(windowed_data)
-        decoded_data = trained_decoder.decode(encoded_data)
+    reconstructed_data, debug_info = process_data(mock_config)
 
-        mse = mean_squared_error(windowed_data, decoded_data)
-        mae = mean_absolute_error(windowed_data, decoded_data)
-        print(f"Mean Squared Error for column {column}: {mse}")
-        print(f"Mean Absolute Error for column {column}: {mae}")
-        debug_info[f'mean_squared_error_{column}'] = mse
-        debug_info[f'mean_absolute_error_{column}'] = mae
+    assert isinstance(reconstructed_data, pd.DataFrame)
+    assert 'mean_squared_error_A' in debug_info
+    assert 'mean_absolute_error_A' in debug_info
 
-        reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
+def test_train_autoencoder():
+    encoder = MockEncoder()
+    decoder = MockDecoder()
+    data = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
-        output_filename = f"{config['csv_output_path']}_{column}.csv"
-        write_csv(output_filename, reconstructed_data.values, include_date=config['force_date'], headers=config['headers'])
-        print(f"Output written to {output_filename}")
+    trained_encoder, trained_decoder = train_autoencoder(
+        encoder, decoder, data, mse_threshold=0.1, initial_size=4, step_size=2, incremental_search=False, epochs=10
+    )
 
-        print(f"Encoder Dimensions: {trained_encoder.model.input_shape} -> {trained_encoder.model.output_shape}")
-        print(f"Decoder Dimensions: {trained_decoder.model.input_shape} -> {trained_decoder.model.output_shape}")
+    assert isinstance(trained_encoder, MockEncoder)
+    assert isinstance(trained_decoder, MockDecoder)
 
-    return reconstructed_data, debug_info
+if __name__ == "__main__":
+    pytest.main()

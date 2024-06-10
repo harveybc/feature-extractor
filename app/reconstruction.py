@@ -15,7 +15,7 @@ def unwindow_data(windowed_df):
     num_rows = len(windowed_df)
     total_rows_out = num_rows + window_size
 
-    output_dataset = pd.DataFrame(0, index=range(total_rows_out), columns=['Output'])
+    output_dataset = pd.DataFrame(0, index=range(total_rows_out-1), columns=['Output'])
     print("Un-Windowing output data")
     percen_val = num_rows // 100
     count=0

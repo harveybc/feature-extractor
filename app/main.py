@@ -3,7 +3,7 @@ import json
 from app.config_handler import load_config, save_config, merge_config, save_debug_info, load_remote_config
 from app.cli import parse_args
 from app.data_processor import process_data
-from app.config_defaults import DEFAULT_VALUES  # Assuming this contains the DEFAULT_VALUES
+from app.config import DEFAULT_VALUES  # Ensure this import
 
 def main():
     print("Parsing initial arguments...")

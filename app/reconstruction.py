@@ -39,7 +39,7 @@ def unwindow_data(windowed_df):
         count += 1
         output_dataset.iloc[row] /= window_size
     print("calculateing averages in the last segment")        
-    for row in range(total_rows_out - window_size+1, total_rows_out-1):
+    for row in range(total_rows_out - window_size, total_rows_out-1):
         output_dataset.iloc[row] /= (total_rows_out - row)
 
     return output_dataset

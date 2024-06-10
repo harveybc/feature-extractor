@@ -56,7 +56,7 @@ class MockDecoder:
 @pytest.fixture
 def mock_config():
     return {
-        'csv_file': 'test.csv',
+        'csv_file': 'tests/data/csv_sel_unb_norm_512.csv',
         'headers': False,
         'force_date': False,
         'encoder_plugin': 'mock_encoder',

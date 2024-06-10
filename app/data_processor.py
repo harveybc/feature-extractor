@@ -3,7 +3,7 @@ import requests
 import numpy as np
 from app.data_handler import load_csv, write_csv, sliding_window
 from app.plugin_loader import load_encoder_decoder_plugins
-from app.reconstruction import reconstruct_from_windows, unwindow_data
+from app.reconstruction import unwindow_data
 
 def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
     current_size = initial_size

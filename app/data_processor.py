@@ -3,7 +3,7 @@ import requests
 import numpy as np
 from app.data_handler import load_csv, write_csv, sliding_window
 from app.plugin_loader import load_encoder_decoder_plugins
-from app.reconstruction import reconstruct_series_from_windows
+from app.reconstruction import reconstruct_from_windows, unwindow_data
 
 def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
     current_size = initial_size
@@ -11,28 +11,28 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
     print(f"Training autoencoder with initial size {current_size}...")
 
     while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
-        encoder.configure_size(input_dim=data.shape[1], encoding_dim=current_size)
-        decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[1])
+        encoder.configure_size(input_dim=data.shape[2], encoding_dim=current_size)
+        decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[2])
         encoder.train(data)
         encoded_data = encoder.encode(data)
         decoder.train(encoded_data, data)
-        
+
         encoded_data = encoder.encode(data)
         decoded_data = decoder.decode(encoded_data)
         current_mse = encoder.calculate_mse(data, decoded_data)
         print(f"Current MSE: {current_mse} at interface size: {current_size}")
-        
+
         if (incremental_search and current_mse >= mse_threshold) or (not incremental_search and current_mse <= mse_threshold):
             print("Desired MSE reached. Stopping training.")
             break
-        
+
         if incremental_search:
             current_size += step_size
-            if current_size >= data.shape[1]:
+            if current_size >= data.shape[2]:
                 break
         else:
             current_size -= step_size
-    
+
     return encoder, decoder
 
 def process_data(config):
@@ -56,9 +56,6 @@ def process_data(config):
         windowed_data = sliding_window(column_data, config['window_size'])
         print(f"Windowed data shape: {windowed_data.shape}")
 
-        windowed_data = windowed_data.reshape(windowed_data.shape[0], windowed_data.shape[1])
-        print(f"Reshaped windowed data shape: {windowed_data.shape}")
-
         trained_encoder, trained_decoder = train_autoencoder(
             Encoder(), Decoder(), windowed_data, config['mse_threshold'], 
             config['initial_encoding_dim'], config['encoding_step_size'], 
@@ -79,13 +76,10 @@ def process_data(config):
         print(f"Mean Squared Error for column {column}: {mse}")
         debug_info[f'mean_squared_error_{column}'] = mse
 
-        reconstructed_data = reconstruct_series_from_windows(decoded_data, data.shape[0], config['window_size'])
-
-        print(f"Reconstructed data shape: {reconstructed_data.shape}")
-        print(f"First 5 rows of reconstructed data: {reconstructed_data[:5]}")
+        reconstructed_data = unwindow_data(pd.DataFrame(decoded_data.squeeze()))
 
         output_filename = f"{config['csv_output_path']}_{column}.csv"
-        write_csv(output_filename, reconstructed_data.reshape(-1, 1), include_date=config['force_date'], headers=config['headers'])
+        write_csv(output_filename, reconstructed_data.values, include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")
 
         print(f"Encoder Dimensions: {trained_encoder.model.input_shape} -> {trained_encoder.model.output_shape}")

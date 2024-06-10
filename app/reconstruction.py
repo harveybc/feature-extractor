@@ -1,42 +1,32 @@
 import numpy as np
+import pandas as pd
 
-def reconstruct_series_from_windows(windowed_data, original_length, window_size):
+def unwindow_data(windowed_df):
     """
-    Reconstruct the original time series from windowed data by averaging the overlapping windows.
+    Transform a windowed dataset into a non-windowed dataset by following a precise procedure.
     
-    Args:
-        windowed_data (np.array): The windowed data, shape (num_windows, window_size).
-        original_length (int): The original length of the time series.
-        window_size (int): The size of each window.
+    Parameters:
+    windowed_df (DataFrame): The input dataset with windowed data.
     
     Returns:
-        np.array: The reconstructed time series of the original length.
+    DataFrame: The resulting non-windowed dataset.
     """
-    num_windows = windowed_data.shape[0]
-    step_size = window_size // 2
+    window_size = windowed_df.shape[1]
+    num_rows = len(windowed_df)
+    total_rows_out = num_rows + window_size
 
-    # Initialize the reconstructed series and the count of overlapping segments
-    reconstructed_series = np.zeros(original_length)
-    window_counts = np.zeros(original_length)
-    
-    for i in range(num_windows):
-        start_idx = i * step_size
-        end_idx = start_idx + window_size
-        
-        # Handle edge case where end_idx might exceed original_length
-        if end_idx > original_length:
-            end_idx = original_length
-            windowed_segment = windowed_data[i, :(end_idx - start_idx)]
-        else:
-            windowed_segment = windowed_data[i, :]
-        
-        print(f"Window {i}: start_idx={start_idx}, end_idx={end_idx}, windowed_segment_shape={windowed_segment.shape}")
-        
-        reconstructed_series[start_idx:end_idx] += windowed_segment
-        window_counts[start_idx:end_idx] += 1
-    
-    # Avoid division by zero
-    window_counts[window_counts == 0] = 1
-    reconstructed_series /= window_counts
+    output_dataset = pd.DataFrame(0, index=range(total_rows_out), columns=['Output'])
 
-    return reconstructed_series
+    for row in range(num_rows):
+        extended_row = np.zeros(total_rows_out)
+        extended_row[row:row + window_size] = windowed_df.iloc[row].values
+        output_dataset['Output'] += extended_row
+
+    for row in range(window_size - 2):
+        output_dataset.iloc[row] /= (row + 1)
+    for row in range(window_size - 1, total_rows_out - window_size):
+        output_dataset.iloc[row] /= window_size
+    for row in range(total_rows_out - window_size+1, total_rows_out-1):
+        output_dataset.iloc[row] /= (total_rows_out - row)
+
+    return output_dataset

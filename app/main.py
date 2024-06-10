@@ -3,7 +3,7 @@ import json
 from app.config_handler import load_config, save_config, merge_config, save_debug_info, load_remote_config
 from app.cli import parse_args
 from app.data_processor import process_data
-from app.config import DEFAULT_VALUES  # Ensure this import
+from app.config import DEFAULT_VALUES
 
 def main():
     print("Parsing initial arguments...")
@@ -39,12 +39,12 @@ def main():
             return
 
     print("Loading configuration...")
-    config = DEFAULT_VALUES.copy()  # Start with default values
+    config = DEFAULT_VALUES.copy()
 
     if args.load_config:
         file_config = load_config(args.load_config)
         print(f"Loaded config from file: {file_config}")
-        config.update(file_config)  # Update with values from the config file
+        config.update(file_config)
 
     print("Merging configuration with CLI arguments and unknown args...")
     config = merge_config(config, cli_args, unknown_args_dict)

@@ -33,6 +33,10 @@ def unwindow_data(windowed_df):
         output_dataset.iloc[row] /= (row + 1)
         print("calculateing averages in the second segment")
     for row in range(window_size - 1, total_rows_out - window_size):
+        if count == percen_val:
+            print(f"{row//percen_val}% done")
+            count = 0
+        count += 1
         output_dataset.iloc[row] /= window_size
     print("calculateing averages in the last segment")        
     for row in range(total_rows_out - window_size+1, total_rows_out-1):

@@ -11,6 +11,28 @@ def main():
     print(f"Initial args: {args}")
     print(f"Unknown args: {unknown_args}")
 
+    cli_args = vars(args)
+    print(f"CLI arguments: {cli_args}")
+
+    unknown_args_dict = {}
+    current_key = None
+    for arg in unknown_args:
+        if arg.startswith('--'):
+            if current_key:
+                unknown_args_dict[current_key] = True
+            current_key = arg[2:]
+        else:
+            if current_key:
+                unknown_args_dict[current_key] = arg
+                current_key = None
+    if current_key:
+        unknown_args_dict[current_key] = True
+
+    # Check for unrecognized arguments
+    if unknown_args_dict:
+        print(f"Error: Unrecognized arguments: {unknown_args_dict}", file=sys.stderr)
+        sys.exit(1)
+
     print("Loading configuration...")
     config = DEFAULT_VALUES.copy()
 
@@ -20,7 +42,7 @@ def main():
         config.update(file_config)
 
     print("Merging configuration with CLI arguments and unknown args...")
-    config = merge_config(config, vars(args), unknown_args)
+    config = merge_config(config, cli_args, unknown_args_dict)
     print(f"Config after merging: {config}")
 
     if args.save_config:

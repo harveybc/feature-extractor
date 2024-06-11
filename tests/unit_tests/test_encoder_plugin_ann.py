@@ -6,6 +6,7 @@ from keras.optimizers import Adam
 from unittest.mock import patch, MagicMock
 from app.plugins.encoder_plugin_ann import Plugin
 
+# Fixtures for setting up mock data and configurations
 @pytest.fixture
 def mock_data():
     return np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
@@ -64,10 +65,7 @@ def test_save(encoder_plugin):
         mock_save_model.assert_called_once_with(encoder_plugin.model, 'test_path')
 
 def test_load(encoder_plugin):
-    with patch('app.plugins.encoder_plugin_ann.load_model') as mock_load_model:
-        mock_model_instance = MagicMock()
-        mock_load_model.return_value = mock_model_instance
-
+    with patch('app.plugins.encoder_plugin_ann.load_model', return_value=MagicMock()) as mock_load_model:
         encoder_plugin.load('test_path')
         mock_load_model.assert_called_once_with('test_path')
         assert encoder_plugin.encoder_model is not None

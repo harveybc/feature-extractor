@@ -52,4 +52,22 @@ def merge_config(config, cli_args, plugin_params):
     print(f"Pre-Merge: file config: {config}")
     print(f"Pre-Merge: cli_args: {cli_args}")
     print(f"Pre-Merge: plugin_params: {plugin_params}")
+    merged_config = {**DEFAULT_VALUES, **config, **cli_args, **plugin_params}
+    print(f"Post-Merge: {merged_config}")
+    return merged_config
 
+def save_debug_info(debug_info, path='debug_out.json'):
+    """
+    Save debug information to a JSON file.
+
+    Args:
+        debug_info (dict): The debug information to save.
+        path (str): The path to the output debug file.
+
+    Returns:
+        None
+    """
+    print(f"Saving debug information to file: {path}")
+    with open(path, 'w') as f:
+        json.dump(debug_info, f, indent=4)
+   

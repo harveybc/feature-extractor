@@ -43,7 +43,7 @@ class Plugin:
         decoded = Dense(input_dim, activation='tanh')(encoded)
 
         self.model = Model(inputs=input_layer, outputs=decoded)
-        self.encoder_model = Model(inputs=self.model.input, outputs=self.model.layers[1].output)
+        self.encoder_model = Model(inputs=self.model.input, outputs=encoded)
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
     def train(self, data):

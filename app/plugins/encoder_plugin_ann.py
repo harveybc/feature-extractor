@@ -1,5 +1,5 @@
 import numpy as np
-from keras.models import Model, load_model, save_model
+from keras.models import Model, save_model, load_model
 from keras.layers import Dense, Input
 from keras.optimizers import Adam
 
@@ -55,7 +55,7 @@ class Plugin:
 
     def train(self, data):
         # Debugging message
-        print("Starting training...")
+        print(f"Training autoencoder with data shape: {data.shape}")
         self.model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
         print("Training completed.")
 
@@ -67,13 +67,12 @@ class Plugin:
         return encoded_data
 
     def save(self, file_path):
-        save_model(self.model, file_path)
-        print(f"Model saved to {file_path}")
+        save_model(self.encoder_model, file_path)
+        print(f"Encoder model saved to {file_path}")
 
     def load(self, file_path):
-        self.model = load_model(file_path)
-        self.encoder_model = Model(inputs=self.model.input, outputs=self.model.get_layer("encoder_output").output)
-        print(f"Model loaded from {file_path}")
+        self.encoder_model = load_model(file_path)
+        print(f"Encoder model loaded from {file_path}")
 
     def calculate_mse(self, original_data, reconstructed_data):
         if original_data.shape != reconstructed_data.shape:

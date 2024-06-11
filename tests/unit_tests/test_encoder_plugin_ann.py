@@ -1,12 +1,11 @@
 import pytest
 import numpy as np
-from keras.models import Sequential
+from keras.models import Sequential, Model
 from keras.layers import Dense, Input
 from keras.optimizers import Adam
 from unittest.mock import patch, MagicMock
 from app.plugins.encoder_plugin_ann import Plugin
 
-# Fixtures for setting up mock data and configurations
 @pytest.fixture
 def mock_data():
     return np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
@@ -66,9 +65,13 @@ def test_save(encoder_plugin):
 
 def test_load(encoder_plugin):
     with patch('app.plugins.encoder_plugin_ann.load_model') as mock_load_model:
+        mock_model_instance = MagicMock()
+        mock_load_model.return_value = mock_model_instance
+
         encoder_plugin.load('test_path')
         mock_load_model.assert_called_once_with('test_path')
         assert encoder_plugin.encoder_model is not None
+        assert isinstance(encoder_plugin.encoder_model, Model)
 
 def test_calculate_mse(encoder_plugin, mock_data):
     encoder_plugin.configure_size(input_dim=3, encoding_dim=2)

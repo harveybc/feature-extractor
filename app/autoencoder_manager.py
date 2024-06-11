@@ -69,16 +69,8 @@ class AutoencoderManager:
         print(f"Decoder model loaded from {file_path}")
 
     def calculate_mse(self, original_data, reconstructed_data):
+        original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))  # Flatten the data
         mse = np.mean(np.square(original_data - reconstructed_data))
         print(f"Calculated MSE: {mse}")
         return mse
-
-# Debugging usage example
-if __name__ == "__main__":
-    autoencoder_manager = AutoencoderManager(input_dim=128, encoding_dim=4)
-    autoencoder_manager.build_autoencoder()
-    # Assuming data is already loaded and preprocessed
-    # data = np.random.rand(8513, 128)  # Example data
-    # autoencoder_manager.train_autoencoder(data)
-    debug_info = {"input_dim": autoencoder_manager.input_dim, "encoding_dim": autoencoder_manager.encoding_dim}
-    print(f"Debug Info: {debug_info}")

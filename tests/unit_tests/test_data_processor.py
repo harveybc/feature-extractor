@@ -87,4 +87,14 @@ def test_process_data(mock_unwindow_data, mock_write_csv, mock_load_csv, mock_lo
 def test_train_autoencoder():
     encoder = MockEncoder()
     decoder = MockDecoder()
-    data = np.array([[1, 2, 3], [4, 5, 6
+    data = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+    trained_encoder, trained_decoder = train_autoencoder(
+        encoder, decoder, data, mse_threshold=0.1, initial_size=4, step_size=2, incremental_search=False, epochs=10
+    )
+
+    assert isinstance(trained_encoder, MockEncoder)
+    assert isinstance(trained_decoder, MockDecoder)
+
+if __name__ == "__main__":
+    pytest.main()

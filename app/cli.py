@@ -1,6 +1,12 @@
 import argparse
 
 def parse_args():
+    """
+    Parse command-line arguments for the feature-extractor application.
+
+    Returns:
+        tuple: Parsed known arguments and unknown arguments.
+    """
     parser = argparse.ArgumentParser(description="Feature-extractor: A tool for encoding and decoding CSV data with support for dynamic plugins.")
     parser.add_argument('csv_file', type=str, help='Path to the CSV file to process.')
     parser.add_argument('-se', '--save_encoder', type=str, help='Filename to save the trained encoder model.', default='./encoder_ann.keras')
@@ -11,7 +17,7 @@ def parse_args():
     parser.add_argument('-ed', '--evaluate_decoder', type=str, help='Filename for outputting decoder evaluation results.')
     parser.add_argument('-ep', '--encoder_plugin', type=str, default='default', help='Name of the encoder plugin to use.')
     parser.add_argument('-dp', '--decoder_plugin', type=str, default='default', help='Name of the decoder plugin to use.')
-    parser.add_argument('-ws', '--window_size', type=int, default=512, help='Sliding window size to use for processing time series data.')
+    parser.add_argument('-ws', '--window_size', type=int, help='Sliding window size to use for processing time series data.')
     parser.add_argument('-me', '--max_error', type=float, help='Maximum MSE threshold to stop the training process.', default=0.3)
     parser.add_argument('-is', '--initial_size', type=int, help='Initial size of the encoder/decoder interface.', default=256)
     parser.add_argument('-ss', '--step_size', type=int, help='Step size to adjust the size of the encoder/decoder interface.', default=32)

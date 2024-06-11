@@ -1,5 +1,5 @@
 import numpy as np
-from keras.models import Model, load_model, save_model
+from keras.models import Model
 from keras.layers import Input, Dense
 from keras.optimizers import Adam
 
@@ -10,15 +10,19 @@ class AutoencoderManager:
         self.input_dim = input_dim
         self.encoding_dim = encoding_dim
         self.autoencoder_model = None
+        self.encoder_model = None
 
     def build_autoencoder(self):
         encoder_input = Input(shape=(self.input_dim,), name="encoder_input")
-        encoder_output = self.encoder_plugin.configure_size(self.input_dim, self.encoding_dim)
-        decoder_output = self.decoder_plugin.configure_size(self.encoding_dim, self.input_dim)
+        encoded = self.encoder_plugin.configure_size(self.input_dim, self.encoding_dim)(encoder_input)
+        decoded = self.decoder_plugin.configure_size(self.encoding_dim, self.input_dim)(encoded)
 
-        self.autoencoder_model = Model(inputs=encoder_input, outputs=decoder_output, name="autoencoder")
+        self.encoder_model = Model(inputs=encoder_input, outputs=encoded, name="encoder")
+        self.autoencoder_model = Model(inputs=encoder_input, outputs=decoded, name="autoencoder")
         self.autoencoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
 
+        print("Encoder Model Summary:")
+        self.encoder_model.summary()
         print("Full Autoencoder Model Summary:")
         self.autoencoder_model.summary()
 

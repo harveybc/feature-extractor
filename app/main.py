@@ -1,6 +1,6 @@
 import sys
 import json
-from app.config_handler import load_config, save_config, merge_config
+from app.config_handler import load_config, save_config, merge_config, save_debug_info
 from app.cli import parse_args
 from app.data_processor import process_data
 from app.config import DEFAULT_VALUES
@@ -41,33 +41,37 @@ def main():
         print(f"Configuration saved to {args.save_config}.")
 
     print("Processing data...")
+    data = process_data(config)
+
+    # Initialize encoder and decoder plugins
     encoder_plugin = EncoderPlugin()
     decoder_plugin = DecoderPlugin()
 
-    autoencoder_manager = AutoencoderManager(
-        encoder_plugin, 
-        decoder_plugin, 
-        input_dim=config['window_size'], 
-        encoding_dim=config['initial_encoding_dim']
-    )
-
+    # Initialize autoencoder manager
+    autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin, input_dim=128, encoding_dim=4)
     autoencoder_manager.build_autoencoder()
-    data = process_data(config)
 
-    autoencoder_manager.train_autoencoder(
-        data, 
-        epochs=config['epochs'], 
-        batch_size=config['batch_size']
-    )
+    # Train autoencoder
+    autoencoder_manager.train_autoencoder(data, epochs=config['epochs'], batch_size=config['training_batch_size'])
 
+    # Encode and decode data
     encoded_data = autoencoder_manager.encode(data)
     decoded_data = autoencoder_manager.decode(encoded_data)
 
+    # Calculate MSE
+    mse = autoencoder_manager.calculate_mse(data, decoded_data)
+    print(f"Mean Squared Error: {mse}")
+
+    # Save models if specified
+    if config['save_encoder']:
+        autoencoder_manager.save(config['save_encoder'], config['save_decoder'])
+
     if not args.quiet_mode:
-        print("Encoded data:")
-        print(encoded_data)
-        print("Decoded data:")
+        print("Processed data:")
         print(decoded_data)
+        debug_info = {"mse": mse}
+        print("Debug information:")
+        print(json.dumps(debug_info, indent=4))
 
 if __name__ == "__main__":
     main()

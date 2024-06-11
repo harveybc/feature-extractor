@@ -36,9 +36,6 @@ class Plugin:
         self.params['input_dim'] = input_dim
         self.params['encoding_dim'] = encoding_dim
 
-        # Debugging message
-        print(f"Configuring size with input_dim: {input_dim} and encoding_dim: {encoding_dim}")
-
         input_layer = Input(shape=(input_dim,), name="encoder_input")
         encoded = Dense(encoding_dim, activation='relu', name="encoder_output")(input_layer)
         decoded = Dense(input_dim, activation='tanh', name="decoder_output")(encoded)
@@ -54,13 +51,11 @@ class Plugin:
         self.model.summary()
 
     def train(self, data):
-        # Debugging message
         print(f"Training autoencoder with data shape: {data.shape}")
         self.model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
         print("Training completed.")
 
     def encode(self, data):
-        # Debugging message
         print(f"Encoding data with shape: {data.shape}")
         encoded_data = self.encoder_model.predict(data)
         print(f"Encoded data shape: {encoded_data.shape}")
@@ -75,8 +70,6 @@ class Plugin:
         print(f"Encoder model loaded from {file_path}")
 
     def calculate_mse(self, original_data, reconstructed_data):
-        if original_data.shape != reconstructed_data.shape:
-            reconstructed_data = reconstructed_data.reshape(original_data.shape)
         mse = np.mean(np.square(original_data - reconstructed_data))
         print(f"Calculated MSE: {mse}")
         return mse

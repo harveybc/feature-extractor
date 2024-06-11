@@ -52,7 +52,12 @@ def merge_config(config, cli_args, plugin_params):
     print(f"Pre-Merge: file config: {config}")
     print(f"Pre-Merge: cli_args: {cli_args}")
     print(f"Pre-Merge: plugin_params: {plugin_params}")
-    merged_config = {**DEFAULT_VALUES, **config, **cli_args, **plugin_params}
+    
+    merged_config = DEFAULT_VALUES.copy()
+    merged_config.update(config)
+    merged_config.update({k: v for k, v in cli_args.items() if v is not None})
+    merged_config.update(plugin_params)
+    
     print(f"Post-Merge: {merged_config}")
     return merged_config
 
@@ -70,4 +75,63 @@ def save_debug_info(debug_info, path='debug_out.json'):
     print(f"Saving debug information to file: {path}")
     with open(path, 'w') as f:
         json.dump(debug_info, f, indent=4)
-   
+    print(f"Debug information saved to {path}")
+
+def load_remote_config(url, username, password):
+    """
+    Load configuration from a remote URL.
+
+    Args:
+        url (str): The URL to the remote configuration.
+        username (str): The username for authentication.
+        password (str): The password for authentication.
+
+    Returns:
+        dict: The loaded configuration as a dictionary.
+    """
+    print(f"Loading remote configuration from URL: {url}")
+    response = requests.get(url, auth=(username, password))
+    response.raise_for_status()
+    config = response.json()
+    print(f"Loaded remote configuration: {config}")
+    return config
+
+def save_remote_config(config, url, username, password):
+    """
+    Save configuration to a remote URL.
+
+    Args:
+        config (dict): The configuration to save.
+        url (str): The URL to the remote endpoint.
+        username (str): The username for authentication.
+        password (str): The password for authentication.
+
+    Returns:
+        bool: True if the configuration was saved successfully, False otherwise.
+    """
+    print(f"Saving configuration to remote URL: {url}")
+    response = requests.post(url, auth=(username, password), json=config)
+    response.raise_for_status()
+    success = response.status_code == 200
+    print(f"Configuration saved to remote URL: {success}")
+    return success
+
+def log_remote_data(data, url, username, password):
+    """
+    Log data to a remote URL.
+
+    Args:
+        data (dict): The data to log.
+        url (str): The URL to the remote endpoint.
+        username (str): The username for authentication.
+        password (str): The password for authentication.
+
+    Returns:
+        bool: True if the data was logged successfully, False otherwise.
+    """
+    print(f"Logging data to remote URL: {url}")
+    response = requests.post(url, auth=(username, password), json=data)
+    response.raise_for_status()
+    success = response.status_code == 200
+    print(f"Data logged to remote URL: {success}")
+    return success

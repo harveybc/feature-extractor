@@ -30,13 +30,10 @@ def main():
 
     print(f"Unknown args as dict: {unknown_args_dict}")
 
-    if 'range' in unknown_args_dict:
-        range_str = unknown_args_dict['range']
-        try:
-            unknown_args_dict['range'] = tuple(map(int, range_str.strip("()").split(',')))
-        except ValueError:
-            print(f"Error: Invalid format for --range argument: {range_str}", file=sys.stderr)
-            return
+    # Check for unrecognized arguments
+    if unknown_args_dict:
+        print(f"Error: Unrecognized arguments: {unknown_args_dict}", file=sys.stderr)
+        return
 
     print("Loading configuration...")
     config = DEFAULT_VALUES.copy()

@@ -39,17 +39,19 @@ class Plugin:
         # Debugging message
         print(f"Configuring size with input_dim: {input_dim} and encoding_dim: {encoding_dim}")
 
-        input_layer = Input(shape=(input_dim,))
-        encoded = Dense(encoding_dim, activation='relu')(input_layer)
-        decoded = Dense(input_dim, activation='tanh')(encoded)
+        input_layer = Input(shape=(input_dim,), name="encoder_input")
+        encoded = Dense(encoding_dim, activation='relu', name="encoder_output")(input_layer)
+        decoded = Dense(input_dim, activation='tanh', name="decoder_output")(encoded)
 
-        self.model = Model(inputs=input_layer, outputs=decoded)
-        self.encoder_model = Model(inputs=input_layer, outputs=encoded)
+        self.model = Model(inputs=input_layer, outputs=decoded, name="autoencoder")
+        self.encoder_model = Model(inputs=input_layer, outputs=encoded, name="encoder")
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration
-        print(f"Encoder Model Summary: \n{self.encoder_model.summary()}")
-        print(f"Full Model Summary: \n{self.model.summary()}")
+        print("Encoder Model Summary:")
+        self.encoder_model.summary()
+        print("Full Autoencoder Model Summary:")
+        self.model.summary()
 
     def train(self, data):
         # Debugging message
@@ -70,7 +72,7 @@ class Plugin:
 
     def load(self, file_path):
         self.model = load_model(file_path)
-        self.encoder_model = Model(inputs=self.model.input, outputs=self.model.layers[1].output)
+        self.encoder_model = Model(inputs=self.model.input, outputs=self.model.get_layer("encoder_output").output)
         print(f"Model loaded from {file_path}")
 
     def calculate_mse(self, original_data, reconstructed_data):

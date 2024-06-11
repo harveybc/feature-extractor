@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 from app.main import main
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def mock_args():
     'incremental_search': True
 })
 def test_main(mock_process_data, mock_save_config, mock_load_config, mock_parse_args, mock_args):
-    mock_parse_args.return_value = (MagicMock(), [])
+    mock_parse_args.return_value = (MagicMock(load_config=None, save_config=None), [])
     mock_process_data.return_value = (MagicMock(), {})
     mock_load_config.return_value = {}
 
@@ -49,7 +49,7 @@ def test_main(mock_process_data, mock_save_config, mock_load_config, mock_parse_
         main()
 
     mock_parse_args.assert_called_once()
-    mock_load_config.assert_called_once()
+    mock_load_config.assert_not_called()
     mock_save_config.assert_called_once()
     mock_process_data.assert_called_once()
 
@@ -83,7 +83,7 @@ def test_main(mock_process_data, mock_save_config, mock_load_config, mock_parse_
     'incremental_search': True
 })
 def test_main_without_load_config(mock_process_data, mock_save_config, mock_load_config, mock_parse_args, mock_args):
-    mock_parse_args.return_value = (MagicMock(), [])
+    mock_parse_args.return_value = (MagicMock(load_config=None, save_config='config_out.json'), [])
     mock_process_data.return_value = (MagicMock(), {})
     mock_load_config.return_value = {}
 
@@ -135,7 +135,7 @@ def test_main_with_invalid_range(mock_process_data, mock_save_config, mock_load_
 
     mock_parse_args.assert_called_once()
     mock_load_config.assert_not_called()
-    mock_save_config.assert_called_once()
+    mock_save_config.assert_not_called()
     mock_process_data.assert_not_called()
     assert 'Error: Invalid format for --range argument' in mock_stderr.write.call_args[0][0]
 

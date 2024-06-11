@@ -38,6 +38,9 @@ class Plugin:
         self.params['input_dim'] = input_dim
         self.params['encoding_dim'] = encoding_dim
 
+        # Debugging message
+        print(f"Configuring size with input_dim: {input_dim} and encoding_dim: {encoding_dim}")
+
         input_layer = Input(shape=(input_dim,))
         encoded = Dense(encoding_dim, activation='relu')(input_layer)
         decoded = Dense(input_dim, activation='tanh')(encoded)
@@ -63,3 +66,10 @@ class Plugin:
         if original_data.shape != reconstructed_data.shape:
             reconstructed_data = reconstructed_data.reshape(original_data.shape)
         return np.mean(np.square(original_data - reconstructed_data))
+
+# Debugging usage example
+if __name__ == "__main__":
+    plugin = Plugin()
+    plugin.configure_size(input_dim=128, encoding_dim=4)
+    debug_info = plugin.get_debug_info()
+    print(f"Debug Info: {debug_info}")

@@ -1,6 +1,6 @@
 import sys
 import json
-from app.config_handler import load_config, save_config, merge_config
+from app.config_handler import load_config, save_config, merge_config, save_debug_info
 from app.cli import parse_args
 from app.data_processor import process_data
 from app.config import DEFAULT_VALUES
@@ -39,36 +39,33 @@ def main():
         print(f"Configuration saved to {args.save_config}.")
 
     print("Processing data...")
-    data = process_data(config)
-    print("Data processed successfully.")
+    processed_data, debug_info = process_data(config)
 
-    # Initialize and build the autoencoder
-    autoencoder_manager = AutoencoderManager(input_dim=128, encoding_dim=4)
-    autoencoder_manager.build_autoencoder()
+    for column, windowed_data in processed_data.items():
+        autoencoder_manager = AutoencoderManager(input_dim=windowed_data.shape[1], encoding_dim=config['initial_encoding_dim'])
+        autoencoder_manager.build_autoencoder()
+        autoencoder_manager.train_autoencoder(windowed_data, epochs=config['epochs'], batch_size=config['training_batch_size'])
 
-    # Train the autoencoder
-    autoencoder_manager.train_autoencoder(data, epochs=config['epochs'], batch_size=config['training_batch_size'])
+        encoder_model_filename = f"{config['save_encoder_path']}_{column}.keras"
+        decoder_model_filename = f"{config['save_decoder_path']}_{column}.keras"
+        autoencoder_manager.save_encoder(encoder_model_filename)
+        autoencoder_manager.save_decoder(decoder_model_filename)
+        print(f"Saved encoder model to {encoder_model_filename}")
+        print(f"Saved decoder model to {decoder_model_filename}")
 
-    # Encode and decode data
-    encoded_data = autoencoder_manager.encode_data(data)
-    decoded_data = autoencoder_manager.decode_data(encoded_data)
+        encoded_data = autoencoder_manager.encode_data(windowed_data)
+        decoded_data = autoencoder_manager.decode_data(encoded_data)
 
-    # Calculate and print MSE
-    mse = autoencoder_manager.calculate_mse(data, decoded_data)
-    print(f"Mean Squared Error: {mse}")
+        mse = autoencoder_manager.calculate_mse(windowed_data, decoded_data)
+        print(f"Mean Squared Error for column {column}: {mse}")
 
-    # Save encoder and decoder models if specified
-    if config['save_encoder']:
-        autoencoder_manager.save_encoder(config['save_encoder'])
-    if config['save_decoder']:
-        autoencoder_manager.save_decoder(config['save_decoder'])
+        reconstructed_data = pd.DataFrame(decoded_data)
+        output_filename = f"{config['csv_output_path']}_{column}.csv"
+        write_csv(output_filename, reconstructed_data.values, include_date=config['force_date'], headers=config['headers'])
+        print(f"Output written to {output_filename}")
 
-    if not args.quiet_mode:
-        print("Processed data:")
-        print(decoded_data)
-        debug_info = {"mse": mse}
-        print("Debug information:")
-        print(json.dumps(debug_info, indent=4))
+        print(f"Encoder Dimensions: {autoencoder_manager.encoder_model.input_shape} -> {autoencoder_manager.encoder_model.output_shape}")
+        print(f"Decoder Dimensions: {autoencoder_manager.decoder_model.input_shape} -> {autoencoder_manager.decoder_model.output_shape}")
 
 if __name__ == "__main__":
     main()

@@ -52,22 +52,33 @@ class Plugin:
         print(f"Full Model Summary: \n{self.model.summary()}")
 
     def train(self, data):
+        # Debugging message
+        print("Starting training...")
         self.model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        print("Training completed.")
 
     def encode(self, data):
-        return self.encoder_model.predict(data)
+        # Debugging message
+        print(f"Encoding data with shape: {data.shape}")
+        encoded_data = self.encoder_model.predict(data)
+        print(f"Encoded data shape: {encoded_data.shape}")
+        return encoded_data
 
     def save(self, file_path):
         save_model(self.model, file_path)
+        print(f"Model saved to {file_path}")
 
     def load(self, file_path):
         self.model = load_model(file_path)
         self.encoder_model = Model(inputs=self.model.input, outputs=self.model.layers[1].output)
+        print(f"Model loaded from {file_path}")
 
     def calculate_mse(self, original_data, reconstructed_data):
         if original_data.shape != reconstructed_data.shape:
             reconstructed_data = reconstructed_data.reshape(original_data.shape)
-        return np.mean(np.square(original_data - reconstructed_data))
+        mse = np.mean(np.square(original_data - reconstructed_data))
+        print(f"Calculated MSE: {mse}")
+        return mse
 
 # Debugging usage example
 if __name__ == "__main__":

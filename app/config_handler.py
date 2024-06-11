@@ -12,8 +12,27 @@ def save_config(config, path='config_out.json'):
         json.dump(config_to_save, f, indent=4)
     return config, path
 
-def merge_config(config, cli_args, plugin_params):
-    merged_config = {**DEFAULT_VALUES, **config, **cli_args, **plugin_params}
+def merge_config(config, cli_args, unknown_args):
+    unknown_args_dict = {}
+    current_key = None
+    for arg in unknown_args:
+        if arg.startswith('--'):
+            if current_key:
+                unknown_args_dict[current_key] = True
+            current_key = arg[2:]
+        else:
+            if current_key:
+                unknown_args_dict[current_key] = arg
+                current_key = None
+    if current_key:
+        unknown_args_dict[current_key] = True
+
+    # Check for unrecognized arguments
+    if unknown_args_dict:
+        print(f"Error: Unrecognized arguments: {unknown_args_dict}", file=sys.stderr)
+        sys.exit(1)
+
+    merged_config = {**DEFAULT_VALUES, **config, **cli_args, **unknown_args_dict}
     return merged_config
 
 def save_debug_info(debug_info, path='debug_out.json'):

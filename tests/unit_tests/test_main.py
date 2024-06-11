@@ -89,13 +89,11 @@ def test_main_with_invalid_arguments(mock_process_data, mock_save_config, mock_l
 
     with patch('sys.argv', mock_args + ['--invalid_argument']):
         with patch('sys.stderr', new_callable=MagicMock()) as mock_stderr:
-            main()
+            with pytest.raises(SystemExit):  # Expect SystemExit due to sys.exit(1)
+                main()
 
         mock_parse_args.assert_called_once()
         mock_load_config.assert_not_called()
         mock_save_config.assert_not_called()
         mock_process_data.assert_not_called()
         mock_stderr.write.assert_any_call('Error: Unrecognized arguments: {\'invalid_argument\': True}\n')
-
-if __name__ == "__main__":
-    pytest.main()

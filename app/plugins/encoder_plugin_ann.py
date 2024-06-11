@@ -1,5 +1,5 @@
 import numpy as np
-from keras.models import Model, save_model, load_model
+from keras.models import Model, load_model, save_model
 from keras.layers import Dense, Input
 from keras.optimizers import Adam
 
@@ -17,8 +17,8 @@ class Plugin:
 
     def __init__(self):
         self.params = self.plugin_params.copy()
-        self.model = None
         self.encoder_model = None
+        self.autoencoder_model = None
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
@@ -36,23 +36,25 @@ class Plugin:
         self.params['input_dim'] = input_dim
         self.params['encoding_dim'] = encoding_dim
 
-        input_layer = Input(shape=(input_dim,), name="encoder_input")
-        encoded = Dense(encoding_dim, activation='relu', name="encoder_output")(input_layer)
-        decoded = Dense(input_dim, activation='tanh', name="decoder_output")(encoded)
+        # Encoder
+        encoder_input = Input(shape=(input_dim,), name="encoder_input")
+        encoder_output = Dense(encoding_dim, activation='relu', name="encoder_output")(encoder_input)
+        self.encoder_model = Model(inputs=encoder_input, outputs=encoder_output, name="encoder")
 
-        self.model = Model(inputs=input_layer, outputs=decoded, name="autoencoder")
-        self.encoder_model = Model(inputs=input_layer, outputs=encoded, name="encoder")
-        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+        # Autoencoder
+        decoder_output = Dense(input_dim, activation='tanh', name="decoder_output")(encoder_output)
+        self.autoencoder_model = Model(inputs=encoder_input, outputs=decoder_output, name="autoencoder")
+        self.autoencoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration
         print("Encoder Model Summary:")
         self.encoder_model.summary()
         print("Full Autoencoder Model Summary:")
-        self.model.summary()
+        self.autoencoder_model.summary()
 
     def train(self, data):
         print(f"Training autoencoder with data shape: {data.shape}")
-        self.model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        self.autoencoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
         print("Training completed.")
 
     def encode(self, data):
@@ -70,13 +72,4 @@ class Plugin:
         print(f"Encoder model loaded from {file_path}")
 
     def calculate_mse(self, original_data, reconstructed_data):
-        mse = np.mean(np.square(original_data - reconstructed_data))
-        print(f"Calculated MSE: {mse}")
-        return mse
-
-# Debugging usage example
-if __name__ == "__main__":
-    plugin = Plugin()
-    plugin.configure_size(input_dim=128, encoding_dim=4)
-    debug_info = plugin.get_debug_info()
-    print(f"Debug Info: {debug_info}")
+        original_data = original_data.reshape((original_data.shape[0], -

@@ -18,13 +18,15 @@ def main():
     cli_args = vars(args)
     print(f"CLI arguments: {cli_args}")
 
-    print("Loading configuration...")
+    print("Loading default configuration...")
     config = DEFAULT_VALUES.copy()
+    print(f"Default config: {config}")
 
     if args.load_config:
         file_config = load_config(args.load_config)
         print(f"Loaded config from file: {file_config}")
         config.update(file_config)
+        print(f"Config after loading from file: {config}")
 
     print("Merging configuration with CLI arguments and unknown args...")
     config = merge_config(config, cli_args, {})

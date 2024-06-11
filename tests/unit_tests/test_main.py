@@ -83,11 +83,11 @@ def test_main(mock_process_data, mock_save_config, mock_load_config, mock_parse_
     'incremental_search': True
 })
 def test_main_with_invalid_arguments(mock_process_data, mock_save_config, mock_load_config, mock_parse_args, mock_args):
-    mock_parse_args.return_value = (MagicMock(), ['--invalid_argument'])
+    mock_parse_args.return_value = (MagicMock(), [])
     mock_process_data.return_value = (MagicMock(), {})
     mock_load_config.return_value = {}
 
-    with patch('sys.argv', mock_args):
+    with patch('sys.argv', mock_args + ['--invalid_argument']):
         with patch('sys.stderr', new_callable=MagicMock()) as mock_stderr:
             main()
 

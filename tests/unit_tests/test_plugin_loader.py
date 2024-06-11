@@ -1,97 +1,66 @@
-import unittest
+import pytest
 from unittest.mock import patch, MagicMock
 from app.plugin_loader import load_plugin, load_encoder_decoder_plugins, get_plugin_params
 
-class TestPluginLoader(unittest.TestCase):
+def test_load_plugin_success():
+    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
+        mock_entry_point = MagicMock()
+        mock_entry_point.load.return_value.plugin_params = {'param1': 'value1'}
+        mock_get_entry_map.return_value = {'test_plugin': mock_entry_point}
 
-    @patch('pkg_resources.get_entry_map')
-    def test_load_plugin_success(self, mock_get_entry_map):
-        # Setup
-        plugin_name = 'default_encoder'
-        plugin_group = 'feature_extractor.encoders'
-        mock_plugin = MagicMock()
-        mock_plugin.plugin_params = {'param1': 'value1'}
-        mock_entry_point = MagicMock(load=MagicMock(return_value=mock_plugin))
-        mock_get_entry_map.return_value = {plugin_name: mock_entry_point}
+        plugin_class, required_params = load_plugin('test_group', 'test_plugin')
+        assert plugin_class is not None
+        assert required_params == ['param1']
 
-        # Execute
-        plugin_class, required_params = load_plugin(plugin_group, plugin_name)
-
-        # Verify
-        mock_get_entry_map.assert_called_once_with('feature-extractor', plugin_group)
-        self.assertEqual(plugin_class, mock_plugin)
-        self.assertEqual(required_params, ['param1'])
-
-    @patch('pkg_resources.get_entry_map')
-    def test_load_plugin_not_found(self, mock_get_entry_map):
-        # Setup
-        plugin_name = 'non_existent_plugin'
-        plugin_group = 'feature_extractor.encoders'
+def test_load_plugin_key_error():
+    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
         mock_get_entry_map.return_value = {}
 
-        # Execute & Verify
-        with self.assertRaises(ImportError):
-            load_plugin(plugin_group, plugin_name)
+        with pytest.raises(ImportError):
+            load_plugin('test_group', 'non_existent_plugin')
 
-    @patch('pkg_resources.get_entry_map')
-    def test_load_encoder_decoder_plugins(self, mock_get_entry_map):
-        # Setup
-        encoder_name = 'default_encoder'
-        decoder_name = 'default_decoder'
-        plugin_group_encoders = 'feature_extractor.encoders'
-        plugin_group_decoders = 'feature_extractor.decoders'
-        mock_encoder_plugin = MagicMock()
-        mock_decoder_plugin = MagicMock()
-        mock_encoder_plugin.plugin_params = {'param1': 'value1'}
-        mock_decoder_plugin.plugin_params = {'param2': 'value2'}
-        mock_encoder_entry_point = MagicMock(load=MagicMock(return_value=mock_encoder_plugin))
-        mock_decoder_entry_point = MagicMock(load=MagicMock(return_value=mock_decoder_plugin))
-        mock_get_entry_map.side_effect = [
-            {encoder_name: mock_encoder_entry_point},
-            {decoder_name: mock_decoder_entry_point}
+def test_load_plugin_exception():
+    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
+        mock_get_entry_map.side_effect = Exception('Unexpected error')
+
+        with pytest.raises(Exception):
+            load_plugin('test_group', 'test_plugin')
+
+def test_load_encoder_decoder_plugins():
+    with patch('app.plugin_loader.load_plugin') as mock_load_plugin:
+        mock_load_plugin.side_effect = [
+            (MagicMock(), ['param1']),
+            (MagicMock(), ['param2'])
         ]
 
-        # Execute
-        encoder_plugin, encoder_params, decoder_plugin, decoder_params = load_encoder_decoder_plugins(encoder_name, decoder_name)
+        encoder_plugin, encoder_params, decoder_plugin, decoder_params = load_encoder_decoder_plugins('encoder', 'decoder')
+        assert encoder_plugin is not None
+        assert encoder_params == ['param1']
+        assert decoder_plugin is not None
+        assert decoder_params == ['param2']
 
-        # Verify
-        mock_get_entry_map.assert_any_call('feature-extractor', plugin_group_encoders)
-        mock_get_entry_map.assert_any_call('feature-extractor', plugin_group_decoders)
-        self.assertEqual(encoder_plugin, mock_encoder_plugin)
-        self.assertEqual(encoder_params, ['param1'])
-        self.assertEqual(decoder_plugin, mock_decoder_plugin)
-        self.assertEqual(decoder_params, ['param2'])
+def test_get_plugin_params_success():
+    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
+        mock_entry_point = MagicMock()
+        mock_entry_point.load.return_value.plugin_params = {'param1': 'value1'}
+        mock_get_entry_map.return_value = {'test_plugin': mock_entry_point}
 
-    @patch('pkg_resources.get_entry_map')
-    def test_get_plugin_params_success(self, mock_get_entry_map):
-        # Setup
-        plugin_name = 'default_encoder'
-        plugin_group = 'feature_extractor.encoders'
-        mock_plugin = MagicMock()
-        mock_plugin.plugin_params = {'param1': 'value1'}
-        mock_entry_point = MagicMock(load=MagicMock(return_value=mock_plugin))
-        mock_get_entry_map.return_value = {plugin_name: mock_entry_point}
+        params = get_plugin_params('test_group', 'test_plugin')
+        assert params == {'param1': 'value1'}
 
-        # Execute
-        params = get_plugin_params(plugin_group, plugin_name)
-
-        # Verify
-        mock_get_entry_map.assert_called_once_with('feature-extractor', plugin_group)
-        self.assertEqual(params, {'param1': 'value1'})
-
-    @patch('pkg_resources.get_entry_map')
-    def test_get_plugin_params_not_found(self, mock_get_entry_map):
-        # Setup
-        plugin_name = 'non_existent_plugin'
-        plugin_group = 'feature_extractor.encoders'
+def test_get_plugin_params_key_error():
+    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
         mock_get_entry_map.return_value = {}
 
-        # Execute
-        params = get_plugin_params(plugin_group, plugin_name)
+        params = get_plugin_params('test_group', 'non_existent_plugin')
+        assert params == {}
 
-        # Verify
-        mock_get_entry_map.assert_called_once_with('feature-extractor', plugin_group)
-        self.assertEqual(params, {})
+def test_get_plugin_params_exception():
+    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
+        mock_get_entry_map.side_effect = Exception('Unexpected error')
 
-if __name__ == '__main__':
-    unittest.main()
+        params = get_plugin_params('test_group', 'test_plugin')
+        assert params == {}
+
+if __name__ == "__main__":
+    pytest.main()

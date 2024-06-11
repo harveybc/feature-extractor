@@ -64,7 +64,10 @@ def main():
 
     # Save models if specified
     if config['save_encoder']:
-        autoencoder_manager.save(config['save_encoder'], config['save_decoder'])
+        autoencoder_manager.save_encoder(config['save_encoder'])
+
+    if config['save_decoder']:
+        autoencoder_manager.save_decoder(config['save_decoder'])
 
     if not args.quiet_mode:
         print("Processed data:")

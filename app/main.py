@@ -13,7 +13,7 @@ def main():
 
     if unknown_args:
         print(f"Error: Unrecognized arguments: {unknown_args}", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(1)  # Exit the program if there are unknown arguments
 
     cli_args = vars(args)
     print(f"CLI arguments: {cli_args}")

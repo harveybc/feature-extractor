@@ -12,8 +12,8 @@ def save_config(config, path='config_out.json'):
         json.dump(config_to_save, f, indent=4)
     return config, path
 
-def merge_config(config, cli_args, unknown_args):
-    merged_config = {**DEFAULT_VALUES, **config, **cli_args, **unknown_args}
+def merge_config(config, cli_args, plugin_params):
+    merged_config = {**DEFAULT_VALUES, **config, **plugin_params, **cli_args}
     return merged_config
 
 def save_debug_info(debug_info, path='debug_out.json'):

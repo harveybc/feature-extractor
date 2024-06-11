@@ -1,5 +1,5 @@
 import numpy as np
-from keras.models import Sequential, load_model, Model, save_model
+from keras.models import Model, load_model, save_model
 from keras.layers import Dense, Input
 from keras.optimizers import Adam
 
@@ -9,13 +9,11 @@ class Plugin:
     """
 
     plugin_params = {
-        'input_dim': None,
-        'encoding_dim': None,
         'epochs': 10,
         'batch_size': 256
     }
 
-    plugin_debug_vars = ['input_dim', 'encoding_dim', 'epochs', 'batch_size']
+    plugin_debug_vars = ['epochs', 'batch_size']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -48,6 +46,10 @@ class Plugin:
         self.model = Model(inputs=input_layer, outputs=decoded)
         self.encoder_model = Model(inputs=input_layer, outputs=encoded)
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+
+        # Debugging messages to trace the model configuration
+        print(f"Encoder Model Summary: \n{self.encoder_model.summary()}")
+        print(f"Full Model Summary: \n{self.model.summary()}")
 
     def train(self, data):
         self.model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)

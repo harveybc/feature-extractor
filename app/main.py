@@ -1,12 +1,10 @@
 import sys
 import json
-from app.config_handler import load_config, save_config, merge_config, save_debug_info
+from app.config_handler import load_config, save_config, merge_config
 from app.cli import parse_args
 from app.data_processor import process_data
 from app.config import DEFAULT_VALUES
 from app.autoencoder_manager import AutoencoderManager
-from app.plugins.encoder_plugin_ann import Plugin as EncoderPlugin
-from app.plugins.decoder_plugin_ann import Plugin as DecoderPlugin
 
 def main():
     print("Parsing initial arguments...")
@@ -42,30 +40,26 @@ def main():
 
     print("Processing data...")
     data = process_data(config)
+    print("Data processed successfully.")
 
-    # Initialize encoder and decoder plugins
-    encoder_plugin = EncoderPlugin()
-    decoder_plugin = DecoderPlugin()
-
-    # Initialize autoencoder manager
-    autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin, input_dim=128, encoding_dim=4)
+    # Initialize and build the autoencoder
+    autoencoder_manager = AutoencoderManager(input_dim=128, encoding_dim=4)
     autoencoder_manager.build_autoencoder()
 
-    # Train autoencoder
+    # Train the autoencoder
     autoencoder_manager.train_autoencoder(data, epochs=config['epochs'], batch_size=config['training_batch_size'])
 
     # Encode and decode data
-    encoded_data = autoencoder_manager.encode(data)
-    decoded_data = autoencoder_manager.decode(encoded_data)
+    encoded_data = autoencoder_manager.encode_data(data)
+    decoded_data = autoencoder_manager.decode_data(encoded_data)
 
-    # Calculate MSE
+    # Calculate and print MSE
     mse = autoencoder_manager.calculate_mse(data, decoded_data)
     print(f"Mean Squared Error: {mse}")
 
-    # Save models if specified
+    # Save encoder and decoder models if specified
     if config['save_encoder']:
         autoencoder_manager.save_encoder(config['save_encoder'])
-
     if config['save_decoder']:
         autoencoder_manager.save_decoder(config['save_decoder'])
 

@@ -1,9 +1,12 @@
 import sys
 import json
-from app.config_handler import load_config, save_config, merge_config, save_debug_info
+from app.config_handler import load_config, save_config, merge_config
 from app.cli import parse_args
 from app.data_processor import process_data
 from app.config import DEFAULT_VALUES
+from app.autoencoder_manager import AutoencoderManager
+from app.plugins.encoder_plugin_ann import Plugin as EncoderPlugin
+from app.plugins.decoder_plugin_ann import Plugin as DecoderPlugin
 
 def main():
     print("Parsing initial arguments...")
@@ -38,13 +41,33 @@ def main():
         print(f"Configuration saved to {args.save_config}.")
 
     print("Processing data...")
-    decoded_data, debug_info = process_data(config)
+    encoder_plugin = EncoderPlugin()
+    decoder_plugin = DecoderPlugin()
+
+    autoencoder_manager = AutoencoderManager(
+        encoder_plugin, 
+        decoder_plugin, 
+        input_dim=config['window_size'], 
+        encoding_dim=config['initial_encoding_dim']
+    )
+
+    autoencoder_manager.build_autoencoder()
+    data = process_data(config)
+
+    autoencoder_manager.train_autoencoder(
+        data, 
+        epochs=config['epochs'], 
+        batch_size=config['batch_size']
+    )
+
+    encoded_data = autoencoder_manager.encode(data)
+    decoded_data = autoencoder_manager.decode(encoded_data)
 
     if not args.quiet_mode:
-        print("Processed data:")
+        print("Encoded data:")
+        print(encoded_data)
+        print("Decoded data:")
         print(decoded_data)
-        print("Debug information:")
-        print(json.dumps(debug_info, indent=4))
 
 if __name__ == "__main__":
     main()

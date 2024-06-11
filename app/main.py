@@ -1,59 +1,73 @@
 import sys
+import json
+import pandas as pd
+from app.config_handler import load_config, save_config, merge_config, save_debug_info
 from app.cli import parse_args
-from app.config import MODEL_SAVE_PATH, MODEL_LOAD_PATH, OUTPUT_PATH, MINIMUM_MSE_THRESHOLD
-from app.data_handler import load_csv
-import pkg_resources
-import requests
-
-def load_plugin(plugin_group, plugin_name):
-    """
-    Load a plugin based on the group and name specified.
-    """
-    try:
-        entry_point = next(pkg_resources.iter_entry_points(plugin_group, plugin_name))
-        return entry_point.load()
-    except StopIteration:
-        print(f"Plugin {plugin_name} not found in group {plugin_group}.", file=sys.stderr)
-        sys.exit(1)
-
-def train_autoencoder(encoder, data, max_error, initial_size, step_size):
-    """
-    Train an autoencoder with decreasing interface size until the max_error is reached.
-    """
-    current_size = initial_size
-    current_mse = float('inf')
-    while current_size > 0 and current_mse > max_error:
-        encoder.configure_size(current_size)
-        encoder.train(data)
-        encoded_data = encoder.encode(data)
-        decoded_data = encoder.decode(encoded_data)
-        current_mse = encoder.calculate_mse(data, decoded_data)
-        print(f"Current MSE: {current_mse} at interface size: {current_size}")
-        if current_mse <= max_error:
-            print("Desired MSE reached. Stopping training.")
-            break
-        current_size -= step_size
-        # Connect to data-logger on localhost:60500 via HTTP POST request with basic authentication using 
-        # username 'test' and password 'pass', and send the current_mse and current_size as form data
-        response = requests.post('http://localhost:60500/feature_extractor/fe_training_error', auth=('test', 'pass'), data={'mse': current_mse, 'interface_size': current_size, 'config_id': 1})
-        print(f"Response from data-logger: {response.text}")
-    return encoder
+from app.data_processor import process_data
+from app.config import DEFAULT_VALUES
+from app.autoencoder_manager import AutoencoderManager
+from app.data_handler import write_csv
 
 def main():
-    # Parse command line arguments and remore configurations
-    args = parse_args()
+    print("Parsing initial arguments...")
+    args, unknown_args = parse_args()
+    print(f"Initial args: {args}")
+    print(f"Unknown args: {unknown_args}")
 
-    # Load the CSV data
-    data_series = load_csv(args.csv_file, args.window_size)
+    if unknown_args:
+        print(f"Error: Unrecognized arguments: {unknown_args}", file=sys.stderr)
+        sys.exit(1)
 
-    # Train a separate autoencoder for each time series column
-    for index, series_data in enumerate(data_series):
-        Encoder = load_plugin('feature_extractor.encoders', args.encoder_plugin if args.encoder_plugin else 'default_encoder')
-        encoder = Encoder()
-        trained_encoder = train_autoencoder(encoder, series_data, args.max_error, args.initial_size, args.step_size)
-        model_filename = f"{MODEL_SAVE_PATH}{args.save_encoder}_{index}.h5"
-        trained_encoder.save(model_filename)
-        print(f"Model saved as {model_filename}")
+    cli_args = vars(args)
+    print(f"CLI arguments: {cli_args}")
 
-if __name__ == '__main__':
+    print("Loading default configuration...")
+    config = DEFAULT_VALUES.copy()
+    print(f"Default config: {config}")
+
+    if args.load_config:
+        file_config = load_config(args.load_config)
+        print(f"Loaded config from file: {file_config}")
+        config.update(file_config)
+        print(f"Config after loading from file: {config}")
+
+    print("Merging configuration with CLI arguments and unknown args...")
+    config = merge_config(config, cli_args, {})
+    print(f"Config after merging: {config}")
+
+    if args.save_config:
+        print(f"Saving configuration to {args.save_config}...")
+        save_config(config, args.save_config)
+        print(f"Configuration saved to {args.save_config}.")
+
+    print("Processing data...")
+    processed_data, debug_info = process_data(config)
+
+    for column, windowed_data in processed_data.items():
+        autoencoder_manager = AutoencoderManager(input_dim=windowed_data.shape[1], encoding_dim=config['initial_encoding_dim'])
+        autoencoder_manager.build_autoencoder()
+        autoencoder_manager.train_autoencoder(windowed_data, epochs=config['epochs'], batch_size=config['training_batch_size'])
+
+        encoder_model_filename = f"{config['save_encoder_path']}_{column}.keras"
+        decoder_model_filename = f"{config['save_decoder_path']}_{column}.keras"
+        autoencoder_manager.save_encoder(encoder_model_filename)
+        autoencoder_manager.save_decoder(decoder_model_filename)
+        print(f"Saved encoder model to {encoder_model_filename}")
+        print(f"Saved decoder model to {decoder_model_filename}")
+
+        encoded_data = autoencoder_manager.encode_data(windowed_data)
+        decoded_data = autoencoder_manager.decode_data(encoded_data)
+
+        mse = autoencoder_manager.calculate_mse(windowed_data, decoded_data)
+        print(f"Mean Squared Error for column {column}: {mse}")
+
+        reconstructed_data = pd.DataFrame(decoded_data)
+        output_filename = f"{config['csv_output_path']}_{column}.csv"
+        write_csv(output_filename, reconstructed_data.values, include_date=config['force_date'], headers=config['headers'])
+        print(f"Output written to {output_filename}")
+
+        print(f"Encoder Dimensions: {autoencoder_manager.encoder_model.input_shape} -> {autoencoder_manager.encoder_model.output_shape}")
+        print(f"Decoder Dimensions: {autoencoder_manager.decoder_model.input_shape} -> {autoencoder_manager.decoder_model.output_shape}")
+
+if __name__ == "__main__":
     main()

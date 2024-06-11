@@ -1,0 +1,157 @@
+Hi, please act as a software engineer and machine learning expert, i have a project that do to the foollowing:
+Detailed Description of the Preprocessor System
+General Overview
+The system is a preprocessing framework designed to handle CSV data through various dynamically loadable plugins. It allows for flexible configuration via command-line interface (CLI) arguments, local configuration files, and remote configuration files. Each plugin in the system is capable of configuring its own parameters, default values, and debug variables. This modular approach enables users to easily extend the system with new preprocessing capabilities.
+
+Use Level
+At the use level, the system operates through a simple CLI interface that allows users to specify the CSV file to be processed, the plugin to be used, and other optional parameters for customization. Users can also save and load configurations locally or remotely, making the system adaptable to different environments and workflows.
+
+Example Usage
+bash
+Copiar código
+# Basic usage with a local CSV file and a specified plugin
+preprocessor.bat tests/data/EURUSD_5m_2006_2007.csv --plugin normalizer
+
+# Saving configuration remotely
+preprocessor.bat tests/data/EURUSD_5m_2006_2007.csv --plugin normalizer --remote_save_config http://localhost:60500/preprocessor/feature_selector/create --remote_username test --remote_password pass
+
+# Loading configuration remotely
+preprocessor.bat --remote_load_config http://localhost:60500/preprocessor/feature_selector/detail/1 --remote_username test --remote_password pass
+System Level
+At the system level, the framework consists of several components that interact to perform the required preprocessing tasks. These components include the main entry point (main.py), CLI argument parsing (cli.py), configuration handling (config_handler.py), data handling (data_handler.py), plugin management (plugin_loader.py), and individual plugins for specific preprocessing tasks.
+
+Key Components
+Main Entry Point (main.py): Coordinates the entire preprocessing workflow, from parsing CLI arguments to loading configurations and executing the selected plugin.
+CLI Argument Parsing (cli.py): Handles the parsing of command-line arguments and unknown arguments that may be specific to plugins.
+Configuration Handling (config_handler.py): Manages the loading, merging, and saving of configurations from various sources (CLI, local files, remote files).
+Data Handling (data_handler.py): Provides functions for loading and writing CSV data.
+Plugin Management (plugin_loader.py): Dynamically loads the specified plugin and its parameters.
+Plugins: Individual modules that perform specific preprocessing tasks, such as normalization, unbiasing, and feature selection.
+Integration Level
+At the integration level, the system tests how different components work together to perform end-to-end preprocessing tasks. This includes testing the interaction between the main entry point, configuration handling, data handling, and plugins.
+
+Key Integration Points
+Configuration Integration: Ensures that configurations are correctly loaded, merged, and applied from CLI, local files, and remote files.
+Data Integration: Verifies that data is correctly loaded from CSV files, processed by plugins, and written back to output files.
+Plugin Integration: Tests the dynamic loading and execution of different plugins with their specific parameters and default values.
+Modular Level
+At the modular level, each component and plugin is individually tested to ensure its functionality and reliability. Unit tests are written for each function and method to validate their correctness.
+
+Key Modules
+CLI Module (cli.py): Tests for argument parsing and handling of unknown arguments.
+Configuration Module (config_handler.py): Tests for loading, merging, and saving configurations.
+Data Module (data_handler.py): Tests for loading and writing CSV data.
+Plugin Loader Module (plugin_loader.py): Tests for dynamic loading of plugins.
+Plugins: Individual tests for each plugin's functionality and parameter handling.
+Detailed Description of Each File
+cli.py
+This file contains the parse_args function, which uses argparse to define and parse command-line arguments. It handles standard arguments such as the CSV file, plugin name, and configuration options, as well as unknown arguments that may be specific to plugins.
+
+config.py
+This file defines the structure of the configuration objects used throughout the system. It ensures consistency in how configurations are represented and manipulated.
+
+config_handler.py
+This module provides functions for loading, merging, and saving configurations. It supports loading configurations from CLI arguments, local files, and remote URLs. The merge_config function ensures that default values are applied where necessary.
+
+data_handler.py
+This module provides functions for loading and writing CSV data. The load_csv function reads a CSV file into a pandas DataFrame, and the write_csv function writes a DataFrame back to a CSV file. These functions handle various options such as including headers and forcing date inclusion.
+
+data_processor.py
+This module contains generic data processing functions that are used by multiple plugins. It provides common utilities that facilitate the preprocessing tasks performed by the plugins.
+
+default_plugin.py
+This file defines the DefaultPlugin class, which is a basic plugin for normalizing datasets using methods like min-max and z-score normalization. It includes parameter definitions, default values, and debug variables specific to the plugin.
+
+main.py
+The main entry point of the system. It coordinates the entire preprocessing workflow, including parsing CLI arguments, loading configurations, and executing the specified plugin. It also handles remote operations for saving and loading configurations and logging debug information.
+
+plugins Directory
+This directory contains additional plugins that extend the preprocessing capabilities of the system. Each plugin defines its own parameters, default values, and debug variables.
+
+plugin_cleaner.py
+A plugin for cleaning data by handling missing values and outliers.
+
+plugin_feature_selector_post.py
+A plugin for performing feature selection using post-processing techniques.
+
+plugin_feature_selector_pre.py
+A plugin for performing feature selection using pre-processing techniques, such as ACF, PACF, and Granger causality tests.
+
+plugin_trimmer.py
+A plugin for trimming data by removing rows or columns based on specified criteria.
+
+plugin_unbiaser.py
+A plugin for unbiasing data using methods like moving average and exponential moving average.
+
+plugin_loader.py
+This module provides functions for dynamically loading plugins based on the specified plugin name. It retrieves the plugin class and its required parameters, ensuring that the correct plugin is used for preprocessing.
+
+__init__.py
+This file marks the directory as a Python package and allows for relative imports within the package. It is generally empty but essential for the correct functioning of the package structure.
+
+-----------------end
+
+but i need to modify it to have this functionallity:
+Usage
+The application supports several command line arguments to control its behavior:
+
+usage: python -m app.main [-h] [-ds SAVE_ENCODER] [-dl LOAD_DECODER_PARAMS]
+                              [-el LOAD_ENCODER_PARAMS] [-ee EVALUATE_ENCODER]
+                              [-de EVALUATE_DECODER] [-em ENCODER_PLUGIN]
+                              [-dm DECODER_PLUGIN]
+                              csv_file
+Command Line Arguments
+Required Arguments:
+csv_file: Path to the CSV file to process. This is a required positional argument for specifying the CSV file that the feature-extractor tool will process.
+Optional Arguments:
+-se, --save_encoder: Filename to save the trained encoder model. Specify this argument to set the filename for saving the encoder's parameters after training.
+-sd, --save_decoder: Filename to save the trained decoder model. Specify this argument to set the filename for saving the decoder's parameters after training.
+-le, --load_encoder: Filename to load encoder parameters from. Use this option to specify the file from which the encoder parameters should be loaded.
+-ld, --load_decoder: Filename to load decoder parameters from. Use this option to specify the file from which the decoder parameters should be loaded.
+-ee, --evaluate_encoder: Filename for outputting encoder evaluation results. This option sets the output file for storing the results of the encoder evaluation.
+-ed, --evaluate_decoder: Filename for outputting decoder evaluation results. This option sets the output file for storing the results of the decoder evaluation.
+-ep, --encoder_plugin: Name of the encoder plugin to use. Defaults to 'default_encoder'. This argument allows users to specify which encoder plugin the tool should use.
+-dp, --decoder_plugin: Name of the decoder plugin to use. Defaults to 'default_decoder'. This argument allows users to specify which decoder plugin the tool should use.
+-ws, --window_size: Sliding window size to use for processing time series data. Defaults to 10. This option sets the window size for processing the data.
+-me, --max_error: Maximum MSE error to stop the training process. Specify this option to set a threshold for the maximum mean squared error at which training should be terminated.
+-is, --initial_size: Initial size of the encoder/decoder interface. This parameter sets the starting size for the interface between the encoder and decoder during training.
+-ss, --step_size: Step size to reduce the size of the encoder/decoder interface on each iteration. This parameter determines how much to decrease the interface size after each training iteration.
+-rl, --remote_log: URL of a remote data-logger API endpoint. Specify this option to set the endpoint for remote logging and monitoring of the training process.
+-rc, --remote_config: URL of a remote JSON configuration file to download and execute. Use this argument to specify a remote configuration that should be automatically downloaded and applied.
+-qm, --quiet_mode: Do not show results on the console. Defaults to 0 (disabled). Set this to 1 to enable quiet mode, which suppresses output to the console during processing.
+Examples of Use
+Train Encoder and Save Model
+
+To train an encoder using an RNN model on your data with a sliding window size of 10:
+
+python -m app.main --encoder_plugin rnn --decoder_plugin rnn --csv_file path/to/your/data.csv --window_size 10 --save_encoder rnn_encoder.model
+Train Encoder and Save Model
+
+To train an encoder using an RNN model on your data with a sliding window size of 10:
+
+python -m app.main --encoder_plugin rnn --csv_file path/to/your/data.csv --window_size 10 --save_encoder rnn_encoder.model
+
+The changes basically are that the new feature-extractor project requires 2 configurable plugins instead of just one required by the preprocessor. Also, as you see requires more global parameters since the trained models can be saved or loaded (localy or remotely), and both encoder and decoder selected plugins have their own plugin_specific parameters and debug variables instead of just requiring one of each in the preprocessor.
+
+Lets do this slowly. First without generating any code, please tellme what changes have to be made in the file structure to adapt to the new project and what changes have to be made to each file, without generating any code. 
+
+The current preprocessor app directory contains:
+(tensorflow) C:\Users\harve\preprocessor\app>dir
+ El volumen de la unidad C no tiene etiqueta.
+ El número de serie del volumen es: E80A-66A5
+
+ Directorio de C:\Users\harve\preprocessor\app
+
+06/06/2024  06:26 am    <DIR>          .
+06/06/2024  06:26 am    <DIR>          ..
+06/06/2024  12:33 am             1,468 cli.py
+21/05/2024  09:51 pm             1,132 config.py
+06/06/2024  05:40 am             1,457 config_handler.py
+04/06/2024  12:07 am             2,560 data_handler.py
+03/06/2024  11:31 pm             1,008 data_processor.py
+06/06/2024  06:03 am             5,570 default_plugin.py
+06/06/2024  06:26 am             5,595 main.py
+06/06/2024  09:44 am    <DIR>          plugins
+05/06/2024  08:55 pm             1,357 plugin_loader.py
+21/05/2024  03:20 pm               216 __init__.py
+06/06/2024  06:41 am    <DIR>          __pycache__

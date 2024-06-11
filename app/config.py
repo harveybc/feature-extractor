@@ -1,24 +1,28 @@
 # Configuration file for the feature-extractor application
 
-# Path configurations
-CSV_INPUT_PATH = './csv_input.csv'  # Default path for CSV input if not specified
-MODEL_SAVE_PATH = './model_out'          # Default directory to save trained models
-MODEL_LOAD_PATH = './model_in'          # Default directory to load models from
-OUTPUT_PATH = './csv_output.csv'                   # Default directory for saving outputs
-
-# Model and training configurations
-DEFAULT_ENCODER_PLUGIN = 'basic_encoder'         # Default encoder plugin name
-DEFAULT_DECODER_PLUGIN = 'basic_decoder'         # Default decoder plugin name
-TRAINING_BATCH_SIZE = 32                         # Default batch size for model training
-EPOCHS = 10                                      # Default number of epochs for training
-
-# Sliding window size for time series processing
-WINDOW_SIZE = 10                                 # Default window size for sliding window technique
-
-# Autoencoder configuration
-INITIAL_ENCODING_DIM = 100                       # Initial encoding dimension for the encoder
-ENCODING_STEP_SIZE = 10                          # Step size to reduce the encoding dimension
-MAXIMUM_MSE_THRESHOLD = 0.01                     # Maximum MSE threshold for stopping training
-
-# Plugin configurations
-PLUGIN_DIRECTORY = 'app/plugins/'                # Directory containing all plugins
+# Default configuration values
+DEFAULT_VALUES = {
+    'csv_input_path': './csv_input.csv',
+    'csv_output_path': './csv_output.csv',
+    'config_save_path': './config_out.json',
+    'config_load_path': './config_in.json',
+    'encoder_plugin': 'default',
+    'decoder_plugin': 'default',
+    'training_batch_size': 128,  # Increased batch size for faster training
+    'epochs': 10,  # Reduced number of epochs
+    'plugin_directory': 'app/plugins/',
+    'remote_log_url': None,
+    'remote_config_url': None,
+    'window_size': 128,  # Smaller window size
+    'initial_encoding_dim': 4,  # Smaller initial encoding dimension
+    'encoding_step_size': 4,  # Smaller step size
+    'mse_threshold': 0.3,  # Renamed parameter
+    'quiet_mode': False,
+    'remote_username': 'test',
+    'remote_password': 'pass',
+    'save_encoder_path': './encoder_ann.keras',
+    'save_decoder_path': './decoder_ann.keras',
+    'force_date': False,
+    'headers': False,  # Ensure this default value is set
+    'incremental_search': True  # New parameter for incremental search
+}

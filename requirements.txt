@@ -2,3 +2,6 @@ numpy
 pandas
 tensorflow
 keras
+build
+pytest
+pdoc3

@@ -1,57 +1,143 @@
 import pytest
-import pandas as pd
-import numpy as np
 from unittest.mock import patch, MagicMock
 from app.main import main
-import json
 
+@pytest.fixture
+def mock_args():
+    return [
+        'script_name',
+        'tests/data/csv_sel_unb_norm_512.csv',
+        '--save_encoder', './encoder_ann.keras',
+        '--save_decoder', './decoder_ann.keras'
+    ]
 
-@patch("app.cli.parse_args")
-@patch("app.config_handler.load_config")
-@patch("app.config_handler.save_config")
-@patch("app.config_handler.save_debug_info")
-@patch("app.config_handler.merge_config")
-@patch("app.data_handler.load_csv")
-@patch("app.data_processor.process_data")
-@patch("requests.post")
-def test_main(mock_requests_post, mock_process_data, mock_load_csv, mock_merge_config, mock_save_debug_info, mock_save_config, mock_load_config, mock_parse_args):
-    # Mock parse_args
-    mock_parse_args.return_value = MagicMock(load_config=None, remote_load_config=None, save_config=None, debug_file='debug_out.json', csv_file='tests/data/csv_sel_unb_norm_512.csv', remote_load_encoder=None, remote_load_decoder=None), []
-
-    # Mock load_config
+@patch('app.main.parse_args')
+@patch('app.main.load_config')
+@patch('app.main.save_config')
+@patch('app.main.process_data')
+@patch('app.main.DEFAULT_VALUES', {
+    'csv_input_path': './csv_input.csv',
+    'csv_output_path': './csv_output.csv',
+    'config_save_path': './config_out.json',
+    'config_load_path': './config_in.json',
+    'encoder_plugin': 'default',
+    'decoder_plugin': 'default',
+    'training_batch_size': 128,
+    'epochs': 10,
+    'plugin_directory': 'app/plugins/',
+    'remote_log_url': None,
+    'remote_config_url': None,
+    'window_size': 128,
+    'initial_encoding_dim': 4,
+    'encoding_step_size': 4,
+    'mse_threshold': 0.3,
+    'quiet_mode': False,
+    'remote_username': 'test',
+    'remote_password': 'pass',
+    'save_encoder_path': './encoder_ann.keras',
+    'save_decoder_path': './decoder_ann.keras',
+    'force_date': False,
+    'headers': False,
+    'incremental_search': True
+})
+def test_main(mock_process_data, mock_save_config, mock_load_config, mock_parse_args, mock_args):
+    mock_parse_args.return_value = (MagicMock(), [])
+    mock_process_data.return_value = (MagicMock(), {})
     mock_load_config.return_value = {}
 
-    # Mock merge_config
-    mock_merge_config.return_value = {
-        'csv_file': 'tests/data/csv_sel_unb_norm_512.csv',
-        'headers': True,
-        'window_size': 10,
-        'max_error': 0.01,
-        'initial_size': 256,
-        'step_size': 32,
-        'save_encoder': 'encoder_model.h5',
-        'save_decoder': 'decoder_model.h5',
-        'output_file': 'output.csv',
-        'force_date': False,
-        'remote_log': 'http://localhost:60500/preprocessor/feature_extractor/create',
-        'remote_username': 'test',
-        'remote_password': 'pass',
-        'encoder_plugin': 'default_encoder',
-        'decoder_plugin': 'default_decoder'
-    }
-
-    # Mock load_csv
-    mock_load_csv.return_value = pd.read_csv('tests/data/csv_sel_unb_norm_512.csv')
-
-    # Mock process_data
-    mock_process_data.return_value = (pd.DataFrame(np.random.rand(10, 10)), {'execution_time': 0})
-
-    # Mock save_config
-    mock_save_config.return_value = (json.dumps(mock_merge_config.return_value), 'config_out.json')
-
-    # Mock requests.post
-    mock_requests_post.return_value.text = "Logged"
-
-    # Capture the output
-    with patch('sys.stdout', new_callable=lambda: MagicMock()) as mock_stdout:
+    with patch('sys.argv', mock_args):
         main()
+
+    mock_parse_args.assert_called_once()
+    mock_load_config.assert_called_once()
+    mock_save_config.assert_called_once()
+    mock_process_data.assert_called_once()
+
+@patch('app.main.parse_args')
+@patch('app.main.load_config')
+@patch('app.main.save_config')
+@patch('app.main.process_data')
+@patch('app.main.DEFAULT_VALUES', {
+    'csv_input_path': './csv_input.csv',
+    'csv_output_path': './csv_output.csv',
+    'config_save_path': './config_out.json',
+    'config_load_path': './config_in.json',
+    'encoder_plugin': 'default',
+    'decoder_plugin': 'default',
+    'training_batch_size': 128,
+    'epochs': 10,
+    'plugin_directory': 'app/plugins/',
+    'remote_log_url': None,
+    'remote_config_url': None,
+    'window_size': 128,
+    'initial_encoding_dim': 4,
+    'encoding_step_size': 4,
+    'mse_threshold': 0.3,
+    'quiet_mode': False,
+    'remote_username': 'test',
+    'remote_password': 'pass',
+    'save_encoder_path': './encoder_ann.keras',
+    'save_decoder_path': './decoder_ann.keras',
+    'force_date': False,
+    'headers': False,
+    'incremental_search': True
+})
+def test_main_without_load_config(mock_process_data, mock_save_config, mock_load_config, mock_parse_args, mock_args):
+    mock_parse_args.return_value = (MagicMock(), [])
+    mock_process_data.return_value = (MagicMock(), {})
+    mock_load_config.return_value = {}
+
+    with patch('sys.argv', mock_args):
+        main()
+
+    mock_parse_args.assert_called_once()
+    mock_load_config.assert_not_called()
+    mock_save_config.assert_called_once()
+    mock_process_data.assert_called_once()
+
+@patch('app.main.parse_args')
+@patch('app.main.load_config')
+@patch('app.main.save_config')
+@patch('app.main.process_data')
+@patch('app.main.DEFAULT_VALUES', {
+    'csv_input_path': './csv_input.csv',
+    'csv_output_path': './csv_output.csv',
+    'config_save_path': './config_out.json',
+    'config_load_path': './config_in.json',
+    'encoder_plugin': 'default',
+    'decoder_plugin': 'default',
+    'training_batch_size': 128,
+    'epochs': 10,
+    'plugin_directory': 'app/plugins/',
+    'remote_log_url': None,
+    'remote_config_url': None,
+    'window_size': 128,
+    'initial_encoding_dim': 4,
+    'encoding_step_size': 4,
+    'mse_threshold': 0.3,
+    'quiet_mode': False,
+    'remote_username': 'test',
+    'remote_password': 'pass',
+    'save_encoder_path': './encoder_ann.keras',
+    'save_decoder_path': './decoder_ann.keras',
+    'force_date': False,
+    'headers': False,
+    'incremental_search': True
+})
+def test_main_with_invalid_range(mock_process_data, mock_save_config, mock_load_config, mock_parse_args, mock_args):
+    mock_parse_args.return_value = (MagicMock(), ['--range', '(invalid)'])
+    mock_process_data.return_value = (MagicMock(), {})
+    mock_load_config.return_value = {}
+
+    with patch('sys.argv', mock_args):
+        with patch('sys.stderr', new_callable=MagicMock()) as mock_stderr:
+            main()
+
+    mock_parse_args.assert_called_once()
+    mock_load_config.assert_not_called()
+    mock_save_config.assert_called_once()
+    mock_process_data.assert_not_called()
+    assert 'Error: Invalid format for --range argument' in mock_stderr.write.call_args[0][0]
+
+if __name__ == "__main__":
+    pytest.main()

@@ -18,7 +18,6 @@ class Plugin:
     def __init__(self):
         self.params = self.plugin_params.copy()
         self.encoder_model = None
-        self.autoencoder_model = None
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
@@ -40,21 +39,15 @@ class Plugin:
         encoder_input = Input(shape=(input_dim,), name="encoder_input")
         encoder_output = Dense(encoding_dim, activation='relu', name="encoder_output")(encoder_input)
         self.encoder_model = Model(inputs=encoder_input, outputs=encoder_output, name="encoder")
-
-        # Autoencoder
-        decoder_output = Dense(input_dim, activation='tanh', name="decoder_output")(encoder_output)
-        self.autoencoder_model = Model(inputs=encoder_input, outputs=decoder_output, name="autoencoder")
-        self.autoencoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+        self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration
         print("Encoder Model Summary:")
         self.encoder_model.summary()
-        print("Full Autoencoder Model Summary:")
-        self.autoencoder_model.summary()
 
     def train(self, data):
-        print(f"Training autoencoder with data shape: {data.shape}")
-        self.autoencoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        print(f"Training encoder with data shape: {data.shape}")
+        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
         print("Training completed.")
 
     def encode(self, data):
@@ -71,5 +64,9 @@ class Plugin:
         self.encoder_model = load_model(file_path)
         print(f"Encoder model loaded from {file_path}")
 
-    def calculate_mse(self, original_data, reconstructed_data):
-        original_data = original_data.reshape((original_data.shape[0], -
+# Debugging usage example
+if __name__ == "__main__":
+    plugin = Plugin()
+    plugin.configure_size(input_dim=128, encoding_dim=4)
+    debug_info = plugin.get_debug_info()
+    print(f"Debug Info: {debug_info}")

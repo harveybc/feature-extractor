@@ -16,7 +16,7 @@ DEFAULT_VALUES = {
     'window_size': 128,  # Smaller window size
     'initial_encoding_dim': 4,  # Smaller initial encoding dimension
     'encoding_step_size': 4,  # Smaller step size
-    'mse_threshold': 0.3,  # Renamed parameter
+    'mse_threshold': 0.005,  # Renamed parameter
     'quiet_mode': False,
     'remote_username': 'test',
     'remote_password': 'pass',

@@ -96,4 +96,4 @@ def test_main_with_invalid_arguments(mock_process_data, mock_save_config, mock_l
             mock_load_config.assert_not_called()
             mock_save_config.assert_not_called()
             mock_process_data.assert_not_called()
-            mock_stderr.write.assert_any_call("Error: Unrecognized arguments: {'invalid_argument': True}\n")
+            mock_stderr.write.assert_any_call("Error: Unrecognized arguments: ['--invalid_argument']\n")

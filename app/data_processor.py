@@ -5,23 +5,21 @@ import pandas as pd
 from app.data_handler import load_csv, write_csv, sliding_window
 from app.plugin_loader import load_encoder_decoder_plugins
 from app.reconstruction import unwindow_data
+from app.autoencoder_manager import AutoencoderManager
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
+def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
     current_size = initial_size
     current_mse = float('inf')
     print(f"Training autoencoder with initial size {current_size}...")
 
     while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
-        encoder.configure_size(input_dim=data.shape[1], encoding_dim=current_size)
-        decoder.configure_size(encoding_dim=current_size, output_dim=data.shape[1])
-        encoder.train(data)
-        encoded_data = encoder.encode(data)
-        decoder.train(encoded_data, data)
+        autoencoder_manager.build_autoencoder()
+        autoencoder_manager.train_autoencoder(data, epochs=epochs, batch_size=256)
 
-        encoded_data = encoder.encode(data)
-        decoded_data = decoder.decode(encoded_data)
-        current_mse = encoder.calculate_mse(data, decoded_data)
+        encoded_data = autoencoder_manager.encode_data(data)
+        decoded_data = autoencoder_manager.decode_data(encoded_data)
+        current_mse = autoencoder_manager.calculate_mse(data, decoded_data)
         print(f"Current MSE: {current_mse} at interface size: {current_size}")
 
         if (incremental_search and current_mse >= mse_threshold) or (not incremental_search and current_mse <= mse_threshold):
@@ -35,7 +33,7 @@ def train_autoencoder(encoder, decoder, data, mse_threshold, initial_size, step_
         else:
             current_size -= step_size
 
-    return encoder, decoder
+    return autoencoder_manager
 
 def process_data(config):
     data = load_csv(config['csv_file'], headers=config['headers'])
@@ -48,10 +46,6 @@ def process_data(config):
 
     debug_info = {}
 
-    encoder_name = config.get('encoder_plugin', 'default_encoder')
-    decoder_name = config.get('decoder_plugin', 'default_decoder')
-    Encoder, encoder_params, Decoder, decoder_params = load_encoder_decoder_plugins(encoder_name, decoder_name)
-
     for column in data.columns:
         print(f"Processing column: {column}")
         column_data = data[[column]].values.astype(np.float64)
@@ -59,21 +53,22 @@ def process_data(config):
         windowed_data = windowed_data.squeeze()  # Ensure correct shape for training
         print(f"Windowed data shape: {windowed_data.shape}")
 
-        trained_encoder, trained_decoder = train_autoencoder(
-            Encoder(), Decoder(), windowed_data, config['mse_threshold'], 
+        autoencoder_manager = AutoencoderManager(input_dim=windowed_data.shape[1], encoding_dim=config['initial_encoding_dim'])
+        trained_autoencoder_manager = train_autoencoder(
+            autoencoder_manager, windowed_data, config['mse_threshold'], 
             config['initial_encoding_dim'], config['encoding_step_size'], 
             config['incremental_search'], config['epochs']
         )
 
         encoder_model_filename = f"{config['save_encoder_path']}_{column}.keras"
         decoder_model_filename = f"{config['save_decoder_path']}_{column}.keras"
-        trained_encoder.save(encoder_model_filename)
-        trained_decoder.save(decoder_model_filename)
+        trained_autoencoder_manager.save_encoder(encoder_model_filename)
+        trained_autoencoder_manager.save_decoder(decoder_model_filename)
         print(f"Saved encoder model to {encoder_model_filename}")
         print(f"Saved decoder model to {decoder_model_filename}")
 
-        encoded_data = trained_encoder.encode(windowed_data)
-        decoded_data = trained_decoder.decode(encoded_data)
+        encoded_data = trained_autoencoder_manager.encode_data(windowed_data)
+        decoded_data = trained_autoencoder_manager.decode_data(encoded_data)
 
         mse = mean_squared_error(windowed_data, decoded_data)
         mae = mean_absolute_error(windowed_data, decoded_data)
@@ -88,7 +83,7 @@ def process_data(config):
         write_csv(output_filename, reconstructed_data.values, include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")
 
-        print(f"Encoder Dimensions: {trained_encoder.model.input_shape} -> {trained_encoder.model.output_shape}")
-        print(f"Decoder Dimensions: {trained_decoder.model.input_shape} -> {trained_decoder.model.output_shape}")
+        print(f"Encoder Dimensions: {trained_autoencoder_manager.encoder_model.input_shape} -> {trained_autoencoder_manager.encoder_model.output_shape}")
+        print(f"Decoder Dimensions: {trained_autoencoder_manager.decoder_model.input_shape} -> {trained_autoencoder_manager.decoder_model.output_shape}")
 
     return reconstructed_data, debug_info

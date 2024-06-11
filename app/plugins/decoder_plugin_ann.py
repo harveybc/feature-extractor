@@ -38,10 +38,9 @@ class Plugin:
         # Debugging message
         print(f"Configuring size with encoding_dim: {encoding_dim} and output_dim: {output_dim}")
 
-        self.model = Sequential([
-            Dense(int(encoding_dim * 2), input_shape=(encoding_dim,), activation='relu', name="decoder_input"),
-            Dense(output_dim, activation='tanh', name="decoder_output")
-        ])
+        self.model = Sequential(name="decoder")
+        self.model.add(Dense(int(encoding_dim * 2), input_shape=(encoding_dim,), activation='relu', name="decoder_input"))
+        self.model.add(Dense(output_dim, activation='tanh', name="decoder_output"))
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration

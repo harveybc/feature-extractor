@@ -36,6 +36,8 @@ class AutoencoderManager:
         self.autoencoder_model.summary()
 
     def train_autoencoder(self, data, epochs=10, batch_size=256):
+        if isinstance(data, tuple):
+            data = data[0]  # Ensure data is not a tuple
         print(f"Training autoencoder with data shape: {data.shape}")
         self.autoencoder_model.fit(data, data, epochs=epochs, batch_size=batch_size, verbose=1)
         print("Training completed.")

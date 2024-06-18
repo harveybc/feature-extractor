@@ -76,6 +76,34 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
         ```bash
         pdoc --html -o docs app
         ```
+9. **Install Nvidia CUDA GPU support (Optional)**:
+Be sure to have the latest Nvidia Grapic Driver and we need to determine your hardware CUDA Version with the following command:
+    - On Windows, :
+        ```bash
+        c:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe
+        ```
+
+    - On Linux, run:
+        ```bash
+        nvidia-smi
+        pytest
+        ```
+After finding the correct CUDA Version for your device in the output of the previous command, please download and install cuDNN for your EXACT CUDA Version from:
+[CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive)
+
+Finally, install tensorflow-gpu and keras-gpu (Need to have Anaconda installed, and if possible within an enviroment):
+    ```bash
+    conda install -c anaconda tensorflow-gpu cudatoolkit==<YOUR_CUDA_VERSION_HERE>
+    conda install -c anaconda keras-gpu cudatoolkit==<YOUR_CUDA_VERSION_HERE>
+    ```
+
+To test if keras is using the GPU:
+    ```bash
+    python
+    from keras import backend as K
+    K.tensorflow_backend._get_available_gpus()
+    exit()
+    ```
 
 ## Usage
 

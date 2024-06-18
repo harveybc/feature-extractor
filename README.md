@@ -92,12 +92,14 @@ After finding the correct CUDA Version for your device in the output of the prev
 [CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive)
 
 Finally, install tensorflow-gpu and keras-gpu (Need to have Anaconda installed, and if possible within an enviroment):
+
     ```bash
     conda install -c anaconda tensorflow-gpu cudatoolkit==<YOUR_CUDA_VERSION_HERE>
     conda install -c anaconda keras-gpu cudatoolkit==<YOUR_CUDA_VERSION_HERE>
     ```
 
 To test if keras is using the GPU:
+
     ```bash
     python
     from keras import backend as K

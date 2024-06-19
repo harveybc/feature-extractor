@@ -21,8 +21,8 @@ To install and set up the feature-extractor application, follow these steps:
 
     - **Using `conda`**:
         ```bash
-        conda create --name feature-extractor_env python=3.9
-        conda activate feature-extractor_env
+        conda create --name feature-extractor-env python=3.9
+        conda activate feature-extractor-env
         ```
 
 3. **Install Dependencies**:
@@ -74,6 +74,7 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
 9. **(Optional)Install Nvidia CUDA GPU support**:
 
 - Be sure to have the latest Nvidia Grapic Driver and we need to determine your hardware **CUDA Version** with the following command, anotate the exact version for next steps:
+
     - On Windows, :
         ```bash
         c:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe
@@ -86,13 +87,20 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
 - After finding the correct **CUDA Version** for your device in the output of the previous command, please download and install the **Cuda Toolkit** for your **EXACT CUDA Version** from:
 [CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive)
 
-- Go to [TensorFlow, CUDA and cuDNN Compatibility](https://punndeeplearningblog.com/development/tensorflow-cuda-cudnn-compatibility/) and search for the following for your current **CUDA Version**:
+- Go to [TensorFlow, CUDA and cuDNN Compatibility](https://punndeeplearningblog.com/development/tensorflow-cuda-cudnn-compatibility/) and search for the following for your current **CUDA Version** and anotate the versions for the next steps:
 
-    -The **Python Version**
-    -The **CUDNN Version**
+    - The **Tensorflow Version**
+    - The **Python Version**
+    - The **CUDNN Version**
 
 - Search, download and install the correct **CuDNN Version** from the [CuDNN Archive](https://developer.nvidia.com/cudnn-archive) by using the [CuDNN installation instructions](https://docs.nvidia.com/deeplearning/cudnn/latest/installation/windows.html)
 
+- Restart your CLI, console or terminal, so the enviroment variables set by CuDNN installation are loaded
+
+- After restarting your console to load the environment variables, activate your conda environment again:
+        ```bash
+        conda activate feature-extractor-env
+        ```
 - (Optionally) Update to the required **Python Version** for your **CUDA Version** in your conda environment:
 
     ```bash
@@ -106,14 +114,17 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
     pip uninstall tensorflow keras
     ```
 
-- Install tensorflow-gpu and keras-gpu (Need to have Anaconda installed, and if possible within an enviroment):
+- Modify the requirements.txt file to show tensorflow-gpu
+
+- Install tensorflow-gpu (Keras included):
 
     ```bash
-    conda install -c anaconda tensorflow-gpu cudatoolkit==<YOUR_CUDA_VERSION_HERE>
-    conda install -c anaconda keras-gpu cudatoolkit==<YOUR_CUDA_VERSION_HERE>
+    pip install tensorflow-gpu==2.3.0  
     ```
 
--To test if keras is using the GPU:
+- Since tensorflow-gpu version 2.0, the keras-gpu package comes included and do not need separate installation, for previous versions, install the keras package with: pip install keras
+
+- To test if Keras is using the GPU:
 
     ```bash
     python
@@ -121,6 +132,7 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
     K.tensorflow_backend._get_available_gpus()
     exit()
     ```
+- If the previous test is passed, the GPU can be used, and no other changes in this repo code are required since it detects if a gpu is available automatically for training and evalation of trained models.
 
 ## Usage
 

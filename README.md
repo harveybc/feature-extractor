@@ -108,18 +108,13 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
     python --version
     ```
 
-- Uninstall the default tensorflow and keras versions:
- 
-    ```bash
-    pip uninstall tensorflow keras
-    ```
-
 - Modify the requirements.txt file to show **tensorflow-gpu==<REQUIRED_TENSORFLOW_VERSION_HERE>** instead of just **tensorflow**, and if using tensorflow-gpu version more than 2.0, remove the **keras** line, since tensorflow-gpu > 2.0, already includes keras-gpu. Save the changes.
 
-- Install the modified **requirements.txt**, this time with **tensorflow-gpu** (Keras-gpu included) instead of just **keras**:
+- Install the modified **requirements.txt**, this time with **tensorflow-gpu** (Keras-gpu included) instead of just **keras** (you may need to fix some package versions in the readme for the requirements of your current tensorflow-gpu version, if some error appears):
 
     ```bash
-    pip install -r requirements.txt
+    pip uninstall -y numpy scipy pandas tensorflow keras
+    pip install -r requirements.txt --no-cache-dir 
     ```
 
 - Since tensorflow-gpu version 2.0, the keras-gpu package comes included and do not need separate installation, for previous versions, install the keras package with: pip install keras

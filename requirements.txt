@@ -2,7 +2,7 @@ tensorflow
 keras
 numpy==1.22.3
 pandas==1.4.4
-h5py>=3.1.0
+h5py
 scipy==1.8.0
 build
 pytest

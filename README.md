@@ -114,12 +114,12 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
     pip uninstall tensorflow keras
     ```
 
-- Modify the requirements.txt file to show tensorflow-gpu
+- Modify the requirements.txt file to show **tensorflow-gpu==<REQUIRED_TENSORFLOW_VERSION_HERE>** instead of just **tensorflow**, and if using tensorflow-gpu version more than 2.0, remove the **keras** line, since tensorflow-gpu > 2.0, already includes keras-gpu. Save the changes.
 
-- Install tensorflow-gpu (Keras included):
+- Install the modified **requirements.txt**, this time with **tensorflow-gpu** (Keras-gpu included) instead of just **keras**:
 
     ```bash
-    pip install tensorflow-gpu==2.3.0 --no-cache-dir
+    pip install -r requirements.txt
     ```
 
 - Since tensorflow-gpu version 2.0, the keras-gpu package comes included and do not need separate installation, for previous versions, install the keras package with: pip install keras

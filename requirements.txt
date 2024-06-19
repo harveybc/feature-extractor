@@ -1,7 +1,7 @@
-numpy
-pandas
 tensorflow
 keras
+numpy
+pandas
 build
 pytest
 pdoc3

@@ -17,12 +17,7 @@ To install and set up the feature-extractor application, follow these steps:
     cd feature-extractor
     ```
 
-2. **Create and Activate a Virtual Environment**:
-    - **Using `venv` (Python 3.3+)**:
-        ```bash
-        python -m venv env
-        source env/bin/activate  # On Windows use `env\Scripts\activate`
-        ```
+2. **Create and Activate a Virtual Environment (Anaconda is required)**:
 
     - **Using `conda`**:
         ```bash
@@ -77,7 +72,8 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
         pdoc --html -o docs app
         ```
 9. **Install Nvidia CUDA GPU support (Optional)**:
-Be sure to have the latest Nvidia Grapic Driver and we need to determine your hardware CUDA Version with the following command:
+
+- Be sure to have the latest Nvidia Grapic Driver and we need to determine your hardware CUDA Version with the following command:
     - On Windows, :
         ```bash
         c:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe
@@ -88,17 +84,35 @@ Be sure to have the latest Nvidia Grapic Driver and we need to determine your ha
         nvidia-smi
         pytest
         ```
-After finding the correct CUDA Version for your device in the output of the previous command, please download and install cuDNN for your EXACT CUDA Version from:
+- After finding the correct **CUDA Version** for your device in the output of the previous command, please download and install cuDNN for your EXACT CUDA Version from:
 [CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive)
 
-Finally, install tensorflow-gpu and keras-gpu (Need to have Anaconda installed, and if possible within an enviroment):
+- Go to [TensorFlow, CUDA and cuDNN Compatibility](https://punndeeplearningblog.com/development/tensorflow-cuda-cudnn-compatibility/) and search for the following for your current **CUDA Version**:
+    -The **Python Version**
+    -The **CUDNN Version**
+
+- Search, download and install the correct **CuDNN Version** from the [CuDNN Archive](https://developer.nvidia.com/cudnn-archive)
+
+- (Optionally) Update to the required **Python Version** for your **CUDA Version** in your conda environment:
+
+    ```bash
+    conda install python=<REQUIRED_PYTHON_VERSION>
+    ```
+
+- Uninstall the default tensorflow and keras versions:
+ 
+    ```bash
+    pip uninstall tensorflow keras
+    ```
+
+- Install tensorflow-gpu and keras-gpu (Need to have Anaconda installed, and if possible within an enviroment):
 
     ```bash
     conda install -c anaconda tensorflow-gpu cudatoolkit==<YOUR_CUDA_VERSION_HERE>
     conda install -c anaconda keras-gpu cudatoolkit==<YOUR_CUDA_VERSION_HERE>
     ```
 
-To test if keras is using the GPU:
+-To test if keras is using the GPU:
 
     ```bash
     python

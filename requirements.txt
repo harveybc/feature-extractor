@@ -1,9 +1,9 @@
 tensorflow
 keras
 numpy<1.19.0
-pandas==1.4.4
+pandas
 h5py
-scipy>=1.8
+scipy==1.4.1
 build
 pytest
 pdoc3

@@ -119,7 +119,7 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
 - Install tensorflow-gpu (Keras included):
 
     ```bash
-    pip install tensorflow-gpu==2.3.0  
+    pip install tensorflow-gpu==2.3.0 --no-cache-dir
     ```
 
 - Since tensorflow-gpu version 2.0, the keras-gpu package comes included and do not need separate installation, for previous versions, install the keras package with: pip install keras

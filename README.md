@@ -41,7 +41,7 @@ To install and set up the feature-extractor application, follow these steps:
     pip install .
     ```
 
-6. **Run the feature-extractor**:
+6. **(Optional) Run the feature-extractor**:
     - On Windows, run the following command to verify installation (it generates an example output file csv_output.csv):
         ```bash
         feature-extractor.bat tests\data\csv_sel_unb_norm_512.csv --plugin feature_selector --method select_single --single 0
@@ -52,7 +52,7 @@ To install and set up the feature-extractor application, follow these steps:
         sh feature-extractor.sh tests\data\csv_sel_unb_norm_512.csv --plugin feature_selector --method select_single --single 0
         ```
 
-7. **Run Tests (Optional, requires external repo)**:
+7. **(Optional) Run Tests**:
 For pasing remote tests, requires an instance of [harveybc/data-logger](https://github.com/harveybc/data-logger)
     - On Windows, run the following command to run the tests:
         ```bash
@@ -66,14 +66,14 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
         pytest
         ```
 
-8. **Generate Documentation (Optional)**:
+8. **(Optional)Generate Documentation**:
     - Run the following command to generate code documentation in HTML format in the docs directory:
         ```bash
         pdoc --html -o docs app
         ```
-9. **Install Nvidia CUDA GPU support (Optional)**:
+9. **(Optional)Install Nvidia CUDA GPU support**:
 
-- Be sure to have the latest Nvidia Grapic Driver and we need to determine your hardware CUDA Version with the following command:
+- Be sure to have the latest Nvidia Grapic Driver and we need to determine your hardware **CUDA Version** with the following command, anotate the exact version for next steps:
     - On Windows, :
         ```bash
         c:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe
@@ -82,21 +82,22 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
     - On Linux, run:
         ```bash
         nvidia-smi
-        pytest
         ```
-- After finding the correct **CUDA Version** for your device in the output of the previous command, please download and install cuDNN for your EXACT CUDA Version from:
+- After finding the correct **CUDA Version** for your device in the output of the previous command, please download and install the **Cuda Toolkit** for your **EXACT CUDA Version** from:
 [CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive)
 
 - Go to [TensorFlow, CUDA and cuDNN Compatibility](https://punndeeplearningblog.com/development/tensorflow-cuda-cudnn-compatibility/) and search for the following for your current **CUDA Version**:
+
     -The **Python Version**
     -The **CUDNN Version**
 
-- Search, download and install the correct **CuDNN Version** from the [CuDNN Archive](https://developer.nvidia.com/cudnn-archive)
+- Search, download and install the correct **CuDNN Version** from the [CuDNN Archive](https://developer.nvidia.com/cudnn-archive) by using the [CuDNN installation instructions](https://docs.nvidia.com/deeplearning/cudnn/latest/installation/windows.html)
 
 - (Optionally) Update to the required **Python Version** for your **CUDA Version** in your conda environment:
 
     ```bash
     conda install python=<REQUIRED_PYTHON_VERSION>
+    python --version
     ```
 
 - Uninstall the default tensorflow and keras versions:

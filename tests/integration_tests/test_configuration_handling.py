@@ -19,7 +19,7 @@ def test_save_config(default_config):
         config_handler.save_config(default_config, DEFAULT_VALUES['config_save_path'])
     m.assert_called_once_with(DEFAULT_VALUES['config_save_path'], 'w')
     handle = m()
-    handle.write.assert_called_once_with(json.dumps(default_config, indent=4))
+    handle.write.assert_called_once_with(json.dumps({k: v for k, v in default_config.items() if k not in DEFAULT_VALUES or v != DEFAULT_VALUES[k]}, indent=4))
 
 def test_configure_with_args(default_config):
     args = {

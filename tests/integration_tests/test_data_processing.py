@@ -1,4 +1,6 @@
 import pytest
+import numpy as np
+import pandas as pd
 from app.data_processor import train_autoencoder
 from app.autoencoder_manager import AutoencoderManager
 from app.plugin_loader import load_plugin

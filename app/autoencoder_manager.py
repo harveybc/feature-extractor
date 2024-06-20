@@ -13,34 +13,37 @@ class AutoencoderManager:
         print(f"[AutoencoderManager] Initialized with input_dim: {self.input_dim}, encoding_dim: {self.encoding_dim}")
 
     def build_autoencoder(self):
-        print("[build_autoencoder] Start building encoder...")
-        try:
-            encoder_input = Input(shape=(self.input_dim,), name="encoder_input")
-            encoder_output = Dense(self.encoding_dim, activation='relu', name="encoder_output")(encoder_input)
-            self.encoder_model = Model(inputs=encoder_input, outputs=encoder_output, name="encoder")
-            print(f"[build_autoencoder] Encoder model built: {self.encoder_model}")
+    try:
+        print("[build_autoencoder] Starting to build autoencoder...")
 
-            print("[build_autoencoder] Start building decoder...")
-            decoder_input = Input(shape=(self.encoding_dim,), name="decoder_input")
-            decoder_output = Dense(self.input_dim, activation='tanh', name="decoder_output")(decoder_input)
-            self.decoder_model = Model(inputs=decoder_input, outputs=decoder_output, name="decoder")
-            print(f"[build_autoencoder] Decoder model built: {self.decoder_model}")
+        # Encoder
+        encoder_input = Input(shape=(self.input_dim,), name="encoder_input")
+        encoder_output = Dense(self.encoding_dim, activation='relu', name="encoder_output")(encoder_input)
+        self.encoder_model = Model(inputs=encoder_input, outputs=encoder_output, name="encoder")
+        print("[build_autoencoder] Encoder model built successfully")
 
-            print("[build_autoencoder] Start building autoencoder...")
-            autoencoder_output = self.decoder_model(self.encoder_model.output)
-            self.autoencoder_model = Model(inputs=encoder_input, outputs=autoencoder_output, name="autoencoder")
-            self.autoencoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
-            print(f"[build_autoencoder] Autoencoder model built: {self.autoencoder_model}")
+        # Decoder
+        decoder_input = Input(shape=(self.encoding_dim,), name="decoder_input")
+        decoder_output = Dense(self.input_dim, activation='tanh', name="decoder_output")(decoder_input)
+        self.decoder_model = Model(inputs=decoder_input, outputs=decoder_output, name="decoder")
+        print("[build_autoencoder] Decoder model built successfully")
 
-            # Debugging messages to trace the model configuration
-            print("[build_autoencoder] Encoder Model Summary:")
-            self.encoder_model.summary()
-            print("[build_autoencoder] Decoder Model Summary:")
-            self.decoder_model.summary()
-            print("[build_autoencoder] Full Autoencoder Model Summary:")
-            self.autoencoder_model.summary()
-        except Exception as e:
-            print(f"[build_autoencoder] Error during building autoencoder: {e}")
+        # Autoencoder
+        autoencoder_output = self.decoder_model(encoder_output)
+        self.autoencoder_model = Model(inputs=encoder_input, outputs=autoencoder_output, name="autoencoder")
+        self.autoencoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+        print("[build_autoencoder] Autoencoder model built and compiled successfully")
+
+        # Debugging messages to trace the model configuration
+        print("Encoder Model Summary:")
+        self.encoder_model.summary()
+        print("Decoder Model Summary:")
+        self.decoder_model.summary()
+        print("Full Autoencoder Model Summary:")
+        self.autoencoder_model.summary()
+    except Exception as e:
+        print(f"[build_autoencoder] Exception occurred: {e}")
+        raise
 
     def train_autoencoder(self, data, epochs=10, batch_size=256):
         if isinstance(data, tuple):

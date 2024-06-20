@@ -61,6 +61,20 @@ def merge_config(config, cli_args, plugin_params):
     print(f"Post-Merge: {merged_config}")
     return merged_config
 
+def configure_with_args(config, args):
+    """
+    Update the configuration with command-line arguments.
+
+    Args:
+        config (dict): The current configuration.
+        args (dict): Command-line arguments to update the configuration.
+
+    Returns:
+        dict: The updated configuration.
+    """
+    config.update(args)
+    return config
+
 def save_debug_info(debug_info, path='debug_out.json'):
     """
     Save debug information to a JSON file.

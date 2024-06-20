@@ -1,36 +1,35 @@
-import sys
-import requests
-import numpy as np
-import pandas as pd
-from app.data_handler import load_csv, write_csv, sliding_window
-from app.plugin_loader import load_encoder_decoder_plugins
-from app.reconstruction import unwindow_data
-from app.autoencoder_manager import AutoencoderManager
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-
 def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
     current_size = initial_size
     current_mse = float('inf')
-    print(f"Training autoencoder with initial size {current_size}...")
+    print(f"[train_autoencoder] Initial size: {current_size}")
+    print(f"[train_autoencoder] Data shape: {data.shape}")
+    print(f"[train_autoencoder] MSE threshold: {mse_threshold}")
+    print(f"[train_autoencoder] Step size: {step_size}")
+    print(f"[train_autoencoder] Incremental search: {incremental_search}")
+    print(f"[train_autoencoder] Epochs: {epochs}")
 
     while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
-        print("Building autoencoder...")
+        print("[train_autoencoder] Building autoencoder...")
         autoencoder_manager.build_autoencoder()
-        print(f"Autoencoder model after building: {autoencoder_manager.autoencoder_model}")
+        print(f"[train_autoencoder] Autoencoder model after building: {autoencoder_manager.autoencoder_model}")
 
         if autoencoder_manager.autoencoder_model is None:
-            print("Error: autoencoder_model is None after build_autoencoder.")
+            print("[train_autoencoder] Error: autoencoder_model is None after build_autoencoder.")
             break
 
+        print("[train_autoencoder] Training autoencoder...")
         autoencoder_manager.train_autoencoder(data, epochs=epochs, batch_size=256)
+        print("[train_autoencoder] Training completed.")
 
+        print("[train_autoencoder] Encoding data...")
         encoded_data = autoencoder_manager.encode_data(data)
+        print("[train_autoencoder] Decoding data...")
         decoded_data = autoencoder_manager.decode_data(encoded_data)
         current_mse = autoencoder_manager.calculate_mse(data, decoded_data)
-        print(f"Current MSE: {current_mse} at encoding size: {current_size}")
+        print(f"[train_autoencoder] Current MSE: {current_mse} at encoding size: {current_size}")
 
         if (incremental_search and current_mse >= mse_threshold) or (not incremental_search and current_mse <= mse_threshold):
-            print("Desired MSE reached. Stopping training.")
+            print("[train_autoencoder] Desired MSE reached. Stopping training.")
             break
 
         if incremental_search:
@@ -42,27 +41,27 @@ def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, st
 
     return autoencoder_manager
 
-
-
 def process_data(config):
+    print(f"[process_data] Loading data from: {config['csv_file']}")
     data = load_csv(config['csv_file'], headers=config['headers'])
-    print(f"Data loaded: {data.shape[0]} rows and {data.shape[1]} columns.")
+    print(f"[process_data] Data loaded: {data.shape[0]} rows and {data.shape[1]} columns.")
 
     if config['force_date']:
+        print("[process_data] Forcing date conversion on index.")
         data.index = pd.to_datetime(data.index)
 
-    print(f"Data types:\n {data.dtypes}")
+    print(f"[process_data] Data types:\n{data.dtypes}")
 
     debug_info = {}
     processed_data = {}
 
     for column in data.columns:
-        print(f"Processing column: {column}")
+        print(f"[process_data] Processing column: {column}")
         column_data = data[[column]].values.astype(np.float64)
-        print(f"Applying sliding window of size: {config['window_size']}")
+        print(f"[process_data] Applying sliding window of size: {config['window_size']}")
         windowed_data = sliding_window(column_data, config['window_size'])
         windowed_data = windowed_data.squeeze()  # Ensure correct shape for training
-        print(f"Windowed data shape: {windowed_data.shape}")
+        print(f"[process_data] Windowed data shape: {windowed_data.shape}")
         processed_data[column] = windowed_data
 
     return processed_data, debug_info

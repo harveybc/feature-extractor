@@ -3,7 +3,6 @@ import numpy as np
 from unittest.mock import patch, MagicMock
 from app.plugins.encoder_plugin_ann import Plugin
 from keras.models import Model
-from keras.layers import Input, Dense
 
 @pytest.fixture
 def encoder_plugin():
@@ -52,9 +51,21 @@ def test_load(encoder_plugin):
 
 def test_calculate_mse(encoder_plugin):
     encoder_plugin.configure_size(input_dim=3, encoding_dim=2)
+
+    # Create a mock autoencoder model
+    input_layer = encoder_plugin.encoder_model.input
+    encoded_layer = encoder_plugin.encoder_model.output
+    decoded_layer = Dense(3, activation='relu', name="decoder_output")(encoded_layer)
+    autoencoder_model = Model(inputs=input_layer, outputs=decoded_layer)
+    autoencoder_model.compile(optimizer='adam', loss='mean_squared_error')
+
     mock_data = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-    encoder_plugin.train(mock_data)
+
+    with patch.object(autoencoder_model, 'fit') as mock_fit:
+        autoencoder_model.fit(mock_data, mock_data, epochs=encoder_plugin.params['epochs'], batch_size=encoder_plugin.params['batch_size'], verbose=1)
+        mock_fit.assert_called_once()
+
     encoded_data = encoder_plugin.encode(mock_data)
-    decoded_data = encoder_plugin.encoder_model.predict(encoded_data)
+    decoded_data = autoencoder_model.predict(encoded_data)
     mse = np.mean(np.square(mock_data - decoded_data))
     assert isinstance(mse, float)

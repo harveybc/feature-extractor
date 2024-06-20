@@ -16,7 +16,7 @@ def test_load_default_config(default_config):
 def test_save_config(default_config):
     m = mock_open()
     with patch('builtins.open', m):
-        config_handler.save_config(DEFAULT_VALUES['config_save_path'], default_config)
+        config_handler.save_config(default_config, DEFAULT_VALUES['config_save_path'])
     m.assert_called_once_with(DEFAULT_VALUES['config_save_path'], 'w')
     handle = m()
     handle.write.assert_called_once_with(json.dumps(default_config, indent=4))

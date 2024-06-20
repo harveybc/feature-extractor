@@ -32,7 +32,7 @@ def get_plugin_params(plugin_group, plugin_name):
         return plugin_class.plugin_params
     except StopIteration:
         print(f"Failed to find plugin {plugin_name} in group {plugin_group}")
-        return {}
+        raise ImportError(f"Plugin {plugin_name} not found in group {plugin_group}.")
     except Exception as e:
         print(f"Failed to get plugin params for {plugin_name} from group {plugin_group}, Error: {e}")
-        return {}
+        raise ImportError(f"Failed to get plugin params for {plugin_name} from group {plugin_group}, Error: {e}")

@@ -10,10 +10,12 @@ class Plugin:
 
     plugin_params = {
         'epochs': 10,
-        'batch_size': 256
+        'batch_size': 256,
+        'input_dim': None,  # Added input_dim
+        'encoding_dim': None  # Added encoding_dim
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size', 'input_dim', 'encoding_dim']
+    plugin_debug_vars = ['epochs', 'batch_size', 'input_dim', 'encoding_dim']  # Updated debug vars
 
     def __init__(self):
         self.params = self.plugin_params.copy()

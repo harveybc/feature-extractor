@@ -1,9 +1,9 @@
 import pytest
-import numpy as np
 import pandas as pd
-from app.data_processor import train_autoencoder
-from app.autoencoder_manager import AutoencoderManager
+import numpy as np
 from app.plugin_loader import load_plugin
+from app.autoencoder_manager import AutoencoderManager
+from app.data_processor import train_autoencoder
 
 @pytest.fixture
 def mock_data():
@@ -13,18 +13,22 @@ def mock_data():
 def config():
     return {
         'csv_file': 'path/to/mock_csv.csv',
-        'mse_threshold': 0.005,
+        'window_size': 128,
         'initial_encoding_dim': 4,
         'encoding_step_size': 4,
-        'incremental_search': True,
+        'mse_threshold': 0.005,
         'epochs': 10,
-        'force_date': False,
         'headers': False,
+        'force_date': False,
+        'incremental_search': True
     }
 
 def test_train_autoencoder(mock_data, config):
     encoder_plugin, encoder_params = load_plugin('feature_extractor.encoders', 'default')
     decoder_plugin, decoder_params = load_plugin('feature_extractor.decoders', 'default')
+
+    print(f"[test_train_autoencoder] Encoder params: {encoder_params}")
+    print(f"[test_train_autoencoder] Decoder params: {decoder_params}")
 
     autoencoder_manager = AutoencoderManager(input_dim=mock_data.shape[1], encoding_dim=config['initial_encoding_dim'])
 
@@ -32,3 +36,4 @@ def test_train_autoencoder(mock_data, config):
     assert trained_manager is not None
     print("Checking if build_autoencoder was called...")
     assert autoencoder_manager.autoencoder_model is not None
+    print(f"[test_train_autoencoder] Autoencoder model: {autoencoder_manager.autoencoder_model}")

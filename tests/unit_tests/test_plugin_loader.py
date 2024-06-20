@@ -34,7 +34,7 @@ def test_load_encoder_decoder_plugins():
         encoder_plugin, encoder_params, decoder_plugin, decoder_params = load_encoder_decoder_plugins('mock_encoder', 'mock_decoder')
         assert encoder_plugin.plugin_params == {'param1': 'value1'}
         assert encoder_params == ['param1']
-        assert decoder_plugin.plugin_params == {'param2': 'value2']
+        assert decoder_plugin.plugin_params == {'param2': 'value2'}
         assert decoder_params == ['param2']
 
 def test_get_plugin_params_success():

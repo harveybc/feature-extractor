@@ -16,11 +16,12 @@ def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, st
     while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
         print("Building autoencoder...")
         autoencoder_manager.build_autoencoder()
+        print(f"Autoencoder model after building: {autoencoder_manager.autoencoder_model}")
+
         if autoencoder_manager.autoencoder_model is None:
             print("Error: autoencoder_model is None after build_autoencoder.")
             break
 
-        print(f"Autoencoder model built: {autoencoder_manager.autoencoder_model}")
         autoencoder_manager.train_autoencoder(data, epochs=epochs, batch_size=256)
 
         encoded_data = autoencoder_manager.encode_data(data)

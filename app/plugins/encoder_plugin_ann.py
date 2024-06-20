@@ -23,6 +23,8 @@ class Plugin:
         for key, value in kwargs.items():
             if key in self.params:
                 self.params[key] = value
+            else:
+                self.params[key] = value
 
     def get_debug_info(self):
         return {var: self.params[var] for var in self.plugin_debug_vars}

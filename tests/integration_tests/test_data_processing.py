@@ -33,8 +33,10 @@ def test_train_autoencoder(mock_data, config):
     autoencoder_manager = AutoencoderManager(input_dim=mock_data.shape[1], encoding_dim=config['initial_encoding_dim'])
     print(f"[test_train_autoencoder] AutoencoderManager initialized")
 
+    assert autoencoder_manager.input_dim == mock_data.shape[1]
+    assert autoencoder_manager.encoding_dim == config['initial_encoding_dim']
+
     trained_manager = train_autoencoder(autoencoder_manager, mock_data.values, config['mse_threshold'], config['initial_encoding_dim'], config['encoding_step_size'], config['incremental_search'], config['epochs'])
     assert trained_manager is not None
     print("Checking if build_autoencoder was called...")
     assert autoencoder_manager.autoencoder_model is not None
-    print(f"[test_train_autoencoder] Autoencoder model: {autoencoder_manager.autoencoder_model}")

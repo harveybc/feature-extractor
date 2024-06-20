@@ -18,7 +18,6 @@ def test_load_plugin_general_exception():
 def test_load_encoder_decoder_plugins():
     encoder_plugin, encoder_params, decoder_plugin, decoder_params = load_encoder_decoder_plugins('default', 'default')
     assert encoder_plugin.plugin_params == {'epochs': 10, 'batch_size': 256}
-    # Update this line to match the actual parameters of the default decoder plugin
     assert decoder_plugin.plugin_params == {'epochs': 10, 'batch_size': 256}
 
 def test_get_plugin_params_success():

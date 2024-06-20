@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from unittest.mock import patch, MagicMock
 from app.plugins.encoder_plugin_ann import Plugin
-from tensorflow.keras.models import Model
+from keras.models import Model
 
 @pytest.fixture
 def encoder_plugin():

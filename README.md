@@ -44,12 +44,12 @@ To install and set up the feature-extractor application, follow these steps:
 6. **(Optional) Run the feature-extractor**:
     - On Windows, run the following command to verify installation (it generates an example output file csv_output.csv):
         ```bash
-        feature-extractor.bat tests\data\csv_sel_unb_norm_512.csv --plugin feature_selector --method select_single --single 0
+        feature-extractor.bat tests\data\csv_sel_unb_norm_512.csv 
         ```
 
     - On Linux, run:
         ```bash
-        sh feature-extractor.sh tests\data\csv_sel_unb_norm_512.csv --plugin feature_selector --method select_single --single 0
+        sh feature-extractor.sh tests\data\csv_sel_unb_norm_512.csv
         ```
 
 7. **(Optional) Run Tests**:

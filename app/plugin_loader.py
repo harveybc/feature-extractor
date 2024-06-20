@@ -1,38 +1,60 @@
-from importlib.metadata import entry_points, EntryPoint
-import sys
+import pytest
+from unittest.mock import patch, MagicMock
+from importlib.metadata import entry_points
+from app.plugin_loader import load_plugin, load_encoder_decoder_plugins, get_plugin_params
 
-def load_plugin(plugin_group, plugin_name):
-    print(f"Attempting to load plugin: {plugin_name} from group: {plugin_group}")
-    try:
-        group_entries = entry_points().get(plugin_group, [])
-        entry_point = next(ep for ep in group_entries if ep.name == plugin_name)
-        plugin_class = entry_point.load()
-        required_params = list(plugin_class.plugin_params.keys())
-        print(f"Successfully loaded plugin: {plugin_name} with params: {plugin_class.plugin_params}")
-        return plugin_class, required_params
-    except StopIteration:
-        print(f"Failed to find plugin {plugin_name} in group {plugin_group}")
-        raise ImportError(f"Plugin {plugin_name} not found in group {plugin_group}.")
-    except Exception as e:
-        print(f"Failed to load plugin {plugin_name} from group {plugin_group}, Error: {e}")
-        raise
+def test_load_plugin_success():
+    mock_entry_point = MagicMock()
+    mock_entry_point.load.return_value = MagicMock(plugin_params={'param1': 'value1'})
+    with patch('importlib.metadata.entry_points', return_value={'feature_extractor.encoders': [mock_entry_point]}):
+        plugin_class, required_params = load_plugin('feature_extractor.encoders', 'mock_plugin')
+        assert plugin_class.plugin_params == {'param1': 'value1'}
+        assert required_params == ['param1']
+        mock_entry_point.load.assert_called_once()
 
-def load_encoder_decoder_plugins(encoder_name, decoder_name):
-    encoder_plugin, encoder_params = load_plugin('feature_extractor.encoders', encoder_name)
-    decoder_plugin, decoder_params = load_plugin('feature_extractor.decoders', decoder_name)
-    return encoder_plugin, encoder_params, decoder_plugin, decoder_params
+def test_load_plugin_key_error():
+    with patch('importlib.metadata.entry_points', return_value={'feature_extractor.encoders': []}):
+        with pytest.raises(ImportError) as excinfo:
+            load_plugin('feature_extractor.encoders', 'nonexistent_plugin')
+        assert 'Plugin nonexistent_plugin not found in group feature_extractor.encoders.' in str(excinfo.value)
 
-def get_plugin_params(plugin_group, plugin_name):
-    print(f"Getting plugin parameters for: {plugin_name} from group: {plugin_group}")
-    try:
-        group_entries = entry_points().get(plugin_group, [])
-        entry_point = next(ep for ep in group_entries if ep.name == plugin_name)
-        plugin_class = entry_point.load()
-        print(f"Retrieved plugin params: {plugin_class.plugin_params}")
-        return plugin_class.plugin_params
-    except StopIteration:
-        print(f"Failed to find plugin {plugin_name} in group {plugin_group}")
-        return {}
-    except Exception as e:
-        print(f"Failed to get plugin params for {plugin_name} from group {plugin_group}, Error: {e}")
-        return {}
+def test_load_plugin_general_exception():
+    with patch('importlib.metadata.entry_points', side_effect=Exception('General error')):
+        with pytest.raises(Exception) as excinfo:
+            load_plugin('feature_extractor.encoders', 'mock_plugin')
+        assert 'General error' in str(excinfo.value)
+
+def test_load_encoder_decoder_plugins():
+    mock_encoder_entry_point = MagicMock()
+    mock_encoder_entry_point.load.return_value = MagicMock(plugin_params={'param1': 'value1'})
+    mock_decoder_entry_point = MagicMock()
+    mock_decoder_entry_point.load.return_value = MagicMock(plugin_params={'param2': 'value2'})
+    with patch('importlib.metadata.entry_points', return_value={
+        'feature_extractor.encoders': [mock_encoder_entry_point],
+        'feature_extractor.decoders': [mock_decoder_entry_point]
+    }):
+        encoder_plugin, encoder_params, decoder_plugin, decoder_params = load_encoder_decoder_plugins('mock_encoder', 'mock_decoder')
+        assert encoder_plugin.plugin_params == {'param1': 'value1'}
+        assert encoder_params == ['param1']
+        assert decoder_plugin.plugin_params == {'param2': 'value2'}
+        assert decoder_params == ['param2']
+        mock_encoder_entry_point.load.assert_called_once()
+        mock_decoder_entry_point.load.assert_called_once()
+
+def test_get_plugin_params_success():
+    mock_entry_point = MagicMock()
+    mock_entry_point.load.return_value = MagicMock(plugin_params={'param1': 'value1'})
+    with patch('importlib.metadata.entry_points', return_value={'feature_extractor.encoders': [mock_entry_point]}):
+        params = get_plugin_params('feature_extractor.encoders', 'mock_plugin')
+        assert params == {'param1': 'value1'}
+        mock_entry_point.load.assert_called_once()
+
+def test_get_plugin_params_key_error():
+    with patch('importlib.metadata.entry_points', return_value={'feature_extractor.encoders': []}):
+        params = get_plugin_params('feature_extractor.encoders', 'nonexistent_plugin')
+        assert params == {}
+
+def test_get_plugin_params_general_exception():
+    with patch('importlib.metadata.entry_points', side_effect=Exception('General error')):
+        params = get_plugin_params('feature_extractor.encoders', 'mock_plugin')
+        assert params == {}

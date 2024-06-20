@@ -16,13 +16,20 @@ def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, st
     while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
         print("Building autoencoder...")
         autoencoder_manager.build_autoencoder()
+        print("Autoencoder built.")
+        
         print("Training autoencoder...")
         autoencoder_manager.train_autoencoder(data, epochs=epochs, batch_size=256)
-
+        print("Autoencoder trained.")
+        
         print("Encoding data...")
         encoded_data = autoencoder_manager.encode_data(data)
+        print("Data encoded.")
+        
         print("Decoding data...")
         decoded_data = autoencoder_manager.decode_data(encoded_data)
+        print("Data decoded.")
+        
         print("Calculating MSE...")
         current_mse = autoencoder_manager.calculate_mse(data, decoded_data)
         print(f"Current MSE: {current_mse} at interface size: {current_size}")

@@ -1,11 +1,12 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from importlib.metadata import entry_points
+from importlib.metadata import EntryPoint
 from app.plugin_loader import load_plugin, load_encoder_decoder_plugins, get_plugin_params
 
 def test_load_plugin_success():
-    mock_entry_point = MagicMock()
-    mock_entry_point.load.return_value = MagicMock(plugin_params={'param1': 'value1'})
+    mock_entry_point = EntryPoint(name='mock_plugin', value='mock.module:Plugin', group='feature_extractor.encoders')
+    mock_entry_point.load = MagicMock(return_value=MagicMock(plugin_params={'param1': 'value1'}))
+    
     with patch('importlib.metadata.entry_points', return_value={'feature_extractor.encoders': [mock_entry_point]}):
         plugin_class, required_params = load_plugin('feature_extractor.encoders', 'mock_plugin')
         assert plugin_class.plugin_params == {'param1': 'value1'}
@@ -25,10 +26,11 @@ def test_load_plugin_general_exception():
         assert 'General error' in str(excinfo.value)
 
 def test_load_encoder_decoder_plugins():
-    mock_encoder_entry_point = MagicMock()
-    mock_encoder_entry_point.load.return_value = MagicMock(plugin_params={'param1': 'value1'})
-    mock_decoder_entry_point = MagicMock()
-    mock_decoder_entry_point.load.return_value = MagicMock(plugin_params={'param2': 'value2'})
+    mock_encoder_entry_point = EntryPoint(name='mock_encoder', value='mock.module:EncoderPlugin', group='feature_extractor.encoders')
+    mock_decoder_entry_point = EntryPoint(name='mock_decoder', value='mock.module:DecoderPlugin', group='feature_extractor.decoders')
+    mock_encoder_entry_point.load = MagicMock(return_value=MagicMock(plugin_params={'param1': 'value1'}))
+    mock_decoder_entry_point.load = MagicMock(return_value=MagicMock(plugin_params={'param2': 'value2'}))
+
     with patch('importlib.metadata.entry_points', return_value={
         'feature_extractor.encoders': [mock_encoder_entry_point],
         'feature_extractor.decoders': [mock_decoder_entry_point]
@@ -42,8 +44,9 @@ def test_load_encoder_decoder_plugins():
         mock_decoder_entry_point.load.assert_called_once()
 
 def test_get_plugin_params_success():
-    mock_entry_point = MagicMock()
-    mock_entry_point.load.return_value = MagicMock(plugin_params={'param1': 'value1'})
+    mock_entry_point = EntryPoint(name='mock_plugin', value='mock.module:Plugin', group='feature_extractor.encoders')
+    mock_entry_point.load = MagicMock(return_value=MagicMock(plugin_params={'param1': 'value1'}))
+    
     with patch('importlib.metadata.entry_points', return_value={'feature_extractor.encoders': [mock_entry_point]}):
         params = get_plugin_params('feature_extractor.encoders', 'mock_plugin')
         assert params == {'param1': 'value1'}

@@ -3,7 +3,7 @@ import numpy as np
 from unittest.mock import patch, MagicMock
 from app.plugins.encoder_plugin_ann import Plugin
 from keras.models import Model
-from keras.layers import Dense  # Import Dense
+from keras.layers import Dense, Input  # Ensure Input is also imported
 
 @pytest.fixture
 def encoder_plugin():
@@ -56,6 +56,7 @@ def test_calculate_mse(encoder_plugin):
     # Create a mock autoencoder model
     input_layer = encoder_plugin.encoder_model.input
     encoded_layer = encoder_plugin.encoder_model.output
+    # Decoder should match the encoded layer's shape
     decoded_layer = Dense(3, activation='relu', name="decoder_output")(encoded_layer)
     autoencoder_model = Model(inputs=input_layer, outputs=decoded_layer)
     autoencoder_model.compile(optimizer='adam', loss='mean_squared_error')
@@ -67,6 +68,9 @@ def test_calculate_mse(encoder_plugin):
         mock_fit.assert_called_once()
 
     encoded_data = encoder_plugin.encode(mock_data)
+    # Ensure decoded data matches the original mock_data's shape
     decoded_data = autoencoder_model.predict(encoded_data)
+    decoded_data = decoded_data.reshape(mock_data.shape)
+
     mse = np.mean(np.square(mock_data - decoded_data))
     assert isinstance(mse, float)

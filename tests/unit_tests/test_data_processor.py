@@ -38,12 +38,14 @@ def test_process_data(mock_unwindow_data, mock_write_csv, mock_load_csv, mock_lo
         assert isinstance(value, np.ndarray)
 
 def test_train_autoencoder():
-    encoder = MagicMock()
-    decoder = MagicMock()
+    autoencoder_manager = MagicMock()
+    autoencoder_manager.calculate_mse.return_value = 0.05  # Mock the return value of calculate_mse
+
     data = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
     trained_autoencoder_manager = train_autoencoder(
-        autoencoder_manager=MagicMock(), data=data, mse_threshold=0.1, initial_size=4, step_size=2, incremental_search=False, epochs=10
+        autoencoder_manager=autoencoder_manager, data=data, mse_threshold=0.1, initial_size=4, step_size=2, incremental_search=False, epochs=10
     )
 
     assert trained_autoencoder_manager is not None
+    autoencoder_manager.calculate_mse.assert_called()  # Ensure calculate_mse was called

@@ -3,6 +3,7 @@ import numpy as np
 from unittest.mock import patch, MagicMock
 from app.plugins.encoder_plugin_ann import Plugin
 from keras.models import Model
+from keras.layers import Input, Dense
 
 @pytest.fixture
 def encoder_plugin():
@@ -43,7 +44,7 @@ def test_save(encoder_plugin):
         mock_save_model.assert_called_once_with(encoder_plugin.encoder_model, 'test_path')
 
 def test_load(encoder_plugin):
-    with patch('app.plugins.encoder_plugin_ann.load_model', return_value=MagicMock()) as mock_load_model:
+    with patch('app.plugins.encoder_plugin_ann.load_model', return_value=MagicMock(spec=Model)) as mock_load_model:
         encoder_plugin.load('test_path')
         mock_load_model.assert_called_once_with('test_path')
         assert encoder_plugin.encoder_model is not None
@@ -53,5 +54,6 @@ def test_calculate_mse(encoder_plugin):
     encoder_plugin.configure_size(input_dim=3, encoding_dim=2)
     mock_data = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     encoder_plugin.train(mock_data)
-    mse = encoder_plugin.calculate_mse(mock_data)
+    reconstructed_data = encoder_plugin.encoder_model.predict(mock_data)
+    mse = np.mean(np.square(mock_data - reconstructed_data))
     assert isinstance(mse, float)

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from unittest.mock import patch, MagicMock
 from app.plugins.encoder_plugin_ann import Plugin
-from keras.models import Model
+from tensorflow.keras.models import Model
 
 @pytest.fixture
 def encoder_plugin():
@@ -53,5 +53,5 @@ def test_calculate_mse(encoder_plugin):
     encoder_plugin.configure_size(input_dim=3, encoding_dim=2)
     mock_data = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     encoder_plugin.train(mock_data)
-    mse = encoder_plugin.calculate_mse(mock_data, mock_data)
+    mse = encoder_plugin.calculate_mse(mock_data)
     assert isinstance(mse, float)

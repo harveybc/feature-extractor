@@ -6,7 +6,6 @@ from app.data_processor import process_data, train_autoencoder
 from app.data_handler import load_csv, write_csv
 from app.plugin_loader import load_plugin
 from app.reconstruction import unwindow_data
-from app.autoencoder_manager import AutoencoderManager
 
 sample_data = pd.DataFrame({
     'column1': np.random.rand(100),
@@ -34,14 +33,13 @@ def test_process_data(mock_unwindow_data, mock_write_csv, mock_load_csv, mock_lo
 
     reconstructed_data, debug_info = process_data(config)
 
-    assert isinstance(reconstructed_data, dict)
+    assert isinstance(reconstructed_data, pd.DataFrame)
 
 def test_train_autoencoder():
-    autoencoder_manager = AutoencoderManager(input_dim=3, encoding_dim=2)
+    encoder = MagicMock()
+    decoder = MagicMock()
     data = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
-    trained_manager = train_autoencoder(
-        autoencoder_manager, data, mse_threshold=0.1, initial_size=4, step_size=2, incremental_search=False, epochs=10
+    trained_encoder, trained_decoder = train_autoencoder(
+        encoder, decoder, data, mse_threshold=0.1, initial_size=4, step_size=2, incremental_search=False, epochs=10
     )
-
-    assert isinstance(trained_manager, AutoencoderManager)

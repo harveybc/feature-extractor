@@ -8,7 +8,7 @@ from app.reconstruction import unwindow_data
 from app.autoencoder_manager import AutoencoderManager
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-def train_autoencoder(autoencoder_manager, data, mse_threshold=0.1, initial_size=4, step_size=2, incremental_search=False, epochs=10):
+def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
     current_size = initial_size
     current_mse = float('inf')
     print(f"Training autoencoder with initial size {current_size}...")
@@ -55,6 +55,4 @@ def process_data(config):
         print(f"Windowed data shape: {windowed_data.shape}")
         processed_data[column] = windowed_data
 
-    # Convert processed_data to DataFrame
-    processed_df = pd.DataFrame({key: value.tolist() for key, value in processed_data.items()})
-    return processed_df, debug_info
+    return processed_data, debug_info

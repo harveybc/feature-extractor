@@ -21,8 +21,7 @@ class Plugin:
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
-            if key in self.params:
-                self.params[key] = value
+            self.params[key] = value
 
     def get_debug_info(self):
         return {var: self.params[var] for var in self.plugin_debug_vars}

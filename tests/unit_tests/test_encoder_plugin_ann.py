@@ -3,6 +3,7 @@ import numpy as np
 from unittest.mock import patch, MagicMock
 from app.plugins.encoder_plugin_ann import Plugin
 from keras.models import Model
+from keras.layers import Dense  # Import Dense
 
 @pytest.fixture
 def encoder_plugin():

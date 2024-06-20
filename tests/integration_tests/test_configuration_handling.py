@@ -1,40 +1,35 @@
 import pytest
 import json
-from app.main import load_config, save_config
+from unittest.mock import patch, mock_open
+from app import config_handler
+from app.config import DEFAULT_VALUES
 
-def test_load_config():
-    config_path = 'tests/integration_tests/test_config.json'
-    config_data = {
-        'encoder_plugin': 'ann',
-        'decoder_plugin': 'cnn',
-        'training_batch_size': 128,
-        'epochs': 20
-    }
-    
-    # Save the config data to a file
-    with open(config_path, 'w') as f:
-        json.dump(config_data, f)
-    
-    # Load the config
-    loaded_config = load_config(config_path)
-    
-    # Verify the loaded config
-    assert loaded_config == config_data
+@pytest.fixture
+def default_config():
+    return DEFAULT_VALUES.copy()
 
-def test_save_config():
-    config_path = 'tests/integration_tests/test_save_config.json'
-    config_data = {
-        'encoder_plugin': 'rnn',
-        'decoder_plugin': 'lstm',
-        'training_batch_size': 64,
-        'epochs': 15
+def test_load_default_config(default_config):
+    with patch('builtins.open', mock_open(read_data=json.dumps(default_config))):
+        loaded_config = config_handler.load_config(DEFAULT_VALUES['config_load_path'])
+        assert loaded_config == default_config
+
+def test_save_config(default_config):
+    m = mock_open()
+    with patch('builtins.open', m):
+        config_handler.save_config(DEFAULT_VALUES['config_save_path'], default_config)
+    m.assert_called_once_with(DEFAULT_VALUES['config_save_path'], 'w')
+    handle = m()
+    handle.write.assert_called_once_with(json.dumps(default_config, indent=4))
+
+def test_configure_with_args(default_config):
+    args = {
+        'csv_input_path': './new_input.csv',
+        'csv_output_path': './new_output.csv',
+        'epochs': 20,
+        'quiet_mode': True
     }
-    
-    # Save the config
-    save_config(config_path, config_data)
-    
-    # Load the config to verify
-    with open(config_path, 'r') as f:
-        loaded_config = json.load(f)
-    
-    assert loaded_config == config_data
+    updated_config = config_handler.configure_with_args(default_config, args)
+    assert updated_config['csv_input_path'] == './new_input.csv'
+    assert updated_config['csv_output_path'] == './new_output.csv'
+    assert updated_config['epochs'] == 20
+    assert updated_config['quiet_mode'] is True

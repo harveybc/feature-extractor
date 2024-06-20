@@ -66,12 +66,12 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
         pytest
         ```
 
-8. **(Optional)Generate Documentation**:
+8. **(Optional) Generate Documentation**:
     - Run the following command to generate code documentation in HTML format in the docs directory:
         ```bash
         pdoc --html -o docs app
         ```
-9. **(Optional)Install Nvidia CUDA GPU support**:
+9. **(Optional) Install Nvidia CUDA GPU support**:
 
 - Be sure to have the latest Nvidia Grapic Driver and we need to determine your hardware **CUDA Version** with the following command, anotate the exact version for next steps:
 

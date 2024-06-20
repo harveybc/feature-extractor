@@ -45,7 +45,9 @@ def test_get_plugin_params_success():
     mock_entry_point.load = MagicMock(return_value=MagicMock(plugin_params={'param1': 'value1'}))
 
     with patch('importlib.metadata.entry_points', return_value={'feature_extractor.encoders': [mock_entry_point]}):
+        print("DEBUG: mock_entry_point = ", mock_entry_point)  # Add debug statement
         params = get_plugin_params('feature_extractor.encoders', 'mock_plugin')
+        print("DEBUG: params = ", params)  # Add debug statement
         assert params == {'param1': 'value1'}
 
 def test_get_plugin_params_key_error():

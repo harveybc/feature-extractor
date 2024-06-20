@@ -27,7 +27,7 @@ class AutoencoderManager:
             print(f"[build_autoencoder] Decoder model built: {self.decoder_model}")
 
             print("[build_autoencoder] Start building autoencoder...")
-            autoencoder_output = self.decoder_model(encoder_output)
+            autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=encoder_input, outputs=autoencoder_output, name="autoencoder")
             self.autoencoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
             print(f"[build_autoencoder] Autoencoder model built: {self.autoencoder_model}")

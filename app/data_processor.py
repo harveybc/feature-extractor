@@ -34,6 +34,7 @@ def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, st
         else:
             current_size -= step_size
 
+    print(f"[train_autoencoder] Final autoencoder model: {autoencoder_manager.autoencoder_model}")
     return autoencoder_manager
 
 def process_data(config):

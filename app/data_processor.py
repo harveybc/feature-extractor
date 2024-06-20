@@ -17,6 +17,10 @@ def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, st
         print("Building autoencoder...")
         autoencoder_manager.build_autoencoder()
         print(f"Autoencoder model built: {autoencoder_manager.autoencoder_model}")
+        if autoencoder_manager.autoencoder_model is None:
+            print("Autoencoder model is None after build_autoencoder")
+            break
+        
         autoencoder_manager.train_autoencoder(data, epochs=epochs, batch_size=256)
 
         encoded_data = autoencoder_manager.encode_data(data)

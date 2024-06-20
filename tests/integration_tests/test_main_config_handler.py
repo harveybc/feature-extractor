@@ -1,6 +1,6 @@
 import json
 import requests
-import config
+from app import config
 
 # Define default values for the configuration
 DEFAULT_VALUES = {

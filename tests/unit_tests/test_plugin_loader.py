@@ -12,8 +12,14 @@ def test_load_plugin_success():
         assert plugin_class.plugin_params == {'param1': 'value1'}
         assert required_params == ['param1']
 
+def test_load_plugin_key_error():
+    with patch('importlib.metadata.entry_points', return_value={'feature_extractor.encoders': []}):
+        with pytest.raises(ImportError):
+            load_plugin('feature_extractor.encoders', 'mock_plugin')
+
 def test_load_plugin_general_exception():
-    with patch('importlib.metadata.entry_points', side_effect=Exception('General error')):
+    with patch('importlib.metadata.entry_points') as mock_entry_points:
+        mock_entry_points.side_effect = Exception('General error')
         with pytest.raises(Exception) as excinfo:
             load_plugin('feature_extractor.encoders', 'mock_plugin')
         assert 'General error' in str(excinfo.value)

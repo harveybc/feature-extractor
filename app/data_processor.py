@@ -50,6 +50,7 @@ def process_data(config):
     for column in data.columns:
         print(f"Processing column: {column}")
         column_data = data[[column]].values.astype(np.float64)
+        print(f"Applying sliding window of size: {config['window_size']}")
         windowed_data = sliding_window(column_data, config['window_size'])
         windowed_data = windowed_data.squeeze()  # Ensure correct shape for training
         print(f"Windowed data shape: {windowed_data.shape}")

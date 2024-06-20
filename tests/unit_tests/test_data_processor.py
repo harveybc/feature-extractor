@@ -31,15 +31,19 @@ def test_process_data(mock_unwindow_data, mock_write_csv, mock_load_csv, mock_lo
     mock_load_plugin.side_effect = [(MagicMock(), []), (MagicMock(), [])]
     mock_unwindow_data.return_value = pd.DataFrame({'Output': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]})
 
-    reconstructed_data, debug_info = process_data(config)
+    processed_data, debug_info = process_data(config)
 
-    assert isinstance(reconstructed_data, pd.DataFrame)
+    assert isinstance(processed_data, dict)
+    for value in processed_data.values():
+        assert isinstance(value, np.ndarray)
 
 def test_train_autoencoder():
     encoder = MagicMock()
     decoder = MagicMock()
     data = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
-    trained_encoder, trained_decoder = train_autoencoder(
-        encoder, decoder, data, mse_threshold=0.1, initial_size=4, step_size=2, incremental_search=False, epochs=10
+    trained_autoencoder_manager = train_autoencoder(
+        autoencoder_manager=MagicMock(), data=data, mse_threshold=0.1, initial_size=4, step_size=2, incremental_search=False, epochs=10
     )
+
+    assert trained_autoencoder_manager is not None

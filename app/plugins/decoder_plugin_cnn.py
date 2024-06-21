@@ -47,21 +47,23 @@ class Plugin:
         print(f"Layer sizes: {layer_sizes}")
 
         self.model = Sequential(name="decoder")
-        
+
         # Start with dense layer of interface size
         self.model.add(Dense(interface_size, input_shape=(interface_size,), activation='relu', name="decoder_input"))
 
-        # Add Dense layers and reshape
         for i in range(1, len(layer_sizes)):
             self.model.add(Dense(layer_sizes[i], activation='relu'))
+            # Add a Flatten layer before reshaping to ensure compatibility
+            self.model.add(Flatten())
+            reshape_size = layer_sizes[i]
+            total_elements = layer_sizes[i] * 1  # Correcting the total elements calculation
+            self.model.add(Reshape((reshape_size, 1)))
+
             if i < len(layer_sizes) - 1:
-                reshape_size = layer_sizes[i]
-                total_elements = reshape_size * layer_sizes[i + 1] // 4  # Correct total_elements calculation
-                self.model.add(Reshape((reshape_size, total_elements // reshape_size)))
-                upsampling_factor = layer_sizes[i+1] // layer_sizes[i]
+                upsampling_factor = layer_sizes[i + 1] // layer_sizes[i]
                 self.model.add(UpSampling1D(size=upsampling_factor))
                 kernel_size = min(3, reshape_size)  # Dynamically set kernel size
-                self.model.add(Conv1D(layer_sizes[i+1], kernel_size=kernel_size, padding='same', activation='relu'))
+                self.model.add(Conv1D(layer_sizes[i + 1], kernel_size=kernel_size, padding='same', activation='relu'))
 
         # Final Convolution layer to match the output shape
         self.model.add(Conv1D(1, kernel_size=min(3, layer_sizes[-1]), padding='same', activation='tanh', name="decoder_output"))

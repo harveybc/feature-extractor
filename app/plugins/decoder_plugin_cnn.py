@@ -35,48 +35,36 @@ class Plugin:
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
-        # Calculate layer sizes starting from the output size
         layer_sizes = []
         current_size = output_shape
         while current_size > interface_size:
             layer_sizes.append(current_size)
-            current_size = max(current_size // 4, interface_size)
+            current_size = current_size // 4
         layer_sizes.append(interface_size)
         layer_sizes.reverse()
 
+        # Debugging message
         print(f"Layer sizes: {layer_sizes}")
 
         self.model = Sequential(name="decoder")
 
-        # Start with dense layer of interface size
-        self.model.add(Dense(interface_size, input_shape=(interface_size,), activation='relu', name="decoder_input"))
-        print(f"Added Dense layer with size: {interface_size} as decoder_input")
+        # Adding Dense layers
+        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', name="decoder_input"))
+        self.model.add(Dense(layer_sizes[1], activation='relu'))
 
-        for i in range(1, len(layer_sizes)):
-            self.model.add(Dense(layer_sizes[i], activation='relu'))
-            print(f"Added Dense layer with size: {layer_sizes[i]}")
-            if i == 1:
-                self.model.add(Flatten())
-                print(f"Added Flatten layer after the first Dense layer")
-
-            total_elements = layer_sizes[i - 1]
+        for i in range(1, len(layer_sizes) - 1):
             reshape_size = layer_sizes[i]
-            print(f"Reshape layer with input size: {total_elements} and reshape size: {reshape_size}")
-            self.model.add(Reshape((reshape_size, total_elements // reshape_size)))
-            print(f"Added Reshape layer to shape: ({reshape_size}, {total_elements // reshape_size})")
+            next_size = layer_sizes[i + 1]
+            total_elements = reshape_size * next_size
 
-            if i < len(layer_sizes) - 1:
-                upsampling_factor = layer_sizes[i + 1] // layer_sizes[i]
-                print(f"Adding UpSampling1D layer with size: {upsampling_factor}")
-                self.model.add(UpSampling1D(size=upsampling_factor))
-                kernel_size = min(3, reshape_size)  # Dynamically set kernel size
-                print(f"Adding Conv1D layer with size: {layer_sizes[i + 1]} and kernel size: {kernel_size}")
-                self.model.add(Conv1D(layer_sizes[i + 1], kernel_size=kernel_size, padding='same', activation='relu'))
+            print(f"Reshape layer with input size: {reshape_size} and reshape size: {next_size}")
 
-        # Final Convolution layer to match the output shape
-        kernel_size = min(3, layer_sizes[-1])
-        print(f"Adding final Conv1D layer with size: 1 and kernel size: {kernel_size}")
-        self.model.add(Conv1D(1, kernel_size=kernel_size, padding='same', activation='tanh', name="decoder_output"))
+            self.model.add(Reshape((reshape_size, next_size // reshape_size)))
+            self.model.add(UpSampling1D(size=4))
+            self.model.add(Conv1D(next_size, kernel_size=max(2, next_size // reshape_size), padding='same', activation='relu'))
+
+        # Adding the final Conv1D layer
+        self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration

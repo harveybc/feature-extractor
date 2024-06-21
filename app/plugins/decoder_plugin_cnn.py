@@ -45,13 +45,14 @@ class Plugin:
         while current_size < output_shape:
             next_size = min(current_size * 4, output_shape)
             self.model.add(Dense(next_size, activation='relu'))
-            self.model.add(Reshape((next_size, 1)))
+            reshape_size = next_size if next_size % 4 == 0 else next_size // 4 * 4
+            self.model.add(Reshape((reshape_size // 4, 4)))
             self.model.add(UpSampling1D(size=4))
             self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='relu'))
             current_size = next_size
 
-        # Ensure the reshape layer does not change the total number of elements
-        self.model.add(Reshape((current_size // output_shape, output_shape)))
+        final_reshape_size = current_size if current_size % 4 == 0 else current_size // 4 * 4
+        self.model.add(Reshape((final_reshape_size // 4, 4)))
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

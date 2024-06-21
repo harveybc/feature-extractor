@@ -1,75 +1,75 @@
-from keras.models import Model
-from keras.layers import Input, Conv1D, MaxPooling1D, Flatten, Dense
+import numpy as np
+from keras.models import Model, load_model, save_model
+from keras.layers import Conv1D, Flatten, Dense, Input
 from keras.optimizers import Adam
 
-class CNNEncoderPlugin:
+class Plugin:
     """
-    An encoder plugin using 1D convolutional layers, suitable for time series data,
-    with dynamically configurable output size.
+    A CNN-based encoder plugin using Keras, with dynamically configurable size.
     """
+
+    plugin_params = {
+        'epochs': 10,
+        'batch_size': 256
+    }
+
+    plugin_debug_vars = ['epochs', 'batch_size', 'input_dim', 'encoding_dim']
+
     def __init__(self):
-        """
-        Initializes the ExampleEncoderPlugin without a fixed architecture.
-        """
-        self.model = None
+        self.params = self.plugin_params.copy()
+        self.encoder_model = None
 
-    def configure_size(self, input_length, input_features, latent_dim):
-        """
-        Configure the encoder model architecture dynamically based on the size of the input data and the desired latent dimension.
+    def set_params(self, **kwargs):
+        for key, value in kwargs.items():
+            self.params[key] = value
 
-        Args:
-            input_length (int): The length of the input sequences.
-            input_features (int): The number of features per timestep.
-            latent_dim (int): The desired size of the output latent dimension.
-        """
-        input_layer = Input(shape=(input_length, input_features))
-        x = Conv1D(32, 3, activation='relu', padding='same')(input_layer)
-        x = MaxPooling1D(2, padding='same')(x)
-        x = Conv1D(32, 3, activation='relu', padding='same')(x)
-        x = MaxPooling1D(2, padding='same')(x)
+    def get_debug_info(self):
+        return {var: self.params[var] for var in self.plugin_debug_vars}
+
+    def add_debug_info(self, debug_info):
+        plugin_debug_info = self.get_debug_info()
+        debug_info.update(plugin_debug_info)
+
+    def configure_size(self, input_dim, encoding_dim):
+        self.params['input_dim'] = input_dim
+        self.params['encoding_dim'] = encoding_dim
+
+        # Encoder
+        encoder_input = Input(shape=(input_dim, 1), name="encoder_input")
+        x = Conv1D(filters=16, kernel_size=3, activation='relu')(encoder_input)
         x = Flatten()(x)
-        x = Dense(latent_dim, activation='relu')(x)  # Adjusts the latent space dimension dynamically
+        encoder_output = Dense(encoding_dim, activation='relu', name="encoder_output")(x)
+        self.encoder_model = Model(inputs=encoder_input, outputs=encoder_output, name="encoder")
+        self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
 
-        self.model = Model(inputs=input_layer, outputs=x)
-        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+        # Debugging messages to trace the model configuration
+        print("Encoder Model Summary:")
+        self.encoder_model.summary()
 
-    def train(self, data, epochs=50, batch_size=256):
-        """
-        Trains the encoder model on provided data.
-
-        Args:
-            data (np.array): Training data.
-            epochs (int): Number of epochs to train for.
-            batch_size (int): Batch size for training.
-        """
-        self.model.fit(data, data, epochs=epochs, batch_size=batch_size)
+    def train(self, data):
+        print(f"Training encoder with data shape: {data.shape}")
+        data = np.expand_dims(data, axis=-1)  # Add a channel dimension
+        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        print("Training completed.")
 
     def encode(self, data):
-        """
-        Encodes the data using the trained model.
-
-        Args:
-            data (np.array): Data to encode.
-
-        Returns:
-            np.array: Encoded data.
-        """
-        return self.model.predict(data)
+        print(f"Encoding data with shape: {data.shape}")
+        data = np.expand_dims(data, axis=-1)  # Add a channel dimension
+        encoded_data = self.encoder_model.predict(data)
+        print(f"Encoded data shape: {encoded_data.shape}")
+        return encoded_data
 
     def save(self, file_path):
-        """
-        Saves the model to a specified path.
-
-        Args:
-            file_path (str): Path to save the model.
-        """
-        self.model.save(file_path)
+        save_model(self.encoder_model, file_path)
+        print(f"Encoder model saved to {file_path}")
 
     def load(self, file_path):
-        """
-        Loads a model from a specified path.
+        self.encoder_model = load_model(file_path)
+        print(f"Encoder model loaded from {file_path}")
 
-        Args:
-            file_path (str): Path where the model is stored.
-        """
-        self.model.load_weights(file_path)
+# Debugging usage example
+if __name__ == "__main__":
+    plugin = Plugin()
+    plugin.configure_size(input_dim=128, encoding_dim=4)
+    debug_info = plugin.get_debug_info()
+    print(f"Debug Info: {debug_info}")

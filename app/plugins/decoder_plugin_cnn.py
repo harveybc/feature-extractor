@@ -1,73 +1,89 @@
-from keras.models import Model
-from keras.layers import Input, Conv1DTranspose, Conv1D, Dense
+import numpy as np
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Reshape, Conv1D, Flatten
 from keras.optimizers import Adam
 
-class CNNDecoderPlugin:
+class Plugin:
     """
-    An example decoder plugin using 1D convolutional transpose layers, suitable for time series data,
-    with dynamically configurable output size.
+    A CNN-based decoder plugin using Keras, with dynamically configurable size.
     """
+
+    plugin_params = {
+        'epochs': 10,
+        'batch_size': 256
+    }
+
+    plugin_debug_vars = ['epochs', 'batch_size']
+
     def __init__(self):
-        """
-        Initializes the ExampleDecoderPlugin without a fixed architecture.
-        """
+        self.params = self.plugin_params.copy()
         self.model = None
 
-    def configure_size(self, input_length, latent_dim, output_features):
-        """
-        Configure the decoder model architecture dynamically based on the size of the encoded output.
+    def set_params(self, **kwargs):
+        for key, value in kwargs.items():
+            if key in self.params:
+                self.params[key] = value
 
-        Args:
-            input_length (int): The length of the input sequences to be reconstructed.
-            latent_dim (int): The size of the input latent dimension from the encoder.
-            output_features (int): The number of features per timestep in the output sequence.
-        """
-        input_layer = Input(shape=(input_length, latent_dim))
-        x = Conv1DTranspose(32, 3, strides=2, activation='relu', padding='same')(input_layer)
-        x = Conv1DTranspose(16, 3, strides=2, activation='relu', padding='same')(x)
-        output_layer = Conv1D(output_features, 3, activation='sigmoid', padding='same')(x)
+    def get_debug_info(self):
+        return {var: self.params[var] for var in self.plugin_debug_vars}
 
-        self.model = Model(inputs=input_layer, outputs=output_layer)
+    def add_debug_info(self, debug_info):
+        plugin_debug_info = self.get_debug_info()
+        debug_info.update(plugin_debug_info)
+
+    def configure_size(self, encoding_dim, output_dim):
+        self.params['encoding_dim'] = encoding_dim
+        self.params['output_dim'] = output_dim
+
+        # Debugging message
+        print(f"Configuring size with encoding_dim: {encoding_dim} and output_dim: {output_dim}")
+
+        self.model = Sequential(name="decoder")
+        self.model.add(Dense(encoding_dim, input_shape=(encoding_dim,), activation='relu', name="decoder_input"))
+        self.model.add(Reshape((encoding_dim, 1)))
+        self.model.add(Conv1D(filters=1, kernel_size=3, activation='tanh', padding='same', name="decoder_output"))
+        self.model.add(Flatten())
+        self.model.add(Dense(output_dim, activation='tanh', name="decoder_output"))
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
-    def train(self, encoded_data, original_data, epochs=50, batch_size=256):
-        """
-        Trains the decoder model on provided encoded data to reconstruct the original data.
+        # Debugging messages to trace the model configuration
+        print("Decoder Model Summary:")
+        self.model.summary()
 
-        Args:
-            encoded_data (np.array): Encoded data from the encoder.
-            original_data (np.array): Original data to reconstruct.
-            epochs (int): Number of epochs to train for.
-            batch_size (int): Batch size for training.
-        """
-        self.model.fit(encoded_data, original_data, epochs=epochs, batch_size=batch_size)
+    def train(self, encoded_data, original_data):
+        # Debugging message
+        print(f"Training decoder with encoded data shape: {encoded_data.shape} and original data shape: {original_data.shape}")
+        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))  # Flatten the data
+        original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        print("Training completed.")
 
     def decode(self, encoded_data):
-        """
-        Decodes the data using the trained model.
-
-        Args:
-            encoded_data (np.array): Encoded data to decode.
-
-        Returns:
-            np.array: Decoded (reconstructed) data.
-        """
-        return self.model.predict(encoded_data)
+        # Debugging message
+        print(f"Decoding data with shape: {encoded_data.shape}")
+        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))  # Flatten the data
+        decoded_data = self.model.predict(encoded_data)
+        print(f"Decoded data shape: {decoded_data.shape}")
+        return decoded_data
 
     def save(self, file_path):
-        """
-        Saves the model to a specified path.
-
-        Args:
-            file_path (str): Path to save the model.
-        """
         self.model.save(file_path)
+        print(f"Decoder model saved to {file_path}")
 
     def load(self, file_path):
-        """
-        Loads a model from a specified path.
+        self.model = load_model(file_path)
+        print(f"Decoder model loaded from {file_path}")
 
-        Args:
-            file_path (str): Path where the model is stored.
-        """
-        self.model.load_weights(file_path)
+    def calculate_mse(self, original_data, reconstructed_data):
+        original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        mse = np.mean(np.square(original_data - reconstructed_data))
+        print(f"Calculated MSE: {mse}")
+        return mse
+
+# Debugging usage example
+if __name__ == "__main__":
+    plugin = Plugin()
+    plugin.configure_size(encoding_dim=4, output_dim=128)
+    debug_info = plugin.get_debug_info()
+    print(f"Debug Info: {debug_info}")

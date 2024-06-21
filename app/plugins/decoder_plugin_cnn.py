@@ -58,16 +58,16 @@ class Plugin:
             reshape_size = layer_sizes[i]
             next_size = layer_sizes[i + 1]
 
-            total_elements = reshape_size * 4  # Correct calculation for next layer
-            self.model.add(Reshape((reshape_size, 1)))
+            # Debug message for reshaping sizes
             print(f"Reshape layer with input size: {reshape_size} and reshape size: 1")
+            self.model.add(Reshape((reshape_size, 1)))
 
             upsample_factor = next_size // reshape_size
-            self.model.add(UpSampling1D(size=upsample_factor))
             print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
+            self.model.add(UpSampling1D(size=upsample_factor))
 
-            self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='relu'))
             print(f"Added Conv1D layer with size: {next_size} and kernel size: 3")
+            self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='relu'))
 
         # Adding the final Conv1D layer
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))

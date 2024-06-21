@@ -1,5 +1,5 @@
 import numpy as np
-from keras.models import load_model
+from keras.models import Model, load_model
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
@@ -13,6 +13,10 @@ class AutoencoderManager:
     def build_autoencoder(self):
         try:
             print("[build_autoencoder] Starting to build autoencoder...")
+
+            # Ensure the required parameters are set
+            self.encoder_plugin.set_params(input_dim=self.encoder_plugin.params.get('input_dim', 128), encoding_dim=self.encoder_plugin.params.get('encoding_dim', 4))
+            self.decoder_plugin.set_params(encoding_dim=self.decoder_plugin.params.get('encoding_dim', 4), output_dim=self.decoder_plugin.params.get('output_dim', 128))
 
             # Configure and build the encoder model using the plugin
             self.encoder_plugin.configure_size(input_dim=self.encoder_plugin.params['input_dim'], encoding_dim=self.encoder_plugin.params['encoding_dim'])

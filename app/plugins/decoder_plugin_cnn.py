@@ -43,21 +43,38 @@ class Plugin:
 
         # Debugging message
         print(f"Configuring size with interface_size: {interface_size} and output_shape: {output_shape}")
+        print(f"Layer sizes: {layer_sizes}")
 
         self.model = Sequential(name="decoder")
 
         # Start with dense layer of interface size
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', name="decoder_input"))
+        print(f"Added Dense layer with size: {layer_sizes[0]} as decoder_input")
 
         for i in range(1, len(layer_sizes)):
             self.model.add(Dense(layer_sizes[i], activation='relu'))
+            print(f"Added Dense layer with size: {layer_sizes[i]}")
+            
             if i < len(layer_sizes) - 1:
-                self.model.add(Reshape((layer_sizes[i], 1)))
+                if layer_sizes[i] % 4 == 0:
+                    reshape_size = layer_sizes[i]
+                else:
+                    reshape_size = layer_sizes[i] // 4 * 4
+                self.model.add(Reshape((reshape_size // 4, 4)))
+                print(f"Added Reshape layer to shape: ({reshape_size // 4}, 4)")
+                
                 self.model.add(UpSampling1D(size=4))
+                print(f"Added UpSampling1D layer with size: 4")
+                
                 self.model.add(Conv1D(layer_sizes[i], kernel_size=3, padding='same', activation='relu'))
+                print(f"Added Conv1D layer with size: {layer_sizes[i]}")
 
         self.model.add(Reshape((output_shape, 1)))
+        print(f"Added final Reshape layer to shape: ({output_shape}, 1)")
+        
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
+        print(f"Added final Conv1D layer with output size: 1")
+
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration

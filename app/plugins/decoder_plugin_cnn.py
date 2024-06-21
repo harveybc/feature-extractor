@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten
 from keras.optimizers import Adam
 
 class Plugin:
@@ -54,13 +54,12 @@ class Plugin:
         self.model.add(Dense(layer_sizes[1], activation='relu'))
         print(f"Added Dense layer with size: {layer_sizes[1]}")
 
+        self.model.add(Reshape((layer_sizes[1], 1)))
+        print(f"Reshape layer with size: ({layer_sizes[1]}, 1)")
+
         for i in range(1, len(layer_sizes) - 1):
             reshape_size = layer_sizes[i]
             next_size = layer_sizes[i + 1]
-
-            # Debug message for reshaping sizes
-            print(f"Reshape layer with input size: {reshape_size} and reshape size: 1")
-            self.model.add(Reshape((reshape_size, 1)))
 
             upsample_factor = next_size // reshape_size
             print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
@@ -72,6 +71,10 @@ class Plugin:
         # Adding the final Conv1D layer
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         print(f"Added final Conv1D layer with size: 1 and kernel size: 3")
+        
+        self.model.add(Reshape((output_shape,)))
+        print(f"Reshape layer with size: ({output_shape},)")
+
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration

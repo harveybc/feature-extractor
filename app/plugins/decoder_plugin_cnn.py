@@ -57,16 +57,16 @@ class Plugin:
         for i in range(1, len(layer_sizes) - 1):
             reshape_size = layer_sizes[i]
             next_size = layer_sizes[i + 1]
-            total_elements = reshape_size * next_size
 
-            print(f"Reshape layer with input size: {reshape_size} and reshape size: {next_size // reshape_size}")
+            self.model.add(Reshape((reshape_size, 1)))
+            print(f"Reshape layer with input size: {reshape_size} and reshape size: 1")
 
-            self.model.add(Reshape((reshape_size, next_size // reshape_size)))
-            print(f"Added Reshape layer to shape: {(reshape_size, next_size // reshape_size)}")
-            self.model.add(UpSampling1D(size=next_size // reshape_size))
-            print(f"Added UpSampling1D layer with size: {next_size // reshape_size}")
-            self.model.add(Conv1D(next_size, kernel_size=max(2, next_size // reshape_size), padding='same', activation='relu'))
-            print(f"Added Conv1D layer with size: {next_size} and kernel size: {max(2, next_size // reshape_size)}")
+            upsample_factor = next_size // reshape_size
+            self.model.add(UpSampling1D(size=upsample_factor))
+            print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
+
+            self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='relu'))
+            print(f"Added Conv1D layer with size: {next_size} and kernel size: 3")
 
         # Adding the final Conv1D layer
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))

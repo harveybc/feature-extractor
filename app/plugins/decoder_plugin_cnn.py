@@ -91,6 +91,7 @@ class Plugin:
         print(f"Decoding data with shape: {encoded_data.shape}")
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))  # Flatten the data
         decoded_data = self.model.predict(encoded_data)
+        decoded_data = decoded_data.reshape((decoded_data.shape[0], decoded_data.shape[1]))  # Reshape to 2D array
         print(f"Decoded data shape: {decoded_data.shape}")
         return decoded_data
 

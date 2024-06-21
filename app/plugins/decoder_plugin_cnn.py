@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten
 from keras.optimizers import Adam
 
 class Plugin:
@@ -45,15 +45,15 @@ class Plugin:
         while current_size < output_shape:
             next_size = min(current_size * 4, output_shape)
             self.model.add(Dense(next_size, activation='relu'))
-            reshape_size = next_size if next_size % 4 == 0 else next_size // 4 * 4
-            self.model.add(Reshape((reshape_size // 4, 4)))
+            self.model.add(Reshape((next_size, 1)))
             self.model.add(UpSampling1D(size=4))
             self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='relu'))
             current_size = next_size
 
-        # Ensure the final reshape layer does not change the total number of elements
-        final_reshape_size = current_size if current_size % 4 == 0 else (current_size // 4) * 4
-        self.model.add(Reshape((final_reshape_size // 4, 4)))
+        # Ensure the reshape layer does not change the total number of elements
+        self.model.add(Flatten())
+        self.model.add(Dense(output_shape * 4, activation='relu'))  # Adjusting to match the required output shape
+        self.model.add(Reshape((output_shape, 4)))  # Reshape to the desired final shape
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

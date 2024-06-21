@@ -45,8 +45,7 @@ class Plugin:
         while current_size < output_shape:
             next_size = min(current_size * 4, output_shape)
             self.model.add(Dense(next_size, activation='relu'))
-            reshape_size = next_size if next_size % 4 == 0 else next_size // 4 * 4
-            self.model.add(Reshape((reshape_size // 4, 4)))
+            self.model.add(Reshape((next_size // 4, 4)))  # Ensure reshape dimensions are consistent
             self.model.add(UpSampling1D(size=4))
             self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='relu'))
             current_size = next_size

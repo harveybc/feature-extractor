@@ -58,6 +58,7 @@ class Plugin:
             reshape_size = layer_sizes[i]
             next_size = layer_sizes[i + 1]
 
+            total_elements = reshape_size * 4  # Correct calculation for next layer
             self.model.add(Reshape((reshape_size, 1)))
             print(f"Reshape layer with input size: {reshape_size} and reshape size: 1")
 

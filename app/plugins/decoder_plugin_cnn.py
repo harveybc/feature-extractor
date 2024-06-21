@@ -1,11 +1,11 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Reshape, Conv1D, Flatten
+from keras.layers import Dense, Conv1D, UpSampling1D
 from keras.optimizers import Adam
 
 class Plugin:
     """
-    A CNN-based decoder plugin using Keras, with dynamically configurable size.
+    A convolutional neural network (CNN) based decoder using Keras, with dynamically configurable size.
     """
 
     plugin_params = {
@@ -31,19 +31,23 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, encoding_dim, output_dim):
-        self.params['encoding_dim'] = encoding_dim
-        self.params['output_dim'] = output_dim
+    def configure_size(self, interface_size, output_shape):
+        self.params['interface_size'] = interface_size
+        self.params['output_shape'] = output_shape
 
         # Debugging message
-        print(f"Configuring size with encoding_dim: {encoding_dim} and output_dim: {output_dim}")
+        print(f"Configuring size with interface_size: {interface_size} and output_shape: {output_shape}")
 
         self.model = Sequential(name="decoder")
-        self.model.add(Dense(encoding_dim, input_shape=(encoding_dim,), activation='relu', name="decoder_input"))
-        self.model.add(Reshape((encoding_dim, 1)))
-        self.model.add(Conv1D(filters=1, kernel_size=3, activation='tanh', padding='same', name="decoder_output"))
-        self.model.add(Flatten())
-        self.model.add(Dense(output_dim, activation='tanh', name="decoder_output"))
+        self.model.add(Dense(interface_size, input_shape=(interface_size,), activation='relu', name="decoder_input"))
+        
+        current_size = interface_size
+        while current_size < output_shape:
+            self.model.add(Dense(current_size * 4, activation='relu'))
+            self.model.add(UpSampling1D(size=4))
+            current_size *= 4
+
+        self.model.add(Dense(output_shape, activation='tanh', name="decoder_output"))
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration
@@ -66,24 +70,4 @@ class Plugin:
         print(f"Decoded data shape: {decoded_data.shape}")
         return decoded_data
 
-    def save(self, file_path):
-        self.model.save(file_path)
-        print(f"Decoder model saved to {file_path}")
-
-    def load(self, file_path):
-        self.model = load_model(file_path)
-        print(f"Decoder model loaded from {file_path}")
-
-    def calculate_mse(self, original_data, reconstructed_data):
-        original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
-        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))  # Flatten the data
-        mse = np.mean(np.square(original_data - reconstructed_data))
-        print(f"Calculated MSE: {mse}")
-        return mse
-
-# Debugging usage example
-if __name__ == "__main__":
-    plugin = Plugin()
-    plugin.configure_size(encoding_dim=4, output_dim=128)
-    debug_info = plugin.get_debug_info()
-    print(f"Debug Info: {debug_info}")
+    def save(self, file_path

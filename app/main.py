@@ -7,7 +7,7 @@ from app.data_processor import process_data
 from app.config import DEFAULT_VALUES
 from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import write_csv
-from app.plugin_loader import load_encoder_decoder_plugins  # Import load_encoder_decoder_plugins function
+from app.plugin_loader import load_plugin  # Correct import for load_plugin
 
 def main():
     print("Parsing initial arguments...")

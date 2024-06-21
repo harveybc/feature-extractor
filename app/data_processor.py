@@ -1,6 +1,6 @@
 import pandas as pd
 from app.autoencoder_manager import AutoencoderManager
-from app.data_handler import write_csv
+from app.data_handler import load_csv, write_csv
 from app.reconstruction import unwindow_data
 
 def process_data(config):
@@ -14,11 +14,21 @@ def process_data(config):
         processed_data (dict): Processed data.
         debug_info (dict): Debug information.
     """
-    # Your existing data processing logic
-    processed_data = {}  # Placeholder for processed data
-    debug_info = {}  # Placeholder for debug information
-    # Add your data processing logic here
-    print(f"Processed data: {processed_data}")
+    # Load the CSV file
+    print(f"Loading data from CSV file: {config['csv_file']}")
+    data = load_csv(config['csv_file'], headers=config['headers'])
+    print(f"Data loaded with shape: {data.shape}")
+
+    # Apply sliding window transformation if needed
+    window_size = config['window_size'] or config['initial_encoding_dim']
+    print(f"Applying sliding window of size: {window_size}")
+    windowed_data = data.rolling(window=window_size).apply(lambda x: x.values).dropna()
+    print(f"Windowed data shape: {windowed_data.shape}")
+
+    # Process data into the required format
+    processed_data = {col: windowed_data[col].dropna().values for col in windowed_data.columns}
+    debug_info = {'window_size': window_size, 'num_columns': len(windowed_data.columns)}
+    print(f"Processed data: {processed_data.keys()}")
     print(f"Debug info: {debug_info}")
 
     return processed_data, debug_info
@@ -60,7 +70,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 
         # Perform unwindowing of the decoded data
         reconstructed_data = unwindow_data(pd.DataFrame(decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])))
-        
+
         output_filename = f"{config['csv_output_path']}_{column}.csv"
         write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'], window_size=config['window_size'])
         print(f"Output written to {output_filename}")

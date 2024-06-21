@@ -52,7 +52,7 @@ class Plugin:
         for i in range(1, len(layer_sizes)):
             self.model.add(Dense(layer_sizes[i], activation='relu'))
             if i < len(layer_sizes) - 1:
-                self.model.add(Reshape((layer_sizes[i] // 4, 4)))
+                self.model.add(Reshape((layer_sizes[i], 1)))
                 self.model.add(UpSampling1D(size=4))
                 self.model.add(Conv1D(layer_sizes[i], kernel_size=3, padding='same', activation='relu'))
 

@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape
 from keras.optimizers import Adam
 
 class Plugin:
@@ -50,21 +50,27 @@ class Plugin:
 
         # Adding Dense layers
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', name="decoder_input"))
+        print(f"Added Dense layer with size: {layer_sizes[0]} as decoder_input")
         self.model.add(Dense(layer_sizes[1], activation='relu'))
+        print(f"Added Dense layer with size: {layer_sizes[1]}")
 
         for i in range(1, len(layer_sizes) - 1):
             reshape_size = layer_sizes[i]
             next_size = layer_sizes[i + 1]
             total_elements = reshape_size * next_size
 
-            print(f"Reshape layer with input size: {reshape_size} and reshape size: {next_size}")
+            print(f"Reshape layer with input size: {reshape_size} and reshape size: {next_size // reshape_size}")
 
             self.model.add(Reshape((reshape_size, next_size // reshape_size)))
-            self.model.add(UpSampling1D(size=4))
+            print(f"Added Reshape layer to shape: {(reshape_size, next_size // reshape_size)}")
+            self.model.add(UpSampling1D(size=next_size // reshape_size))
+            print(f"Added UpSampling1D layer with size: {next_size // reshape_size}")
             self.model.add(Conv1D(next_size, kernel_size=max(2, next_size // reshape_size), padding='same', activation='relu'))
+            print(f"Added Conv1D layer with size: {next_size} and kernel size: {max(2, next_size // reshape_size)}")
 
         # Adding the final Conv1D layer
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
+        print(f"Added final Conv1D layer with size: 1 and kernel size: 3")
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration

@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape
 from keras.optimizers import Adam
 
 class Plugin:
@@ -39,6 +39,8 @@ class Plugin:
         print(f"Configuring size with interface_size: {interface_size} and output_shape: {output_shape}")
 
         self.model = Sequential(name="decoder")
+        
+        # Start with dense layer of interface size
         self.model.add(Dense(interface_size, input_shape=(interface_size,), activation='relu', name="decoder_input"))
 
         current_size = interface_size
@@ -46,14 +48,12 @@ class Plugin:
             next_size = min(current_size * 4, output_shape)
             self.model.add(Dense(next_size, activation='relu'))
             self.model.add(Reshape((next_size, 1)))
-            self.model.add(UpSampling1D(size=4))
+            if next_size < output_shape:
+                self.model.add(UpSampling1D(size=4))
             self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='relu'))
             current_size = next_size
 
-        # Ensure the reshape layer does not change the total number of elements
-        self.model.add(Flatten())
-        self.model.add(Dense(output_shape * 4, activation='relu'))  # Adjusting to match the required output shape
-        self.model.add(Reshape((output_shape, 4)))  # Reshape to the desired final shape
+        # Final Convolution layer to match the output shape
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

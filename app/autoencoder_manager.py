@@ -23,13 +23,13 @@ class AutoencoderManager:
             self.decoder_plugin.set_params(encoding_dim=encoding_dim, output_dim=output_dim)
 
             # Configure and build the encoder model using the plugin
-            self.encoder_plugin.configure_size(input_dim=input_dim, encoding_dim=encoding_dim)
+            self.encoder_plugin.configure_size(input_dim, encoding_dim)
             self.encoder_model = self.encoder_plugin.encoder_model
             print("[build_autoencoder] Encoder model built successfully")
             self.encoder_model.summary()
 
             # Configure and build the decoder model using the plugin
-            self.decoder_plugin.configure_size(encoding_dim=encoding_dim, output_dim=output_dim)
+            self.decoder_plugin.configure_size(encoding_dim, output_dim)
             self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built successfully")
             self.decoder_model.summary()

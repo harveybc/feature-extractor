@@ -50,21 +50,29 @@ class Plugin:
 
         # Start with dense layer of interface size
         self.model.add(Dense(interface_size, input_shape=(interface_size,), activation='relu', name="decoder_input"))
+        print(f"Added Dense layer with size: {interface_size} as decoder_input")
 
         for i in range(1, len(layer_sizes)):
             self.model.add(Dense(layer_sizes[i], activation='relu'))
+            print(f"Added Dense layer with size: {layer_sizes[i]}")
             reshape_size = layer_sizes[i]
-            total_elements = layer_sizes[i - 1]  # Correct total elements based on previous layer
+            total_elements = layer_sizes[i - 1]
+            print(f"Reshape layer with input size: {total_elements} and reshape size: {reshape_size}")
             self.model.add(Reshape((reshape_size, total_elements // reshape_size)))
+            print(f"Added Reshape layer to shape: ({reshape_size}, {total_elements // reshape_size})")
 
             if i < len(layer_sizes) - 1:
                 upsampling_factor = layer_sizes[i + 1] // layer_sizes[i]
+                print(f"Adding UpSampling1D layer with size: {upsampling_factor}")
                 self.model.add(UpSampling1D(size=upsampling_factor))
                 kernel_size = min(3, reshape_size)  # Dynamically set kernel size
+                print(f"Adding Conv1D layer with size: {layer_sizes[i + 1]} and kernel size: {kernel_size}")
                 self.model.add(Conv1D(layer_sizes[i + 1], kernel_size=kernel_size, padding='same', activation='relu'))
 
         # Final Convolution layer to match the output shape
-        self.model.add(Conv1D(1, kernel_size=min(3, layer_sizes[-1]), padding='same', activation='tanh', name="decoder_output"))
+        kernel_size = min(3, layer_sizes[-1])
+        print(f"Adding final Conv1D layer with size: 1 and kernel size: {kernel_size}")
+        self.model.add(Conv1D(1, kernel_size=kernel_size, padding='same', activation='tanh', name="decoder_output"))
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration

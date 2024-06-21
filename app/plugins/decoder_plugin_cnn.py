@@ -56,11 +56,11 @@ class Plugin:
             self.model.add(Dense(layer_sizes[i], activation='relu'))
             if i < len(layer_sizes) - 1:
                 reshape_size = layer_sizes[i]
-                total_elements = np.prod([reshape_size, 1])
+                total_elements = reshape_size * layer_sizes[i + 1] // 4  # Correct total_elements calculation
                 self.model.add(Reshape((reshape_size, total_elements // reshape_size)))
                 upsampling_factor = layer_sizes[i+1] // layer_sizes[i]
                 self.model.add(UpSampling1D(size=upsampling_factor))
-                kernel_size = min(3, layer_sizes[i])
+                kernel_size = min(3, reshape_size)  # Dynamically set kernel size
                 self.model.add(Conv1D(layer_sizes[i+1], kernel_size=kernel_size, padding='same', activation='relu'))
 
         # Final Convolution layer to match the output shape

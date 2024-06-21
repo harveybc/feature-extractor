@@ -8,7 +8,7 @@ from app.reconstruction import unwindow_data
 from app.autoencoder_manager import AutoencoderManager
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
+def train_autoencoder(encoder_plugin, decoder_plugin, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
     try:
         print(f"[train_autoencoder] Initial size: {initial_size}")
         print(f"[train_autoencoder] Data shape: {data.shape}")
@@ -17,6 +17,7 @@ def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, st
         print(f"[train_autoencoder] Incremental search: {incremental_search}")
         print(f"[train_autoencoder] Epochs: {epochs}")
 
+        autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         current_size = initial_size
         current_mse = float('inf')
         print(f"[train_autoencoder] Training autoencoder with initial size {current_size}...")
@@ -52,7 +53,6 @@ def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, st
     except Exception as e:
         print(f"[train_autoencoder] Exception occurred: {e}")
         raise
-
 
 def process_data(config):
     data = load_csv(config['csv_file'], headers=config['headers'])

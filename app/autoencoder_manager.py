@@ -1,79 +1,84 @@
-import sys
-import json
-import pandas as pd
-from app.config_handler import load_config, save_config, merge_config, save_debug_info
-from app.cli import parse_args
-from app.data_processor import process_data
-from app.config import DEFAULT_VALUES
-from app.autoencoder_manager import AutoencoderManager
-from app.data_handler import write_csv
-from app.plugin_loader import load_encoder_decoder_plugins  # Import load_encoder_decoder_plugins function
+import numpy as np
+from keras.models import Model, load_model
+from keras.optimizers import Adam
 
-def main():
-    print("Parsing initial arguments...")
-    args, unknown_args = parse_args()
-    print(f"Initial args: {args}")
-    print(f"Unknown args: {unknown_args}")
+class AutoencoderManager:
+    def __init__(self, encoder_plugin, decoder_plugin):
+        self.encoder_plugin = encoder_plugin
+        self.decoder_plugin = decoder_plugin
+        self.encoder_model = None
+        self.decoder_model = None
+        self.autoencoder_model = None
 
-    if unknown_args:
-        print(f"Error: Unrecognized arguments: {unknown_args}", file=sys.stderr)
-        sys.exit(1)
+    def build_autoencoder(self):
+        try:
+            print("[build_autoencoder] Starting to build autoencoder...")
 
-    cli_args = vars(args)
-    print(f"CLI arguments: {cli_args}")
+            self.encoder_model = self.encoder_plugin.encoder_model
+            print("[build_autoencoder] Encoder model built successfully")
+            print(f"[build_autoencoder] Encoder model summary: {self.encoder_model.summary()}")
 
-    print("Loading default configuration...")
-    config = DEFAULT_VALUES.copy()
-    print(f"Default config: {config}")
+            self.decoder_model = self.decoder_plugin.decoder_model
+            print("[build_autoencoder] Decoder model built successfully")
+            print(f"[build_autoencoder] Decoder model summary: {self.decoder_model.summary()}")
 
-    if args.load_config:
-        file_config = load_config(args.load_config)
-        print(f"Loaded config from file: {file_config}")
-        config.update(file_config)
-        print(f"Config after loading from file: {config}")
+            # Autoencoder
+            encoder_output = self.encoder_model(self.encoder_model.input)
+            autoencoder_output = self.decoder_model(encoder_output)
+            self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
+            self.autoencoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+            print("[build_autoencoder] Autoencoder model built and compiled successfully")
+            print(f"[build_autoencoder] Autoencoder model summary: {self.autoencoder_model.summary()}")
 
-    print("Merging configuration with CLI arguments and unknown args...")
-    config = merge_config(config, cli_args, {})
-    print(f"Config after merging: {config}")
+            # Validate models
+            if not self.encoder_model or not self.decoder_model or not self.autoencoder_model:
+                raise ValueError("[build_autoencoder] Failed to build encoder, decoder, or autoencoder model")
+        except Exception as e:
+            print(f"[build_autoencoder] Exception occurred: {e}")
+            raise
 
-    if args.save_config:
-        print(f"Saving configuration to {args.save_config}...")
-        save_config(config, args.save_config)
-        print(f"Configuration saved to {args.save_config}.")
+    def train_autoencoder(self, data, epochs=10, batch_size=256):
+        try:
+            if isinstance(data, tuple):
+                data = data[0]  # Ensure data is not a tuple
+            print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
+            self.autoencoder_model.fit(data, data, epochs=epochs, batch_size=batch_size, verbose=1)
+            print("[train_autoencoder] Training completed.")
+        except Exception as e:
+            print(f"[train_autoencoder] Exception occurred during training: {e}")
+            raise
 
-    print("Loading encoder plugin: ", config['encoder_plugin'])
-    encoder_plugin_class, encoder_params = load_encoder_decoder_plugins(config['encoder_plugin'], config['decoder_plugin'])
-    print("Loading decoder plugin: ", config['decoder_plugin'])
-    decoder_plugin_class, decoder_params = load_encoder_decoder_plugins(config['encoder_plugin'], config['decoder_plugin'])
+    def encode_data(self, data):
+        print(f"[encode_data] Encoding data with shape: {data.shape}")
+        encoded_data = self.encoder_model.predict(data)
+        print(f"[encode_data] Encoded data shape: {encoded_data.shape}")
+        return encoded_data
 
-    print("Processing data...")
-    processed_data, debug_info = process_data(config)
+    def decode_data(self, encoded_data):
+        print(f"[decode_data] Decoding data with shape: {encoded_data.shape}")
+        decoded_data = self.decoder_model.predict(encoded_data)
+        print(f"[decode_data] Decoded data shape: {decoded_data.shape}")
+        return decoded_data
 
-    for column, windowed_data in processed_data.items():
-        autoencoder_manager = AutoencoderManager(input_dim=windowed_data.shape[1], encoding_dim=config['initial_encoding_dim'])
-        autoencoder_manager.build_autoencoder()
-        autoencoder_manager.train_autoencoder(windowed_data, epochs=config['epochs'], batch_size=config['training_batch_size'])
+    def save_encoder(self, file_path):
+        self.encoder_model.save(file_path)
+        print(f"[save_encoder] Encoder model saved to {file_path}")
 
-        encoder_model_filename = f"{config['save_encoder_path']}_{column}.keras"
-        decoder_model_filename = f"{config['save_decoder_path']}_{column}.keras"
-        autoencoder_manager.save_encoder(encoder_model_filename)
-        autoencoder_manager.save_decoder(decoder_model_filename)
-        print(f"Saved encoder model to {encoder_model_filename}")
-        print(f"Saved decoder model to {decoder_model_filename}")
+    def save_decoder(self, file_path):
+        self.decoder_model.save(file_path)
+        print(f"[save_decoder] Decoder model saved to {file_path}")
 
-        encoded_data = autoencoder_manager.encode_data(windowed_data)
-        decoded_data = autoencoder_manager.decode_data(encoded_data)
+    def load_encoder(self, file_path):
+        self.encoder_model = load_model(file_path)
+        print(f"[load_encoder] Encoder model loaded from {file_path}")
 
-        mse = autoencoder_manager.calculate_mse(windowed_data, decoded_data)
-        print(f"Mean Squared Error for column {column}: {mse}")
+    def load_decoder(self, file_path):
+        self.decoder_model = load_model(file_path)
+        print(f"[load_decoder] Decoder model loaded from {file_path}")
 
-        reconstructed_data = pd.DataFrame(decoded_data)
-        output_filename = f"{config['csv_output_path']}_{column}.csv"
-        write_csv(output_filename, reconstructed_data.values, include_date=config['force_date'], headers=config['headers'])
-        print(f"Output written to {output_filename}")
-
-        print(f"Encoder Dimensions: {autoencoder_manager.encoder_model.input_shape} -> {autoencoder_manager.encoder_model.output_shape}")
-        print(f"Decoder Dimensions: {autoencoder_manager.decoder_model.input_shape} -> {autoencoder_manager.decoder_model.output_shape}")
-
-if __name__ == "__main__":
-    main()
+    def calculate_mse(self, original_data, reconstructed_data):
+        original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        mse = np.mean(np.square(original_data - reconstructed_data))
+        print(f"[calculate_mse] Calculated MSE: {mse}")
+        return mse

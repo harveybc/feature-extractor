@@ -29,7 +29,6 @@ def save_config(config, path='config_out.json'):
     Returns:
         tuple: The saved configuration and the path to the file.
     """
-    # Ensure to filter out default values correctly
     config_to_save = {k: v for k, v in config.items() if k not in DEFAULT_VALUES or v != DEFAULT_VALUES[k]}
     print(f"Saving configuration to file: {path}")
     print(f"Configuration to save: {config_to_save}")

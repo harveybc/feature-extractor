@@ -1,9 +1,8 @@
 import sys
-import json
 import pandas as pd
-from app.config_handler import load_config, save_config, merge_config, save_debug_info
+from app.config_handler import load_config, save_config, merge_config
 from app.cli import parse_args
-from app.data_processor import process_data, run_autoencoder_pipeline  # Updated import
+from app.data_processor import run_autoencoder_pipeline  # Ensure the import is correct
 from app.config import DEFAULT_VALUES
 from app.plugin_loader import load_plugin
 

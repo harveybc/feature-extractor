@@ -35,16 +35,15 @@ class Plugin:
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
-        # Debugging message
-        print(f"Configuring size with interface_size: {interface_size} and output_shape: {output_shape}")
-
-        layer_sizes = [interface_size]
-        current_size = interface_size
-        while current_size < output_shape:
-            current_size *= 4
+        # Calculate layer sizes starting from the output size
+        layer_sizes = []
+        current_size = output_shape
+        while current_size > interface_size:
             layer_sizes.append(current_size)
-        
-        # Debugging message
+            current_size = max(current_size // 4, interface_size)
+        layer_sizes.append(interface_size)
+        layer_sizes.reverse()
+
         print(f"Layer sizes: {layer_sizes}")
 
         self.model = Sequential(name="decoder")
@@ -52,18 +51,20 @@ class Plugin:
         # Start with dense layer of interface size
         self.model.add(Dense(interface_size, input_shape=(interface_size,), activation='relu', name="decoder_input"))
 
+        # Add Dense layers and reshape
         for i in range(1, len(layer_sizes)):
             self.model.add(Dense(layer_sizes[i], activation='relu'))
-            if i == len(layer_sizes) - 1:
-                self.model.add(Reshape((layer_sizes[i], 1)))
-            else:
-                total_elements = layer_sizes[i]
-                reshape_size = layer_sizes[i] // 4
+            if i < len(layer_sizes) - 1:
+                reshape_size = layer_sizes[i]
+                total_elements = np.prod([reshape_size, 1])
                 self.model.add(Reshape((reshape_size, total_elements // reshape_size)))
-                self.model.add(UpSampling1D(size=4))
-                self.model.add(Conv1D(layer_sizes[i], kernel_size=3, padding='same', activation='relu'))
+                upsampling_factor = layer_sizes[i+1] // layer_sizes[i]
+                self.model.add(UpSampling1D(size=upsampling_factor))
+                kernel_size = min(3, layer_sizes[i])
+                self.model.add(Conv1D(layer_sizes[i+1], kernel_size=kernel_size, padding='same', activation='relu'))
 
-        self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
+        # Final Convolution layer to match the output shape
+        self.model.add(Conv1D(1, kernel_size=min(3, layer_sizes[-1]), padding='same', activation='tanh', name="decoder_output"))
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration

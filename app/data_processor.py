@@ -1,7 +1,34 @@
+import tensorflow as tf
 import pandas as pd
 from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import load_csv, write_csv
 from app.reconstruction import unwindow_data
+
+def create_sliding_windows(data, window_size):
+    """
+    Create sliding windows for the given data using tf.keras.preprocessing.timeseries_dataset_from_array.
+
+    Args:
+        data (pd.DataFrame): The input data.
+        window_size (int): The size of the sliding window.
+
+    Returns:
+        windows (pd.DataFrame): The windowed data.
+    """
+    data_array = data.to_numpy()
+    dataset = tf.keras.preprocessing.timeseries_dataset_from_array(
+        data=data_array,
+        targets=None,
+        sequence_length=window_size,
+        sequence_stride=1,
+        batch_size=1
+    )
+
+    windows = []
+    for batch in dataset:
+        windows.append(batch.numpy().flatten())
+
+    return pd.DataFrame(windows)
 
 def process_data(config):
     """
@@ -22,13 +49,13 @@ def process_data(config):
     # Apply sliding window transformation if needed
     window_size = config['window_size'] or config['initial_encoding_dim']
     print(f"Applying sliding window of size: {window_size}")
-    windowed_data = data.rolling(window=window_size).apply(lambda x: x.values).dropna()
+    windowed_data = create_sliding_windows(data, window_size)
     print(f"Windowed data shape: {windowed_data.shape}")
 
     # Process data into the required format
-    processed_data = {col: windowed_data[col].dropna().values for col in windowed_data.columns}
+    processed_data = {col: windowed_data.values for col in data.columns}
     debug_info = {'window_size': window_size, 'num_columns': len(windowed_data.columns)}
-    print(f"Processed data: {processed_data.keys()}")
+    print(f"Processed data: {list(processed_data.keys())}")
     print(f"Debug info: {debug_info}")
 
     return processed_data, debug_info

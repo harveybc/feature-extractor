@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape
 from keras.optimizers import Adam
 
 class Plugin:
@@ -35,31 +35,27 @@ class Plugin:
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
+        # Generate layers sizes
+        layer_sizes = [output_shape]
+        while layer_sizes[-1] > interface_size:
+            layer_sizes.append(max(interface_size, layer_sizes[-1] // 4))
+        layer_sizes.reverse()
+
         # Debugging message
         print(f"Configuring size with interface_size: {interface_size} and output_shape: {output_shape}")
 
-        layer_sizes = []
-        current_size = output_shape
-        while current_size > interface_size:
-            layer_sizes.append(current_size)
-            current_size = max(current_size // 4, interface_size)
-        layer_sizes.append(interface_size)
-        layer_sizes.reverse()
-
         self.model = Sequential(name="decoder")
-        
-        # Dense layer from interface size
+
+        # Start with dense layer of interface size
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', name="decoder_input"))
-        
+
         for i in range(1, len(layer_sizes)):
             self.model.add(Dense(layer_sizes[i], activation='relu'))
-            self.model.add(Reshape((layer_sizes[i], 1)))
             if i < len(layer_sizes) - 1:
-                self.model.add(UpSampling1D(size=layer_sizes[i] // layer_sizes[i-1]))
+                self.model.add(Reshape((layer_sizes[i], 1)))
+                self.model.add(UpSampling1D(size=4))
+                self.model.add(Conv1D(layer_sizes[i], kernel_size=3, padding='same', activation='relu'))
 
-            self.model.add(Conv1D(layer_sizes[i], kernel_size=3, padding='same', activation='relu'))
-        
-        # Final Convolution layer to match the output shape
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
@@ -97,10 +93,3 @@ class Plugin:
         mse = np.mean(np.square(original_data - reconstructed_data))
         print(f"Calculated MSE: {mse}")
         return mse
-
-# Debugging usage example
-if __name__ == "__main__":
-    plugin = Plugin()
-    plugin.configure_size(interface_size=4, output_shape=128)
-    debug_info = plugin.get_debug_info()
-    print(f"Debug Info: {debug_info}")

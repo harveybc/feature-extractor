@@ -18,6 +18,8 @@ def process_data(config):
     processed_data = {}  # Placeholder for processed data
     debug_info = {}  # Placeholder for debug information
     # Add your data processing logic here
+    print(f"Processed data: {processed_data}")
+    print(f"Debug info: {debug_info}")
 
     return processed_data, debug_info
 
@@ -33,9 +35,12 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     Returns:
         None
     """
+    print("Running process_data...")
     processed_data, debug_info = process_data(config)
+    print("Processed data received.")
 
     for column, windowed_data in processed_data.items():
+        print(f"Processing column: {column}")
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         autoencoder_manager.build_autoencoder()
         autoencoder_manager.train_autoencoder(windowed_data, epochs=config['epochs'], batch_size=config['training_batch_size'])
@@ -57,7 +62,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         reconstructed_data = unwindow_data(pd.DataFrame(decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])))
         
         output_filename = f"{config['csv_output_path']}_{column}.csv"
-        write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'])
+        write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'], window_size=config['window_size'])
         print(f"Output written to {output_filename}")
 
         print(f"Encoder Dimensions: {autoencoder_manager.encoder_model.input_shape} -> {autoencoder_manager.encoder_model.output_shape}")

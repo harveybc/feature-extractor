@@ -7,6 +7,7 @@ from app.data_processor import process_data
 from app.config import DEFAULT_VALUES
 from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import write_csv
+from app.plugin_loader import load_encoder_decoder_plugins
 
 def main():
     print("Parsing initial arguments...")
@@ -40,12 +41,26 @@ def main():
         save_config(config, args.save_config)
         print(f"Configuration saved to {args.save_config}.")
 
+    # Load the specified encoder and decoder plugins
+    print(f"Loading encoder plugin: {config['encoder_plugin']}")
+    encoder_plugin_class, encoder_params = load_plugin('feature_extractor.encoders', config['encoder_plugin'])
+    encoder_plugin = encoder_plugin_class()
+
+    print(f"Loading decoder plugin: {config['decoder_plugin']}")
+    decoder_plugin_class, decoder_params = load_plugin('feature_extractor.decoders', config['decoder_plugin'])
+    decoder_plugin = decoder_plugin_class()
+
     print("Processing data...")
     processed_data, debug_info = process_data(config)
 
     for column, windowed_data in processed_data.items():
         autoencoder_manager = AutoencoderManager(input_dim=windowed_data.shape[1], encoding_dim=config['initial_encoding_dim'])
-        autoencoder_manager.build_autoencoder()
+        
+        # Configure the encoder and decoder plugins
+        encoder_plugin.configure_size(windowed_data.shape[1], config['initial_encoding_dim'])
+        decoder_plugin.configure_size(config['initial_encoding_dim'], windowed_data.shape[1])
+        
+        autoencoder_manager.build_autoencoder(encoder_plugin, decoder_plugin)
         autoencoder_manager.train_autoencoder(windowed_data, epochs=config['epochs'], batch_size=config['training_batch_size'])
 
         encoder_model_filename = f"{config['save_encoder_path']}_{column}.keras"

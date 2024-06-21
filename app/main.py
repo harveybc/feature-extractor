@@ -6,7 +6,7 @@ from app.cli import parse_args
 from app.data_processor import process_data, train_autoencoder
 from app.config import DEFAULT_VALUES
 from app.data_handler import write_csv
-from app.plugin_loader import load_encoder_decoder_plugins
+from app.plugin_loader import load_plugin  # Ensure load_plugin is imported
 
 def main():
     print("Parsing initial arguments...")

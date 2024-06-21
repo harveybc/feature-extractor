@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten
+from keras.layers import Dense, Conv1D, UpSampling1D, Flatten, Reshape
 from keras.optimizers import Adam
 
 class Plugin:
@@ -39,7 +39,7 @@ class Plugin:
         print(f"Configuring size with interface_size: {interface_size} and output_shape: {output_shape}")
 
         self.model = Sequential(name="decoder")
-
+        
         # Start with dense layer of interface size
         self.model.add(Dense(interface_size, input_shape=(interface_size,), activation='relu', name="decoder_input"))
 
@@ -47,12 +47,15 @@ class Plugin:
         current_size = interface_size * 4
         self.model.add(Dense(current_size, activation='relu'))
 
-        # Add reshape to mirror the flatten in the encoder
-        self.model.add(Reshape((current_size // 4, 4)))
+        # Add flatten to match the flatten in the encoder
+        self.model.add(Flatten())
 
         while current_size < output_shape:
             next_size = min(current_size * 4, output_shape)
-            self.model.add(UpSampling1D(size=4))
+            self.model.add(Dense(next_size, activation='relu'))
+            self.model.add(Reshape((next_size, 1)))
+            if next_size < output_shape:
+                self.model.add(UpSampling1D(size=4))
             self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='relu'))
             current_size = next_size
 

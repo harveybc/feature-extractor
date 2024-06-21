@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape
 from keras.optimizers import Adam
 
 class Plugin:
@@ -53,11 +53,9 @@ class Plugin:
 
         for i in range(1, len(layer_sizes)):
             self.model.add(Dense(layer_sizes[i], activation='relu'))
-            # Add a Flatten layer before reshaping to ensure compatibility
-            self.model.add(Flatten())
             reshape_size = layer_sizes[i]
-            total_elements = layer_sizes[i] * 1  # Correcting the total elements calculation
-            self.model.add(Reshape((reshape_size, 1)))
+            total_elements = layer_sizes[i - 1]  # Correct total elements based on previous layer
+            self.model.add(Reshape((reshape_size, total_elements // reshape_size)))
 
             if i < len(layer_sizes) - 1:
                 upsampling_factor = layer_sizes[i + 1] // layer_sizes[i]

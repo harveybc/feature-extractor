@@ -1,34 +1,37 @@
 import numpy as np
-from keras.models import Model, load_model
-from keras.optimizers import Adam
+from keras.models import load_model
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
         self.encoder_plugin = encoder_plugin
         self.decoder_plugin = decoder_plugin
+        self.autoencoder_model = None
         self.encoder_model = None
         self.decoder_model = None
-        self.autoencoder_model = None
+        print(f"[AutoencoderManager] Initialized with encoder plugin and decoder plugin")
 
     def build_autoencoder(self):
         try:
             print("[build_autoencoder] Starting to build autoencoder...")
 
+            # Configure and build the encoder model using the plugin
+            self.encoder_plugin.configure_size(input_dim=self.encoder_plugin.params['input_dim'], encoding_dim=self.encoder_plugin.params['encoding_dim'])
             self.encoder_model = self.encoder_plugin.encoder_model
             print("[build_autoencoder] Encoder model built successfully")
-            print(f"[build_autoencoder] Encoder model summary: {self.encoder_model.summary()}")
+            self.encoder_model.summary()
 
-            self.decoder_model = self.decoder_plugin.decoder_model
+            # Configure and build the decoder model using the plugin
+            self.decoder_plugin.configure_size(encoding_dim=self.decoder_plugin.params['encoding_dim'], output_dim=self.decoder_plugin.params['output_dim'])
+            self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built successfully")
-            print(f"[build_autoencoder] Decoder model summary: {self.decoder_model.summary()}")
+            self.decoder_model.summary()
 
             # Autoencoder
-            encoder_output = self.encoder_model(self.encoder_model.input)
-            autoencoder_output = self.decoder_model(encoder_output)
+            autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
-            self.autoencoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+            self.autoencoder_model.compile(optimizer='adam', loss='mean_squared_error')
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
-            print(f"[build_autoencoder] Autoencoder model summary: {self.autoencoder_model.summary()}")
+            self.autoencoder_model.summary()
 
             # Validate models
             if not self.encoder_model or not self.decoder_model or not self.autoencoder_model:

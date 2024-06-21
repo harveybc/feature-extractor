@@ -58,6 +58,7 @@ class Plugin:
 
         # Final Convolution layer to match the output shape
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
+        self.model.add(Reshape((output_shape, 1)))  # Reshape to match the original data shape
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration

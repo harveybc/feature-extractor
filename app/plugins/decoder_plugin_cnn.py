@@ -50,6 +50,8 @@ class Plugin:
             self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='relu'))
             current_size = next_size
 
+        # Ensure the reshape layer does not change the total number of elements
+        self.model.add(Reshape((current_size // output_shape, output_shape)))
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

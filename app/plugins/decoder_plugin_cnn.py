@@ -56,12 +56,8 @@ class Plugin:
             print(f"Added Dense layer with size: {layer_sizes[i]}")
             
             if i < len(layer_sizes) - 1:
-                if layer_sizes[i] % 4 == 0:
-                    reshape_size = layer_sizes[i]
-                else:
-                    reshape_size = layer_sizes[i] // 4 * 4
-                self.model.add(Reshape((reshape_size // 4, 4)))
-                print(f"Added Reshape layer to shape: ({reshape_size // 4}, 4)")
+                self.model.add(Reshape((layer_sizes[i], 1)))
+                print(f"Added Reshape layer to shape: ({layer_sizes[i]}, 1)")
                 
                 self.model.add(UpSampling1D(size=4))
                 print(f"Added UpSampling1D layer with size: 4")

@@ -38,7 +38,8 @@ class Plugin:
         # Generate layer sizes
         layer_sizes = [output_shape]
         while layer_sizes[-1] > interface_size:
-            layer_sizes.append(max(interface_size, layer_sizes[-1] // 4))
+            next_size = max(interface_size, layer_sizes[-1] // 4)
+            layer_sizes.append(next_size)
         layer_sizes.reverse()
 
         # Debugging message

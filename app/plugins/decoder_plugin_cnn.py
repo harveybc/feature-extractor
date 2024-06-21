@@ -67,7 +67,7 @@ class Plugin:
             self.model.add(UpSampling1D(size=upsample_factor))
 
             print(f"Added Conv1D layer with size: {next_size} and kernel size: 3")
-            self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='relu'))
+            self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='relu'))
 
         # Adding the final Conv1D layer
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))

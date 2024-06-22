@@ -86,12 +86,12 @@ class Plugin:
             
         print("[build_autoencoder_layers] Decoder model layers built successfully")
         self.model.summary()    
-        # Adding the final Conv1D layer
-        #self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
-        #print(f"Added final Conv1D layer with size: 1 and kernel size: 3")
+        # Adding the final Conv1D layer to match the output shape
+        self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
+        print(f"Added final Conv1D layer with size: 1 and kernel size: 3")
         
-        #self.model.add(Reshape((output_shape,)))
-        #print(f"Reshape layer with size: ({output_shape},)")
+        self.model.add(Reshape((output_shape,)))
+        print(f"Reshape layer with size: ({output_shape},)")
 
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

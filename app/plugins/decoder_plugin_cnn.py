@@ -46,7 +46,7 @@ class Plugin:
         layer_sizes.reverse()
 
         # Debugging message
-        print(f"Layer sizes: {layer_sizes}")
+        print(f"Decoder Layer sizes: {layer_sizes}")
 
         self.model = Sequential(name="decoder")
 

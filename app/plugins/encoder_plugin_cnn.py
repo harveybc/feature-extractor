@@ -40,6 +40,9 @@ class Plugin:
         while current_size > interface_size:
             layers.append((current_size, interface_size))
             current_size = max(current_size // layer_size_divisor, interface_size)
+        
+        # Debugging message
+        print(f"Decoder Layer sizes: {layers}")
 
         inputs = Input(shape=(input_shape, 1))
         x = inputs

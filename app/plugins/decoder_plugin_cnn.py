@@ -62,7 +62,7 @@ class Plugin:
 
         self.model.add(Reshape((layer_sizes[1], 1)))
         print(f"Reshape layer with size: ({layer_sizes[1]}, 1)")
-
+        next_size = interface_size
         for i in range(1, len(layer_sizes) - 1):
             reshape_size = layer_sizes[i]
             if i < (len(layer_sizes) - 1):

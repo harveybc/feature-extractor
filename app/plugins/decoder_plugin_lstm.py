@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, LSTM, Reshape, Flatten, RepeatVector, TimeDistributed
+from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed
 from keras.optimizers import Adam
 
 class Plugin:
@@ -60,8 +60,8 @@ class Plugin:
         self.model.add(Dense(layer_sizes[1], activation='relu'))
         print(f"Added Dense layer with size: {layer_sizes[1]}")
 
-        self.model.add(Reshape((layer_sizes[1], 1)))
-        print(f"Reshape layer with size: ({layer_sizes[1]}, 1)")
+        self.model.add(RepeatVector(layer_sizes[1]))
+        print(f"Added RepeatVector layer with size: {layer_sizes[1]}")
 
         # Adding LSTM layers
         next_size = interface_size
@@ -72,11 +72,6 @@ class Plugin:
             else:
                 next_size = output_shape
 
-            # RepeatVector to match the LSTM input shape
-            self.model.add(RepeatVector(reshape_size))
-            print(f"Added RepeatVector layer with size: {reshape_size}")
-
-            # Adding the LSTM layers
             self.model.add(LSTM(units=reshape_size, activation='tanh', return_sequences=True))
             print(f"Added LSTM layer with size: {reshape_size}")
 
@@ -84,11 +79,8 @@ class Plugin:
         self.model.add(TimeDistributed(Dense(1, activation='tanh')))
         print(f"Added final TimeDistributed Dense layer with size: 1")
 
-        self.model.add(Flatten())
-        print(f"Flatten layer added")
-
-        self.model.add(Reshape((output_shape,)))
-        print(f"Reshape layer with size: ({output_shape},)")
+        self.model.add(TimeDistributed(Dense(output_shape)))
+        print(f"Added TimeDistributed Dense layer with size: {output_shape}")
 
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

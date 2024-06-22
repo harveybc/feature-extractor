@@ -41,7 +41,7 @@ class Plugin:
         layer_size_divisor = 1 + self.params['intermediate_layers']
         while current_size > interface_size:
             layer_sizes.append(current_size)
-            current_size = current_size // layer_size_divisor
+            current_size = current_size // 4
         layer_sizes.append(interface_size)
         layer_sizes.reverse()
 

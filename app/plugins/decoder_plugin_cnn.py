@@ -39,9 +39,11 @@ class Plugin:
         layer_sizes = []
         current_size = output_shape
         layer_size_divisor = 1 + self.params['intermediate_layers']
-        while current_size > interface_size:
+        current_location = output_shape
+        while current_location > interface_size:
             layer_sizes.append(current_size)
-            current_size = current_size // 4
+            current_size = current_size // layer_size_divisor
+            current_location = interface_size + current_size
         layer_sizes.append(interface_size)
         layer_sizes.reverse()
 

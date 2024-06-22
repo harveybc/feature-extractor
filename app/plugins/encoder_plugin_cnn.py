@@ -37,10 +37,11 @@ class Plugin:
         layers = []
         current_size = input_shape
         layer_size_divisor = 1 + self.params['intermediate_layers']
-        while current_size > interface_size:
+        current_location = input_shape
+        while current_location > interface_size:
             layers.append((current_size, interface_size))
-            current_size = max(current_size // 4, interface_size)
-        
+            current_size = max(current_size // layer_size_divisor, interface_size)
+            current_location = interface_size + current_size
         # Debugging message
         print(f"Encoder Layer sizes: {layers}")
 

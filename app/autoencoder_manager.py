@@ -93,3 +93,10 @@ class AutoencoderManager:
         mse = np.mean(np.square(original_data - reconstructed_data))
         print(f"[calculate_mse] Calculated MSE: {mse}")
         return mse
+
+    def calculate_mae(self, original_data, reconstructed_data):
+        original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        mae = np.mean(np.abs(original_data - reconstructed_data))
+        print(f"[calculate_mae] Calculated MAE: {mae}")
+        return mae

@@ -93,7 +93,9 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         decoded_data = autoencoder_manager.decode_data(encoded_data)
 
         mse = autoencoder_manager.calculate_mse(windowed_data, decoded_data)
+        mae = autoencoder_manager.calculate_mae(windowed_data, decoded_data)
         print(f"Mean Squared Error for column {column}: {mse}")
+        print(f"Mean Absolute Error for column {column}: {mae}")
 
         # Perform unwindowing of the decoded data
         reconstructed_data = unwindow_data(pd.DataFrame(decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])))

@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed
+from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed, Reshape
 from keras.optimizers import Adam
 
 class Plugin:
@@ -81,6 +81,9 @@ class Plugin:
 
         self.model.add(TimeDistributed(Dense(output_shape)))
         print(f"Added TimeDistributed Dense layer with size: {output_shape}")
+
+        self.model.add(Reshape((output_shape,)))
+        print(f"Reshape layer with size: ({output_shape},)")
 
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

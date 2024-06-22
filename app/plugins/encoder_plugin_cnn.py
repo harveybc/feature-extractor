@@ -45,16 +45,33 @@ class Plugin:
         # Debugging message
         print(f"Encoder Layer sizes: {layers}")
 
+        # set input layer
         inputs = Input(shape=(input_shape, 1))
         x = inputs
-        for size, pool_size in layers:
-            x = Conv1D(filters=size, kernel_size=3, activation='relu', padding='same')(x)
+
+        # add conv and maxpooling layers, calculating their kernel and pool sizes
+        layers_index = 0
+        for size in layers:
+            layers_index += 1
+            # pool size calculation
+            if layers_index >= len(layers):
+                pool_size = round(size/interface_size)
+            else:
+                pool_size = round(size/layers[layers_index])
+            # kernel size configuration based on the layer's size
+            kernel_size = 3 
+            if size > 64:
+                kernel_size = 5
+            if size > 512:
+                kernel_size = 7
+            # add the conv and maxpooling layers
+            x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', padding='same')(x)
             x = MaxPooling1D(pool_size=pool_size)(x)
 
         x = Flatten()(x)
-        x = Dense(layers[-1][0], activation='relu')(x)
+        x = Dense(layers[len(layers)-1], activation='relu')(x)
         outputs = Dense(interface_size)(x)
-
+        
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
         self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
 

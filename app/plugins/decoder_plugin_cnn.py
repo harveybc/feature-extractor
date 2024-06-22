@@ -63,7 +63,7 @@ class Plugin:
         self.model.add(Reshape((layer_sizes[1], 1)))
         print(f"Reshape layer with size: ({layer_sizes[1]}, 1)")
         next_size = interface_size
-        for i in range(1, len(layer_sizes) - 1):
+        for i in range(1, len(layer_sizes)):
             reshape_size = layer_sizes[i]
             if i < (len(layer_sizes) - 1):
                 next_size = layer_sizes[i + 1]
@@ -73,6 +73,7 @@ class Plugin:
             upsample_factor = next_size // reshape_size
             print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
             self.model.add(UpSampling1D(size=upsample_factor))
+            
             # kernel size configuration based on the layer's size
             kernel_size = 3 
             if layer_sizes[i] > 64:

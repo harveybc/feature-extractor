@@ -75,10 +75,6 @@ class Plugin:
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
         self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
 
-        # Debugging messages to trace the model configuration
-        print("Encoder Model Summary:")
-        self.encoder_model.summary()
-
     def train(self, data):
         print(f"Training encoder with data shape: {data.shape}")
         self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)

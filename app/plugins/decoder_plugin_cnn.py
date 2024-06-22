@@ -87,10 +87,6 @@ class Plugin:
 
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
-        # Debugging messages to trace the model configuration
-        print("Decoder Model Summary:")
-        self.model.summary()
-
     def train(self, encoded_data, original_data):
         # Debugging message
         print(f"Training decoder with encoded data shape: {encoded_data.shape} and original data shape: {original_data.shape}")

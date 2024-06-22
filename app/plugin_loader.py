@@ -1,5 +1,4 @@
 from importlib.metadata import entry_points, EntryPoint
-import sys
 
 def load_plugin(plugin_group, plugin_name):
     print(f"Attempting to load plugin: {plugin_name} from group: {plugin_group}")

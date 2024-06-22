@@ -3,9 +3,9 @@ import json
 import pandas as pd
 from app.config_handler import load_config, save_config, merge_config, save_debug_info
 from app.cli import parse_args
-from app.data_processor import process_data, run_autoencoder_pipeline  # Updated import
+from app.data_processor import process_data, run_autoencoder_pipeline
 from app.config import DEFAULT_VALUES
-from app.plugin_loader import load_plugin
+from app.plugin_loader import load_plugin, load_encoder_decoder_plugins
 
 def main():
     print("Parsing initial arguments...")
@@ -30,15 +30,6 @@ def main():
         config.update(file_config)
         print(f"Config after loading from file: {config}")
 
-    print("Merging configuration with CLI arguments and unknown args...")
-    config = merge_config(config, cli_args, {})
-    print(f"Config after merging: {config}")
-
-    if args.save_config:
-        print(f"Saving configuration to {args.save_config}...")
-        save_config(config, args.save_config)
-        print(f"Configuration saved to {args.save_config}.")
-
     print("Loading encoder plugin: ", config['encoder_plugin'])
     encoder_plugin_class, encoder_params = load_plugin('feature_extractor.encoders', config['encoder_plugin'])
     print("Loading decoder plugin: ", config['decoder_plugin'])
@@ -46,6 +37,24 @@ def main():
 
     encoder_plugin = encoder_plugin_class()
     decoder_plugin = decoder_plugin_class()
+
+    # Extract plugin-specific parameters from CLI args
+    plugin_params = {
+        'encoder_params': {k: cli_args[k] for k in encoder_params if k in cli_args},
+        'decoder_params': {k: cli_args[k] for k in decoder_params if k in cli_args}
+    }
+
+    print("Merging configuration with CLI arguments and unknown args...")
+    config = merge_config(config, cli_args, plugin_params)
+    print(f"Config after merging: {config}")
+
+    if args.save_config:
+        print(f"Saving configuration to {args.save_config}...")
+        save_config(config, args.save_config)
+        print(f"Configuration saved to {args.save_config}.")
+
+    encoder_plugin.set_params(**config)
+    decoder_plugin.set_params(**config)
 
     print("Processing and running autoencoder pipeline...")
     run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin)

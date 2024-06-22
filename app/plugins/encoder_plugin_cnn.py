@@ -42,7 +42,7 @@ class Plugin:
             current_size = max(current_size // layer_size_divisor, interface_size)
         
         # Debugging message
-        print(f"Decoder Layer sizes: {layers}")
+        print(f"Encoder Layer sizes: {layers}")
 
         inputs = Input(shape=(input_shape, 1))
         x = inputs

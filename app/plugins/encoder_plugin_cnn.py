@@ -10,10 +10,11 @@ class Plugin:
 
     plugin_params = {
         'epochs': 10,
-        'batch_size': 256
+        'batch_size': 256,
+        'intermediate_layers': 1
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape']
+    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -35,9 +36,10 @@ class Plugin:
 
         layers = []
         current_size = input_shape
+        layer_size_divisor = 1 + self.params['intermediate_layers']
         while current_size > interface_size:
             layers.append((current_size, interface_size))
-            current_size = max(current_size // 4, interface_size)
+            current_size = max(current_size // layer_size_divisor, interface_size)
 
         inputs = Input(shape=(input_shape, 1))
         x = inputs

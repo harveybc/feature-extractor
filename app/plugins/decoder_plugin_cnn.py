@@ -11,7 +11,8 @@ class Plugin:
     plugin_params = {
         'epochs': 10,
         'batch_size': 256,
-        'intermediate_layers': 1
+        'intermediate_layers': 1,
+        'layer_size_divisor': 2
     }
 
     plugin_debug_vars = ['epochs', 'batch_size', 'interface_size', 'output_shape', 'intermediate_layers']
@@ -38,13 +39,14 @@ class Plugin:
 
         layer_sizes = []
         current_size = output_shape
-        layer_size_divisor = 1 + self.params['intermediate_layers']
+        layer_size_divisor = self.params['layer_size_divisor'] 
         current_location = output_shape
-        while current_size > interface_size:
+        int_layers = 0
+        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
             layer_sizes.append(current_location)
-            current_size = current_size // layer_size_divisor
+            current_size = max(current_size // layer_size_divisor, interface_size)
             current_location = interface_size + current_size
-        layer_sizes.append(interface_size)
+            int_layers += 1
         layer_sizes.reverse()
 
         # Debugging message
@@ -63,7 +65,10 @@ class Plugin:
 
         for i in range(1, len(layer_sizes) - 1):
             reshape_size = layer_sizes[i]
-            next_size = layer_sizes[i + 1]
+            if i < (len(layer_sizes) - 1):
+                next_size = layer_sizes[i + 1]
+            else:
+                next_size = output_shape
 
             upsample_factor = next_size // reshape_size
             print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")

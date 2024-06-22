@@ -11,7 +11,8 @@ class Plugin:
     plugin_params = {
         'epochs': 10,
         'batch_size': 256,
-        'intermediate_layers': 1
+        'intermediate_layers': 1,
+        'layer_size_divisor': 2
     }
 
     plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers']
@@ -36,12 +37,15 @@ class Plugin:
 
         layers = []
         current_size = input_shape
-        layer_size_divisor = 1 + self.params['intermediate_layers']
+        layer_size_divisor = self.params['layer_size_divisor'] 
         current_location = input_shape
-        while current_size > interface_size:
+        int_layers = 0
+        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
             layers.append(current_location)
             current_size = max(current_size // layer_size_divisor, interface_size)
             current_location = interface_size + current_size
+            int_layers += 1
+
         # Debugging message
         print(f"Encoder Layer sizes: {layers}")
 

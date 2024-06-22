@@ -84,7 +84,7 @@ class Plugin:
             self.model.add(Conv1D(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
             
         print("[build_autoencoder_layers] Decoder model layers built successfully")
-        self.decoder_model.summary()    
+        self.model.summary()    
         # Adding the final Conv1D layer
         #self.model.add(Conv1D(next_size, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         #print(f"Added final Conv1D layer with size: 1 and kernel size: 3")

@@ -1,72 +1,98 @@
-from keras.models import Model
-from keras.layers import Input, LSTM, Dense
+import numpy as np
+from keras.models import Model, load_model, save_model
+from keras.layers import LSTM, Dense, Input, Flatten
 from keras.optimizers import Adam
 
-class LSTMEncoderPlugin:
+class Plugin:
     """
-    An LSTM-based encoder plugin suitable for time series data,
-    with dynamically configurable output size.
+    An encoder plugin using a Long Short-Term Memory (LSTM) network based on Keras, with dynamically configurable size.
     """
+
+    plugin_params = {
+        'epochs': 10,
+        'batch_size': 256,
+        'intermediate_layers': 1,
+        'layer_size_divisor': 2
+    }
+
+    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers']
+
     def __init__(self):
-        """
-        Initializes the LSTMEncoderPlugin without a fixed architecture.
-        """
-        self.model = None
+        self.params = self.plugin_params.copy()
+        self.encoder_model = None
 
-    def configure_size(self, input_length, input_features, latent_dim):
-        """
-        Configure the encoder model architecture dynamically based on the desired output size.
+    def set_params(self, **kwargs):
+        for key, value in kwargs.items():
+            self.params[key] = value
 
-        Args:
-            input_length (int): The number of timesteps in each input sequence.
-            input_features (int): The number of features per timestep.
-            latent_dim (int): The desired size of the output latent dimension.
-        """
-        input_layer = Input(shape=(input_length, input_features))
-        x = LSTM(64, return_sequences=True)(input_layer)
-        x = LSTM(32, return_sequences=False)(x)
-        x = Dense(latent_dim, activation='relu')(x)  # Controls the size of the output encoding
+    def get_debug_info(self):
+        return {var: self.params[var] for var in self.plugin_debug_vars}
 
-        self.model = Model(inputs=input_layer, outputs=x)
-        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+    def add_debug_info(self, debug_info):
+        plugin_debug_info = self.get_debug_info()
+        debug_info.update(plugin_debug_info)
 
-    def train(self, data, epochs=50, batch_size=256):
-        """
-        Trains the encoder model on provided data.
+    def configure_size(self, input_shape, interface_size):
+        self.params['input_shape'] = input_shape
 
-        Args:
-            data (np.array): Training data.
-            epochs (int): Number of epochs to train for.
-            batch_size (int): Batch size for training.
-        """
-        self.model.fit(data, data, epochs=epochs, batch_size=batch_size)
+        layers = []
+        current_size = input_shape
+        layer_size_divisor = self.params['layer_size_divisor'] 
+        current_location = input_shape
+        int_layers = 0
+        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
+            layers.append(current_location)
+            current_size = max(current_size // layer_size_divisor, interface_size)
+            current_location = interface_size + current_size
+            int_layers += 1
+
+        # Debugging message
+        print(f"Encoder Layer sizes: {layers}")
+
+        # set input layer
+        inputs = Input(shape=(input_shape, 1))
+        x = inputs
+
+        # add LSTM layers
+        layers_index = 0
+        for size in layers:
+            layers_index += 1
+
+            # add the LSTM layers
+            if layers_index == 1:
+                x = LSTM(units=size, activation='tanh', return_sequences=True)(x)
+            else:
+                x = LSTM(units=size, activation='tanh', return_sequences=(layers_index < len(layers)))(x)
+        
+        x = Flatten()(x)
+        x = Dense(layers[-1], activation='relu')(x)
+        outputs = Dense(interface_size)(x)
+        
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
+        self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+
+    def train(self, data):
+        print(f"Training encoder with data shape: {data.shape}")
+        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        print("Training completed.")
 
     def encode(self, data):
-        """
-        Encodes the data using the trained model.
-
-        Args:
-            data (np.array): Data to encode.
-
-        Returns:
-            np.array: Encoded data.
-        """
-        return self.model.predict(data)
+        print(f"Encoding data with shape: {data.shape}")
+        encoded_data = self.encoder_model.predict(data)
+        print(f"Encoded data shape: {encoded_data.shape}")
+        return encoded_data
 
     def save(self, file_path):
-        """
-        Saves the model to a specified path.
-
-        Args:
-            file_path (str): Path to save the model.
-        """
-        self.model.save(file_path)
+        save_model(self.encoder_model, file_path)
+        print(f"Encoder model saved to {file_path}")
 
     def load(self, file_path):
-        """
-        Loads a model from a specified path.
+        self.encoder_model = load_model(file_path)
+        print(f"Encoder model loaded from {file_path}")
 
-        Args:
-            file_path (str): Path where the model is stored.
-        """
-        self.model.load_weights(file_path)
+# Debugging usage example
+if __name__ == "__main__":
+    plugin = Plugin()
+    plugin.configure_size(input_shape=128, interface_size=4)
+    debug_info = plugin.get_debug_info()
+    print(f"Debug Info: {debug_info}")

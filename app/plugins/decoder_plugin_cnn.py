@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten,Conv1DTranspose
 from keras.optimizers import Adam
 
 class Plugin:
@@ -72,24 +72,15 @@ class Plugin:
                 kernel_size = 7
 
             print(f"Added Conv1D layer with size: {next_size} and kernel size: 3")
-            self.model.add(Conv1D(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
+            self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
             
             reshape_size = layer_sizes[i]
             if i < (len(layer_sizes) - 1):
                 next_size = layer_sizes[i + 1]
                 upsample_factor = next_size // reshape_size
                 print(f"Adding UpSampling1D layer with upsample factor: {upsample_factor}")
-                if upsample_factor <= 1:
-                    upsample_factor = 2
+                if upsample_factor > 1:
                     self.model.add(UpSampling1D(size=upsample_factor))
-                    print(f"Added Conv1D layer with size: {next_size} and kernel size: 3")
-                    self.model.add(Conv1D(output_shape, kernel_size=3, padding='same', activation='tanh'))
-                    self.model.add(Reshape((output_shape,upsample_factor*reshape_size)))
-                    print(f"Added Reshape layer with size: ({output_shape},)")
-                else:
-                    self.model.add(UpSampling1D(size=upsample_factor))
-                
-                    
             else:
                 next_size = output_shape
             

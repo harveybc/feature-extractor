@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input, Reshape
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input
 from keras.optimizers import Adam
 
 class Plugin:
@@ -36,7 +36,6 @@ class Plugin:
         self.params['input_shape'] = input_shape
 
         layers = []
-        kernel_size = 3 
         current_size = input_shape
         layer_size_divisor = self.params['layer_size_divisor'] 
         current_location = input_shape
@@ -71,17 +70,11 @@ class Plugin:
                 kernel_size = 7
             # add the conv and maxpooling layers
             x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', padding='same')(x)
-            if layers_index < (len(layers)):
-                x = MaxPooling1D(pool_size=pool_size)(x)
-            else:
-                # Calculate the new shape by inverting the dimensions
-                new_shape = (x.shape[2], x.shape[1])
-                x = Reshape(new_shape)(x)
-
-
-        # Adding the final Conv1D layer to match the output shape
-        outputs = Conv1D(1, kernel_size=kernel_size, padding='same', activation='tanh', name="decoder_output")(x)
-        print(f"Added final Conv1D layer with size: 1 ")
+            x = MaxPooling1D(pool_size=pool_size)(x)
+            
+        x = Flatten()(x)
+        #x = Dense(layers[len(layers)-1], activation='relu')(x)
+        outputs = Dense(interface_size)(x)
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
         self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')

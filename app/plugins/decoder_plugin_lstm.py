@@ -39,7 +39,7 @@ class Plugin:
 
         layer_sizes = []
         current_size = output_shape
-        layer_size_divisor = self.params['layer_size_divisor'] 
+        layer_size_divisor = self.params['layer_size_divisor']
         current_location = output_shape
         int_layers = 0
         while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
@@ -64,26 +64,13 @@ class Plugin:
         print(f"Added RepeatVector layer with size: {layer_sizes[1]}")
 
         # Adding LSTM layers
-        next_size = interface_size
-        for i in range(1, len(layer_sizes)):
-            reshape_size = layer_sizes[i]
-            if i < (len(layer_sizes) - 1):
-                next_size = layer_sizes[i + 1]
-            else:
-                next_size = output_shape
-
-            self.model.add(LSTM(units=reshape_size, activation='tanh', return_sequences=True))
-            print(f"Added LSTM layer with size: {reshape_size}")
+        for i in range(len(layer_sizes) - 1):
+            self.model.add(LSTM(units=layer_sizes[i], activation='tanh', return_sequences=True))
+            print(f"Added LSTM layer with size: {layer_sizes[i]}")
 
         # Adding the final TimeDistributed Dense layer to match the output shape
-        self.model.add(TimeDistributed(Dense(1, activation='tanh')))
-        print(f"Added final TimeDistributed Dense layer with size: 1")
-
-        self.model.add(TimeDistributed(Dense(output_shape)))
-        print(f"Added TimeDistributed Dense layer with size: {output_shape}")
-
-        self.model.add(Reshape((output_shape,)))
-        print(f"Reshape layer with size: ({output_shape},)")
+        self.model.add(TimeDistributed(Dense(output_shape, activation='tanh')))
+        print(f"Added final TimeDistributed Dense layer with size: {output_shape}")
 
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

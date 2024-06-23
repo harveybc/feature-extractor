@@ -17,20 +17,29 @@ def save_config(config, path='config_out.json'):
         json.dump(config_to_save, f, indent=4)
     return config, path
 
-def merge_config(config, cli_args, plugin_params):
+def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin):
     print(f"Pre-Merge: default config: {DEFAULT_VALUES}")
     print(f"Pre-Merge: file config: {config}")
     print(f"Pre-Merge: cli_args: {cli_args}")
-    print(f"Pre-Merge: plugin_params: {plugin_params}")
     
     merged_config = DEFAULT_VALUES.copy()
     merged_config.update(config)
     merged_config.update({k: v for k, v in cli_args.items() if v is not None})
     
-    # Plugin-specific parameters should override the defaults
-    for plugin_param_key, plugin_param_values in plugin_params.items():
-        if plugin_param_values:
-            merged_config.update(plugin_param_values)
+    # Handle unknown arguments and compare them with plugin-specific parameters
+    encoder_plugin_params = encoder_plugin.plugin_params
+    decoder_plugin_params = decoder_plugin.plugin_params
+    for arg in unknown_args:
+        if arg.startswith('--'):
+            key = arg.lstrip('--')
+            value = unknown_args[arg]
+            if key in encoder_plugin_params:
+                encoder_plugin_params[key] = value
+            if key in decoder_plugin_params:
+                decoder_plugin_params[key] = value
+    
+    merged_config.update(encoder_plugin_params)
+    merged_config.update(decoder_plugin_params)
     
     print(f"Post-Merge: {merged_config}")
     return merged_config

@@ -2,6 +2,7 @@ import numpy as np
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten
 from keras.optimizers import Adam
+from math import ceil
 
 class Plugin:
     """
@@ -77,9 +78,8 @@ class Plugin:
         for i in range(1, len(layer_sizes)):
             prev_size = layer_sizes[i-1]
         
-            upsample_factor = layer_sizes[i] // prev_size
-            if upsample_factor == 1:
-                print(f"i, layer_sizes[i], prev_size: {i}, {layer_sizes[i]}, {prev_size}")
+            upsample_factor = ceil(layer_sizes[i] / prev_size)
+            
             print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
             self.model.add(UpSampling1D(size=upsample_factor))
             

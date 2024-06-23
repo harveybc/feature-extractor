@@ -83,7 +83,10 @@ class Plugin:
             else:
                 next_size = output_shape
         
-            self.model.add(Flatten(Dense(interface_size)))
+            self.model.add(Flatten())
+            print(f"Added Flatten layer")
+            self.model.add(Dense(output_shape, activation='relu'))
+            print(f"Added Dense layer with size: {output_shape}")
             
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

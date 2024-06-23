@@ -71,8 +71,6 @@ class Plugin:
             if layer_sizes[i] > 512:
                 kernel_size = 7
 
-            print(f"Added Conv1D layer with size: {next_size} and kernel size: 3")
-            self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
             
             reshape_size = layer_sizes[i]
             if i < (len(layer_sizes) - 1):
@@ -83,7 +81,9 @@ class Plugin:
                     self.model.add(UpSampling1D(size=upsample_factor))
             else:
                 next_size = output_shape
-            
+            print(f"Added Conv1D layer with size: {next_size} and kernel size: 3")
+            self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
+
         # Adding the final Conv1D layer to match the output shape
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         print(f"Added final Conv1D layer with size: 1 and kernel size: 3")

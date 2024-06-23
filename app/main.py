@@ -35,7 +35,14 @@ def main():
     decoder_plugin = decoder_plugin_class()
 
     print("Merging configuration with CLI arguments and unknown args...")
-    config = merge_config(config, cli_args, dict(unknown_args), encoder_plugin, decoder_plugin)
+    try:
+        unknown_args_dict = {unknown_args[i]: unknown_args[i + 1] for i in range(0, len(unknown_args), 2)}
+    except Exception as e:
+        print(f"Error processing unknown args: {e}")
+        sys.exit(1)
+
+    print(f"Unknown args as dict: {unknown_args_dict}")
+    config = merge_config(config, cli_args, unknown_args_dict, encoder_plugin, decoder_plugin)
     print(f"Config after merging: {config}")
 
     if args.save_config:

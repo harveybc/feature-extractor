@@ -47,6 +47,7 @@ class Plugin:
             current_size = max(current_size // layer_size_divisor, interface_size)
             current_location = interface_size + current_size
             int_layers += 1
+        layer_sizes.append(interface_size)
         layer_sizes.reverse()
 
         # Debugging message

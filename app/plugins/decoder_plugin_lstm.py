@@ -68,14 +68,8 @@ class Plugin:
         print(f"Added RepeatVector layer with size: {output_shape}")
 
         # Adding LSTM layers
-        next_size = interface_size
-        for i in range(1, len(layer_sizes)):
+        for i in range(0, len(layer_sizes)):
             reshape_size = layer_sizes[i]
-            if i < (len(layer_sizes) - 1):
-                next_size = layer_sizes[i + 1]
-            else:
-                next_size = output_shape
-
             self.model.add(LSTM(units=reshape_size, activation='tanh', return_sequences=True))
             print(f"Added LSTM layer with size: {reshape_size}")
 

@@ -63,27 +63,25 @@ class Plugin:
         print(f"Reshape layer with size: ({layer_sizes[0]}, 1)")
         
         next_size = layer_sizes[0]
-        for i in range(0, len(layer_sizes)):
+        for i in range(0, len(layer_sizes)-1):
             # kernel size configuration based on the layer's size
             kernel_size = 3 
             if layer_sizes[i] > 64:
                 kernel_size = 5
             if layer_sizes[i] > 512:
                 kernel_size = 7
-
             
-            reshape_size = layer_sizes[i]
-            if i < (len(layer_sizes) - 1):
-                next_size = layer_sizes[i + 1]
-                upsample_factor = next_size // reshape_size
-                print(f"Adding UpSampling1D layer with upsample factor: {upsample_factor}")
-                if upsample_factor > 1:
-                    self.model.add(UpSampling1D(size=upsample_factor))
-            else:
-                next_size = output_shape
             self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
             print(f"Added Conv1DTranspose layer with size: {next_size} and kernel size: 3")
 
+            reshape_size = layer_sizes[i]
+            next_size = layer_sizes[i + 1]
+            upsample_factor = next_size // reshape_size
+            if upsample_factor > 1:
+                print(f"Adding UpSampling1D layer with upsample factor: {upsample_factor}")
+                self.model.add(UpSampling1D(size=upsample_factor))
+
+        self.model.add(Conv1DTranspose(output_shape, kernel_size=kernel_size, padding='same', activation='tanh', name="decoder_output"))        
         # Adding the final Conv1D layer to match the output shape
         self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         print(f"Added final Conv1D layer with size: 1 and kernel size: 3")

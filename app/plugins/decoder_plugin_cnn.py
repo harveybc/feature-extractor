@@ -78,7 +78,7 @@ class Plugin:
         for i in range(1, len(layer_sizes)):
             prev_size = layer_sizes[i-1]
         
-            upsample_factor = ceil(layer_sizes[i] / prev_size)
+            upsample_factor = layer_sizes[i] // prev_size
             
             print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
             self.model.add(UpSampling1D(size=upsample_factor))

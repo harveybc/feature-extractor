@@ -87,7 +87,10 @@ class Plugin:
             print(f"Added Flatten layer")
             self.model.add(Dense(output_shape, activation='relu'))
             print(f"Added Dense layer with size: {output_shape}")
-            
+            # Reshape to the desired shape
+            self.model.add(Reshape((output_shape, 1)))  # Shape: (None, 128, 1)
+            print(f"Reshape layer with size: (128, 1)")
+
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
     def train(self, encoded_data, original_data):

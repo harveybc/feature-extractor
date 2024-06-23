@@ -81,8 +81,8 @@ class Plugin:
                 print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
                 self.model.add(UpSampling1D(size=upsample_factor))
             else:
-                print(f"Added UpSampling1D layer with upsample factor: {next_size}")
-                self.model.add(UpSampling1D(size=output_shape // reshape_size))            
+                next_size = output_shape
+                self.model.add(Conv1D(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
 
         
         # Adding the final Conv1D layer to match the output shape

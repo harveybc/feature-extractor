@@ -72,7 +72,7 @@ class Plugin:
             kernel_size = 7
 
         print(f"Added Conv1D layer with size: {prev_size} and kernel size: {kernel_size}")
-        self.model.add(Conv1D(prev_size, kernel_size=kernel_size, padding='same', activation='relu'))
+        self.model.add(Conv1D(prev_size, kernel_size=3, padding='same', activation='relu'))
         upsample_factor = 1
         # add intermediate layers
         for i in range(1, len(layer_sizes)):
@@ -91,7 +91,7 @@ class Plugin:
                 kernel_size = 7
 
             print(f"Added Conv1D layer with size: {layer_sizes[i]} and kernel size: {kernel_size}")
-            self.model.add(Conv1D(layer_sizes[i], kernel_size=kernel_size, padding='same', activation='relu'))
+            self.model.add(Conv1D(layer_sizes[i], kernel_size=3, padding='same', activation='relu'))
         # Adding reshape layer to match the output shape
         #self.model.add(Reshape((output_shape, upsample_factor*prev_size)))
 

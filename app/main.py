@@ -26,13 +26,10 @@ def main():
         config.update(file_config)
         print(f"Config after loading from file: {config}")
 
-    encoder_plugin_name = config['encoder_plugin'] if 'encoder_plugin' in cli_args and cli_args['encoder_plugin'] is None else cli_args['encoder_plugin']
-    decoder_plugin_name = config['decoder_plugin'] if 'decoder_plugin' in cli_args and cli_args['decoder_plugin'] is None else cli_args['decoder_plugin']
-
-    print(f"Loading encoder plugin: {encoder_plugin_name}")
-    encoder_plugin_class, _ = load_plugin('feature_extractor.encoders', encoder_plugin_name)
-    print(f"Loading decoder plugin: {decoder_plugin_name}")
-    decoder_plugin_class, _ = load_plugin('feature_extractor.decoders', decoder_plugin_name)
+    print("Loading encoder plugin: ", config['encoder_plugin'])
+    encoder_plugin_class, _ = load_plugin('feature_extractor.encoders', config['encoder_plugin'])
+    print("Loading decoder plugin: ", config['decoder_plugin'])
+    decoder_plugin_class, _ = load_plugin('feature_extractor.decoders', config['decoder_plugin'])
 
     encoder_plugin = encoder_plugin_class()
     decoder_plugin = decoder_plugin_class()

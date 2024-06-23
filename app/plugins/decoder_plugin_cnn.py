@@ -61,7 +61,7 @@ class Plugin:
 
         self.model.add(Reshape((layer_sizes[0], 1)))
         print(f"Reshape layer with size: ({layer_sizes[0]}, 1)")
-        
+        reshape_size = layer_sizes[0]
         next_size = layer_sizes[0]
         for i in range(0, len(layer_sizes)-1):
             # kernel size configuration based on the layer's size
@@ -83,6 +83,9 @@ class Plugin:
 
         self.model.add(Conv1DTranspose(output_shape, kernel_size=kernel_size, padding='same', activation='tanh', name="last_layer"))        
         # Adding the final Conv1D layer to match the output shape
+        self.model.add(Reshape((output_shape,reshape_size)))
+        print(f"Reshape layer with size: ({output_shape},{reshape_size})")
+
         self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         print(f"Added final Conv1D layer with size: 1 and kernel size: 3")
         

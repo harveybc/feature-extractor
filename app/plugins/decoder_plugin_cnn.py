@@ -72,7 +72,7 @@ class Plugin:
                 kernel_size = 7
             
             self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
-            print(f"Added Conv1DTranspose layer with size: {next_size} and kernel size: 3")
+            print(f"Added Conv1DTranspose layer with size: {next_size} and kernel size: {kernel_size}")
 
             reshape_size = layer_sizes[i]
             next_size = layer_sizes[i + 1]
@@ -82,6 +82,7 @@ class Plugin:
                 self.model.add(UpSampling1D(size=upsample_factor))
 
         self.model.add(Conv1DTranspose(output_shape, kernel_size=kernel_size, padding='same', activation='tanh', name="last_layer"))        
+        print(f"Added Conv1DTranspose layer with size: {output_shape} and kernel size: {kernel_size}")
         # Adding the final Conv1D layer to match the output shape
         self.model.add(Reshape((output_shape,reshape_size)))
         print(f"Reshape layer with size: ({output_shape},{reshape_size})")

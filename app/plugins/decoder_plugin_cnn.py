@@ -59,8 +59,8 @@ class Plugin:
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', name="decoder_input"))
         print(f"Added Dense layer with size: {layer_sizes[0]} as decoder_input")
 
-        #self.model.add(Reshape((layer_sizes[1], 1)))
-        #print(f"Reshape layer with size: ({layer_sizes[0]}, 1)")
+        self.model.add(Reshape((layer_sizes[0], 1)))
+        print(f"Reshape layer with size: ({layer_sizes[0]}, 1)")
         
         next_size = interface_size
         for i in range(0, len(layer_sizes)):

@@ -73,7 +73,7 @@ class Plugin:
             x = MaxPooling1D(pool_size=pool_size)(x)
 
         x = Flatten()(x)
-        x = Dense(layers[len(layers)-1], activation='relu')(x)
+        #x = Dense(layers[len(layers)-1], activation='relu')(x)
         outputs = Dense(interface_size)(x)
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")

@@ -78,11 +78,13 @@ class Plugin:
             if i < (len(layer_sizes) - 1):
                 next_size = layer_sizes[i + 1]
                 upsample_factor = next_size // reshape_size
-                print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
-                self.model.add(UpSampling1D(size=upsample_factor))
+                #print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
+                #self.model.add(UpSampling1D(size=upsample_factor))
             else:
                 next_size = output_shape
-            
+        
+        print(f"Added Conv1D layer with size: {next_size} and kernel size: 3")
+        self.model.add(Conv1D(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
         # Adding the final Conv1D layer to match the output shape
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='sigmoid', name="decoder_output"))
         print(f"Added final Conv1D layer with size: 1 and kernel size: 3")

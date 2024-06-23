@@ -33,12 +33,14 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     print(f"Encoder plugin params before merging: {encoder_plugin_params}")
     print(f"Decoder plugin params before merging: {decoder_plugin_params}")
 
-    for key, value in unknown_args.items():
+    for i in range(0, len(unknown_args), 2):
+        key = unknown_args[i].lstrip('--')
+        value = unknown_args[i + 1]
         if key in encoder_plugin_params:
-            encoder_plugin_params[key] = value
+            encoder_plugin_params[key] = type(encoder_plugin_params[key])(value)
         if key in decoder_plugin_params:
-            decoder_plugin_params[key] = value
-    
+            decoder_plugin_params[key] = type(decoder_plugin_params[key])(value)
+
     print(f"Encoder plugin params after merging: {encoder_plugin_params}")
     print(f"Decoder plugin params after merging: {decoder_plugin_params}")
 

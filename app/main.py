@@ -26,8 +26,8 @@ def main():
         config.update(file_config)
         print(f"Config after loading from file: {config}")
 
-    encoder_plugin_name = config['encoder_plugin'] if 'encoder_plugin' in cli_args and cli_args['encoder_plugin'] is None else cli_args['encoder_plugin']
-    decoder_plugin_name = config['decoder_plugin'] if 'decoder_plugin' in cli_args and cli_args['decoder_plugin'] is None else cli_args['decoder_plugin']
+    encoder_plugin_name = cli_args['encoder_plugin']
+    decoder_plugin_name = cli_args['decoder_plugin']
 
     print(f"Loading encoder plugin: {encoder_plugin_name}")
     encoder_plugin_class, _ = load_plugin('feature_extractor.encoders', encoder_plugin_name)
@@ -38,12 +38,7 @@ def main():
     decoder_plugin = decoder_plugin_class()
 
     print("Merging configuration with CLI arguments and unknown args...")
-    try:
-        unknown_args_dict = {unknown_args[i]: unknown_args[i + 1] for i in range(0, len(unknown_args), 2)}
-    except Exception as e:
-        print(f"Error processing unknown args: {e}")
-        sys.exit(1)
-
+    unknown_args_dict = {unknown_args[i].lstrip('--'): unknown_args[i + 1] for i in range(0, len(unknown_args), 2)}
     print(f"Unknown args as dict: {unknown_args_dict}")
     config = merge_config(config, cli_args, unknown_args_dict, encoder_plugin, decoder_plugin)
     print(f"Config after merging: {config}")

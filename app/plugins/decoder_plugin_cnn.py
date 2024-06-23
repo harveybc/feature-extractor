@@ -82,7 +82,7 @@ class Plugin:
                 self.model.add(UpSampling1D(size=upsample_factor))
             else:
                 next_size = output_shape
-                self.model.add(Conv1D(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
+                self.model.add(Reshape((output_shape, )))
 
         
         # Adding the final Conv1D layer to match the output shape

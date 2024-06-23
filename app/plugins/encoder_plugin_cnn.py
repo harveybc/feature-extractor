@@ -70,11 +70,11 @@ class Plugin:
                 kernel_size = 7
             # add the conv and maxpooling layers
             x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', padding='same')(x)
-            #if layers_index < (len(layers)):
-            #    x = MaxPooling1D(pool_size=pool_size)(x)
+            if layers_index < (len(layers)):
+                x = MaxPooling1D(pool_size=pool_size)(x)
 
         x = Flatten()(x)
-        #x = Dense(layers[len(layers)-1], activation='relu')(x)
+        x = Dense(layers[len(layers)-1], activation='relu')(x)
         outputs = Dense(interface_size)(x)
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")

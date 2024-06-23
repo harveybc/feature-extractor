@@ -13,7 +13,7 @@ class Plugin:
         'batch_size': 256
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size']
+    plugin_debug_vars = ['epochs', 'batch_size', 'input_dim', 'encoding_dim']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -21,8 +21,7 @@ class Plugin:
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
-            if key in self.params:
-                self.params[key] = value
+            self.params[key] = value
 
     def get_debug_info(self):
         return {var: self.params[var] for var in self.plugin_debug_vars}

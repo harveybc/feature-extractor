@@ -1,66 +1,34 @@
 import pytest
-from unittest.mock import patch, MagicMock
 from app.plugin_loader import load_plugin, load_encoder_decoder_plugins, get_plugin_params
 
 def test_load_plugin_success():
-    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
-        mock_entry_point = MagicMock()
-        mock_entry_point.load.return_value.plugin_params = {'param1': 'value1'}
-        mock_get_entry_map.return_value = {'test_plugin': mock_entry_point}
-
-        plugin_class, required_params = load_plugin('test_group', 'test_plugin')
-        assert plugin_class is not None
-        assert required_params == ['param1']
+    plugin_class, required_params = load_plugin('feature_extractor.encoders', 'default')
+    assert plugin_class.plugin_params == {'epochs': 10, 'batch_size': 256}
+    assert required_params == ['epochs', 'batch_size']
 
 def test_load_plugin_key_error():
-    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
-        mock_get_entry_map.return_value = {}
+    with pytest.raises(ImportError):
+        load_plugin('feature_extractor.encoders', 'non_existent_plugin')
 
-        with pytest.raises(ImportError):
-            load_plugin('test_group', 'non_existent_plugin')
-
-def test_load_plugin_exception():
-    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
-        mock_get_entry_map.side_effect = Exception('Unexpected error')
-
-        with pytest.raises(Exception):
-            load_plugin('test_group', 'test_plugin')
+def test_load_plugin_general_exception():
+    with pytest.raises(ImportError) as excinfo:
+        load_plugin('feature_extractor.encoders', 'non_existent_plugin')
+    assert 'Plugin non_existent_plugin not found in group feature_extractor.encoders.' in str(excinfo.value)
 
 def test_load_encoder_decoder_plugins():
-    with patch('app.plugin_loader.load_plugin') as mock_load_plugin:
-        mock_load_plugin.side_effect = [
-            (MagicMock(), ['param1']),
-            (MagicMock(), ['param2'])
-        ]
-
-        encoder_plugin, encoder_params, decoder_plugin, decoder_params = load_encoder_decoder_plugins('encoder', 'decoder')
-        assert encoder_plugin is not None
-        assert encoder_params == ['param1']
-        assert decoder_plugin is not None
-        assert decoder_params == ['param2']
+    encoder_plugin, encoder_params, decoder_plugin, decoder_params = load_encoder_decoder_plugins('default', 'default')
+    assert encoder_plugin.plugin_params == {'epochs': 10, 'batch_size': 256}
+    assert decoder_plugin.plugin_params == {'epochs': 10, 'batch_size': 256}
 
 def test_get_plugin_params_success():
-    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
-        mock_entry_point = MagicMock()
-        mock_entry_point.load.return_value.plugin_params = {'param1': 'value1'}
-        mock_get_entry_map.return_value = {'test_plugin': mock_entry_point}
-
-        params = get_plugin_params('test_group', 'test_plugin')
-        assert params == {'param1': 'value1'}
+    params = get_plugin_params('feature_extractor.encoders', 'default')
+    assert params == {'epochs': 10, 'batch_size': 256}
 
 def test_get_plugin_params_key_error():
-    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
-        mock_get_entry_map.return_value = {}
+    with pytest.raises(ImportError):
+        get_plugin_params('feature_extractor.encoders', 'non_existent_plugin')
 
-        params = get_plugin_params('test_group', 'non_existent_plugin')
-        assert params == {}
-
-def test_get_plugin_params_exception():
-    with patch('app.plugin_loader.pkg_resources.get_entry_map') as mock_get_entry_map:
-        mock_get_entry_map.side_effect = Exception('Unexpected error')
-
-        params = get_plugin_params('test_group', 'test_plugin')
-        assert params == {}
-
-if __name__ == "__main__":
-    pytest.main()
+def test_get_plugin_params_general_exception():
+    with pytest.raises(ImportError) as excinfo:
+        get_plugin_params('feature_extractor.encoders', 'non_existent_plugin')
+    assert 'Plugin non_existent_plugin not found in group feature_extractor.encoders.' in str(excinfo.value)

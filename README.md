@@ -17,17 +17,12 @@ To install and set up the feature-extractor application, follow these steps:
     cd feature-extractor
     ```
 
-2. **Create and Activate a Virtual Environment**:
-    - **Using `venv` (Python 3.3+)**:
-        ```bash
-        python -m venv env
-        source env/bin/activate  # On Windows use `env\Scripts\activate`
-        ```
+2. **Create and Activate a Virtual Environment (Anaconda is required)**:
 
     - **Using `conda`**:
         ```bash
-        conda create --name feature-extractor_env python=3.9
-        conda activate feature-extractor_env
+        conda create --name feature-extractor-env python=3.9
+        conda activate feature-extractor-env
         ```
 
 3. **Install Dependencies**:
@@ -46,18 +41,18 @@ To install and set up the feature-extractor application, follow these steps:
     pip install .
     ```
 
-6. **Run the feature-extractor**:
+6. **(Optional) Run the feature-extractor**:
     - On Windows, run the following command to verify installation (it generates an example output file csv_output.csv):
         ```bash
-        feature-extractor.bat tests\data\csv_sel_unb_norm_512.csv --plugin feature_selector --method select_single --single 0
+        feature-extractor.bat tests\data\csv_sel_unb_norm_512.csv 
         ```
 
     - On Linux, run:
         ```bash
-        sh feature-extractor.sh tests\data\csv_sel_unb_norm_512.csv --plugin feature_selector --method select_single --single 0
+        sh feature-extractor.sh tests\data\csv_sel_unb_norm_512.csv
         ```
 
-7. **Run Tests (Optional, requires external repo)**:
+7. **(Optional) Run Tests**:
 For pasing remote tests, requires an instance of [harveybc/data-logger](https://github.com/harveybc/data-logger)
     - On Windows, run the following command to run the tests:
         ```bash
@@ -71,11 +66,68 @@ For pasing remote tests, requires an instance of [harveybc/data-logger](https://
         pytest
         ```
 
-8. **Generate Documentation (Optional)**:
+8. **(Optional) Generate Documentation**:
     - Run the following command to generate code documentation in HTML format in the docs directory:
         ```bash
         pdoc --html -o docs app
         ```
+9. **(Optional) Install Nvidia CUDA GPU support**:
+
+- Be sure to have the latest Nvidia Grapic Driver and we need to determine your hardware **CUDA Version** with the following command, anotate the exact version for next steps:
+
+    - On Windows, :
+        ```bash
+        c:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe
+        ```
+
+    - On Linux, run:
+        ```bash
+        nvidia-smi
+        ```
+- After finding the correct **CUDA Version** for your device in the output of the previous command, please download and install the **Cuda Toolkit** for your **EXACT CUDA Version** from:
+[CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive)
+
+- Go to [TensorFlow, CUDA and cuDNN Compatibility](https://punndeeplearningblog.com/development/tensorflow-cuda-cudnn-compatibility/) and search for the following for your current **CUDA Version** and anotate the versions for the next steps:
+
+    - The **Tensorflow Version**
+    - The **Python Version**
+    - The **CUDNN Version**
+
+- Search, download and install the correct **CuDNN Version** from the [CuDNN Archive](https://developer.nvidia.com/cudnn-archive) by using the [CuDNN installation instructions](https://docs.nvidia.com/deeplearning/cudnn/latest/installation/windows.html)
+
+- Restart your CLI, console or terminal, so the enviroment variables set by CuDNN installation are loaded
+
+- After restarting your console to load the environment variables, activate your conda environment again:
+        ```bash
+        conda activate feature-extractor-env
+        ```
+- (Optionally) Update to the required **Python Version** for your **CUDA Version** in your conda environment:
+
+    ```bash
+    conda install python=<REQUIRED_PYTHON_VERSION>
+    python --version
+    ```
+
+- Modify the requirements.txt file to show **tensorflow-gpu==<REQUIRED_TENSORFLOW_VERSION_HERE>** instead of just **tensorflow**, and if using tensorflow-gpu version more than 2.0, remove the **keras** line, since tensorflow-gpu > 2.0, already includes keras-gpu. Save the changes.
+
+- Install the modified **requirements.txt**, this time with **tensorflow-gpu** (Keras-gpu included) instead of just **keras** (you may need to fix some package versions in the readme for the requirements of your current tensorflow-gpu version, if some error appears):
+
+    ```bash
+    pip uninstall -y numpy scipy pandas tensorflow keras
+    pip install -r requirements.txt --no-cache-dir 
+    ```
+
+- Since tensorflow-gpu version 2.0, the keras-gpu package comes included and do not need separate installation, for previous versions, install the keras package with: pip install keras
+
+- To test if Keras is using the GPU:
+
+    ```bash
+    python
+    from keras import backend as K
+    K.tensorflow_backend._get_available_gpus()
+    exit()
+    ```
+- If the previous test is passed, the GPU can be used, and no other changes in this repo code are required since it detects if a gpu is available automatically for training and evalation of trained models.
 
 ## Usage
 

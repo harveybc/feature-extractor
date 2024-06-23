@@ -1,58 +1,108 @@
-import sys
-import requests
-import numpy as np
+import tensorflow as tf
 import pandas as pd
-from app.data_handler import load_csv, write_csv, sliding_window
-from app.plugin_loader import load_encoder_decoder_plugins
-from app.reconstruction import unwindow_data
 from app.autoencoder_manager import AutoencoderManager
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+from app.data_handler import load_csv, write_csv
+from app.reconstruction import unwindow_data
 
-def train_autoencoder(autoencoder_manager, data, mse_threshold, initial_size, step_size, incremental_search, epochs):
-    current_size = initial_size
-    current_mse = float('inf')
-    print(f"Training autoencoder with initial size {current_size}...")
+def create_sliding_windows(data, window_size):
+    """
+    Create sliding windows for the given data using tf.keras.preprocessing.timeseries_dataset_from_array.
 
-    while current_size > 0 and ((current_mse > mse_threshold) if not incremental_search else (current_mse < mse_threshold)):
-        autoencoder_manager.build_autoencoder()
-        autoencoder_manager.train_autoencoder(data, epochs=epochs, batch_size=256)
+    Args:
+        data (pd.DataFrame): The input data.
+        window_size (int): The size of the sliding window.
 
-        encoded_data = autoencoder_manager.encode_data(data)
-        decoded_data = autoencoder_manager.decode_data(encoded_data)
-        current_mse = autoencoder_manager.calculate_mse(data, decoded_data)
-        print(f"Current MSE: {current_mse} at interface size: {current_size}")
+    Returns:
+        windows (pd.DataFrame): The windowed data.
+    """
+    data_array = data.to_numpy()
+    dataset = tf.keras.preprocessing.timeseries_dataset_from_array(
+        data=data_array,
+        targets=None,
+        sequence_length=window_size,
+        sequence_stride=1,
+        batch_size=1
+    )
 
-        if (incremental_search and current_mse >= mse_threshold) or (not incremental_search and current_mse <= mse_threshold):
-            print("Desired MSE reached. Stopping training.")
-            break
+    windows = []
+    for batch in dataset:
+        windows.append(batch.numpy().flatten())
 
-        if incremental_search:
-            current_size += step_size
-            if current_size >= data.shape[1]:
-                break
-        else:
-            current_size -= step_size
-
-    return autoencoder_manager
+    return pd.DataFrame(windows)
 
 def process_data(config):
+    """
+    Process the data as per the given configuration.
+
+    Args:
+        config (dict): The configuration dictionary.
+
+    Returns:
+        processed_data (dict): Processed data.
+        debug_info (dict): Debug information.
+    """
+    # Load the CSV file
+    print(f"Loading data from CSV file: {config['csv_file']}")
     data = load_csv(config['csv_file'], headers=config['headers'])
-    print(f"Data loaded: {data.shape[0]} rows and {data.shape[1]} columns.")
+    print(f"Data loaded with shape: {data.shape}")
 
-    if config['force_date']:
-        data.index = pd.to_datetime(data.index)
+    # Apply sliding window transformation if needed
+    window_size = config['window_size'] or config['initial_encoding_dim']
+    print(f"Applying sliding window of size: {window_size}")
+    windowed_data = create_sliding_windows(data, window_size)
+    print(f"Windowed data shape: {windowed_data.shape}")
 
-    print(f"Data types:\n {data.dtypes}")
-
-    debug_info = {}
-    processed_data = {}
-
-    for column in data.columns:
-        print(f"Processing column: {column}")
-        column_data = data[[column]].values.astype(np.float64)
-        windowed_data = sliding_window(column_data, config['window_size'])
-        windowed_data = windowed_data.squeeze()  # Ensure correct shape for training
-        print(f"Windowed data shape: {windowed_data.shape}")
-        processed_data[column] = windowed_data
+    # Process data into the required format
+    processed_data = {col: windowed_data.values for col in data.columns}
+    debug_info = {'window_size': window_size, 'num_columns': len(windowed_data.columns)}
+    print(f"Processed data: {list(processed_data.keys())}")
+    print(f"Debug info: {debug_info}")
 
     return processed_data, debug_info
+
+def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
+    """
+    Run the autoencoder training and evaluation pipeline.
+
+    Args:
+        config (dict): The configuration dictionary.
+        encoder_plugin (object): Encoder plugin instance.
+        decoder_plugin (object): Decoder plugin instance.
+
+    Returns:
+        None
+    """
+    print("Running process_data...")
+    processed_data, debug_info = process_data(config)
+    print("Processed data received.")
+
+    for column, windowed_data in processed_data.items():
+        print(f"Processing column: {column}")
+        autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
+        autoencoder_manager.build_autoencoder()
+        autoencoder_manager.train_autoencoder(windowed_data, epochs=config['epochs'], batch_size=config['training_batch_size'])
+
+        encoder_model_filename = f"{config['save_encoder_path']}_{column}.keras"
+        decoder_model_filename = f"{config['save_decoder_path']}_{column}.keras"
+        autoencoder_manager.save_encoder(encoder_model_filename)
+        autoencoder_manager.save_decoder(decoder_model_filename)
+        print(f"Saved encoder model to {encoder_model_filename}")
+        print(f"Saved decoder model to {decoder_model_filename}")
+
+        encoded_data = autoencoder_manager.encode_data(windowed_data)
+        decoded_data = autoencoder_manager.decode_data(encoded_data)
+
+        mse = autoencoder_manager.calculate_mse(windowed_data, decoded_data)
+        mae = autoencoder_manager.calculate_mae(windowed_data, decoded_data)
+        print(f"Mean Squared Error for column {column}: {mse}")
+        print(f"Mean Absolute Error for column {column}: {mae}")
+
+        # Perform unwindowing of the decoded data
+        reconstructed_data = unwindow_data(pd.DataFrame(decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])))
+
+        output_filename = f"{config['csv_output_path']}_{column}.csv"
+        write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'], window_size=config['window_size'])
+        print(f"Output written to {output_filename}")
+
+        print(f"Encoder Dimensions: {autoencoder_manager.encoder_model.input_shape} -> {autoencoder_manager.encoder_model.output_shape}")
+        print(f"Decoder Dimensions: {autoencoder_manager.decoder_model.input_shape} -> {autoencoder_manager.decoder_model.output_shape}")

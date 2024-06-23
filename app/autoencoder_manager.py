@@ -1,78 +1,102 @@
 import numpy as np
 from keras.models import Model, load_model
-from keras.layers import Input, Dense
-from keras.optimizers import Adam
 
 class AutoencoderManager:
-    def __init__(self, input_dim, encoding_dim):
-        self.input_dim = input_dim
-        self.encoding_dim = encoding_dim
+    def __init__(self, encoder_plugin, decoder_plugin):
+        self.encoder_plugin = encoder_plugin
+        self.decoder_plugin = decoder_plugin
         self.autoencoder_model = None
         self.encoder_model = None
         self.decoder_model = None
+        print(f"[AutoencoderManager] Initialized with encoder plugin and decoder plugin")
 
     def build_autoencoder(self):
-        # Encoder
-        encoder_input = Input(shape=(self.input_dim,), name="encoder_input")
-        encoder_output = Dense(self.encoding_dim, activation='relu', name="encoder_output")(encoder_input)
-        self.encoder_model = Model(inputs=encoder_input, outputs=encoder_output, name="encoder")
+        try:
+            print("[build_autoencoder] Starting to build autoencoder...")
 
-        # Decoder
-        decoder_input = Input(shape=(self.encoding_dim,), name="decoder_input")
-        decoder_output = Dense(self.input_dim, activation='tanh', name="decoder_output")(decoder_input)
-        self.decoder_model = Model(inputs=decoder_input, outputs=decoder_output, name="decoder")
+            # Ensure the required parameters are set
+            input_dim = self.encoder_plugin.params.get('input_dim', 128)
+            encoding_dim = self.encoder_plugin.params.get('encoding_dim', 4)
+            output_dim = self.decoder_plugin.params.get('output_dim', 128)
+            
+            self.encoder_plugin.set_params(input_dim=input_dim, encoding_dim=encoding_dim)
+            self.decoder_plugin.set_params(encoding_dim=encoding_dim, output_dim=output_dim)
 
-        # Autoencoder
-        autoencoder_output = self.decoder_model(encoder_output)
-        self.autoencoder_model = Model(inputs=encoder_input, outputs=autoencoder_output, name="autoencoder")
-        self.autoencoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+            # Configure and build the encoder model using the plugin
+            self.encoder_plugin.configure_size(input_dim, encoding_dim)
+            self.encoder_model = self.encoder_plugin.encoder_model
+            print("[build_autoencoder] Encoder model built successfully")
+            self.encoder_model.summary()
 
-        # Debugging messages to trace the model configuration
-        print("Encoder Model Summary:")
-        self.encoder_model.summary()
-        print("Decoder Model Summary:")
-        self.decoder_model.summary()
-        print("Full Autoencoder Model Summary:")
-        self.autoencoder_model.summary()
+            # Configure and build the decoder model using the plugin
+            self.decoder_plugin.configure_size(encoding_dim, output_dim)
+            self.decoder_model = self.decoder_plugin.model
+            print("[build_autoencoder] Decoder model built successfully")
+            self.decoder_model.summary()
+
+            # Autoencoder
+            autoencoder_output = self.decoder_model(self.encoder_model.output)
+            self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
+            self.autoencoder_model.compile(optimizer='adam', loss='mean_squared_error')
+            print("[build_autoencoder] Autoencoder model built and compiled successfully")
+            self.autoencoder_model.summary()
+
+            # Validate models
+            if not self.encoder_model or not self.decoder_model or not self.autoencoder_model:
+                raise ValueError("[build_autoencoder] Failed to build encoder, decoder, or autoencoder model")
+        except Exception as e:
+            print(f"[build_autoencoder] Exception occurred: {e}")
+            raise
 
     def train_autoencoder(self, data, epochs=10, batch_size=256):
-        if isinstance(data, tuple):
-            data = data[0]  # Ensure data is not a tuple
-        print(f"Training autoencoder with data shape: {data.shape}")
-        self.autoencoder_model.fit(data, data, epochs=epochs, batch_size=batch_size, verbose=1)
-        print("Training completed.")
+        try:
+            if isinstance(data, tuple):
+                data = data[0]  # Ensure data is not a tuple
+            print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
+            self.autoencoder_model.fit(data, data, epochs=epochs, batch_size=batch_size, verbose=1)
+            print("[train_autoencoder] Training completed.")
+        except Exception as e:
+            print(f"[train_autoencoder] Exception occurred during training: {e}")
+            raise
 
     def encode_data(self, data):
-        print(f"Encoding data with shape: {data.shape}")
+        print(f"[encode_data] Encoding data with shape: {data.shape}")
         encoded_data = self.encoder_model.predict(data)
-        print(f"Encoded data shape: {encoded_data.shape}")
+        print(f"[encode_data] Encoded data shape: {encoded_data.shape}")
         return encoded_data
 
     def decode_data(self, encoded_data):
-        print(f"Decoding data with shape: {encoded_data.shape}")
+        print(f"[decode_data] Decoding data with shape: {encoded_data.shape}")
         decoded_data = self.decoder_model.predict(encoded_data)
-        print(f"Decoded data shape: {decoded_data.shape}")
+        print(f"[decode_data] Decoded data shape: {decoded_data.shape}")
         return decoded_data
 
     def save_encoder(self, file_path):
         self.encoder_model.save(file_path)
-        print(f"Encoder model saved to {file_path}")
+        print(f"[save_encoder] Encoder model saved to {file_path}")
 
     def save_decoder(self, file_path):
         self.decoder_model.save(file_path)
-        print(f"Decoder model saved to {file_path}")
+        print(f"[save_decoder] Decoder model saved to {file_path}")
 
     def load_encoder(self, file_path):
         self.encoder_model = load_model(file_path)
-        print(f"Encoder model loaded from {file_path}")
+        print(f"[load_encoder] Encoder model loaded from {file_path}")
 
     def load_decoder(self, file_path):
         self.decoder_model = load_model(file_path)
-        print(f"Decoder model loaded from {file_path}")
+        print(f"[load_decoder] Decoder model loaded from {file_path}")
 
     def calculate_mse(self, original_data, reconstructed_data):
         original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
         reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))  # Flatten the data
         mse = np.mean(np.square(original_data - reconstructed_data))
-        print(f"Calculated MSE: {mse}")
+        print(f"[calculate_mse] Calculated MSE: {mse}")
         return mse
+
+    def calculate_mae(self, original_data, reconstructed_data):
+        original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        mae = np.mean(np.abs(original_data - reconstructed_data))
+        print(f"[calculate_mae] Calculated MAE: {mae}")
+        return mae

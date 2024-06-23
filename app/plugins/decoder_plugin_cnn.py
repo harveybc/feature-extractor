@@ -82,7 +82,9 @@ class Plugin:
                 if upsample_factor <= 1:
                     upsample_factor = 2
                     self.model.add(UpSampling1D(size=upsample_factor))
-                    self.model.add(Reshape((output_shape,upsample_factor*reshape_size)))
+                    print(f"Added Conv1D layer with size: {next_size} and kernel size: 3")
+                    self.model.add(Conv1D(output_shape, kernel_size=3, padding='same', activation='tanh'))
+                    #self.model.add(Reshape((output_shape,upsample_factor*reshape_size)))
                     print(f"Added Reshape layer with size: ({output_shape},)")
                 else:
                     self.model.add(UpSampling1D(size=upsample_factor))

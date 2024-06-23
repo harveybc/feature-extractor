@@ -60,7 +60,7 @@ class Plugin:
             layers_index += 1
             # pool size calculation
             if layers_index >= len(layers):
-                pool_size = ceil(size/interface_size)
+                pool_size = 2
             else:
                 pool_size = ceil(size/layers[layers_index])
             if pool_size == 1:

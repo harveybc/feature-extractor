@@ -78,18 +78,17 @@ class Plugin:
             if i < (len(layer_sizes) - 1):
                 next_size = layer_sizes[i + 1]
                 upsample_factor = next_size // reshape_size
-                #print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
-                #self.model.add(UpSampling1D(size=upsample_factor))
+                print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
+                self.model.add(UpSampling1D(size=upsample_factor))
             else:
                 next_size = output_shape
         
-        self.model.add(Flatten())
-        print(f"Added Flatten layer")
-        self.model.add(Dense(output_shape, activation='relu'))
-        print(f"Added Dense layer with size: {output_shape}")
-        # Reshape to the desired shape
-        self.model.add(Reshape((output_shape, 1)))  # Shape: (None, 128, 1)
-        print(f"Reshape layer with size: (128, 1)")
+        # Adding the final Conv1D layer to match the output shape
+        self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
+        print(f"Added final Conv1D layer with size: 1 and kernel size: 3")
+        
+        self.model.add(Reshape((output_shape,1)))
+        print(f"Reshape layer with size: ({output_shape},1)")
 
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

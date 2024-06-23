@@ -83,9 +83,8 @@ class Plugin:
             else:
                 next_size = output_shape
         
-        self.model.add(Reshape((output_shape,1)))
-        print(f"Reshape layer with size: ({output_shape},1)")
-
+            self.model.add(Flatten(Dense(interface_size)))
+            
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
     def train(self, encoded_data, original_data):

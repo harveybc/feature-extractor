@@ -54,7 +54,7 @@ def configure_with_args(config, args):
 
 def save_debug_info(debug_info, path='debug_out.json'):
     print(f"Saving debug information to file: {path}")
-    with open(path, 'w') as f:
+    with open(path, 'w') as f):
         json.dump(debug_info, f, indent=4)
     print(f"Debug information saved to {path}")
 

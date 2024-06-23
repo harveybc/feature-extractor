@@ -83,10 +83,17 @@ class Plugin:
 
         self.model.add(Conv1DTranspose(output_shape, kernel_size=kernel_size, padding='same', activation='tanh', name="last_layer"))        
         print(f"Added Conv1DTranspose layer with size: {output_shape} and kernel size: {kernel_size}")
-        # Adding the final Conv1D layer to match the output shape
-        self.model.add(Reshape((output_shape,reshape_size)))
-        print(f"Reshape layer with size: ({output_shape},{reshape_size})")
+        
+        # Get the shape of the last layer
+        last_layer_shape = self.model.layers[-1].output_shape
 
+        # Invert the dimensions
+        new_shape = (last_layer_shape[2], last_layer_shape[1])
+
+        self.model.add(Reshape(new_shape))
+        print(f"Reshape layer with size: ({new_shape})")
+
+        # Adding the final Conv1D layer to match the output shape
         self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         print(f"Added final Conv1D layer with size: 1 and kernel size: 3")
         

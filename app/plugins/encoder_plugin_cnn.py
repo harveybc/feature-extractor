@@ -2,6 +2,7 @@ import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input
 from keras.optimizers import Adam
+from math import ceil
 
 class Plugin:
     """
@@ -59,9 +60,11 @@ class Plugin:
             layers_index += 1
             # pool size calculation
             if layers_index >= len(layers):
-                pool_size = round(size/interface_size)
+                pool_size = ceil(size/interface_size)
             else:
-                pool_size = round(size/layers[layers_index])
+                pool_size = ceil(size/layers[layers_index])
+            if pool_size == 1:
+                print(f"Warning: Pool size is 1 for layer {layers_index}")
             # kernel size configuration based on the layer's size
             kernel_size = 3 
             if size > 64:

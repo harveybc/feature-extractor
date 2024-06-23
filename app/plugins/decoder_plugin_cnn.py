@@ -79,13 +79,12 @@ class Plugin:
                 print(f"Adding UpSampling1D layer with upsample factor: {upsample_factor}")
                 if upsample_factor > 1:
                     self.model.add(UpSampling1D(size=upsample_factor))
-                else:
-                    self.model.add(Reshape((output_shape,reshape_size)))
-                    print(f"Reshape layer with size: ({output_shape},{reshape_size})")
             else:
                 next_size = output_shape
-            print(f"Added Conv1DTranspose layer with size: {next_size} and kernel size: 3")
+            self.model.add(Reshape((output_shape,reshape_size)))
+            print(f"Reshape layer with size: ({output_shape},{reshape_size})")                
             self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
+            print(f"Added Conv1DTranspose layer with size: {next_size} and kernel size: 3")
 
         # Adding the final Conv1D layer to match the output shape
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))

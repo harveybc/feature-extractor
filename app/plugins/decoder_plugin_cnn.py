@@ -79,7 +79,7 @@ class Plugin:
                 next_size = layer_sizes[i + 1]
                 upsample_factor = next_size // reshape_size
                 print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
-                self.model.add(UpSampling1D(size=upsample_factor))
+                #self.model.add(UpSampling1D(size=upsample_factor))
             else:
                 next_size = output_shape
             

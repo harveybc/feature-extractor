@@ -56,25 +56,28 @@ class Plugin:
         self.model = Sequential(name="decoder")
 
         # Adding a single Dense layer
-        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', name="decoder_input"))
-        print(f"Added Dense layer with size: {layer_sizes[0]} as decoder_input")
+        prev_size = layer_sizes[0]
+        self.model.add(Dense(prev_size, input_shape=(interface_size,), activation='relu', name="decoder_input"))
+        print(f"Added Dense layer with size: {prev_size} as decoder_input")
 
-        self.model.add(Reshape((layer_sizes[0], 1)))
-        print(f"Reshape layer with size: ({layer_sizes[0]}, 1)")
+        self.model.add(Reshape((prev_size, 1)))
+        print(f"Reshape layer with size: ({prev_size}, 1)")
         
         # kernel size configuration based on the layer's size
         kernel_size = 3 
-        if layer_sizes[0] > 64:
+        if prev_size > 64:
             kernel_size = 5
-        if layer_sizes[0] > 512:
+        if prev_size > 512:
             kernel_size = 7
 
-        print(f"Added Conv1D layer with size: {layer_sizes[0]} and kernel size: {kernel_size}")
-        self.model.add(Conv1D(layer_sizes[0], kernel_size=kernel_size, padding='same', activation='relu'))
+        print(f"Added Conv1D layer with size: {prev_size} and kernel size: {kernel_size}")
+        self.model.add(Conv1D(prev_size, kernel_size=kernel_size, padding='same', activation='relu'))
 
         # add intermediate layers
         for i in range(1, len(layer_sizes)):
-            upsample_factor = layer_sizes[i] // layer_sizes[i - 1]
+            prev_size = layer_sizes[i-1]
+        
+            upsample_factor = layer_sizes[i] // prev_size
             print(f"Added UpSampling1D layer with upsample factor: {upsample_factor}")
             self.model.add(UpSampling1D(size=upsample_factor))
             
@@ -88,7 +91,9 @@ class Plugin:
             print(f"Added Conv1D layer with size: {layer_sizes[i]} and kernel size: {kernel_size}")
             self.model.add(Conv1D(layer_sizes[i], kernel_size=kernel_size, padding='same', activation='relu'))
             
-        
+        # Adding reshape layer to match the output shape
+        self.model.add(Reshape((output_shape, prev_size)))
+
         # Adding the final Conv1D layer to match the output shape
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         print(f"Added final Conv1D layer with size: 1 and kernel size: 3")

@@ -57,9 +57,13 @@ class Plugin:
         # Adding Dense layers
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', name="decoder_input"))
         print(f"Added Dense layer with size: {layer_sizes[0]} as decoder_input")
-        self.model.add(Dense(layer_sizes[1], activation='relu'))
-        print(f"Added Dense layer with size: {layer_sizes[1]}")
-
+        if len(layer_sizes) > 1:
+            self.model.add(Dense(layer_sizes[1], activation='relu'))
+            print(f"Added Dense layer with size: {layer_sizes[1]}")
+        else:
+            self.model.add(Dense(output_shape, activation='relu'))
+            print(f"Added Dense layer with size: {output_shape}")
+            
         self.model.add(RepeatVector(output_shape))
         print(f"Added RepeatVector layer with size: {output_shape}")
 

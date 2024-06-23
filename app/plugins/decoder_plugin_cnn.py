@@ -84,8 +84,8 @@ class Plugin:
                 next_size = output_shape
             
         # Adding the final Conv1D layer to match the output shape
-        self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
-        print(f"Added final Conv1D layer with size: 1 and kernel size: 3")
+        #self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
+        #print(f"Added final Conv1D layer with size: 1 and kernel size: 3")
         
         self.model.add(Reshape((output_shape,)))
         print(f"Reshape layer with size: ({output_shape},)")

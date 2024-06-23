@@ -91,12 +91,13 @@ class Plugin:
             print(f"Added Conv1D layer with size: {layer_sizes[i]} and kernel size: {kernel_size}")
             self.model.add(Conv1D(layer_sizes[i], kernel_size=kernel_size, padding='same', activation='relu'))
             
-        # Adding reshape layer to match the output shape
-        self.model.add(Reshape((output_shape, prev_size)))
-
         # Adding the final Conv1D layer to match the output shape
         self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
         print(f"Added final Conv1D layer with size: 1 and kernel size: 3")
+        
+        # Adding reshape layer to match the output shape
+        self.model.add(Reshape((output_shape, )))
+
         
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 

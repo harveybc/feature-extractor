@@ -60,9 +60,9 @@ class Plugin:
             layers_index += 1
             # pool size calculation
             if layers_index >= len(layers):
-                pool_size = 2
+                pool_size = round(size/interface_size)
             else:
-                pool_size = ceil(size/layers[layers_index])
+                pool_size = round(size/layers[layers_index])
             if pool_size == 1:
                 print(f"Warning: Pool size is 1 for layer {layers_index}")
             # kernel size configuration based on the layer's size
@@ -72,7 +72,7 @@ class Plugin:
             if size > 512:
                 kernel_size = 7
             # add the conv and maxpooling layers
-            x = Conv1D(filters=size, kernel_size=3, activation='relu', padding='same')(x)
+            x = Conv1D(filters=size, kernel_size=5, activation='relu', padding='same')(x)
             x = MaxPooling1D(pool_size=pool_size)(x)
             
         x = Flatten()(x)

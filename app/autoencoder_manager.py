@@ -15,9 +15,9 @@ class AutoencoderManager:
             print("[build_autoencoder] Starting to build autoencoder...")
 
             # Ensure the required parameters are set
-            input_dim = self.encoder_plugin.params.get('input_dim', 128)
+            input_dim = self.encoder_plugin.params.get('input_dim', 512)
             encoding_dim = self.encoder_plugin.params.get('encoding_dim', 16)
-            output_dim = self.decoder_plugin.params.get('output_dim', 128)
+            output_dim = self.decoder_plugin.params.get('output_dim', 512)
             
             self.encoder_plugin.set_params(input_dim=input_dim, encoding_dim=encoding_dim)
             self.decoder_plugin.set_params(encoding_dim=encoding_dim, output_dim=output_dim)

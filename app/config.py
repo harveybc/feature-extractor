@@ -13,7 +13,7 @@ DEFAULT_VALUES = {
     'plugin_directory': 'app/plugins/',
     'remote_log_url': None,
     'remote_config_url': None,
-    'window_size': 128,
+    'window_size': 512,
     'initial_encoding_dim': 8,
     'encoding_step_size': 4,
     'mse_threshold': 0.005,

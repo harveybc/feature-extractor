@@ -85,7 +85,7 @@ class Plugin:
             if layer_sizes[i] > 512:
                 kernel_size = 7
 
-            print(f"Added Conv1D layer with size: {next_size} and kernel size: {kernel_size}")
+            print(f"Added Conv1D layer with size: {layer_sizes[i]} and kernel size: {kernel_size}")
             self.model.add(Conv1D(layer_sizes[i], kernel_size=kernel_size, padding='same', activation='relu'))
             
         

@@ -14,7 +14,7 @@ DEFAULT_VALUES = {
     'remote_log_url': None,
     'remote_config_url': None,
     'window_size': 128,
-    'initial_encoding_dim': 4,
+    'initial_encoding_dim': 8,
     'encoding_step_size': 4,
     'mse_threshold': 0.005,
     'quiet_mode': False,

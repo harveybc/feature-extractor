@@ -95,8 +95,8 @@ class Plugin:
         # Adding reshape layer to match the output shape
         #self.model.add(Reshape((output_shape, upsample_factor*prev_size)))
 
-        print(f"Added Conv1D layer with size: 1 and kernel size: {kernel_size}")
-        self.model.add(Conv1D(1, kernel_size=kernel_size, padding='same', activation='relu'))
+        print(f"Added Conv1D layer with size: 1 and kernel size: 3")
+        self.model.add(Conv1D(1, kernel_size=3, padding='same', activation='relu'))
         # Adding reshape layer to match the output shape
         self.model.add(Reshape((output_shape,)))
 

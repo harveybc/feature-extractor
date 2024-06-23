@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed, Reshape
+from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed
 from keras.optimizers import Adam
 
 class Plugin:
@@ -64,12 +64,19 @@ class Plugin:
         print(f"Added RepeatVector layer with size: {layer_sizes[1]}")
 
         # Adding LSTM layers
-        for i in range(len(layer_sizes) - 1):
-            self.model.add(LSTM(units=layer_sizes[i], activation='tanh', return_sequences=True))
-            print(f"Added LSTM layer with size: {layer_sizes[i]}")
+        next_size = interface_size
+        for i in range(1, len(layer_sizes)):
+            reshape_size = layer_sizes[i]
+            if i < (len(layer_sizes) - 1):
+                next_size = layer_sizes[i + 1]
+            else:
+                next_size = output_shape
+
+            self.model.add(LSTM(units=reshape_size, activation='tanh', return_sequences=True))
+            print(f"Added LSTM layer with size: {reshape_size}")
 
         # Adding the final TimeDistributed Dense layer to match the output shape
-        self.model.add(TimeDistributed(Dense(output_shape, activation='tanh')))
+        self.model.add(TimeDistributed(Dense(output_shape)))
         print(f"Added final TimeDistributed Dense layer with size: {output_shape}")
 
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')

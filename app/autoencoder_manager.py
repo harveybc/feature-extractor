@@ -10,14 +10,15 @@ class AutoencoderManager:
         self.decoder_model = None
         print(f"[AutoencoderManager] Initialized with encoder plugin and decoder plugin")
 
-    def build_autoencoder(self):
+    def build_autoencoder(self, window_size, interface_size):
         try:
             print("[build_autoencoder] Starting to build autoencoder...")
-            # Ensure the encoder and decoder models are configured and available
-            self.encoder_plugin.configure_size(self.encoder_plugin.params['input_shape'], self.encoder_plugin.params['interface_size'])
+
+            # Configure encoder and decoder models with window_size and interface_size
+            self.encoder_plugin.configure_size(window_size, interface_size)
             self.encoder_model = self.encoder_plugin.encoder_model
 
-            self.decoder_plugin.configure_size(self.encoder_plugin.params['interface_size'], self.encoder_plugin.params['input_shape'])
+            self.decoder_plugin.configure_size(interface_size, window_size)
             self.decoder_model = self.decoder_plugin.model
 
             autoencoder_output = self.decoder_model(self.encoder_model.output)

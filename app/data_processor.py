@@ -46,7 +46,12 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     for column, windowed_data in processed_data.items():
         print(f"Processing column: {column}")
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
-        autoencoder_manager.build_autoencoder()
+        
+        # Use window_size for input_shape and interface_size
+        window_size = config['window_size']
+        interface_size = config['initial_size']
+        
+        autoencoder_manager.build_autoencoder(window_size, interface_size)
         
         # Training loop to optimize the latent space size
         initial_size = config['initial_size']
@@ -56,8 +61,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         current_size = initial_size
         while True:
             print(f"Training with interface size: {current_size}")
-            encoder_plugin.configure_size(current_size, windowed_data.shape[1])
-            decoder_plugin.configure_size(current_size, windowed_data.shape[1])
+            encoder_plugin.configure_size(window_size, current_size)
+            decoder_plugin.configure_size(current_size, window_size)
 
             autoencoder_manager.train_autoencoder(windowed_data, epochs=config['epochs'], batch_size=config['training_batch_size'])
 

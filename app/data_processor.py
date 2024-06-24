@@ -76,8 +76,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
                     print(f"Cannot increase interface size beyond data dimensions. Stopping.")
                     break
 
-        encoder_model_filename = f"{config['save_encoder_path']}_{column}.keras"
-        decoder_model_filename = f"{config['save_decoder_path']}_{column}.keras"
+        encoder_model_filename = f"{config['save_encoder']}_{column}.keras"
+        decoder_model_filename = f"{config['save_decoder']}_{column}.keras"
         autoencoder_manager.save_encoder(encoder_model_filename)
         autoencoder_manager.save_decoder(decoder_model_filename)
         print(f"Saved encoder model to {encoder_model_filename}")

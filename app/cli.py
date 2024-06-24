@@ -1,12 +1,6 @@
 import argparse
 
 def parse_args():
-    """
-    Parse command-line arguments for the feature-extractor application.
-
-    Returns:
-        tuple: Parsed known arguments and unknown arguments.
-    """
     parser = argparse.ArgumentParser(description="Feature-extractor: A tool for encoding and decoding CSV data with support for dynamic plugins.")
     parser.add_argument('csv_file', type=str, help='Path to the CSV file to process.')
     parser.add_argument('-se', '--save_encoder', type=str, help='Filename to save the trained encoder model.')
@@ -28,4 +22,5 @@ def parse_args():
     parser.add_argument('-qm', '--quiet_mode', action='store_true', help='Suppress output messages.')
     parser.add_argument('-fd', '--force_date', action='store_true', help='Include date in the output CSV files.')
     parser.add_argument('-inc', '--incremental_search', action='store_true', help='Enable incremental search for interface size.')
+    parser.add_argument('-hdr', '--headers', action='store_true', help='Indicate if the CSV file has headers.')
     return parser.parse_known_args()

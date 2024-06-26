@@ -95,7 +95,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         print(f"Saved encoder model to {encoder_model_filename}")
         print(f"Saved decoder model to {decoder_model_filename}")
 
-        reconstructed_data = unwindow_data(pd.DataFrame(decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])))
+        # Perform unwindowing of the decoded data once
+        reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
 
         output_filename = os.path.splitext(config['csv_file'])[0] + f"_{column}.csv"
         write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'], window_size=config['window_size'])

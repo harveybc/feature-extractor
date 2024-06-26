@@ -41,8 +41,8 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     print(f"Encoder plugin params after merging: {encoder_plugin_params}")
     print(f"Decoder plugin params after merging: {decoder_plugin_params}")
 
-    merged_config.update(encoder_plugin_params)
-    merged_config.update(decoder_plugin_params)
+    merged_config.update({k: v for k, v in encoder_plugin_params.items() if v != DEFAULT_VALUES.get(k)})
+    merged_config.update({k: v for k, v in decoder_plugin_params.items() if v != DEFAULT_VALUES.get(k)})
     
     print(f"Post-Merge: {merged_config}")
     return merged_config
@@ -51,7 +51,13 @@ def configure_with_args(config, args):
     config.update(args)
     return config
 
-def save_debug_info(debug_info, path='debug_out.json'):
+def save_debug_info(debug_info, encoder_plugin, decoder_plugin, path='debug_out.json'):
+    encoder_debug_info = encoder_plugin.get_debug_info()
+    decoder_debug_info = decoder_plugin.get_debug_info()
+    
+    debug_info['encoder'] = encoder_debug_info
+    debug_info['decoder'] = decoder_debug_info
+
     print(f"Saving debug information to file: {path}")
     with open(path, 'w') as f:
         json.dump(debug_info, f, indent=4)

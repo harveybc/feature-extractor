@@ -46,30 +46,33 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 
     for column, windowed_data in processed_data.items():
         print(f"Processing column: {column}")
-        autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         
-        window_size = config['window_size']
-        interface_size = config['initial_size']
-        
-        autoencoder_manager.build_autoencoder(window_size, interface_size)
-        
+        # Training loop to optimize the latent space size
         initial_size = config['initial_size']
         step_size = config['step_size']
         threshold_error = config['threshold_error']
         training_batch_size = config['batch_size']
         epochs = config['epochs']
+        incremental_search = config['incremental_search']
         
         current_size = initial_size
         while True:
             print(f"Training with interface size: {current_size}")
-            encoder_plugin.configure_size(window_size, current_size)
-            decoder_plugin.configure_size(current_size, window_size)
+            
+            # Create a new instance of AutoencoderManager for each iteration
+            autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
+            
+            # Build new autoencoder model with the current size
+            autoencoder_manager.build_autoencoder(config['window_size'], current_size)
 
+            # Train the autoencoder model
             autoencoder_manager.train_autoencoder(windowed_data, epochs=epochs, batch_size=training_batch_size)
 
+            # Encode and decode the data
             encoded_data = autoencoder_manager.encode_data(windowed_data)
             decoded_data = autoencoder_manager.decode_data(encoded_data)
 
+            # Calculate the MSE and MAE
             mse = autoencoder_manager.calculate_mse(windowed_data, decoded_data)
             mae = autoencoder_manager.calculate_mae(windowed_data, decoded_data)
             print(f"Mean Squared Error for column {column} with interface size {current_size}: {mse}")
@@ -79,9 +82,12 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
                 print(f"Optimal interface size found: {current_size} with MSE: {mse} and MAE: {mae}")
                 break
             else:
-                current_size += step_size
-                if current_size > windowed_data.shape[1]:
-                    print(f"Cannot increase interface size beyond data dimensions. Stopping.")
+                if incremental_search:
+                    current_size += step_size
+                else:
+                    current_size -= step_size
+                if current_size > windowed_data.shape[1] or current_size <= 0:
+                    print(f"Cannot adjust interface size beyond data dimensions. Stopping.")
                     break
 
         encoder_model_filename = f"{config['save_encoder']}_{column}.keras"

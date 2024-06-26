@@ -1,6 +1,7 @@
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import os
 from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import load_csv, write_csv
 from app.reconstruction import unwindow_data
@@ -93,7 +94,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         # Perform unwindowing of the decoded data
         reconstructed_data = unwindow_data(pd.DataFrame(decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])))
 
-        output_filename = f"{config['csv_output_path']}_{column}.csv"
+        output_filename = os.path.splitext(config['csv_file'])[0] + f"_{column}.csv"
         write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'], window_size=config['window_size'])
         print(f"Output written to {output_filename}")
 

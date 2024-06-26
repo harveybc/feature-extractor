@@ -57,6 +57,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         initial_size = config['initial_size']
         step_size = config['step_size']
         threshold_error = config['threshold_error']
+        training_batch_size = config['batch_size']
+        epochs = config['epochs']
         
         current_size = initial_size
         while True:
@@ -64,7 +66,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             encoder_plugin.configure_size(window_size, current_size)
             decoder_plugin.configure_size(current_size, window_size)
 
-            autoencoder_manager.train_autoencoder(windowed_data, epochs=config['epochs'], batch_size=config['training_batch_size'])
+            autoencoder_manager.train_autoencoder(windowed_data, epochs=epochs, batch_size=training_batch_size)
 
             encoded_data = autoencoder_manager.encode_data(windowed_data)
             decoded_data = autoencoder_manager.decode_data(encoded_data)

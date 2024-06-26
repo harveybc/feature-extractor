@@ -101,7 +101,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
 
         output_filename = os.path.splitext(config['csv_file'])[0] + f"_{column}.csv"
-        write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'], window_size=config['window_size'])
+        write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")
 
         print(f"Encoder Dimensions: {autoencoder_manager.encoder_model.input_shape} -> {autoencoder_manager.encoder_model.output_shape}")

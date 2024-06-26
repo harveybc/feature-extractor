@@ -26,7 +26,6 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     merged_config.update(config)
     merged_config.update({k: v for k, v in cli_args.items() if v is not None})
     
-    # Handle unknown arguments and compare them with plugin-specific parameters
     encoder_plugin_params = encoder_plugin.plugin_params
     decoder_plugin_params = decoder_plugin.plugin_params
 

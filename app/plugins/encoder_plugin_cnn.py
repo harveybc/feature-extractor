@@ -4,6 +4,10 @@ from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input
 from keras.optimizers import Adam
 
 class Plugin:
+    """
+    An encoder plugin using a convolutional neural network (CNN) based on Keras, with dynamically configurable size.
+    """
+
     plugin_params = {
         'epochs': 10,
         'batch_size': 256,
@@ -33,20 +37,48 @@ class Plugin:
 
         layers = []
         current_size = input_shape
-        layer_size_divisor = self.params['layer_size_divisor']
-        while current_size > interface_size:
-            layers.append(current_size)
+        layer_size_divisor = self.params['layer_size_divisor'] 
+        current_location = input_shape
+        int_layers = 0
+        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
+            layers.append(current_location)
             current_size = max(current_size // layer_size_divisor, interface_size)
+            current_location = interface_size + current_size
+            int_layers += 1
         layers.append(interface_size)
-        layers.reverse()
+        # Debugging message
+        print(f"Encoder Layer sizes: {layers}")
 
-        self.encoder_model = Sequential(name="encoder")
-        self.encoder_model.add(Input(shape=(input_shape, 1)))
+        # set input layer
+        inputs = Input(shape=(input_shape, 1))
+        x = inputs
+
+        # add conv and maxpooling layers, calculating their kernel and pool sizes
+        layers_index = 0
         for size in layers:
-            self.encoder_model.add(Conv1D(size, kernel_size=3, padding='same', activation='relu'))
-            self.encoder_model.add(MaxPooling1D(pool_size=2))
-        self.encoder_model.add(Flatten())
-        self.encoder_model.add(Dense(interface_size, activation='relu'))
+            layers_index += 1
+            # pool size calculation
+            if layers_index >= len(layers):
+                pool_size = round(size/interface_size)
+            else:
+                pool_size = round(size/layers[layers_index])
+            # kernel size configuration based on the layer's size
+            kernel_size = 3 
+            if size > 64:
+                kernel_size = 5
+            if size > 512:
+                kernel_size = 7
+            # add the conv and maxpooling layers
+            x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', padding='same')(x)
+            if pool_size < 2:
+                pool_size = 2
+            x = MaxPooling1D(pool_size=pool_size)(x)
+
+        x = Flatten()(x)
+        #x = Dense(layers[len(layers)-1], activation='relu')(x)
+        outputs = Dense(interface_size)(x)
+        
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
         self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
 
     def train(self, data):

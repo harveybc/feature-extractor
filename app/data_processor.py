@@ -35,17 +35,13 @@ def process_data(config):
     print(f"Windowed data shape: {windowed_data.shape}")
 
     processed_data = {col: windowed_data.values for col in data.columns}
-    debug_info = {'window_size': window_size, 'num_columns': len(windowed_data.columns)}
-    print(f"Processed data: {list(processed_data.keys())}")
-    print(f"Debug info: {debug_info}")
-
-    return processed_data, debug_info
+    return processed_data
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     start_time = time.time()
     
     print("Running process_data...")
-    processed_data, debug_info = process_data(config)
+    processed_data = process_data(config)
     print("Processed data received.")
 
     for column, windowed_data in processed_data.items():
@@ -108,7 +104,11 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     # Save final configuration and debug information
     end_time = time.time()
     execution_time = end_time - start_time
-    debug_info['execution_time'] = execution_time
+    debug_info = {
+        'execution_time': execution_time,
+        'encoder': encoder_plugin.get_debug_info(),
+        'decoder': decoder_plugin.get_debug_info()
+    }
 
     save_config(config, config['save_config'])
     save_debug_info(debug_info, encoder_plugin, decoder_plugin, 'debug_out.json')

@@ -23,39 +23,29 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     print(f"Pre-Merge: file config: {config}")
     print(f"Pre-Merge: cli_args: {cli_args}")
 
-    # Start with default values from config.py
+    # Step 1: Start with default values from config.py
     merged_config = DEFAULT_VALUES.copy()
     print(f"Step 1 - Default config: intermediate_layers = {merged_config.get('intermediate_layers')}")
 
-    # Merge with configuration from file
+    # Step 2: Merge with configuration from file
     merged_config.update(config)
     print(f"Step 2 - File config merged: intermediate_layers = {merged_config.get('intermediate_layers')}")
 
-    # Merge with plugin default parameters
-    for param, value in encoder_plugin.plugin_params.items():
-        if param not in merged_config:
-            merged_config[param] = value
-    for param, value in decoder_plugin.plugin_params.items():
-        if param not in merged_config:
-            merged_config[param] = value
+    # Step 3: Merge with plugin default parameters
+    merged_config.update(encoder_plugin.plugin_params)
+    merged_config.update(decoder_plugin.plugin_params)
     print(f"Step 3 - Plugin defaults merged: intermediate_layers = {merged_config.get('intermediate_layers')}")
 
-    # Filter out CLI arguments that were not explicitly set by the user
+    # Step 4: Merge with CLI arguments (filter out non-explicitly set CLI args)
     cli_args_filtered = {k: v for k, v in cli_args.items() if v not in (None, False, '')}
-    print(f"CLI arguments to merge: {cli_args_filtered}")
-
-    # Update merged_config with filtered CLI arguments
     merged_config.update(cli_args_filtered)
     print(f"Step 4 - CLI arguments merged: intermediate_layers = {merged_config.get('intermediate_layers')}")
 
-    # Set plugin parameters
-    encoder_plugin.set_params(**{k: v for k, v in merged_config.items() if k in encoder_plugin.plugin_params})
-    decoder_plugin.set_params(**{k: v for k, v in merged_config.items() if k in decoder_plugin.plugin_params})
+    final_config = {k: v for k, v in merged_config.items() if k in config or k in cli_args_filtered or k in DEFAULT_VALUES}
+    print(f"Final merged config: {final_config}")
+    print(f"Final merged config: intermediate_layers = {final_config.get('intermediate_layers')}")
 
-    print(f"Final merged config: {merged_config}")
-    print(f"Final merged config: intermediate_layers = {merged_config.get('intermediate_layers')}")
-
-    return merged_config
+    return final_config
 
 def configure_with_args(config, args):
     config.update(args)

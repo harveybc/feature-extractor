@@ -21,11 +21,11 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     print(f"Pre-Merge: default config: {DEFAULT_VALUES}")
     print(f"Pre-Merge: file config: {config}")
     print(f"Pre-Merge: cli_args: {cli_args}")
-    
+
     merged_config = DEFAULT_VALUES.copy()
     merged_config.update(config)
     merged_config.update({k: v for k, v in cli_args.items() if v is not None})
-    
+
     encoder_plugin_params = encoder_plugin.plugin_params
     decoder_plugin_params = decoder_plugin.plugin_params
 
@@ -41,11 +41,13 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     print(f"Encoder plugin params after merging: {encoder_plugin_params}")
     print(f"Decoder plugin params after merging: {decoder_plugin_params}")
 
-    merged_config.update({k: v for k, v in encoder_plugin_params.items() if v != DEFAULT_VALUES.get(k)})
-    merged_config.update({k: v for k, v in decoder_plugin_params.items() if v != DEFAULT_VALUES.get(k)})
-    
-    # Ensure the merged config reflects true values provided by the user or CLI args
-    merged_config.update({k: v for k, v in unknown_args.items() if k not in DEFAULT_VALUES or v != DEFAULT_VALUES[k]})
+    # Only update the merged config with non-default values from encoder and decoder plugin params
+    for key, value in encoder_plugin_params.items():
+        if value != DEFAULT_VALUES.get(key):
+            merged_config[key] = value
+    for key, value in decoder_plugin_params.items():
+        if value != DEFAULT_VALUES.get(key):
+            merged_config[key] = value
 
     print(f"Post-Merge: {merged_config}")
     return merged_config
@@ -57,7 +59,7 @@ def configure_with_args(config, args):
 def save_debug_info(debug_info, encoder_plugin, decoder_plugin, path='debug_out.json'):
     encoder_debug_info = encoder_plugin.get_debug_info()
     decoder_debug_info = decoder_plugin.get_debug_info()
-    
+
     debug_info = {
         'execution_time': debug_info.get('execution_time', 0),
         'encoder': encoder_debug_info,

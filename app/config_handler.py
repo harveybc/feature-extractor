@@ -25,24 +25,28 @@ def merge_config(config_file, cli_args, unknown_args, encoder_plugin, decoder_pl
     # Start with the defaults
     merged_config = DEFAULT_VALUES.copy()
     print(f"Initial merged config with defaults: {merged_config}")
-    
+    print(f"Initial incremental_search: {merged_config.get('incremental_search')}")
+
     # Add plugin defaults
     encoder_plugin_params = encoder_plugin.plugin_params.copy()
     decoder_plugin_params = decoder_plugin.plugin_params.copy()
     merged_config.update(encoder_plugin_params)
     merged_config.update(decoder_plugin_params)
     print(f"After adding plugin defaults: {merged_config}")
+    print(f"After adding plugin incremental_search: {merged_config.get('incremental_search')}")
 
     # Update with the file configuration if present
     if config_file:
         merged_config.update(config_file)
         print(f"After updating with file config: {merged_config}")
+        print(f"After file config incremental_search: {merged_config.get('incremental_search')}")
     
     # Update with CLI arguments if they are provided
     cli_args_filtered = {k: v for k, v in cli_args.items() if v is not None}
     print(f"CLI arguments to merge: {cli_args_filtered}")
     merged_config.update(cli_args_filtered)
     print(f"After updating with CLI arguments: {merged_config}")
+    print(f"After CLI args incremental_search: {merged_config.get('incremental_search')}")
 
     print(f"Pre-Merge: file config: {config_file}")
     print(f"Pre-Merge: cli_args: {cli_args_filtered}")
@@ -63,6 +67,7 @@ def merge_config(config_file, cli_args, unknown_args, encoder_plugin, decoder_pl
     merged_config.update({k: v for k, v in encoder_plugin_params.items() if k not in DEFAULT_VALUES or v != DEFAULT_VALUES[k]})
     merged_config.update({k: v for k, v in decoder_plugin_params.items() if k not in DEFAULT_VALUES or v != DEFAULT_VALUES[k]})
     print(f"After updating with plugin params: {merged_config}")
+    print(f"After plugin params incremental_search: {merged_config.get('incremental_search')}")
 
     print(f"Post-Merge: {merged_config}")
     return merged_config

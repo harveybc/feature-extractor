@@ -28,6 +28,36 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     merged_config = DEFAULT_VALUES.copy()
     print(f"Step 1 - Default config: {merged_config}")
 
+    # Validate Step 1
+    desired_step1_output = {
+        'csv_file': './csv_input.csv',
+        'save_encoder': './encoder_model.h5',
+        'save_decoder': './decoder_model.h5',
+        'load_encoder': None,
+        'load_decoder': None,
+        'evaluate_encoder': './encoder_eval.csv',
+        'evaluate_decoder': './decoder_eval.csv',
+        'encoder_plugin': 'default',
+        'decoder_plugin': 'default',
+        'window_size': 128,
+        'threshold_error': 0.0003,
+        'initial_size': 8,
+        'step_size': 4,
+        'remote_log': None,
+        'remote_config': None,
+        'load_config': './config_in.json',
+        'save_config': './config_out.json',
+        'quiet_mode': False,
+        'force_date': False,
+        'incremental_search': True,
+        'headers': False,
+        'epochs': 5,
+        'batch_size': 256
+    }
+    if merged_config != desired_step1_output:
+        print("Error: Step 1 output does not match the desired output.")
+        sys.exit(1)
+
     # Step 2: Merge with plugin default parameters
     merged_config.update(encoder_plugin.plugin_params)
     merged_config.update(decoder_plugin.plugin_params)

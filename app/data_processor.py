@@ -72,13 +72,17 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             encoded_data = autoencoder_manager.encode_data(windowed_data)
             decoded_data = autoencoder_manager.decode_data(encoded_data)
 
+            # Check if the decoded data needs reshaping
+            if len(decoded_data.shape) == 3:
+                decoded_data = decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])
+
             # Calculate the MSE and MAE
             mse = autoencoder_manager.calculate_mse(windowed_data, decoded_data)
             mae = autoencoder_manager.calculate_mae(windowed_data, decoded_data)
             print(f"Mean Squared Error for column {column} with interface size {current_size}: {mse}")
             print(f"Mean Absolute Error for column {column} with interface size {current_size}: {mae}")
 
-            if mse <= threshold_error:
+            if (incremental_search and mse <= threshold_error) or (not incremental_search and mse >= threshold_error):
                 print(f"Optimal interface size found: {current_size} with MSE: {mse} and MAE: {mae}")
                 break
             else:

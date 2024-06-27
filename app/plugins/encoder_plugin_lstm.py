@@ -65,7 +65,6 @@ class Plugin:
                 x = LSTM(units=size, activation='tanh', return_sequences=(layers_index < len(layers)))(x)
         
         x = Flatten()(x)
-        #x = Dense(layers[-1], activation='relu')(x)
         outputs = Dense(interface_size)(x)
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")

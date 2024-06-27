@@ -1,11 +1,11 @@
 import numpy as np
-from keras.models import Sequential, load_model
+from keras.models import Sequential, load_model, save_model
 from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed
 from keras.optimizers import Adam
 
 class Plugin:
     """
-    A Long Short-Term Memory (LSTM) network based decoder using Keras, with dynamically configurable size.
+    A Long Short-Term Memory (LSTM) network-based decoder using Keras, with dynamically configurable size.
     """
 
     plugin_params = {

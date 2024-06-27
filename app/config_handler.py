@@ -34,7 +34,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     print(f"Initial merged config with defaults: {merged_config}")
     
     # Filter out CLI arguments that were not explicitly set by the user
-    cli_args_filtered = {k: v for k, v in cli_args.__dict__.items() if v not in (None, False, '')}
+    cli_args_filtered = {k: v for k, v in cli_args.items() if v not in (None, False, '')}
     print(f"CLI arguments to merge: {cli_args_filtered}")
 
     # Update merged_config with filtered CLI arguments

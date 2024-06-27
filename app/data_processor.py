@@ -86,8 +86,11 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
                     current_size += step_size
                 else:
                     current_size -= step_size
-                if current_size > windowed_data.shape[1] or current_size <= 0:
-                    print(f"Cannot adjust interface size beyond data dimensions. Stopping.")
+                if current_size <= 0:
+                    print(f"Cannot decrease interface size below 1. Stopping.")
+                    break
+                if current_size > windowed_data.shape[1]:
+                    print(f"Cannot increase interface size beyond data dimensions. Stopping.")
                     break
 
         encoder_model_filename = f"{config['save_encoder']}_{column}.keras"
@@ -98,7 +101,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         print(f"Saved decoder model to {decoder_model_filename}")
 
         # Perform unwindowing of the decoded data once
-        reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
+        reconstructed_data = pd.DataFrame(decoded_data)
 
         output_filename = os.path.splitext(config['csv_file'])[0] + f"_{column}.csv"
         write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'])

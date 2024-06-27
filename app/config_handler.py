@@ -80,6 +80,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
 
     return final_config
 
+
 def configure_with_args(config, args):
     for k, v in args.items():
         config[k] = v

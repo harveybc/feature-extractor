@@ -28,7 +28,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     merged_config = DEFAULT_VALUES.copy()
     print(f"Step 1 - Default config: {merged_config}")
 
-    # Validate Step 1
+    # Desired output for Step 1
     desired_step1_output = {
         'csv_file': './csv_input.csv',
         'save_encoder': './encoder_model.h5',
@@ -54,6 +54,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
         'epochs': 5,
         'batch_size': 256
     }
+    print(f"Desired Step 1 Output: {desired_step1_output}")
     if merged_config != desired_step1_output:
         print("Error: Step 1 output does not match the desired output.")
         sys.exit(1)
@@ -63,7 +64,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     merged_config.update(decoder_plugin.plugin_params)
     print(f"Step 2 - Plugin defaults merged: {merged_config}")
 
-    # Validate Step 2
+    # Desired output for Step 2
     desired_step2_output = {
         'csv_file': './csv_input.csv',
         'save_encoder': './encoder_model.h5',
@@ -91,6 +92,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
         'intermediate_layers': 1,
         'layer_size_divisor': 2
     }
+    print(f"Desired Step 2 Output: {desired_step2_output}")
     if merged_config != desired_step2_output:
         print("Error: Step 2 output does not match the desired output.")
         sys.exit(1)
@@ -99,7 +101,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     merged_config.update(config)
     print(f"Step 3 - File config merged: {merged_config}")
 
-    # Validate Step 3
+    # Desired output for Step 3
     desired_step3_output = {
         'csv_file': './csv_input.csv',
         'save_encoder': './encoder_model.h5',
@@ -127,6 +129,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
         'intermediate_layers': 2,
         'layer_size_divisor': 2
     }
+    print(f"Desired Step 3 Output: {desired_step3_output}")
     if merged_config != desired_step3_output:
         print("Error: Step 3 output does not match the desired output.")
         sys.exit(1)
@@ -138,7 +141,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
             merged_config[key] = value
     print(f"Step 4 - CLI arguments merged: {merged_config}")
 
-    # Validate Step 4
+    # Desired output for Step 4
     desired_step4_output = {
         'csv_file': 'tests\\data\\csv_sel_unb_norm_512.csv',
         'save_encoder': './encoder_model.h5',
@@ -166,6 +169,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
         'intermediate_layers': 0,
         'layer_size_divisor': 2
     }
+    print(f"Desired Step 4 Output: {desired_step4_output}")
     if merged_config != desired_step4_output:
         print("Error: Step 4 output does not match the desired output.")
         sys.exit(1)

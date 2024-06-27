@@ -32,7 +32,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     merged_config.update(decoder_plugin_params)
 
     print(f"Initial merged config with defaults: {merged_config}")
-    
+
     # Filter out CLI arguments that were not explicitly set by the user
     cli_args_filtered = {k: v for k, v in cli_args.items() if v not in (None, False, '')}
     print(f"CLI arguments to merge: {cli_args_filtered}")
@@ -42,18 +42,11 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
 
     print(f"Config after merging CLI arguments: {merged_config}")
 
-    for key, value in unknown_args.items():
-        if key in encoder_plugin_params:
-            encoder_plugin_params[key] = type(encoder_plugin_params[key])(value)
-        if key in decoder_plugin_params:
-            decoder_plugin_params[key] = type(decoder_plugin_params[key])(value)
+    # Remove plugin defaults if they were not set by user
+    final_config = {k: v for k, v in merged_config.items() if k in config or k in cli_args_filtered or k in DEFAULT_VALUES}
+    print(f"Final config before saving: {final_config}")
 
-    print(f"After updating with plugin params: {merged_config}")
-    print(f"Encoder plugin params after merging: {encoder_plugin_params}")
-    print(f"Decoder plugin params after merging: {decoder_plugin_params}")
-    print(f"Final merged config: {merged_config}")
-
-    return merged_config
+    return final_config
 
 def configure_with_args(config, args):
     config.update(args)

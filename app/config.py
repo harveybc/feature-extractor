@@ -8,8 +8,8 @@ DEFAULT_VALUES = {
     'evaluate_decoder': './decoder_eval.csv',
     'encoder_plugin': 'default',
     'decoder_plugin': 'default',
-    'window_size': 512,
-    'threshold_error': 0.0005,
+    'window_size': 128,
+    'threshold_error': 0.005,
     'initial_size': 8,
     'step_size': 4,
     'remote_log': None,
@@ -20,6 +20,6 @@ DEFAULT_VALUES = {
     'force_date': False,
     'incremental_search': True,
     'headers': False,
-    'epochs': 10,  # Add epochs here
+    'epochs': 5,  # Add epochs here
     'batch_size': 256  # Add batch_size here
 }

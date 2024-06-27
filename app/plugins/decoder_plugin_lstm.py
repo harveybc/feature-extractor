@@ -1,5 +1,5 @@
 import numpy as np
-from keras.models import Sequential, load_model, save_model
+from keras.models import Sequential, load_model
 from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed
 from keras.optimizers import Adam
 
@@ -69,8 +69,8 @@ class Plugin:
             print(f"Added LSTM layer with size: {reshape_size}")
 
         # Adding the final TimeDistributed Dense layer to match the output shape
-        self.model.add(TimeDistributed(Dense(output_shape)))
-        print(f"Added TimeDistributed Dense layer with size: {output_shape}")
+        self.model.add(TimeDistributed(Dense(1)))
+        print(f"Added TimeDistributed Dense layer with size: 1")
 
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
@@ -78,7 +78,7 @@ class Plugin:
         # Debugging message
         print(f"Training decoder with encoded data shape: {encoded_data.shape} and original data shape: {original_data.shape}")
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))  # Flatten the data
-        original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        original_data = original_data.reshape((original_data.shape[0], original_data.shape[1], 1))  # Reshape to (batch_size, time_steps, 1)
         self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
         print("Training completed.")
 
@@ -87,7 +87,7 @@ class Plugin:
         print(f"Decoding data with shape: {encoded_data.shape}")
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))  # Flatten the data
         decoded_data = self.model.predict(encoded_data)
-        decoded_data = decoded_data.reshape((decoded_data.shape[0], -1))  # Reshape to 2D array
+        decoded_data = decoded_data.reshape((decoded_data.shape[0], decoded_data.shape[1]))  # Reshape to (batch_size, time_steps)
         print(f"Decoded data shape: {decoded_data.shape}")
         return decoded_data
 
@@ -100,8 +100,8 @@ class Plugin:
         print(f"Decoder model loaded from {file_path}")
 
     def calculate_mse(self, original_data, reconstructed_data):
-        original_data = original_data.reshape((original_data.shape[0], -1))  # Flatten the data
-        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))  # Flatten the data
+        original_data = original_data.reshape((original_data.shape[0], original_data.shape[1], 1))  # Reshape to (batch_size, time_steps, 1)
+        reconstructed_data = reconstructed_data.reshape((reconstructed_data.shape[0], reconstructed_data.shape[1], 1))  # Reshape to (batch_size, time_steps, 1)
         mse = np.mean(np.square(original_data - reconstructed_data))
         print(f"Calculated MSE: {mse}")
         return mse
@@ -109,6 +109,6 @@ class Plugin:
 # Debugging usage example
 if __name__ == "__main__":
     plugin = Plugin()
-    plugin.configure_size(interface_size=4, output_shape=128)
+    plugin.configure_size(interface_size=4, output_shape=32)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

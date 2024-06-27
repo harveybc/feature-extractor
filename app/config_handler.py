@@ -39,11 +39,15 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
         print("Error: Step 3 output does not match the desired output.")
         sys.exit(1)
 
+    # Identify CLI arguments explicitly set by the user
+    user_set_cli_args = {k: v for k, v in cli_args.items() if v is not None}
+    print(f"User set CLI arguments: {user_set_cli_args}")
+
     # Step 4: Merge with CLI arguments (ensure CLI args always override)
-    for key, value in cli_args.items():
-        if value is not None:
-            print(f"Merging from CLI args: {key} = {value}")
-            merged_config[key] = value
+    for key, value in user_set_cli_args.items():
+        print(f"Merging from CLI args: {key} = {value}")
+        merged_config[key] = value
+
     print(f"Step 4 - CLI arguments merged: {merged_config}")
     desired_step4_output = {'csv_file': 'tests\\data\\csv_sel_unb_norm_512.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5', 'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 'evaluate_decoder': './decoder_eval.csv', 'encoder_plugin': 'lstm', 'decoder_plugin': 'lstm', 'window_size': 32, 'threshold_error': 0.0003, 'initial_size': 4, 'step_size': 4, 'remote_log': None, 'remote_config': None, 'load_config': 'input_config.json', 'save_config': './config_out.json', 'quiet_mode': False, 'force_date': False, 'incremental_search': False, 'headers': False, 'epochs': 5, 'batch_size': 256, 'intermediate_layers': 4, 'layer_size_divisor': 2}
     print(f"Desired Step 4 Output: {desired_step4_output}")

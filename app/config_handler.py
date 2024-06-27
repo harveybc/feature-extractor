@@ -37,7 +37,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     print(f"Step 3 - Plugin defaults merged: intermediate_layers = {merged_config.get('intermediate_layers')}")
 
     # Step 4: Merge with CLI arguments (filter out non-explicitly set CLI args)
-    cli_args_filtered = {k: v for k, v in cli_args.items() if v not in (None, False, '')}
+    cli_args_filtered = {k: v for k, v in cli_args.items() if v is not None}
     merged_config.update(cli_args_filtered)
     print(f"Step 4 - CLI arguments merged: intermediate_layers = {merged_config.get('intermediate_layers')}")
 

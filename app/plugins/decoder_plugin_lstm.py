@@ -1,11 +1,11 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed
+from keras.layers import Dense, LSTM, Bidirectional, RepeatVector, TimeDistributed
 from keras.optimizers import Adam
 
 class Plugin:
     """
-    A Long Short-Term Memory (LSTM) network-based decoder using Keras, with dynamically configurable size.
+    A Bidirectional Long Short-Term Memory (Bi-LSTM) network-based decoder using Keras, with dynamically configurable size.
     """
 
     plugin_params = {
@@ -62,11 +62,11 @@ class Plugin:
         self.model.add(RepeatVector(output_shape))
         print(f"Added RepeatVector layer with size: {output_shape}")
 
-        # Adding LSTM layers
+        # Adding Bi-LSTM layers
         for i in range(0, len(layer_sizes)):
             reshape_size = layer_sizes[i]
-            self.model.add(LSTM(units=reshape_size, activation='tanh', return_sequences=True))
-            print(f"Added LSTM layer with size: {reshape_size}")
+            self.model.add(Bidirectional(LSTM(units=reshape_size, activation='tanh', return_sequences=True)))
+            print(f"Added Bi-LSTM layer with size: {reshape_size}")
 
         # Adding the final TimeDistributed Dense layer to match the output shape
         self.model.add(TimeDistributed(Dense(1)))

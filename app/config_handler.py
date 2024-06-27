@@ -44,6 +44,9 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     merged_config.update({k: v for k, v in encoder_plugin_params.items() if v != DEFAULT_VALUES.get(k)})
     merged_config.update({k: v for k, v in decoder_plugin_params.items() if v != DEFAULT_VALUES.get(k)})
     
+    # Ensure the merged config reflects true values provided by the user or CLI args
+    merged_config.update({k: v for k, v in unknown_args.items() if k not in DEFAULT_VALUES or v != DEFAULT_VALUES[k]})
+
     print(f"Post-Merge: {merged_config}")
     return merged_config
 

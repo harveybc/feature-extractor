@@ -19,17 +19,22 @@ def save_config(config, path='config_out.json'):
         json.dump(config_to_save, f, indent=4)
     return config, path
 
-def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin):
+def merge_config(config_file, cli_args, unknown_args, encoder_plugin, decoder_plugin):
     print(f"Pre-Merge: default config: {DEFAULT_VALUES}")
-    print(f"Pre-Merge: file config: {config}")
-    print(f"Pre-Merge: cli_args: {cli_args}")
 
-    merged_config = config.copy()  # Start with file config
-    merged_config.update(DEFAULT_VALUES)  # Apply defaults where not set in file config
+    # Start with the defaults
+    merged_config = DEFAULT_VALUES.copy()
 
+    # Update with the file configuration if present
+    if config_file:
+        merged_config.update(config_file)
+    
     # Update with CLI arguments if they are provided
     cli_args_filtered = {k: v for k, v in cli_args.items() if v is not None}
     merged_config.update(cli_args_filtered)
+
+    print(f"Pre-Merge: file config: {config_file}")
+    print(f"Pre-Merge: cli_args: {cli_args_filtered}")
 
     encoder_plugin_params = encoder_plugin.plugin_params
     decoder_plugin_params = decoder_plugin.plugin_params

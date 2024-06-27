@@ -1,3 +1,5 @@
+# main.py
+
 import sys
 import json
 import pandas as pd
@@ -20,11 +22,10 @@ def main():
     config = DEFAULT_VALUES.copy()
     print(f"Default config: {config}")
 
+    file_config = {}
     if args.load_config:
         file_config = load_config(args.load_config)
         print(f"Loaded config from file: {file_config}")
-        config.update(file_config)
-        print(f"Config after loading from file: {config}")
 
     encoder_plugin_name = cli_args['encoder_plugin']
     decoder_plugin_name = cli_args['decoder_plugin']
@@ -40,7 +41,7 @@ def main():
     print("Merging configuration with CLI arguments and unknown args...")
     unknown_args_dict = {unknown_args[i].lstrip('--'): unknown_args[i + 1] for i in range(0, len(unknown_args), 2)}
     print(f"Unknown args as dict: {unknown_args_dict}")
-    config = merge_config(config, cli_args, unknown_args_dict, encoder_plugin, decoder_plugin)
+    config = merge_config(file_config, cli_args, unknown_args_dict, encoder_plugin, decoder_plugin)
     print(f"Config after merging: {config}")
 
     if args.save_config:

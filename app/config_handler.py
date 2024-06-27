@@ -24,6 +24,12 @@ def merge_config(config_file, cli_args, unknown_args, encoder_plugin, decoder_pl
 
     # Start with the defaults
     merged_config = DEFAULT_VALUES.copy()
+    
+    # Add plugin defaults
+    encoder_plugin_params = encoder_plugin.plugin_params.copy()
+    decoder_plugin_params = decoder_plugin.plugin_params.copy()
+    merged_config.update(encoder_plugin_params)
+    merged_config.update(decoder_plugin_params)
 
     # Update with the file configuration if present
     if config_file:
@@ -35,9 +41,6 @@ def merge_config(config_file, cli_args, unknown_args, encoder_plugin, decoder_pl
 
     print(f"Pre-Merge: file config: {config_file}")
     print(f"Pre-Merge: cli_args: {cli_args_filtered}")
-
-    encoder_plugin_params = encoder_plugin.plugin_params
-    decoder_plugin_params = decoder_plugin.plugin_params
 
     print(f"Encoder plugin params before merging: {encoder_plugin_params}")
     print(f"Decoder plugin params before merging: {decoder_plugin_params}")

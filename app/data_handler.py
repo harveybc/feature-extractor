@@ -12,22 +12,13 @@ def load_csv(file_path, headers=False):
                 data.set_index('date', inplace=True)
             else:
                 data.columns = [f'col_{i}' for i in range(len(data.columns))]
+
             for col in data.columns:
                 if col != 'date':
                     data[col] = pd.to_numeric(data[col], errors='coerce')
-    except FileNotFoundError:
-        print(f"Error: The file {file_path} does not exist.")
-        raise
-    except pd.errors.EmptyDataError:
-        print("Error: The file is empty.")
-        raise
-    except pd.errors.ParserError:
-        print("Error: Error parsing the file.")
-        raise
     except Exception as e:
         print(f"An error occurred while loading the CSV: {e}")
         raise
-    
     return data
 
 def write_csv(file_path, data, include_date=True, headers=True, window_size=None):

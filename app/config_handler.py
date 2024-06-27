@@ -55,7 +55,6 @@ def save_debug_info(debug_info, encoder_plugin, decoder_plugin, path='debug_out.
     encoder_debug_info = encoder_plugin.get_debug_info()
     decoder_debug_info = decoder_plugin.get_debug_info()
     
-    # Remove system-specific debug info
     debug_info = {
         'execution_time': debug_info.get('execution_time', 0),
         'encoder': encoder_debug_info,

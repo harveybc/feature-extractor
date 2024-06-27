@@ -24,16 +24,18 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
 
     # Start with the default configuration
     merged_config = DEFAULT_VALUES.copy()
-
+    
     # Update with the configuration file values (if any)
     for key, value in config.items():
         if value is not None:
             merged_config[key] = value
+            print(f"Updated from config file: {key} = {value}")
 
     # Update with CLI arguments
     for key, value in cli_args.items():
         if value is not None:
             merged_config[key] = value
+            print(f"Updated from CLI args: {key} = {value}")
 
     encoder_plugin_params = encoder_plugin.plugin_params
     decoder_plugin_params = decoder_plugin.plugin_params
@@ -54,9 +56,17 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     for key, value in encoder_plugin_params.items():
         if value != DEFAULT_VALUES.get(key):
             merged_config[key] = value
+            print(f"Updated from encoder plugin params: {key} = {value}")
     for key, value in decoder_plugin_params.items():
         if value != DEFAULT_VALUES.get(key):
             merged_config[key] = value
+            print(f"Updated from decoder plugin params: {key} = {value}")
+
+    # Ensure the merged config reflects true values provided by the user or CLI args
+    for key, value in unknown_args.items():
+        if key not in DEFAULT_VALUES or value != DEFAULT_VALUES[key]:
+            merged_config[key] = value
+            print(f"Updated from unknown args: {key} = {value}")
 
     print(f"Post-Merge: {merged_config}")
     return merged_config

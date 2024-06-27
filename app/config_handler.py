@@ -22,9 +22,18 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     print(f"Pre-Merge: file config: {config}")
     print(f"Pre-Merge: cli_args: {cli_args}")
 
+    # Start with the default configuration
     merged_config = DEFAULT_VALUES.copy()
-    merged_config.update(config)
-    merged_config.update({k: v for k, v in cli_args.items() if v is not None})
+
+    # Update with the configuration file values (if any)
+    for key, value in config.items():
+        if value is not None:
+            merged_config[key] = value
+
+    # Update with CLI arguments
+    for key, value in cli_args.items():
+        if value is not None:
+            merged_config[key] = value
 
     encoder_plugin_params = encoder_plugin.plugin_params
     decoder_plugin_params = decoder_plugin.plugin_params

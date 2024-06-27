@@ -33,8 +33,8 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     print(f"CLI arguments to merge: {cli_args_filtered}")
 
     # Update with encoder and decoder plugin parameters
-    encoder_plugin_params = encoder_plugin.plugin_params
-    decoder_plugin_params = decoder_plugin.plugin_params
+    encoder_plugin_params = encoder_plugin.plugin_params.copy()
+    decoder_plugin_params = decoder_plugin.plugin_params.copy()
 
     print(f"Encoder plugin params before merging: {encoder_plugin_params}")
     print(f"Decoder plugin params before merging: {decoder_plugin_params}")
@@ -45,6 +45,10 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     merged_config.update(cli_args_filtered)
 
     print(f"Config after merging CLI arguments: {merged_config}")
+
+    # Apply the CLI and file parameters directly to the plugin parameters
+    encoder_plugin.set_params(**cli_args_filtered)
+    decoder_plugin.set_params(**cli_args_filtered)
 
     # Remove plugin defaults if they were not set by user
     final_config = {k: v for k, v in merged_config.items() if k in config or k in cli_args_filtered or k in DEFAULT_VALUES}

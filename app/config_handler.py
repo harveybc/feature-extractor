@@ -27,7 +27,10 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     # Step 1: Start with default values from config.py
     merged_config = DEFAULT_VALUES.copy()
     print(f"Step 1 - Default config: {merged_config}")
-    if merged_config != {'csv_file': './csv_input.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5', 'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 'evaluate_decoder': './decoder_eval.csv', 'encoder_plugin': 'default', 'decoder_plugin': 'default', 'window_size': 128, 'threshold_error': 0.0003, 'initial_size': 8, 'step_size': 4, 'remote_log': None, 'remote_config': None, 'load_config': './config_in.json', 'save_config': './config_out.json', 'quiet_mode': False, 'force_date': False, 'incremental_search': True, 'headers': False, 'epochs': 5, 'batch_size': 256}:
+    desired_step1_output = {'csv_file': './csv_input.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5', 'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 'evaluate_decoder': './decoder_eval.csv', 'encoder_plugin': 'default', 'decoder_plugin': 'default', 'window_size': 128, 'threshold_error': 0.0003, 'initial_size': 8, 'step_size': 4, 'remote_log': None, 'remote_config': None, 'load_config': './config_in.json', 'save_config': './config_out.json', 'quiet_mode': False, 'force_date': False, 'incremental_search': True, 'headers': False, 'epochs': 5, 'batch_size': 256}
+    if merged_config != desired_step1_output:
+        print(f"Desired Step 1 Output: {desired_step1_output}")
+        print(f"Actual Step 1 Output: {merged_config}")
         print("Error: Step 1 output does not match the desired output.")
         sys.exit(1)
 
@@ -35,14 +38,20 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     merged_config.update(encoder_plugin.plugin_params)
     merged_config.update(decoder_plugin.plugin_params)
     print(f"Step 2 - Plugin defaults merged: {merged_config}")
-    if merged_config != {'csv_file': './csv_input.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5', 'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 'evaluate_decoder': './decoder_eval.csv', 'encoder_plugin': 'default', 'decoder_plugin': 'default', 'window_size': 128, 'threshold_error': 0.0003, 'initial_size': 8, 'step_size': 4, 'remote_log': None, 'remote_config': None, 'load_config': './config_in.json', 'save_config': './config_out.json', 'quiet_mode': False, 'force_date': False, 'incremental_search': True, 'headers': False, 'epochs': 10, 'batch_size': 256, 'intermediate_layers': 1, 'layer_size_divisor': 2}:
+    desired_step2_output = {'csv_file': './csv_input.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5', 'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 'evaluate_decoder': './decoder_eval.csv', 'encoder_plugin': 'default', 'decoder_plugin': 'default', 'window_size': 128, 'threshold_error': 0.0003, 'initial_size': 8, 'step_size': 4, 'remote_log': None, 'remote_config': None, 'load_config': './config_in.json', 'save_config': './config_out.json', 'quiet_mode': False, 'force_date': False, 'incremental_search': True, 'headers': False, 'epochs': 10, 'batch_size': 256, 'intermediate_layers': 1, 'layer_size_divisor': 2}
+    if merged_config != desired_step2_output:
+        print(f"Desired Step 2 Output: {desired_step2_output}")
+        print(f"Actual Step 2 Output: {merged_config}")
         print("Error: Step 2 output does not match the desired output.")
         sys.exit(1)
 
     # Step 3: Merge with file configuration
     merged_config.update(config)
     print(f"Step 3 - File config merged: {merged_config}")
-    if merged_config != {'csv_file': './csv_input.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5', 'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 'evaluate_decoder': './decoder_eval.csv', 'encoder_plugin': 'default', 'decoder_plugin': 'default', 'window_size': 128, 'threshold_error': 0.0003, 'initial_size': 8, 'step_size': 4, 'remote_log': None, 'remote_config': None, 'load_config': './config_in.json', 'save_config': './config_out.json', 'quiet_mode': False, 'force_date': False, 'incremental_search': True, 'headers': False, 'epochs': 5, 'batch_size': 256, 'intermediate_layers': 2, 'layer_size_divisor': 2}:
+    desired_step3_output = {'csv_file': './csv_input.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5', 'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 'evaluate_decoder': './decoder_eval.csv', 'encoder_plugin': 'default', 'decoder_plugin': 'default', 'window_size': 128, 'threshold_error': 0.0003, 'initial_size': 8, 'step_size': 4, 'remote_log': None, 'remote_config': None, 'load_config': './config_in.json', 'save_config': './config_out.json', 'quiet_mode': False, 'force_date': False, 'incremental_search': True, 'headers': False, 'epochs': 5, 'batch_size': 256, 'intermediate_layers': 2, 'layer_size_divisor': 2}
+    if merged_config != desired_step3_output:
+        print(f"Desired Step 3 Output: {desired_step3_output}")
+        print(f"Actual Step 3 Output: {merged_config}")
         print("Error: Step 3 output does not match the desired output.")
         sys.exit(1)
 
@@ -51,7 +60,10 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     for key, value in cli_args_filtered.items():
         merged_config[key] = value
     print(f"Step 4 - CLI arguments merged: {merged_config}")
-    if merged_config != {'csv_file': 'tests\\data\\csv_sel_unb_norm_512.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5', 'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 'evaluate_decoder': './decoder_eval.csv', 'encoder_plugin': 'lstm', 'decoder_plugin': 'lstm', 'window_size': 32, 'threshold_error': 0.0003, 'initial_size': 4, 'step_size': 4, 'remote_log': None, 'remote_config': None, 'load_config': 'input_config.json', 'save_config': './config_out.json', 'quiet_mode': False, 'force_date': False, 'incremental_search': False, 'headers': False, 'epochs': 5, 'batch_size': 256, 'intermediate_layers': 0, 'layer_size_divisor': 2}:
+    desired_step4_output = {'csv_file': 'tests\\data\\csv_sel_unb_norm_512.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5', 'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 'evaluate_decoder': './decoder_eval.csv', 'encoder_plugin': 'lstm', 'decoder_plugin': 'lstm', 'window_size': 32, 'threshold_error': 0.0003, 'initial_size': 4, 'step_size': 4, 'remote_log': None, 'remote_config': None, 'load_config': 'input_config.json', 'save_config': './config_out.json', 'quiet_mode': False, 'force_date': False, 'incremental_search': False, 'headers': False, 'epochs': 5, 'batch_size': 256, 'intermediate_layers': 4, 'layer_size_divisor': 2}
+    if merged_config != desired_step4_output:
+        print(f"Desired Step 4 Output: {desired_step4_output}")
+        print(f"Actual Step 4 Output: {merged_config}")
         print("Error: Step 4 output does not match the desired output.")
         sys.exit(1)
 

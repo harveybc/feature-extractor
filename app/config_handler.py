@@ -18,9 +18,13 @@ def save_config(config, path='config_out.json'):
     return config, path
 
 def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin):
+    print(f"Pre-Merge: default config: {DEFAULT_VALUES}")
+    print(f"Pre-Merge: plugin default params: {encoder_plugin.plugin_params}, {decoder_plugin.plugin_params}")
+    print(f"Pre-Merge: file config: {config}")
+    print(f"Pre-Merge: cli_args: {cli_args}")
+
     # Start with default values from config.py
     merged_config = DEFAULT_VALUES.copy()
-    print(f"Pre-Merge: default config: {DEFAULT_VALUES}")
 
     # Merge with plugin default parameters first
     merged_config.update(encoder_plugin.plugin_params)
@@ -29,8 +33,8 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
 
     # Then merge with configuration from file
     merged_config.update(config)
-    print(f"Pre-Merge: file config: {config}")
-    
+    print(f"Merged config with file config: {merged_config}")
+
     # Filter out CLI arguments that were not explicitly set by the user
     cli_args_filtered = {k: v for k, v in cli_args.items() if v not in (None, False, '')}
     print(f"CLI arguments to merge: {cli_args_filtered}")

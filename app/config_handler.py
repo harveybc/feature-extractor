@@ -26,7 +26,6 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
 
     # Step 1: Start with default values from config.py
     merged_config = DEFAULT_VALUES.copy()
-    print(f"Step 1 - Default config: {merged_config}")
 
     # Desired output for Step 1
     desired_step1_output = {
@@ -55,6 +54,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
         'batch_size': 256
     }
     print(f"Desired Step 1 Output: {desired_step1_output}")
+    print(f"Step 1 - Default config: {merged_config}")
     if merged_config != desired_step1_output:
         print("Error: Step 1 output does not match the desired output.")
         sys.exit(1)
@@ -62,7 +62,6 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     # Step 2: Merge with plugin default parameters
     merged_config.update(encoder_plugin.plugin_params)
     merged_config.update(decoder_plugin.plugin_params)
-    print(f"Step 2 - Plugin defaults merged: {merged_config}")
 
     # Desired output for Step 2
     desired_step2_output = {
@@ -93,13 +92,13 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
         'layer_size_divisor': 2
     }
     print(f"Desired Step 2 Output: {desired_step2_output}")
+    print(f"Step 2 - Plugin defaults merged: {merged_config}")
     if merged_config != desired_step2_output:
         print("Error: Step 2 output does not match the desired output.")
         sys.exit(1)
 
     # Step 3: Merge with file configuration
     merged_config.update(config)
-    print(f"Step 3 - File config merged: {merged_config}")
 
     # Desired output for Step 3
     desired_step3_output = {
@@ -130,6 +129,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
         'layer_size_divisor': 2
     }
     print(f"Desired Step 3 Output: {desired_step3_output}")
+    print(f"Step 3 - File config merged: {merged_config}")
     if merged_config != desired_step3_output:
         print("Error: Step 3 output does not match the desired output.")
         sys.exit(1)
@@ -137,9 +137,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     # Step 4: Merge with CLI arguments (ensure CLI args always override)
     cli_args_filtered = {k: v for k, v in cli_args.items() if v is not None}
     for key, value in cli_args_filtered.items():
-        if value is not None:
-            merged_config[key] = value
-    print(f"Step 4 - CLI arguments merged: {merged_config}")
+        merged_config[key] = value
 
     # Desired output for Step 4
     desired_step4_output = {
@@ -170,6 +168,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
         'layer_size_divisor': 2
     }
     print(f"Desired Step 4 Output: {desired_step4_output}")
+    print(f"Step 4 - CLI arguments merged: {merged_config}")
     if merged_config != desired_step4_output:
         print("Error: Step 4 output does not match the desired output.")
         sys.exit(1)

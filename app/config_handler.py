@@ -25,10 +25,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
 
     # Start with default values from config.py
     merged_config = DEFAULT_VALUES.copy()
-
-    # Merge with configuration from file
-    merged_config.update(config)
-    print(f"Merged config with file config: {merged_config}")
+    print(f"Step 1 - Default config: intermediate_layers = {merged_config.get('intermediate_layers')}")
 
     # Merge with plugin default parameters
     for param, value in encoder_plugin.plugin_params.items():
@@ -37,7 +34,11 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     for param, value in decoder_plugin.plugin_params.items():
         if param not in merged_config:
             merged_config[param] = value
-    print(f"Merged config with plugin defaults: {merged_config}")
+    print(f"Step 2 - Plugin defaults merged: intermediate_layers = {merged_config.get('intermediate_layers')}")
+
+    # Merge with configuration from file
+    merged_config.update(config)
+    print(f"Step 3 - File config merged: intermediate_layers = {merged_config.get('intermediate_layers')}")
 
     # Filter out CLI arguments that were not explicitly set by the user
     cli_args_filtered = {k: v for k, v in cli_args.items() if v not in (None, False, '')}
@@ -45,13 +46,14 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
 
     # Update merged_config with filtered CLI arguments
     merged_config.update(cli_args_filtered)
-    print(f"Config after merging CLI arguments: {merged_config}")
+    print(f"Step 4 - CLI arguments merged: intermediate_layers = {merged_config.get('intermediate_layers')}")
 
     # Set plugin parameters
     encoder_plugin.set_params(**{k: v for k, v in merged_config.items() if k in encoder_plugin.plugin_params})
     decoder_plugin.set_params(**{k: v for k, v in merged_config.items() if k in decoder_plugin.plugin_params})
 
     print(f"Final merged config: {merged_config}")
+    print(f"Final merged config: intermediate_layers = {merged_config.get('intermediate_layers')}")
 
     return merged_config
 

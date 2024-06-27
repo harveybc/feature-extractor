@@ -27,27 +27,34 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     merged_config.update(config)
     print(f"Pre-Merge: file config: {config}")
     
-    # Merge with plugin default parameters
-    encoder_plugin_params = encoder_plugin.plugin_params
-    decoder_plugin_params = decoder_plugin.plugin_params
-    merged_config.update(encoder_plugin_params)
-    merged_config.update(decoder_plugin_params)
-    print(f"Merged config with plugin defaults: {merged_config}")
-
     # Filter out CLI arguments that were not explicitly set by the user
     cli_args_filtered = {k: v for k, v in cli_args.items() if v not in (None, False, '')}
     print(f"CLI arguments to merge: {cli_args_filtered}")
 
+    # Merge with plugin default parameters
+    encoder_plugin_params = encoder_plugin.plugin_params.copy()
+    decoder_plugin_params = decoder_plugin.plugin_params.copy()
+    print(f"Initial encoder plugin params: {encoder_plugin_params}")
+    print(f"Initial decoder plugin params: {decoder_plugin_params}")
+
+    # Update the plugin parameters with CLI arguments
+    encoder_plugin_params.update(cli_args_filtered)
+    decoder_plugin_params.update(cli_args_filtered)
+    print(f"Encoder plugin params after merging CLI arguments: {encoder_plugin_params}")
+    print(f"Decoder plugin params after merging CLI arguments: {decoder_plugin_params}")
+
+    # Set plugin parameters
+    encoder_plugin.set_params(**encoder_plugin_params)
+    decoder_plugin.set_params(**decoder_plugin_params)
+
+    # Update merged config with plugin parameters
+    merged_config.update(encoder_plugin_params)
+    merged_config.update(decoder_plugin_params)
+    print(f"Merged config with plugin defaults: {merged_config}")
+
     # Merge with CLI arguments
     merged_config.update(cli_args_filtered)
     print(f"Config after merging CLI arguments: {merged_config}")
-
-    # Apply the CLI and file parameters directly to the plugin parameters
-    encoder_plugin.set_params(**cli_args_filtered)
-    decoder_plugin.set_params(**cli_args_filtered)
-
-    print(f"Encoder plugin params after merging CLI arguments: {encoder_plugin.params}")
-    print(f"Decoder plugin params after merging CLI arguments: {decoder_plugin.params}")
 
     # Remove plugin defaults if they were not set by user
     final_config = {k: v for k, v in merged_config.items() if k in config or k in cli_args_filtered or k in DEFAULT_VALUES}

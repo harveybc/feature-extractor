@@ -40,7 +40,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
         sys.exit(1)
 
     # Identify CLI arguments explicitly set by the user
-    user_set_cli_args = {k: v for k, v in cli_args.items() if v is not None}
+    user_set_cli_args = {k: v for k, v in cli_args.items() if v is not None and v != DEFAULT_VALUES.get(k)}
     print(f"User set CLI arguments: {user_set_cli_args}")
 
     # Step 4: Merge with CLI arguments (ensure CLI args always override)

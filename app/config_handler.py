@@ -39,8 +39,8 @@ def merge_config(file_config, cli_args, unknown_args, encoder_plugin, decoder_pl
         print(f"After updating with file config: {merged_config}")
         print(f"After file config incremental_search: {merged_config.get('incremental_search')}")
 
-    # Filter out CLI arguments that are None
-    cli_args_filtered = {k: v for k, v in cli_args.items() if v is not None}
+    # Filter out CLI arguments that are None or 'null'
+    cli_args_filtered = {k: v for k, v in cli_args.items() if v is not None and v != 'null'}
     print(f"CLI arguments to merge: {cli_args_filtered}")
 
     # Update with CLI arguments if they are provided

@@ -18,9 +18,9 @@ def save_config(config, path='config_out.json'):
     return config, path
 
 def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin):
-    print(f"Pre-Merge: default config: {DEFAULT_VALUES}")
-    print(f"Pre-Merge: file config: {config}")
-    print(f"Pre-Merge: cli_args: {cli_args}")
+    #print(f"Pre-Merge: default config: {DEFAULT_VALUES}")
+    #print(f"Pre-Merge: file config: {config}")
+    #print(f"Pre-Merge: cli_args: {cli_args}")
 
     merged_config = DEFAULT_VALUES.copy()
     merged_config.update(config)
@@ -31,16 +31,16 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     merged_config.update(encoder_plugin_params)
     merged_config.update(decoder_plugin_params)
 
-    print(f"Initial merged config with defaults: {merged_config}")
+    #print(f"Initial merged config with defaults: {merged_config}")
 
     # Filter out CLI arguments that were not explicitly set by the user
     cli_args_filtered = {k: v for k, v in cli_args.items() if v not in (None, False, '')}
-    print(f"CLI arguments to merge: {cli_args_filtered}")
+    #print(f"CLI arguments to merge: {cli_args_filtered}")
 
     # Update merged_config with filtered CLI arguments
     merged_config.update(cli_args_filtered)
 
-    print(f"Config after merging CLI arguments: {merged_config}")
+    #print(f"Config after merging CLI arguments: {merged_config}")
 
     # Remove plugin defaults if they were not set by user
     final_config = {k: v for k, v in merged_config.items() if k in config or k in cli_args_filtered or k in DEFAULT_VALUES}

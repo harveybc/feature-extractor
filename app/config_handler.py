@@ -125,7 +125,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
         'step_size': 4,
         'remote_log': None,
         'remote_config': None,
-        'load_config': './config_in.json',
+        'load_config': 'input_config.json',
         'save_config': './config_out.json',
         'quiet_mode': False,
         'force_date': False,

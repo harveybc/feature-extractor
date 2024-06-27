@@ -1,5 +1,3 @@
-# config_handler.py
-
 import json
 import requests
 from app.config import DEFAULT_VALUES
@@ -19,7 +17,7 @@ def save_config(config, path='config_out.json'):
         json.dump(config_to_save, f, indent=4)
     return config, path
 
-def merge_config(config_file, cli_args, unknown_args, encoder_plugin, decoder_plugin):
+def merge_config(file_config, cli_args, unknown_args, encoder_plugin, decoder_plugin):
     print(f"Pre-Merge: default config: {DEFAULT_VALUES}")
 
     # Start with the defaults
@@ -36,19 +34,21 @@ def merge_config(config_file, cli_args, unknown_args, encoder_plugin, decoder_pl
     print(f"After adding plugin incremental_search: {merged_config.get('incremental_search')}")
 
     # Update with the file configuration if present
-    if config_file:
-        merged_config.update(config_file)
+    if file_config:
+        merged_config.update(file_config)
         print(f"After updating with file config: {merged_config}")
         print(f"After file config incremental_search: {merged_config.get('incremental_search')}")
-    
-    # Update with CLI arguments if they are provided
+
+    # Filter out CLI arguments that are None
     cli_args_filtered = {k: v for k, v in cli_args.items() if v is not None}
     print(f"CLI arguments to merge: {cli_args_filtered}")
+
+    # Update with CLI arguments if they are provided
     merged_config.update(cli_args_filtered)
     print(f"After updating with CLI arguments: {merged_config}")
     print(f"After CLI args incremental_search: {merged_config.get('incremental_search')}")
 
-    print(f"Pre-Merge: file config: {config_file}")
+    print(f"Pre-Merge: file config: {file_config}")
     print(f"Pre-Merge: cli_args: {cli_args_filtered}")
 
     print(f"Encoder plugin params before merging: {encoder_plugin_params}")
@@ -79,7 +79,7 @@ def configure_with_args(config, args):
 def save_debug_info(debug_info, encoder_plugin, decoder_plugin, path='debug_out.json'):
     encoder_debug_info = encoder_plugin.get_debug_info()
     decoder_debug_info = decoder_plugin.get_debug_info()
-    
+
     debug_info = {
         'execution_time': debug_info.get('execution_time', 0),
         'encoder': encoder_debug_info,

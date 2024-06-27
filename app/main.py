@@ -12,16 +12,16 @@ from app.plugin_loader import load_plugin
 def main():
     print("Parsing initial arguments...")
     args, unknown_args = parse_args()
-    print(f"Initial args: {args}")
-    print(f"Unknown args: {unknown_args}")
+    #print(f"Initial args: {args}")
+    #print(f"Unknown args: {unknown_args}")
 
     cli_args = vars(args)
-    print(f"CLI arguments: {cli_args}")
+    #print(f"CLI arguments: {cli_args}")
 
     print("Loading default configuration...")
     config = DEFAULT_VALUES.copy()
-    print(f"Default config: {config}")
-    print(f"Initial incremental_search: {config.get('incremental_search')}")
+    #print(f"Default config: {config}")
+    #print(f"Initial incremental_search: {config.get('incremental_search')}")
 
     if args.load_config:
         file_config = load_config(args.load_config)
@@ -46,10 +46,10 @@ def main():
 
     print("Merging configuration with CLI arguments and unknown args...")
     unknown_args_dict = {unknown_args[i].lstrip('--'): unknown_args[i + 1] for i in range(0, len(unknown_args), 2)}
-    print(f"Unknown args as dict: {unknown_args_dict}")
+    #print(f"Unknown args as dict: {unknown_args_dict}")
     config = merge_config(config, cli_args, unknown_args_dict, encoder_plugin, decoder_plugin)
-    print(f"Config after merging: {config}")
-    print(f"Final incremental_search: {config.get('incremental_search')}")
+    #print(f"Config after merging: {config}")
+    #print(f"Final incremental_search: {config.get('incremental_search')}")
 
     if args.save_config:
         print(f"Saving configuration to {args.save_config}...")

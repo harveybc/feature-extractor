@@ -44,7 +44,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
 
     # Remove plugin defaults if they were not set by user
     final_config = {k: v for k, v in merged_config.items() if k in config or k in cli_args_filtered or k in DEFAULT_VALUES}
-    print(f"Final config before saving: {final_config}")
+    #print(f"Final config before saving: {final_config}")
 
     return final_config
 

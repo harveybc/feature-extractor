@@ -25,27 +25,26 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
 
     # Step 1: Start with default values from config.py
     merged_config = DEFAULT_VALUES.copy()
-    print(f"Step 1 - Default config: intermediate_layers = {merged_config.get('intermediate_layers')}")
+    print(f"Step 1 - Default config: {merged_config}")
 
-    # Step 2: Merge with file configuration
-    merged_config.update(config)
-    print(f"Step 2 - File config merged: intermediate_layers = {merged_config.get('intermediate_layers')}")
-
-    # Step 3: Merge with plugin default parameters
+    # Step 2: Merge with plugin default parameters
     merged_config.update(encoder_plugin.plugin_params)
     merged_config.update(decoder_plugin.plugin_params)
-    print(f"Step 3 - Plugin defaults merged: intermediate_layers = {merged_config.get('intermediate_layers')}")
+    print(f"Step 2 - Plugin defaults merged: {merged_config}")
+
+    # Step 3: Merge with file configuration
+    merged_config.update(config)
+    print(f"Step 3 - File config merged: {merged_config}")
 
     # Step 4: Merge with CLI arguments (ensure CLI args always override)
     cli_args_filtered = {k: v for k, v in cli_args.items() if v is not None}
     for key, value in cli_args_filtered.items():
         if value is not None:
             merged_config[key] = value
-    print(f"Step 4 - CLI arguments merged: intermediate_layers = {merged_config.get('intermediate_layers')}")
+    print(f"Step 4 - CLI arguments merged: {merged_config}")
 
     final_config = {k: v for k, v in merged_config.items() if k in config or k in cli_args_filtered or k in DEFAULT_VALUES}
     print(f"Final merged config: {final_config}")
-    print(f"Final merged config: intermediate_layers = {final_config.get('intermediate_layers')}")
 
     return final_config
 

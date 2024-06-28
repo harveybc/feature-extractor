@@ -18,9 +18,15 @@ class AutoencoderManager:
             self.encoder_plugin.configure_size(input_shape, interface_size)
             self.decoder_plugin.configure_size(interface_size, input_shape)
             
-            # Get the encoder and decoder models
+            # Get the encoder model
             self.encoder_model = self.encoder_plugin.encoder_model
+            print("[build_autoencoder] Encoder model built and compiled successfully")
+            self.encoder_model.summary()
+
+            # Get the decoder model
             self.decoder_model = self.decoder_plugin.model
+            print("[build_autoencoder] Decoder model built and compiled successfully")
+            self.decoder_model.summary()
 
             # Build autoencoder model
             autoencoder_output = self.decoder_model(self.encoder_model.output)

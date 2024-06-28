@@ -16,30 +16,38 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
 
     # Step 1: Start with default values from config.py
     merged_config = defaults.copy()
+
+    # Print the merged config to debug why 'intermediate_layers' is included
+    print(f"Debug Step 1 - Merged Config Before Cleanup: {merged_config}")
+
+    # Remove 'intermediate_layers' if it exists in the initial merge (shouldn't be there)
+    if 'intermediate_layers' in merged_config:
+        del merged_config['intermediate_layers']
+
     desired_step1_output = {
-    'csv_file': './csv_input.csv',
-    'save_encoder': './encoder_model.h5',
-    'save_decoder': './decoder_model.h5',
-    'load_encoder': None,
-    'load_decoder': None,
-    'evaluate_encoder': './encoder_eval.csv',
-    'evaluate_decoder': './decoder_eval.csv',
-    'encoder_plugin': 'default',
-    'decoder_plugin': 'default',
-    'window_size': 128,
-    'threshold_error': 0.003,
-    'initial_size': 8,
-    'step_size': 4,
-    'remote_log': None,
-    'remote_config': None,
-    'load_config': './config_in.json',
-    'save_config': './config_out.json',
-    'quiet_mode': False,
-    'force_date': False,
-    'incremental_search': True,
-    'headers': False,
-    'epochs': 5,  # Add epochs here
-    'batch_size': 256  # Add batch_size here
+        'csv_file': './csv_input.csv',
+        'save_encoder': './encoder_model.h5',
+        'save_decoder': './decoder_model.h5',
+        'load_encoder': None,
+        'load_decoder': None,
+        'evaluate_encoder': './encoder_eval.csv',
+        'evaluate_decoder': './decoder_eval.csv',
+        'encoder_plugin': 'default',
+        'decoder_plugin': 'default',
+        'window_size': 128,
+        'threshold_error': 0.003,
+        'initial_size': 8,
+        'step_size': 4,
+        'remote_log': None,
+        'remote_config': None,
+        'load_config': './config_in.json',
+        'save_config': './config_out.json',
+        'quiet_mode': False,
+        'force_date': False,
+        'incremental_search': True,
+        'headers': False,
+        'epochs': 5,
+        'batch_size': 256
     }
     print(f"Desired Step 1 Output: {desired_step1_output}")
     print(f"Actual Step 1 Output: {merged_config}")

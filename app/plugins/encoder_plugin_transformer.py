@@ -1,77 +1,92 @@
-from keras.models import Model
-from keras.layers import Input, LayerNormalization, MultiHeadAttention, Dense, Dropout
+# encoder_plugin_transformer.py
+
+import numpy as np
+from keras.models import Model, load_model, save_model
+from keras.layers import Input, Dense, LayerNormalization, Dropout
+from keras.layers import MultiHeadAttention, GlobalAveragePooling1D, Add
 from keras.optimizers import Adam
 
-class TransformerEncoderPlugin:
+class Plugin:
     """
-    A Transformer-based encoder plugin with multiple layers, suitable for handling complex sequence data.
+    An encoder plugin using a transformer-based neural network, with dynamically configurable size.
     """
+
+    plugin_params = {
+        'epochs': 10,
+        'batch_size': 256,
+        'num_heads': 8,
+        'ff_dim': 64,
+        'num_layers': 1,
+        'dropout_rate': 0.1
+    }
+
+    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'num_heads', 'ff_dim', 'num_layers', 'dropout_rate']
+
     def __init__(self):
-        """
-        Initializes the TransformerEncoderPlugin without a fixed architecture.
-        """
-        self.model = None
+        self.params = self.plugin_params.copy()
+        self.encoder_model = None
 
-    def configure_size(self, input_length, input_features, latent_dim):
-        """
-        Configure the Transformer encoder model architecture dynamically.
+    def set_params(self, **kwargs):
+        for key, value in kwargs.items():
+            self.params[key] = value
 
-        Args:
-            input_length (int): The number of timesteps in each input sequence.
-            input_features (int): The number of features per timestep.
-            latent_dim (int): The desired size of the output latent dimension.
-        """
-        input_layer = Input(shape=(input_length, input_features))
-        x = LayerNormalization()(input_layer)
+    def get_debug_info(self):
+        return {var: self.params[var] for var in self.plugin_debug_vars}
 
-        # Multiple Transformer layers
-        for _ in range(3):  # Configurable number of Transformer layers
-            x = MultiHeadAttention(num_heads=2, key_dim=input_features)(x, x)
-            x = Dropout(0.1)(x)
-            x = LayerNormalization()(x)
+    def add_debug_info(self, debug_info):
+        plugin_debug_info = self.get_debug_info()
+        debug_info.update(plugin_debug_info)
 
-        x = Dense(latent_dim, activation='relu')(x)
+    def configure_size(self, input_shape, interface_size):
+        self.params['input_shape'] = input_shape
 
-        self.model = Model(inputs=input_layer, outputs=x)
-        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+        # Transformer Encoder Layer
+        def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
+            x = MultiHeadAttention(key_dim=head_size, num_heads=num_heads, dropout=dropout)(inputs, inputs)
+            x = Dropout(dropout)(x)
+            x = Add()([x, inputs])
+            x = LayerNormalization(epsilon=1e-6)(x)
+            res = x
+            x = Dense(ff_dim, activation="relu")(x)
+            x = Dropout(dropout)(x)
+            x = Dense(inputs.shape[-1])(x)
+            x = Add()([x, res])
+            return LayerNormalization(epsilon=1e-6)(x)
 
-    def train(self, data, epochs=50, batch_size=256):
-        """
-        Trains the Transformer encoder model on provided data.
+        inputs = Input(shape=(input_shape, 1))
+        x = inputs
 
-        Args:
-            data (np.array): Training data.
-            epochs (int): Number of epochs to train for.
-            batch_size (int): Batch size for training.
-        """
-        self.model.fit(data, data, epochs=epochs, batch_size=batch_size)
+        for _ in range(self.params['num_layers']):
+            x = transformer_encoder(x, self.params['ff_dim'], self.params['num_heads'], self.params['ff_dim'], self.params['dropout_rate'])
+
+        x = GlobalAveragePooling1D()(x)
+        outputs = Dense(interface_size)(x)
+        
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
+        self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+
+    def train(self, data):
+        print(f"Training encoder with data shape: {data.shape}")
+        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        print("Training completed.")
 
     def encode(self, data):
-        """
-        Encodes the data using the trained model.
-
-        Args:
-            data (np.array): Data to encode.
-
-        Returns:
-            np.array: Encoded data.
-        """
-        return self.model.predict(data)
+        print(f"Encoding data with shape: {data.shape}")
+        encoded_data = self.encoder_model.predict(data)
+        print(f"Encoded data shape: {encoded_data.shape}")
+        return encoded_data
 
     def save(self, file_path):
-        """
-        Saves the model to a specified path.
-
-        Args:
-            file_path (str): Path to save the model.
-        """
-        self.model.save(file_path)
+        save_model(self.encoder_model, file_path)
+        print(f"Encoder model saved to {file_path}")
 
     def load(self, file_path):
-        """
-        Loads a model from a specified path.
+        self.encoder_model = load_model(file_path)
+        print(f"Encoder model loaded from {file_path}")
 
-        Args:
-            file_path (str): Path where the model is stored.
-        """
-        self.model.load_weights(file_path)
+# Debugging usage example
+if __name__ == "__main__":
+    plugin = Plugin()
+    plugin.configure_size(input_shape=128, interface_size=4)
+    debug_info = plugin.get_debug_info()
+    print(f"Debug Info: {debug_info}")

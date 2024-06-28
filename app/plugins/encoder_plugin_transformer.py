@@ -24,7 +24,7 @@ class Plugin:
 
     def __init__(self):
         self.params = self.plugin_params.copy()
-        self.model = None
+        self.encoder_model = None
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
@@ -80,9 +80,9 @@ class Plugin:
         x = Flatten()(x)
         outputs = Dense(interface_size)(x)
         
-        self.model = Model(inputs=inputs, outputs=outputs, name="encoder")
-        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
-        self.model.summary()  # Add model summary
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
+        self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+        self.encoder_model.summary()  # Add model summary
 
     def train(self, data):
         print(f"Training encoder with data shape: {data.shape}")

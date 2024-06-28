@@ -82,8 +82,8 @@ class Plugin:
         x = Flatten()(x)
         outputs = Dense(interface_size)(x)
         
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
-        self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+        self.model = Model(inputs=inputs, outputs=outputs, name="encoder")
+        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
     def train(self, data):
         print(f"Training encoder with data shape: {data.shape}")

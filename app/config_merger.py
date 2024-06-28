@@ -127,6 +127,11 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config_
         if key in cli_args:
             print(f"Step 4 merging from CLI args: {key} = {cli_args[key]}")
             merged_config[key] = cli_args[key]
+
+    # Handle csv_file separately
+    if len(sys.argv) > 1 and not sys.argv[1].startswith('--'):
+        merged_config['csv_file'] = sys.argv[1]
+
     desired_step4_output = {
         'csv_file': 'tests\\data\\csv_sel_unb_norm_512.csv',
         'save_encoder': './encoder_model.h5',

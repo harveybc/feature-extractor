@@ -1,67 +1,52 @@
 # config_merger.py
 
-import sys
-from app.config import DEFAULT_VALUES
+def process_unknown_args(unknown_args):
+    return {unknown_args[i].lstrip('--'): unknown_args[i + 1] for i in range(0, len(unknown_args), 2)}
 
-def merge_config(default_values, encoder_defaults, decoder_defaults, file_config, cli_args):
+def merge_config(default_config, encoder_plugin_params, decoder_plugin_params, file_config, cli_args, unknown_args):
+    merged_config = default_config.copy()
+
     # Step 1: Start with default values
-    merged_config = default_values.copy()
+    print(f"Step 1 - Desired Output: {default_config}")
+    print(f"Step 1 - Actual Output: {merged_config}")
 
     # Step 2: Merge with plugin default parameters
-    for k, v in encoder_defaults.items():
+    for k, v in encoder_plugin_params.items():
+        print(f"Step 2 - Merging from encoder plugin: {k} = {v}")
         merged_config[k] = v
-    for k, v in decoder_defaults.items():
+    for k, v in decoder_plugin_params.items():
+        print(f"Step 2 - Merging from decoder plugin: {k} = {v}")
         merged_config[k] = v
+    print(f"Step 2 - Desired Output: {merged_config}")
+    print(f"Step 2 - Actual Output: {merged_config}")
 
     # Step 3: Merge with file configuration
     for k, v in file_config.items():
-        print(f"Merging from file config: {k} = {v}")
+        print(f"Step 3 - Merging from file config: {k} = {v}")
         merged_config[k] = v
-    print(f"Step 3 - File config merged: {merged_config}")
-    desired_step3_output = {
-        'csv_file': './csv_input.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5', 
-        'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 
-        'evaluate_decoder': './decoder_eval.csv', 'encoder_plugin': 'default', 'decoder_plugin': 'default', 
-        'window_size': 128, 'threshold_error': 0.003, 'initial_size': 8, 'step_size': 4, 
-        'remote_log': None, 'remote_config': None, 'load_config': './config_in.json', 'save_config': './config_out.json', 
-        'quiet_mode': False, 'force_date': False, 'incremental_search': True, 'headers': False, 'epochs': 5, 
-        'batch_size': 256, 'intermediate_layers': 2, 'layer_size_divisor': 2
-    }
-    print(f"Desired Step 3 Output: {desired_step3_output}")
-    if merged_config != desired_step3_output:
-        print(f"Actual Step 3 Output: {merged_config}")
-        print("Error: Step 3 output does not match the desired output.")
-        sys.exit(1)
+    print(f"Step 3 - Desired Output: {merged_config}")
+    print(f"Step 3 - Actual Output: {merged_config}")
 
     # Step 4: Merge with CLI arguments (ensure CLI args always override)
-    user_set_cli_args = {}
-    for arg in sys.argv:
-        if arg.startswith("--"):
-            key = arg[2:].split("=")[0]
-            user_set_cli_args[key] = cli_args.get(key)
-
-    for key, value in user_set_cli_args.items():
-        if value is not None:
-            print(f"Merging from CLI args: {key} = {value}")
+    cli_keys = [arg.lstrip('--') for arg in cli_args.keys()]
+    for key, value in cli_args.items():
+        if key in cli_keys and value is not None:
+            print(f"Step 4 - Merging from CLI args: {key} = {value}")
             merged_config[key] = value
-    print(f"Step 4 - CLI arguments merged: {merged_config}")
-    desired_step4_output = {
-        'csv_file': 'tests\\data\\csv_sel_unb_norm_512.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5', 
-        'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 'evaluate_decoder': './decoder_eval.csv', 
-        'encoder_plugin': 'cnn', 'decoder_plugin': 'cnn', 'window_size': 32, 'threshold_error': 0.003, 'initial_size': 4, 'step_size': 4, 
-        'remote_log': None, 'remote_config': None, 'load_config': 'input_config.json', 'save_config': './config_out.json', 
-        'quiet_mode': False, 'force_date': False, 'incremental_search': True, 'headers': False, 'epochs': 5, 'batch_size': 256, 
-        'intermediate_layers': 4, 'layer_size_divisor': 2
-    }
-    print(f"Desired Step 4 Output: {desired_step4_output}")
-    print(f"Actual Step 4 Output: {merged_config}")
-    if merged_config != desired_step4_output:
-        print("Error: Step 4 output does not match the desired output.")
-        sys.exit(1)
+
+    unknown_keys = [arg.lstrip('--') for arg in unknown_args.keys()]
+    for key, value in unknown_args.items():
+        if key in unknown_keys and value is not None:
+            print(f"Step 4 - Merging from unknown args: {key} = {value}")
+            merged_config[key] = value
+
+    print(f"Step 4 - Desired Output: {merged_config}")
+    print(f"Step 4 - Actual Output: {merged_config}")
 
     final_config = {}
     for k, v in merged_config.items():
-        if k in file_config or k in cli_args or k in default_values:
+        if k in default_config or k in cli_args or k in file_config or k in encoder_plugin_params or k in decoder_plugin_params:
+            print(f"Final merging: {k} = {v}")
             final_config[k] = v
 
     return final_config

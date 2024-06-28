@@ -1,7 +1,8 @@
+# config_handler.py
+
 import json
 import requests
 from app.config import DEFAULT_VALUES
-from config_merger import merge_config
 
 def load_config(file_path):
     with open(file_path, 'r') as f:
@@ -16,11 +17,6 @@ def save_config(config, path='config_out.json'):
     with open(path, 'w') as f:
         json.dump(config_to_save, f, indent=4)
     return config, path
-
-def configure_with_args(config, args):
-    for k, v in args.items():
-        config[k] = v
-    return config
 
 def save_debug_info(debug_info, encoder_plugin, decoder_plugin, path='debug_out.json'):
     encoder_debug_info = encoder_plugin.get_debug_info()
@@ -52,30 +48,3 @@ def log_remote_data(data, url, username, password):
     response.raise_for_status()
     success = response.status_code == 200
     return success
-
-# Usage example
-if __name__ == "__main__":
-    # Load default values
-    config = DEFAULT_VALUES.copy()
-
-    # Load configuration from file
-    file_config = load_config(config['load_config'])
-
-    # Example plugin defaults (encoder and decoder)
-    encoder_plugin_defaults = {'epochs': 10, 'batch_size': 256, 'intermediate_layers': 1, 'layer_size_divisor': 2}
-    decoder_plugin_defaults = {'epochs': 10, 'batch_size': 256, 'intermediate_layers': 1, 'layer_size_divisor': 2}
-
-    # Parse CLI arguments
-    cli_args = {
-        'csv_file': 'tests\\data\\csv_sel_unb_norm_512.csv',
-        'encoder_plugin': 'cnn',
-        'decoder_plugin': 'cnn',
-        'window_size': 32,
-        'initial_size': 4,
-        'load_config': 'input_config.json',
-        'intermediate_layers': 4
-    }
-
-    # Merge configurations
-    final_config = merge_config(DEFAULT_VALUES, {**encoder_plugin_defaults, **decoder_plugin_defaults}, file_config, cli_args)
-    print(f"Final merged config: {final_config}")

@@ -2,8 +2,8 @@
 
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Input, Dense, LayerNormalization, Dropout
-from keras.layers import MultiHeadAttention, GlobalAveragePooling1D, Add
+from keras.layers import Input, Dense, LayerNormalization, Dropout, Flatten
+from keras.layers import MultiHeadAttention, Add, GlobalAveragePooling1D
 from keras.optimizers import Adam
 
 class Plugin:
@@ -14,13 +14,15 @@ class Plugin:
     plugin_params = {
         'epochs': 10,
         'batch_size': 256,
+        'intermediate_layers': 1,
+        'layer_size_divisor': 2,
+        'embedding_dim': 64,
         'num_heads': 8,
-        'ff_dim': 64,
-        'num_layers': 1,
+        'ff_dim_divisor': 2,  # This parameter is added for dynamically scaling ff_dim
         'dropout_rate': 0.1
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'num_heads', 'ff_dim', 'num_layers', 'dropout_rate']
+    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers', 'embedding_dim']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -40,26 +42,45 @@ class Plugin:
     def configure_size(self, input_shape, interface_size):
         self.params['input_shape'] = input_shape
 
-        # Transformer Encoder Layer
-        def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
-            x = MultiHeadAttention(key_dim=head_size, num_heads=num_heads, dropout=dropout)(inputs, inputs)
-            x = Dropout(dropout)(x)
-            x = Add()([x, inputs])
-            x = LayerNormalization(epsilon=1e-6)(x)
-            res = x
-            x = Dense(ff_dim, activation="relu")(x)
-            x = Dropout(dropout)(x)
-            x = Dense(inputs.shape[-1])(x)
-            x = Add()([x, res])
-            return LayerNormalization(epsilon=1e-6)(x)
+        layers = []
+        current_size = input_shape
+        layer_size_divisor = self.params['layer_size_divisor'] 
+        current_location = input_shape
+        int_layers = 0
+        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
+            layers.append(current_location)
+            current_size = max(current_size // layer_size_divisor, interface_size)
+            current_location = interface_size + current_size
+            int_layers += 1
+        layers.append(interface_size)
+        # Debugging message
+        print(f"Encoder Layer sizes: {layers}")
 
+        # set input layer
         inputs = Input(shape=(input_shape, 1))
         x = inputs
 
-        for _ in range(self.params['num_layers']):
-            x = transformer_encoder(x, self.params['ff_dim'], self.params['num_heads'], self.params['ff_dim'], self.params['dropout_rate'])
+        # add transformer layers, calculating their sizes based on the layer's size
+        layers_index = 0
+        for size in layers:
+            layers_index += 1
+
+            # Attention Layer
+            attn_output = MultiHeadAttention(num_heads=self.params['num_heads'], key_dim=size)(x, x)
+            attn_output = Dropout(self.params['dropout_rate'])(attn_output)
+            x = Add()([x, attn_output])
+            x = LayerNormalization(epsilon=1e-6)(x)
+
+            # Feed Forward Network
+            ffn_dim = size // self.params['ff_dim_divisor']  # Dynamically scale ff_dim
+            ffn_output = Dense(ffn_dim, activation="relu")(x)
+            ffn_output = Dropout(self.params['dropout_rate'])(ffn_output)
+            ffn_output = Dense(size)(ffn_output)
+            x = Add()([x, ffn_output])
+            x = LayerNormalization(epsilon=1e-6)(x)
 
         x = GlobalAveragePooling1D()(x)
+        x = Flatten()(x)
         outputs = Dense(interface_size)(x)
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")

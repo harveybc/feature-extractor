@@ -2,11 +2,12 @@
 
 import sys
 from app.config import DEFAULT_VALUES
+from app.config_handler import load_config
 
 def process_unknown_args(unknown_args):
     return {unknown_args[i].lstrip('--'): unknown_args[i + 1] for i in range(0, len(unknown_args), 2)}
 
-def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config, cli_args, unknown_args):
+def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config_path, cli_args, unknown_args):
     def exit_on_error(step, actual, desired):
         if actual != desired:
             print(f"Error: {step} output does not match the desired output.")
@@ -16,7 +17,6 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
 
     # Step 1: Start with default values from config.py
     merged_config = defaults.copy()
-    
     desired_step1_output = {
         'csv_file': './csv_input.csv',
         'save_encoder': './encoder_model.h5',
@@ -42,15 +42,8 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
         'epochs': 5,
         'batch_size': 256
     }
-    
     print(f"Desired Step 1 Output: {desired_step1_output}")
     print(f"Actual Step 1 Output: {merged_config}")
-    
-    # Ensure no intermediate_layers key exists in Step 1
-    if 'intermediate_layers' in merged_config:
-        print("Error: 'intermediate_layers' should not be in the merged_config for Step 1")
-        sys.exit(1)
-
     exit_on_error("Step 1", merged_config, desired_step1_output)
 
     # Step 2: Merge with plugin default parameters
@@ -92,9 +85,11 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
     exit_on_error("Step 2", merged_config, desired_step2_output)
 
     # Step 3: Merge with file configuration
-    for k, v in config.items():
-        print(f"Step 3 merging from file config: {k} = {v}")
-        merged_config[k] = v
+    if config_path:
+        file_config = load_config(config_path)
+        for k, v in file_config.items():
+            print(f"Step 3 merging from file config: {k} = {v}")
+            merged_config[k] = v
     desired_step3_output = {
         'csv_file': './csv_input.csv',
         'save_encoder': './encoder_model.h5',
@@ -127,7 +122,7 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
     exit_on_error("Step 3", merged_config, desired_step3_output)
 
     # Step 4: Merge with CLI arguments (ensure CLI args always override)
-    cli_keys = [arg.lstrip('--').split('=')[0] for arg in sys.argv if arg.startswith('--')]
+    cli_keys = [arg.lstrip('--') for arg in sys.argv if arg.startswith('--')]
     for key in cli_keys:
         if key in cli_args:
             print(f"Step 4 merging from CLI args: {key} = {cli_args[key]}")

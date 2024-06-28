@@ -3,6 +3,9 @@
 import sys
 from app.config import DEFAULT_VALUES
 
+def process_unknown_args(unknown_args):
+    return {unknown_args[i].lstrip('--'): unknown_args[i + 1] for i in range(0, len(unknown_args), 2)}
+
 def merge_config(defaults, config, cli_args, unknown_args, encoder_plugin, decoder_plugin):
     def exit_on_error(step, actual, desired):
         if actual != desired:

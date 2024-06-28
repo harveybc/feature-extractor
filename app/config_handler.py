@@ -13,18 +13,21 @@ def load_config(file_path):
 
 def save_config(config, path='config_out.json'):
     # Retrieve plugin-specific default values
-    encoder_plugin_default_values = EncoderPluginCNN().plugin_params
-    decoder_plugin_default_values = DecoderPluginTransformer().plugin_params
-    
+    encoder_plugin = EncoderPluginCNN()
+    decoder_plugin = DecoderPluginTransformer()
+    encoder_plugin_default_values = encoder_plugin.plugin_params
+    decoder_plugin_default_values = decoder_plugin.plugin_params
+
     config_to_save = {}
     for k, v in config.items():
         if k not in DEFAULT_VALUES or v != DEFAULT_VALUES[k]:
             # Check for plugin-specific default values
-            if k in encoder_plugin_default_values and v == encoder_plugin_default_values[k]:
+            if k in encoder_plugin_default_values and v == encoder_plugin_default_values[k] and k not in encoder_plugin.params:
                 continue
-            if k in decoder_plugin_default_values and v == decoder_plugin_default_values[k]:
+            if k in decoder_plugin_default_values and v == decoder_plugin_default_values[k] and k not in decoder_plugin.params:
                 continue
             config_to_save[k] = v
+
     with open(path, 'w') as f:
         json.dump(config_to_save, f, indent=4)
     return config, path

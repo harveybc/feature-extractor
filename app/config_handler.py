@@ -1,4 +1,5 @@
 import json
+import requests
 import sys
 from app.config import DEFAULT_VALUES
 from config_merger import merge_config

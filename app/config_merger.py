@@ -119,11 +119,14 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
     exit_on_error("Step 3", merged_config, desired_step3_output)
 
     # Step 4: Merge with CLI arguments (ensure CLI args always override)
-    cli_keys = [arg.lstrip('--') for arg in sys.argv if arg.startswith('--')]
-    for key in cli_keys:
-        if key in merged_config:
-            print(f"Step 4 merging from CLI args: {key} = {cli_args[key]}")
-            merged_config[key] = cli_args[key]
+    for arg in sys.argv[1:]:
+        if arg.startswith('--'):
+            key = arg.lstrip('--').split('=')[0]
+            value = cli_args.get(key, None)
+            if value is not None:
+                print(f"Step 4 merging from CLI args: {key} = {value}")
+                merged_config[key] = value
+
     desired_step4_output = {
         'csv_file': 'tests\\data\\csv_sel_unb_norm_512.csv',
         'save_encoder': './encoder_model.h5',

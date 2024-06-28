@@ -6,6 +6,15 @@ from app.config import DEFAULT_VALUES
 def process_unknown_args(unknown_args):
     return {unknown_args[i].lstrip('--'): unknown_args[i + 1] for i in range(0, len(unknown_args), 2)}
 
+def convert_type(value):
+    try:
+        return int(value)
+    except ValueError:
+        try:
+            return float(value)
+        except ValueError:
+            return value
+
 def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config, cli_args, unknown_args):
     def exit_on_error(step, actual, desired):
         if actual != desired:
@@ -125,8 +134,9 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
             print(f"Step 4 merging from CLI args: {key} = {cli_args[key]}")
             merged_config[key] = cli_args[key]
         elif key in unknown_args:
-            print(f"Step 4 merging from unknown args: {key} = {unknown_args[key]}")
-            merged_config[key] = int(unknown_args[key]) if key == 'intermediate_layers' else unknown_args[key]
+            value = convert_type(unknown_args[key])
+            print(f"Step 4 merging from unknown args: {key} = {value}")
+            merged_config[key] = value
     
     # Special handling for csv_file
     if len(sys.argv) > 1 and not sys.argv[1].startswith('--'):

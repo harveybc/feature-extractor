@@ -1,77 +1,107 @@
-from keras.models import Model
-from keras.layers import Input, Dense, MultiHeadAttention, LayerNormalization, TimeDistributed
+import numpy as np
+from keras.models import Model, load_model, save_model
+from keras.layers import Input, Dense, Flatten, Reshape, GlobalAveragePooling1D, LayerNormalization, Dropout, Add, Activation
 from keras.optimizers import Adam
+from keras_multi_head import MultiHeadAttention
 
-class TransformerDecoderPlugin:
-    """
-    A Transformer-based decoder plugin suitable for reconstructing time series data from encoded states.
-    """
+class Plugin:
+    plugin_params = {
+        'epochs': 10,
+        'batch_size': 256,
+        'intermediate_layers': 1,
+        'layer_size_divisor': 2,
+        'ff_dim_divisor': 2,
+        'dropout_rate': 0.1
+    }
+
+    plugin_debug_vars = ['epochs', 'batch_size', 'interface_size', 'output_shape', 'intermediate_layers']
+
     def __init__(self):
-        """
-        Initializes the TransformerDecoderPlugin without a fixed architecture.
-        """
+        self.params = self.plugin_params.copy()
         self.model = None
 
-    def configure_size(self, input_length, latent_dim, output_features):
-        """
-        Configure the decoder model architecture dynamically based on the size of the encoded output.
+    def set_params(self, **kwargs):
+        for key, value in kwargs.items():
+            self.params[key] = value
 
-        Args:
-            input_length (int): The number of timesteps in the output sequence.
-            latent_dim (int): The size of the input latent dimension.
-            output_features (int): The number of features per timestep in the output sequence.
-        """
-        input_layer = Input(shape=(input_length, latent_dim))
-        x = LayerNormalization()(input_layer)
+    def get_debug_info(self):
+        return {var: self.params[var] for var in self.plugin_debug_vars}
 
-        # Reversing the encoder Transformer layers
-        for _ in range(3):  # Matching number of Transformer layers as in the encoder
-            x = MultiHeadAttention(num_heads=2, key_dim=latent_dim)(x, x)
-            x = LayerNormalization()(x)
+    def add_debug_info(self, debug_info):
+        plugin_debug_info = self.get_debug_info()
+        debug_info.update(plugin_debug_info)
 
-        x = TimeDistributed(Dense(output_features, activation='sigmoid'))(x)
+    def configure_size(self, interface_size, output_shape):
+        self.params['interface_size'] = interface_size
+        self.params['output_shape'] = output_shape
 
-        self.model = Model(inputs=input_layer, outputs=x)
+        layer_sizes = []
+        current_size = output_shape
+        layer_size_divisor = self.params['layer_size_divisor']
+        current_location = output_shape
+        int_layers = 0
+        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
+            layer_sizes.append(current_location)
+            current_size = max(current_size // layer_size_divisor, interface_size)
+            current_location = interface_size + current_size
+            int_layers += 1
+        layer_sizes.append(interface_size)
+        layer_sizes.reverse()
+
+        # set input layer
+        inputs = Input(shape=(interface_size,))
+        x = Reshape((interface_size, 1))(inputs)
+
+        for size in layer_sizes:
+            ff_dim = size // self.params['ff_dim_divisor']
+            if size < 64:
+                num_heads = 2
+            elif 64 <= size < 128:
+                num_heads = 4
+            else:
+                num_heads = 8
+
+            dropout_rate = self.params['dropout_rate']
+            
+            x = Dense(size)(x)
+            x = MultiHeadAttention(head_num=num_heads)(x)
+            x = LayerNormalization(epsilon=1e-6)(x)
+            x = Dropout(dropout_rate)(x)
+            
+            ffn_output = Dense(ff_dim, activation='relu')(x)
+            ffn_output = Dense(size)(ffn_output)
+            ffn_output = Dropout(dropout_rate)(ffn_output)
+            x = Add()([x, ffn_output])
+            x = LayerNormalization(epsilon=1e-6)(x)
+
+        x = Flatten()(x)
+        outputs = Dense(output_shape, activation='tanh')(x)
+        
+        self.model = Model(inputs=inputs, outputs=outputs, name="decoder")
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
-    def train(self, encoded_data, original_data, epochs=50, batch_size=256):
-        """
-        Trains the decoder model on provided encoded data to reconstruct the original data.
-
-        Args:
-            encoded_data (np.array): Encoded data from the encoder.
-            original_data (np.array): Original data to reconstruct.
-            epochs (int): Number of epochs to train for.
-            batch_size (int): Batch size for training.
-        """
-        self.model.fit(encoded_data, original_data, epochs=epochs, batch_size=batch_size)
+    def train(self, encoded_data, original_data):
+        print(f"Training decoder with encoded data shape: {encoded_data.shape} and original data shape: {original_data.shape}")
+        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        print("Training completed.")
 
     def decode(self, encoded_data):
-        """
-        Decodes the data using the trained model.
-
-        Args:
-            encoded_data (np.array): Encoded data to decode.
-
-        Returns:
-            np.array: Decoded (reconstructed) data.
-        """
-        return self.model.predict(encoded_data)
+        print(f"Decoding data with shape: {encoded_data.shape}")
+        decoded_data = self.model.predict(encoded_data)
+        print(f"Decoded data shape: {decoded_data.shape}")
+        return decoded_data
 
     def save(self, file_path):
-        """
-        Saves the model to a specified path.
-
-        Args:
-            file_path (str): Path to save the model.
-        """
-        self.model.save(file_path)
+        save_model(self.model, file_path)
+        print(f"Decoder model saved to {file_path}")
 
     def load(self, file_path):
-        """
-        Loads a model from a specified path.
+        self.model = load_model(file_path)
+        print(f"Decoder model loaded from {file_path}")
 
-        Args:
-            file_path (str): Path where the model is stored.
-        """
-        self.model.load_weights(file_path)
+# Debugging usage example
+if __name__ == "__main__":
+    plugin = Plugin()
+    plugin.configure_size(interface_size=4, output_shape=128)
+    debug_info = plugin.get_debug_info()
+    print(f"Debug Info: {debug_info}")

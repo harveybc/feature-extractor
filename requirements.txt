@@ -7,3 +7,4 @@ scipy
 build
 pytest
 pdoc3
+keras-multi-head

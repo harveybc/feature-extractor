@@ -1,11 +1,11 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import LSTM, Dense, Input, Flatten
+from keras.layers import LSTM, Bidirectional, Dense, Input, Flatten
 from keras.optimizers import Adam
 
 class Plugin:
     """
-    An encoder plugin using a Long Short-Term Memory (LSTM) network based on Keras, with dynamically configurable size.
+    An encoder plugin using a Bidirectional Long Short-Term Memory (Bi-LSTM) network based on Keras, with dynamically configurable size.
     """
 
     plugin_params = {
@@ -53,19 +53,18 @@ class Plugin:
         inputs = Input(shape=(input_shape, 1))
         x = inputs
 
-        # add LSTM layers
+        # add Bi-LSTM layers
         layers_index = 0
         for size in layers:
             layers_index += 1
 
-            # add the LSTM layers
+            # add the Bi-LSTM layers
             if layers_index == 1:
-                x = LSTM(units=size, activation='tanh', return_sequences=True)(x)
+                x = Bidirectional(LSTM(units=size, activation='tanh', return_sequences=True))(x)
             else:
-                x = LSTM(units=size, activation='tanh', return_sequences=(layers_index < len(layers)))(x)
+                x = Bidirectional(LSTM(units=size, activation='tanh', return_sequences=(layers_index < len(layers))))(x)
         
         x = Flatten()(x)
-        #x = Dense(layers[-1], activation='relu')(x)
         outputs = Dense(interface_size)(x)
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")

@@ -1,28 +1,25 @@
-# Configuration file for the feature-extractor application
-
-# Default configuration values
 DEFAULT_VALUES = {
-    'csv_input_path': './csv_input.csv',
-    'csv_output_path': './csv_output.csv',
-    'config_save_path': './config_out.json',
-    'config_load_path': './config_in.json',
+    'csv_file': './csv_input.csv',
+    'save_encoder': './encoder_model.h5',
+    'save_decoder': './decoder_model.h5',
+    'load_encoder': None,
+    'load_decoder': None,
+    'evaluate_encoder': './encoder_eval.csv',
+    'evaluate_decoder': './decoder_eval.csv',
     'encoder_plugin': 'default',
     'decoder_plugin': 'default',
-    'training_batch_size': 128,
-    'epochs': 10,
-    'plugin_directory': 'app/plugins/',
-    'remote_log_url': None,
-    'remote_config_url': None,
     'window_size': 128,
-    'initial_encoding_dim': 4,
-    'encoding_step_size': 4,
-    'mse_threshold': 0.005,
+    'threshold_error': 0.003,
+    'initial_size': 8,
+    'step_size': 4,
+    'remote_log': None,
+    'remote_config': None,
+    'load_config': './config_in.json',
+    'save_config': './config_out.json',
     'quiet_mode': False,
-    'remote_username': 'test',
-    'remote_password': 'pass',
-    'save_encoder_path': './encoder_ann.keras',
-    'save_decoder_path': './decoder_ann.keras',
     'force_date': False,
+    'incremental_search': True,
     'headers': False,
-    'incremental_search': True
+    'epochs': 5,  # Add epochs here
+    'batch_size': 256  # Add batch_size here
 }

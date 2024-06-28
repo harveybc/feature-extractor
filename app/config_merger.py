@@ -142,6 +142,10 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
     if len(sys.argv) > 1 and not sys.argv[1].startswith('--'):
         merged_config['csv_file'] = sys.argv[1]
 
+    # Check and print if 'initial_size' is not found in both cli_args and unknown_args
+    if 'initial_size' not in cli_args and 'initial_size' not in unknown_args:
+        print(f"'initial_size' not found in cli_args or unknown_args. Current value: {merged_config.get('initial_size')}")
+
     desired_step4_output = {
         'csv_file': 'tests\\data\\csv_sel_unb_norm_512.csv',
         'save_encoder': './encoder_model.h5',

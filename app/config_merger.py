@@ -16,14 +16,6 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
 
     # Step 1: Start with default values from config.py
     merged_config = defaults.copy()
-
-    # Print the merged config to debug why 'intermediate_layers' is included
-    print(f"Debug Step 1 - Merged Config Before Cleanup: {merged_config}")
-
-    # Remove 'intermediate_layers' if it exists in the initial merge (shouldn't be there)
-    if 'intermediate_layers' in merged_config:
-        del merged_config['intermediate_layers']
-
     desired_step1_output = {
         'csv_file': './csv_input.csv',
         'save_encoder': './encoder_model.h5',

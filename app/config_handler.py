@@ -3,31 +3,32 @@
 import json
 import requests
 from app.config import DEFAULT_VALUES
-from app.plugins.encoder_plugin_cnn import Plugin as EncoderPluginCNN
-from app.plugins.decoder_plugin_transformer import Plugin as DecoderPluginTransformer
+from app.plugin_loader import load_plugin
 
 def load_config(file_path):
     with open(file_path, 'r') as f:
         config = json.load(f)
     return config
 
+def get_plugin_default_params(plugin_name, plugin_type):
+    plugin_class, _ = load_plugin(plugin_type, plugin_name)
+    plugin_instance = plugin_class()
+    return plugin_instance.plugin_params
+
 def save_config(config, path='config_out.json'):
-    # Retrieve plugin-specific default values
-    encoder_plugin = EncoderPluginCNN()
-    decoder_plugin = DecoderPluginTransformer()
-    encoder_plugin_default_values = encoder_plugin.plugin_params
-    decoder_plugin_default_values = decoder_plugin.plugin_params
+    encoder_plugin_name = config.get('encoder_plugin', DEFAULT_VALUES.get('encoder_plugin'))
+    decoder_plugin_name = config.get('decoder_plugin', DEFAULT_VALUES.get('decoder_plugin'))
+    
+    encoder_default_params = get_plugin_default_params(encoder_plugin_name, 'feature_extractor.encoders')
+    decoder_default_params = get_plugin_default_params(decoder_plugin_name, 'feature_extractor.decoders')
 
     config_to_save = {}
     for k, v in config.items():
         if k not in DEFAULT_VALUES or v != DEFAULT_VALUES[k]:
-            # Check for plugin-specific default values
-            if k in encoder_plugin_default_values and v == encoder_plugin_default_values[k] and k not in encoder_plugin.params:
-                continue
-            if k in decoder_plugin_default_values and v == decoder_plugin_default_values[k] and k not in decoder_plugin.params:
-                continue
-            config_to_save[k] = v
-
+            if k not in encoder_default_params or v != encoder_default_params[k]:
+                if k not in decoder_default_params or v != decoder_default_params[k]:
+                    config_to_save[k] = v
+    
     with open(path, 'w') as f:
         json.dump(config_to_save, f, indent=4)
     return config, path

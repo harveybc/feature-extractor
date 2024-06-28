@@ -127,7 +127,7 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
     exit_on_error("Step 3", merged_config, desired_step3_output)
 
     # Step 4: Merge with CLI arguments (ensure CLI args always override)
-    cli_keys = [arg.lstrip('--') for arg in sys.argv if arg.startswith('--')]
+    cli_keys = [arg.lstrip('--').split('=')[0] for arg in sys.argv if arg.startswith('--')]
     for key in cli_keys:
         if key in cli_args:
             print(f"Step 4 merging from CLI args: {key} = {cli_args[key]}")

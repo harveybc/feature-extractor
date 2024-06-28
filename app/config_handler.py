@@ -48,9 +48,9 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
 
     # Step 4: Identify and merge user-set CLI parameters
     user_set_cli_args = {}
-    cli_arg_keys = [arg.lstrip('--') for arg in sys.argv[1:] if arg.startswith('--')]
+    cli_arg_keys = [arg.lstrip('--').split('=')[0] for arg in sys.argv[1:] if arg.startswith('--')]
     for key in cli_arg_keys:
-        arg_key = key.split('=')[0].replace('-', '_')
+        arg_key = key.replace('-', '_')
         if arg_key in cli_args:
             user_set_cli_args[arg_key] = cli_args[arg_key]
             print(f"User set CLI argument: {arg_key} = {cli_args[arg_key]}")

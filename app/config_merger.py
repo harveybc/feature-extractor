@@ -126,7 +126,7 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
             merged_config[key] = cli_args[key]
         elif key in unknown_args:
             print(f"Step 4 merging from unknown args: {key} = {unknown_args[key]}")
-            merged_config[key] = unknown_args[key]
+            merged_config[key] = int(unknown_args[key]) if key == 'intermediate_layers' else unknown_args[key]
     
     # Special handling for csv_file
     if len(sys.argv) > 1 and not sys.argv[1].startswith('--'):

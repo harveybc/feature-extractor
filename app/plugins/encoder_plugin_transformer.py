@@ -1,5 +1,3 @@
-# encoder_plugin_transformer.py
-
 import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import Input, Dense, Flatten, GlobalAveragePooling1D, LayerNormalization, Dropout, Add, Activation
@@ -26,7 +24,7 @@ class Plugin:
 
     def __init__(self):
         self.params = self.plugin_params.copy()
-        self.encoder_model = None
+        self.model = None
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
@@ -44,7 +42,7 @@ class Plugin:
 
         layers = []
         current_size = input_shape
-        layer_size_divisor = self.params['layer_size_divisor'] 
+        layer_size_divisor = self.params['layer_size_divisor']
         current_location = input_shape
         int_layers = 0
         while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
@@ -84,24 +82,25 @@ class Plugin:
         
         self.model = Model(inputs=inputs, outputs=outputs, name="encoder")
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+        self.model.summary()  # Add model summary
 
     def train(self, data):
         print(f"Training encoder with data shape: {data.shape}")
-        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        self.model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
         print("Training completed.")
 
     def encode(self, data):
         print(f"Encoding data with shape: {data.shape}")
-        encoded_data = self.encoder_model.predict(data)
+        encoded_data = self.model.predict(data)
         print(f"Encoded data shape: {encoded_data.shape}")
         return encoded_data
 
     def save(self, file_path):
-        save_model(self.encoder_model, file_path)
+        save_model(self.model, file_path)
         print(f"Encoder model saved to {file_path}")
 
     def load(self, file_path):
-        self.encoder_model = load_model(file_path)
+        self.model = load_model(file_path)
         print(f"Encoder model loaded from {file_path}")
 
 # Debugging usage example

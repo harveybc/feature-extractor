@@ -14,8 +14,6 @@ class Plugin:
         'batch_size': 256,
         'intermediate_layers': 1,
         'layer_size_divisor': 2,
-        'embedding_dim': 64,
-        'num_heads': 8,
         'ff_dim_divisor': 2,
         'dropout_rate': 0.1
     }
@@ -42,7 +40,7 @@ class Plugin:
 
         layers = []
         current_size = input_shape
-        layer_size_divisor = self.params['layer_size_divisor']
+        layer_size_divisor = self.params['layer_size_divisor'] 
         current_location = input_shape
         int_layers = 0
         while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
@@ -60,18 +58,23 @@ class Plugin:
 
         # add transformer layers
         for size in layers:
-            embedding_dim = self.params['embedding_dim']
-            num_heads = self.params['num_heads']
             ff_dim = size // self.params['ff_dim_divisor']
+            if size < 64:
+                num_heads = 2
+            elif 64 <= size < 128:
+                num_heads = 4
+            else:
+                num_heads = 8
+
             dropout_rate = self.params['dropout_rate']
             
-            x = Dense(embedding_dim)(x)
+            x = Dense(size)(x)
             x = MultiHeadAttention(head_num=num_heads)(x)
             x = LayerNormalization(epsilon=1e-6)(x)
             x = Dropout(dropout_rate)(x)
             
             ffn_output = Dense(ff_dim, activation='relu')(x)
-            ffn_output = Dense(embedding_dim)(ffn_output)
+            ffn_output = Dense(size)(ffn_output)
             ffn_output = Dropout(dropout_rate)(ffn_output)
             x = Add()([x, ffn_output])
             x = LayerNormalization(epsilon=1e-6)(x)
@@ -82,25 +85,24 @@ class Plugin:
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
         self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
-        self.encoder_model.summary()  # Add model summary
 
     def train(self, data):
         print(f"Training encoder with data shape: {data.shape}")
-        self.model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
         print("Training completed.")
 
     def encode(self, data):
         print(f"Encoding data with shape: {data.shape}")
-        encoded_data = self.model.predict(data)
+        encoded_data = self.encoder_model.predict(data)
         print(f"Encoded data shape: {encoded_data.shape}")
         return encoded_data
 
     def save(self, file_path):
-        save_model(self.model, file_path)
+        save_model(self.encoder_model, file_path)
         print(f"Encoder model saved to {file_path}")
 
     def load(self, file_path):
-        self.model = load_model(file_path)
+        self.encoder_model = load_model(file_path)
         print(f"Encoder model loaded from {file_path}")
 
 # Debugging usage example

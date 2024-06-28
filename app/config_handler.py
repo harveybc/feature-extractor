@@ -50,7 +50,7 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     user_set_cli_args = {}
     cli_arg_keys = [arg.lstrip('--') for arg in sys.argv[1:] if arg.startswith('--')]
     for key in cli_arg_keys:
-        arg_key = key.split('=')[0]
+        arg_key = key.split('=')[0].replace('-', '_')
         if arg_key in cli_args:
             user_set_cli_args[arg_key] = cli_args[arg_key]
             print(f"User set CLI argument: {arg_key} = {cli_args[arg_key]}")
@@ -63,9 +63,9 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     desired_step4_output = {
         'csv_file': 'tests\\data\\csv_sel_unb_norm_512.csv', 'save_encoder': './encoder_model.h5', 'save_decoder': './decoder_model.h5',
         'load_encoder': None, 'load_decoder': None, 'evaluate_encoder': './encoder_eval.csv', 'evaluate_decoder': './decoder_eval.csv',
-        'encoder_plugin': 'lstm', 'decoder_plugin': 'lstm', 'window_size': 32, 'threshold_error': 0.0003, 'initial_size': 4,
+        'encoder_plugin': 'cnn', 'decoder_plugin': 'cnn', 'window_size': 32, 'threshold_error': 0.0003, 'initial_size': 4,
         'step_size': 4, 'remote_log': None, 'remote_config': None, 'load_config': 'input_config.json', 'save_config': './config_out.json',
-        'quiet_mode': False, 'force_date': False, 'incremental_search': False, 'headers': False, 'epochs': 5,
+        'quiet_mode': False, 'force_date': False, 'incremental_search': True, 'headers': False, 'epochs': 5,
         'batch_size': 256, 'intermediate_layers': 4, 'layer_size_divisor': 2
     }
     print(f"Desired Step 4 Output: {desired_step4_output}")

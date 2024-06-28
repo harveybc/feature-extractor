@@ -2,13 +2,13 @@
 
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Input, Dense, LayerNormalization, Dropout, Flatten
-from keras.layers import MultiHeadAttention, Add, GlobalAveragePooling1D
+from keras.layers import Input, Dense, Flatten, GlobalAveragePooling1D, LayerNormalization, Dropout, Add, Activation
 from keras.optimizers import Adam
+from keras_multi_head import MultiHeadAttention
 
 class Plugin:
     """
-    An encoder plugin using a transformer-based neural network, with dynamically configurable size.
+    An encoder plugin using transformer layers.
     """
 
     plugin_params = {
@@ -18,11 +18,11 @@ class Plugin:
         'layer_size_divisor': 2,
         'embedding_dim': 64,
         'num_heads': 8,
-        'ff_dim_divisor': 2,  # This parameter is added for dynamically scaling ff_dim
+        'ff_dim_divisor': 2,
         'dropout_rate': 0.1
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers', 'embedding_dim']
+    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -60,22 +60,21 @@ class Plugin:
         inputs = Input(shape=(input_shape, 1))
         x = inputs
 
-        # add transformer layers, calculating their sizes based on the layer's size
-        layers_index = 0
+        # add transformer layers
         for size in layers:
-            layers_index += 1
-
-            # Attention Layer
-            attn_output = MultiHeadAttention(num_heads=self.params['num_heads'], key_dim=size)(x, x)
-            attn_output = Dropout(self.params['dropout_rate'])(attn_output)
-            x = Add()([x, attn_output])
+            embedding_dim = self.params['embedding_dim']
+            num_heads = self.params['num_heads']
+            ff_dim = size // self.params['ff_dim_divisor']
+            dropout_rate = self.params['dropout_rate']
+            
+            x = Dense(embedding_dim)(x)
+            x = MultiHeadAttention(head_num=num_heads)(x)
             x = LayerNormalization(epsilon=1e-6)(x)
-
-            # Feed Forward Network
-            ffn_dim = size // self.params['ff_dim_divisor']  # Dynamically scale ff_dim
-            ffn_output = Dense(ffn_dim, activation="relu")(x)
-            ffn_output = Dropout(self.params['dropout_rate'])(ffn_output)
-            ffn_output = Dense(size)(ffn_output)
+            x = Dropout(dropout_rate)(x)
+            
+            ffn_output = Dense(ff_dim, activation='relu')(x)
+            ffn_output = Dense(embedding_dim)(ffn_output)
+            ffn_output = Dropout(dropout_rate)(ffn_output)
             x = Add()([x, ffn_output])
             x = LayerNormalization(epsilon=1e-6)(x)
 

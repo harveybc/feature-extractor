@@ -50,9 +50,10 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
     user_set_cli_args = {}
     cli_arg_keys = [arg.lstrip('--') for arg in sys.argv[1:] if arg.startswith('--')]
     for key in cli_arg_keys:
-        if key in cli_args:
-            user_set_cli_args[key] = cli_args[key]
-            print(f"User set CLI argument: {key} = {cli_args[key]}")
+        arg_key = key.split('=')[0]
+        if arg_key in cli_args:
+            user_set_cli_args[arg_key] = cli_args[arg_key]
+            print(f"User set CLI argument: {arg_key} = {cli_args[arg_key]}")
 
     for key, value in user_set_cli_args.items():
         if value is not None:
@@ -79,7 +80,6 @@ def merge_config(config, cli_args, unknown_args, encoder_plugin, decoder_plugin)
             final_config[k] = v
 
     return final_config
-
 
 def configure_with_args(config, args):
     for k, v in args.items():

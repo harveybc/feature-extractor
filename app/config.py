@@ -9,7 +9,7 @@ DEFAULT_VALUES = {
     'encoder_plugin': 'default',
     'decoder_plugin': 'default',
     'window_size': 128,
-    'threshold_error': 0.0003,
+    'threshold_error': 0.003,
     'initial_size': 8,
     'step_size': 4,
     'remote_log': None,

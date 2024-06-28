@@ -16,6 +16,7 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
 
     # Step 1: Start with default values from config.py
     merged_config = defaults.copy()
+    
     desired_step1_output = {
         'csv_file': './csv_input.csv',
         'save_encoder': './encoder_model.h5',
@@ -41,8 +42,15 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
         'epochs': 5,
         'batch_size': 256
     }
+    
     print(f"Desired Step 1 Output: {desired_step1_output}")
     print(f"Actual Step 1 Output: {merged_config}")
+    
+    # Ensure no intermediate_layers key exists in Step 1
+    if 'intermediate_layers' in merged_config:
+        print("Error: 'intermediate_layers' should not be in the merged_config for Step 1")
+        sys.exit(1)
+
     exit_on_error("Step 1", merged_config, desired_step1_output)
 
     # Step 2: Merge with plugin default parameters

@@ -1,10 +1,12 @@
+# config_merger.py
+
 import sys
 from app.config import DEFAULT_VALUES
 
 def process_unknown_args(unknown_args):
     return {unknown_args[i].lstrip('--'): unknown_args[i + 1] for i in range(0, len(unknown_args), 2)}
 
-def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config, cli_args, unknown_args):
+def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, file_config, cli_args, unknown_args):
     def exit_on_error(step, actual, desired):
         if actual != desired:
             print(f"Error: {step} output does not match the desired output.")
@@ -36,8 +38,8 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
         'force_date': False,
         'incremental_search': True,
         'headers': False,
-        'epochs': 5,  # Add epochs here
-        'batch_size': 256  # Add batch_size here
+        'epochs': 5,
+        'batch_size': 256
     }
     print(f"Desired Step 1 Output: {desired_step1_output}")
     print(f"Actual Step 1 Output: {merged_config}")
@@ -82,7 +84,7 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
     exit_on_error("Step 2", merged_config, desired_step2_output)
 
     # Step 3: Merge with file configuration
-    for k, v in config.items():
+    for k, v in file_config.items():
         print(f"Step 3 merging from file config: {k} = {v}")
         merged_config[k] = v
     desired_step3_output = {
@@ -119,7 +121,7 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
     # Step 4: Merge with CLI arguments (ensure CLI args always override)
     cli_keys = [arg.lstrip('--') for arg in sys.argv if arg.startswith('--')]
     for key in cli_keys:
-        if key in merged_config:  # Use merged_config to find and replace keys
+        if key in merged_config:  # Change here to look for keys in merged_config
             print(f"Step 4 merging from CLI args: {key} = {cli_args[key]}")
             merged_config[key] = cli_args[key]
     desired_step4_output = {

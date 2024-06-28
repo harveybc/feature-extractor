@@ -1,3 +1,5 @@
+# main.py
+
 import sys
 import json
 import pandas as pd
@@ -21,7 +23,6 @@ def main():
     if args.load_config:
         file_config = load_config(args.load_config)
         print(f"Loaded config from file: {file_config}")
-        config.update(file_config)
 
     encoder_plugin_name = cli_args['encoder_plugin']
     decoder_plugin_name = cli_args['decoder_plugin']

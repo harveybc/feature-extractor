@@ -23,7 +23,7 @@ class Plugin:
 
     def __init__(self):
         self.params = self.plugin_params.copy()
-        self.decoder_model = None
+        self.model = None
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
@@ -81,22 +81,22 @@ class Plugin:
         x = Flatten()(x)
         outputs = Dense(output_shape)(x)
 
-        self.decoder_model = Model(inputs=inputs, outputs=outputs, name="decoder")
-        self.decoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+        self.model = Model(inputs=inputs, outputs=outputs, name="decoder")
+        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
 
     def train(self, encoded_data, original_data):
-        self.decoder_model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
 
     def decode(self, encoded_data):
-        decoded_data = self.decoder_model.predict(encoded_data)
+        decoded_data = self.model.predict(encoded_data)
         return decoded_data
 
     def save(self, file_path):
-        save_model(self.decoder_model, file_path)
+        save_model(self.model, file_path)
         print(f"Decoder model saved to {file_path}")
 
     def load(self, file_path):
-        self.decoder_model = load_model(file_path)
+        self.model = load_model(file_path)
         print(f"Decoder model loaded from {file_path}")
 
     def calculate_mse(self, original_data, reconstructed_data):

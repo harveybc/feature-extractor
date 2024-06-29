@@ -120,7 +120,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         'decoder': decoder_plugin.get_debug_info()
     }
 
-    save_config(config, config['save_config'])
+    #save_config(config, config['save_config'])
     save_debug_info(debug_info, encoder_plugin, decoder_plugin, 'debug_out.json')
 
     print(f"Execution time: {execution_time} seconds")

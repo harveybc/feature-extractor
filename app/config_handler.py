@@ -1,6 +1,7 @@
 # config_handler.py
 
 import json
+import sys
 import requests
 from app.config import DEFAULT_VALUES
 from app.plugin_loader import load_plugin
@@ -46,20 +47,33 @@ def save_debug_info(debug_info, encoder_plugin, decoder_plugin, path='debug_out.
     with open(path, 'w') as f:
         json.dump(debug_info, f, indent=4)
 
-def load_remote_config(url, username, password):
-    response = requests.get(url, auth=(username, password))
-    response.raise_for_status()
-    config = response.json()
-    return config
-
 def save_remote_config(config, url, username, password):
-    response = requests.post(url, auth=(username, password), json=config)
-    response.raise_for_status()
-    success = response.status_code == 200
-    return success
+    try:
+        response = requests.post(
+            url,
+            auth=(username, password),
+            data={'json_config': config}
+        )
+        response.raise_for_status()
+        return True
+    except requests.RequestException as e:
+        print(f"Failed to save remote configuration: {e}", file=sys.stderr)
+        return False
 
-def log_remote_data(data, url, username, password):
-    response = requests.post(url, auth=(username, password), json=data)
-    response.raise_for_status()
-    success = response.status_code == 200
-    return success
+def log_remote_info(config, debug_info, url, username, password):
+    try:
+        data = {
+            'json_config': config,
+            'json_result': json.dumps(debug_info)
+        }
+        response = requests.post(
+            url,
+            auth=(username, password),
+            data=data
+        )
+        response.raise_for_status()
+        return True
+    except requests.RequestException as e:
+        print(f"Failed to log remote information: {e}", file=sys.stderr)
+        return False
+    

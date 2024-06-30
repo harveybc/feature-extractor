@@ -60,7 +60,7 @@ def remote_save_config(config, url, username, password):
         response = requests.post(
             url,
             auth=(username, password),
-            data={'json_config': config_to_save}
+            data={'json_config': json.dumps(config_to_save)}
         )
         response.raise_for_status()
         return True

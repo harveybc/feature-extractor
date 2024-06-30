@@ -52,13 +52,15 @@ def main():
     run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin)
 
     if 'save_config' in config:
-        save_config(config, config['save_config'])
-        print(f"Configuration saved to {config['save_config']}.")
+        if config['save_config'] != None:
+            save_config(config, config['save_config'])
+            print(f"Configuration saved to {config['save_config']}.")
 
     if 'remote_save_config' in config:
-        print(f"Remote saving configuration to {config['remote_save_config']}")
-        remote_save_config(config, config['remote_save_config'], config['username'], config['password'])
-        print(f"Remote configuration saved.")
+        if config['remote_save_config'] != None:
+            print(f"Remote saving configuration to {config['remote_save_config']}")
+            remote_save_config(config, config['remote_save_config'], config['username'], config['password'])
+            print(f"Remote configuration saved.")
 
 if __name__ == "__main__":
     main()

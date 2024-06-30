@@ -47,7 +47,7 @@ def save_debug_info(debug_info, encoder_plugin, decoder_plugin, path='debug_out.
     with open(path, 'w') as f:
         json.dump(debug_info, f, indent=4)
 
-def save_remote_config(config, url, username, password):
+def remote_save_config(config, url, username, password):
     try:
         response = requests.post(
             url,
@@ -60,7 +60,7 @@ def save_remote_config(config, url, username, password):
         print(f"Failed to save remote configuration: {e}", file=sys.stderr)
         return False
     
-def load_remote_config(config, url, username, password):
+def remote_load_config(config, url, username, password):
     try:
         response = requests.post(
             url,

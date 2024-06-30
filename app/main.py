@@ -22,7 +22,7 @@ def main():
     file_config = {}
     # remote config file load
     if args.remote_load_config:
-        file_config = remote_load_config(args.remote_load_config)
+        file_config = remote_load_config(args.remote_load_config, args.username, args.password)
         print(f"Loaded remote config: {file_config}")
 
     # local config file load
@@ -52,7 +52,7 @@ def main():
 
     if args.remote_save_config:
         print(f"Remote saving configuration to {args.remote_save_config}")
-        remote_save_config(config, args.remote_save_config)
+        remote_save_config(config, args.remote_save_config, args.username, args.password)
         print(f"Remote configuration saved.")
 
     encoder_plugin.set_params(**config)

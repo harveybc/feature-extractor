@@ -73,7 +73,7 @@ def remote_load_config(config, url, username, password):
         print(f"Failed to save remote configuration: {e}", file=sys.stderr)
         return False
 
-def log_remote_info(config, debug_info, url, username, password):
+def remote_log(config, debug_info, url, username, password):
     try:
         data = {
             'json_config': config,

@@ -1,5 +1,6 @@
 DEFAULT_VALUES = {
-    'csv_file': './csv_input.csv',
+    'input_file': './csv_input.csv',
+    'output_file': './csv_output.csv',
     'save_encoder': './encoder_model.h5',
     'save_decoder': './decoder_model.h5',
     'load_encoder': None,

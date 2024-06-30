@@ -51,11 +51,11 @@ def main():
     print("Processing and running autoencoder pipeline...")
     run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin)
 
-    if args.save_config:
+    if config.save_config:
         save_config(config, args.save_config)
         print(f"Configuration saved to {args.save_config}.")
 
-    if args.remote_save_config:
+    if config.remote_save_config:
         print(f"Remote saving configuration to {args.remote_save_config}")
         remote_save_config(config, args.remote_save_config, args.username, args.password)
         print(f"Remote configuration saved.")

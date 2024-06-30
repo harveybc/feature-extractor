@@ -52,7 +52,7 @@ def merge_config(defaults, encoder_plugin_params, decoder_plugin_params, config,
     
     # Special handling for csv_file
     if len(sys.argv) > 1 and not sys.argv[1].startswith('--'):
-        merged_config['csv_file'] = sys.argv[1]
+        merged_config['input_file'] = sys.argv[1]
     
     print(f"Actual Step 4 Output: {merged_config}")
     

@@ -56,8 +56,8 @@ def main():
         print(f"Configuration saved to {config['save_config']}.")
 
     if 'remote_save_config' in config:
-        print(f"Remote saving configuration to {config.remote_save_config}")
-        remote_save_config(config, config.remote_save_config, config.username, config.password)
+        print(f"Remote saving configuration to {config['remote_save_config']}")
+        remote_save_config(config, config['remote_save_config'], config['username'], config['password'])
         print(f"Remote configuration saved.")
 
 if __name__ == "__main__":

@@ -68,18 +68,18 @@ def remote_save_config(config, url, username, password):
         print(f"Failed to save remote configuration: {e}", file=sys.stderr)
         return False
     
-def remote_load_config(config, url, username, password):
+def remote_load_config(url, username=None, password=None):
     try:
-        response = requests.post(
-            url,
-            auth=(username, password),
-            data={'json_config': config}
-        )
+        if username and password:
+            response = requests.get(url, auth=(username, password))
+        else:
+            response = requests.get(url)
         response.raise_for_status()
-        return True
+        config = response.json()
+        return config
     except requests.RequestException as e:
-        print(f"Failed to save remote configuration: {e}", file=sys.stderr)
-        return False
+        print(f"Failed to load remote configuration: {e}", file=sys.stderr)
+        return None
 
 def remote_log(config, debug_info, url, username, password):
     try:
@@ -97,4 +97,3 @@ def remote_log(config, debug_info, url, username, password):
     except requests.RequestException as e:
         print(f"Failed to log remote information: {e}", file=sys.stderr)
         return False
-    

@@ -22,6 +22,7 @@ def parse_args():
     parser.add_argument('-p', '--password', type=str, help='Password for Username for the API endpoint.')
     parser.add_argument('-lc', '--load_config', type=str, help='Path to load a configuration file.')
     parser.add_argument('-sc', '--save_config', type=str, help='Path to save the current configuration.')
+    parser.add_argument('-sl', '--save_log', type=str, help='Path to save the current debug info.')
     parser.add_argument('-qm', '--quiet_mode', action='store_true', help='Suppress output messages.')
     parser.add_argument('-fd', '--force_date', action='store_true', help='Include date in the output CSV files.')
     parser.add_argument('-inc', '--incremental_search', action='store_true', help='Enable incremental search for interface size.')

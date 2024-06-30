@@ -6,7 +6,7 @@ import time
 from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import load_csv, write_csv
 from app.reconstruction import unwindow_data
-from app.config_handler import save_config, save_debug_info
+from app.config_handler import save_debug_info, remote_log
 
 def create_sliding_windows(data, window_size):
     data_array = data.to_numpy()
@@ -43,7 +43,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     print("Running process_data...")
     processed_data = process_data(config)
     print("Processed data received.")
-
+    mse=0
+    mae=0
     for column, windowed_data in processed_data.items():
         print(f"Processing column: {column}")
         
@@ -117,10 +118,22 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     debug_info = {
         'execution_time': execution_time,
         'encoder': encoder_plugin.get_debug_info(),
-        'decoder': decoder_plugin.get_debug_info()
+        'decoder': decoder_plugin.get_debug_info(),
+        'mse': mse,
+        'mae': mae
     }
 
-    #save_config(config, config['save_config'])
-    save_debug_info(debug_info, encoder_plugin, decoder_plugin, 'debug_out.json')
+    # save debug info
+    if 'save_log' in config:
+        if config['save_log'] != None:
+            save_debug_info(debug_info, config['save_log'])
+            print(f"Debug info saved to {config['save_log']}.")
+
+    # remote log debug info and config
+    if 'remote_log' in config:
+        if config['remote_log'] != None:
+            remote_log(debug_info, config['remote_log'], config['username'], config['password'])
+            print(f"Debug info saved to {config['remote_log']}.")
+            
 
     print(f"Execution time: {execution_time} seconds")

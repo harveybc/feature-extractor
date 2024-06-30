@@ -3,7 +3,7 @@
 import sys
 import json
 import pandas as pd
-from app.config_handler import load_config, save_config, remote_load_config, remote_save_config
+from app.config_handler import load_config, save_config, remote_load_config, remote_save_config, remote_log
 from app.cli import parse_args
 from app.data_processor import process_data, run_autoencoder_pipeline
 from app.config import DEFAULT_VALUES
@@ -62,5 +62,6 @@ def main():
             remote_save_config(config, config['remote_save_config'], config['username'], config['password'])
             print(f"Remote configuration saved.")
 
+    
 if __name__ == "__main__":
     main()

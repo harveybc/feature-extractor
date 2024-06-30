@@ -41,16 +41,7 @@ def save_config(config, path='config_out.json'):
         json.dump(config_to_save, f, indent=4)
     return config, path
 
-def save_debug_info(debug_info, encoder_plugin, decoder_plugin, path='debug_out.json'):
-    encoder_debug_info = encoder_plugin.get_debug_info()
-    decoder_debug_info = decoder_plugin.get_debug_info()
-    
-    debug_info = {
-        'execution_time': debug_info.get('execution_time', 0),
-        'encoder': encoder_debug_info,
-        'decoder': decoder_debug_info
-    }
-
+def save_debug_info(debug_info, path='debug_out.json'):
     with open(path, 'w') as f:
         json.dump(debug_info, f, indent=4)
 
@@ -82,9 +73,10 @@ def remote_load_config(url, username=None, password=None):
         return None
 
 def remote_log(config, debug_info, url, username, password):
+    config_to_save = compose_config(config)
     try:
         data = {
-            'json_config': config,
+            'json_config': json.dumps(config_to_save),
             'json_result': json.dumps(debug_info)
         }
         response = requests.post(

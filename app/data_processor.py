@@ -25,8 +25,8 @@ def create_sliding_windows(data, window_size):
     return pd.DataFrame(windows)
 
 def process_data(config):
-    print(f"Loading data from CSV file: {config['csv_file']}")
-    data = load_csv(config['csv_file'], headers=config['headers'])
+    print(f"Loading data from CSV file: {config['input_file']}")
+    data = load_csv(config['input_file'], headers=config['headers'])
     print(f"Data loaded with shape: {data.shape}")
 
     window_size = config['window_size']
@@ -105,7 +105,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         # Perform unwindowing of the decoded data once
         reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
 
-        output_filename = os.path.splitext(config['csv_file'])[0] + f"_{column}.csv"
+        output_filename = os.path.splitext(config['output_file'])[0] + f"_{column}.csv"
         write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")
 

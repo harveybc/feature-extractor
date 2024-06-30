@@ -29,8 +29,7 @@ def main():
     if args.load_config:
         file_config = load_config(args.load_config)
         print(f"Loaded local config: {file_config}")
-    
-    
+  
     encoder_plugin_name = cli_args['encoder_plugin']
     decoder_plugin_name = cli_args['decoder_plugin']
 
@@ -45,10 +44,12 @@ def main():
     print("Merging configuration with CLI arguments and unknown args...")
     unknown_args_dict = process_unknown_args(unknown_args)
     config = merge_config(config, encoder_plugin.plugin_params, decoder_plugin.plugin_params, file_config, cli_args, unknown_args_dict)
-
     
     encoder_plugin.set_params(**config)
     decoder_plugin.set_params(**config)
+
+    print("Processing and running autoencoder pipeline...")
+    run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin)
 
     if args.save_config:
         save_config(config, args.save_config)
@@ -58,10 +59,6 @@ def main():
         print(f"Remote saving configuration to {args.remote_save_config}")
         remote_save_config(config, args.remote_save_config, args.username, args.password)
         print(f"Remote configuration saved.")
-
-    print("Processing and running autoencoder pipeline...")
-    run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin)
-
 
 if __name__ == "__main__":
     main()

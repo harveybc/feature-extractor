@@ -29,6 +29,9 @@ def compose_config(config):
             if k not in encoder_default_params or v != encoder_default_params[k]:
                 if k not in decoder_default_params or v != decoder_default_params[k]:
                     config_to_save[k] = v
+    
+    # prints config_to_save
+    print(f"Actual config_to_save: {config_to_save}")
     return config_to_save
 
 def save_config(config, path='config_out.json'):

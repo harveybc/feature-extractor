@@ -132,7 +132,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     # remote log debug info and config
     if 'remote_log' in config:
         if config['remote_log'] != None:
-            remote_log(debug_info, config['remote_log'], config['username'], config['password'])
+            remote_log(config, debug_info, config['remote_log'], config['username'], config['password'])
             print(f"Debug info saved to {config['remote_log']}.")
             
 

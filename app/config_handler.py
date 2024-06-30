@@ -16,7 +16,7 @@ def get_plugin_default_params(plugin_name, plugin_type):
     plugin_instance = plugin_class()
     return plugin_instance.plugin_params
 
-def save_config(config, path='config_out.json'):
+def compose_config(config):
     encoder_plugin_name = config.get('encoder_plugin', DEFAULT_VALUES.get('encoder_plugin'))
     decoder_plugin_name = config.get('decoder_plugin', DEFAULT_VALUES.get('decoder_plugin'))
     
@@ -29,6 +29,10 @@ def save_config(config, path='config_out.json'):
             if k not in encoder_default_params or v != encoder_default_params[k]:
                 if k not in decoder_default_params or v != decoder_default_params[k]:
                     config_to_save[k] = v
+    return config_to_save
+
+def save_config(config, path='config_out.json'):
+    config_to_save = compose_config(config)
     
     with open(path, 'w') as f:
         json.dump(config_to_save, f, indent=4)
@@ -48,11 +52,12 @@ def save_debug_info(debug_info, encoder_plugin, decoder_plugin, path='debug_out.
         json.dump(debug_info, f, indent=4)
 
 def remote_save_config(config, url, username, password):
+    config_to_save = compose_config(config)
     try:
         response = requests.post(
             url,
             auth=(username, password),
-            data={'json_config': config}
+            data={'json_config': config_to_save}
         )
         response.raise_for_status()
         return True

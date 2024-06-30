@@ -46,6 +46,10 @@ def main():
     unknown_args_dict = process_unknown_args(unknown_args)
     config = merge_config(config, encoder_plugin.plugin_params, decoder_plugin.plugin_params, file_config, cli_args, unknown_args_dict)
 
+    
+    encoder_plugin.set_params(**config)
+    decoder_plugin.set_params(**config)
+
     if args.save_config:
         save_config(config, args.save_config)
         print(f"Configuration saved to {args.save_config}.")
@@ -55,11 +59,9 @@ def main():
         remote_save_config(config, args.remote_save_config, args.username, args.password)
         print(f"Remote configuration saved.")
 
-    encoder_plugin.set_params(**config)
-    decoder_plugin.set_params(**config)
-
     print("Processing and running autoencoder pipeline...")
     run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin)
+
 
 if __name__ == "__main__":
     main()

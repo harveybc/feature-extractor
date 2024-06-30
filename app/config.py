@@ -17,7 +17,7 @@ DEFAULT_VALUES = {
     'remote_save_config': None,
     'username': None,
     'password': None, 
-    'load_config': './config_in.json',
+    'load_config': None,
     'save_config': './config_out.json',
     'quiet_mode': False,
     'force_date': False,

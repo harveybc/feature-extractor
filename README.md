@@ -3,9 +3,19 @@
 
 ## Description
 
-Feature Extractor is a Python application designed for processing CSV data through customizable encoding and decoding workflows. The application supports dynamic plugin integration, allowing users to extend its capabilities by adding custom encoder and decoder models. 
+## Description
 
-This feature makes it particularly suitable for tasks that require specialized data processing, such as machine learning model training and evaluation. It Includes plugins for RNN, CNN, LSTM, and Transformer-based architectures.
+The Feature-extractor is a powerful and flexible tool designed for training autoencoders on CSV data, and alseo evaluating pre-trained encoders and decoders, with support for dynamic plugins. It utilizes various machine learning techniques to process time-series data through sliding windows and trains autoencoders with configurable parameters. The tool is capable of saving and loading models, making it highly versatile for both training and evaluation tasks.
+
+### Key Features:
+- **Dynamic Plugins:** Easily switch between different encoder and decoder plugins (e.g. ANN, CNN, LSTM, Transformer) to find the best fit for your data.
+- **Configurable Parameters:** Customize the training process with parameters such as window size, initial size, step size, epochs, batch size, and error thresholds.
+- **Model Management:** Save and load encoder and decoder models for reuse, avoiding the need to retrain models from scratch.
+- **Remote Configuration:** Load and save configurations remotely, facilitating seamless integration with other systems and automation pipelines.
+- **Incremental Search:** Optimize the interface size dynamically during training to achieve the best performance based on a specified error threshold.
+
+This tool is designed for data scientists and machine learning engineers who need to preprocess and encode large datasets efficiently, and it can be easily integrated into larger machine learning workflows.
+
 
 ## Installation Instructions
 

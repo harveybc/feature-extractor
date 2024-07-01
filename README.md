@@ -5,7 +5,7 @@
 
 ## Description
 
-The Feature-extractor is a powerful and flexible tool designed for training autoencoders on CSV data, and alseo evaluating pre-trained encoders and decoders, with support for dynamic plugins. It utilizes various machine learning techniques to process time-series data through sliding windows and trains autoencoders with configurable parameters. The tool is capable of saving and loading models, making it highly versatile for both training and evaluation tasks.
+The Feature-extractor is a powerful and flexible tool designed for training autoencoders on CSV data, and also evaluating pre-trained encoders and decoders, with support for dynamic plugins. It utilizes various machine learning techniques to process time-series data through sliding windows and trains autoencoders with configurable parameters. The tool is capable of saving and loading models, making it highly versatile for both training and evaluation tasks.
 
 ### Key Features:
 - **Dynamic Plugins:** Easily switch between different encoder and decoder plugins (e.g. ANN, CNN, LSTM, Transformer) to find the best fit for your data.

@@ -134,6 +134,39 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         if config['remote_log'] != None:
             remote_log(config, debug_info, config['remote_log'], config['username'], config['password'])
             print(f"Debug info saved to {config['remote_log']}.")
-            
 
     print(f"Execution time: {execution_time} seconds")
+
+def load_and_evaluate_encoder(config, encoder_plugin):
+    # Load the encoder model
+    encoder_plugin.load(config['load_encoder'])
+
+    # Load the input data
+    processed_data = process_data(config)
+    column = list(processed_data.keys())[0]
+    windowed_data = processed_data[column]
+    
+    # Encode the data
+    encoded_data = encoder_plugin.encode(windowed_data)
+
+    # Save the encoded data to CSV
+    evaluate_filename = config['evaluate_encoder']
+    np.savetxt(evaluate_filename, encoded_data, delimiter=",")
+    print(f"Encoded data saved to {evaluate_filename}")
+
+def load_and_evaluate_decoder(config, decoder_plugin):
+    # Load the decoder model
+    decoder_plugin.load(config['load_decoder'])
+
+    # Load the input data
+    processed_data = process_data(config)
+    column = list(processed_data.keys())[0]
+    windowed_data = processed_data[column]
+
+    # Decode the data
+    decoded_data = decoder_plugin.decode(windowed_data)
+
+    # Save the decoded data to CSV
+    evaluate_filename = config['evaluate_decoder']
+    np.savetxt(evaluate_filename, decoded_data, delimiter=",")
+    print(f"Decoded data saved to {evaluate_filename}")

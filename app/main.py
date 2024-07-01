@@ -5,7 +5,7 @@ import json
 import pandas as pd
 from app.config_handler import load_config, save_config, remote_load_config, remote_save_config, remote_log
 from app.cli import parse_args
-from app.data_processor import process_data, run_autoencoder_pipeline
+from app.data_processor import process_data, run_autoencoder_pipeline, load_and_evaluate_encoder, load_and_evaluate_decoder
 from app.config import DEFAULT_VALUES
 from app.plugin_loader import load_plugin
 from config_merger import merge_config, process_unknown_args
@@ -48,8 +48,15 @@ def main():
     encoder_plugin.set_params(**config)
     decoder_plugin.set_params(**config)
 
-    print("Processing and running autoencoder pipeline...")
-    run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin)
+    if config['load_encoder']:
+        print("Loading and evaluating encoder...")
+        load_and_evaluate_encoder(config, encoder_plugin)
+    elif config['load_decoder']:
+        print("Loading and evaluating decoder...")
+        load_and_evaluate_decoder(config, decoder_plugin)
+    else:
+        print("Processing and running autoencoder pipeline...")
+        run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin)
 
     if 'save_config' in config:
         if config['save_config'] != None:
@@ -62,6 +69,5 @@ def main():
             remote_save_config(config, config['remote_save_config'], config['username'], config['password'])
             print(f"Remote configuration saved.")
 
-    
 if __name__ == "__main__":
     main()

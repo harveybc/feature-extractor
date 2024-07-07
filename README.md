@@ -52,14 +52,14 @@ To install and set up the feature-extractor application, follow these steps:
     ```
 
 6. **(Optional) Run the feature-extractor**:
-    - On Windows, run the following command to verify installation (it generates an example output file csv_output.csv):
+    - On Windows, run the following command to verify installation (it uses all default valuex, use feature-extractor.bat --help, for complete command line arguments description):
         ```bash
-        feature-extractor.bat tests\data\csv_sel_unb_norm_512.csv 
+        feature-extractor.bat tests\data\eurusr_1h_norm_10y.csv 
         ```
 
     - On Linux, run:
         ```bash
-        sh feature-extractor.sh tests\data\csv_sel_unb_norm_512.csv
+        sh feature-extractor.sh tests\data\eurusr_1h_norm_10y.csv
         ```
 
 7. **(Optional) Run Tests**:

@@ -1,4 +1,5 @@
-tensorflow-gpu
+tensorflow-gpu==2.10.1
+nvidia-cudnn-cu11==8.9.5.29
 numpy
 pandas
 h5py

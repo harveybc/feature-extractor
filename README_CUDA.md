@@ -35,23 +35,30 @@
     python --version
     ```
 
-- Modify the requirements.txt file to show **tensorflow-gpu==<REQUIRED_TENSORFLOW_VERSION_HERE>** instead of just **tensorflow**, and if using tensorflow-gpu version more than 2.0, remove the **keras** line, since tensorflow-gpu > 2.0, already includes keras-gpu. Save the changes.
+- Modify the requirements.txt file to show **tensorflow-gpu==<2.10.1>** or  your  specific REQUIRED_TENSORFLOW_VERSION_HERE instead of just **tensorflow-gpu**, and if using tensorflow-gpu version more than 2.0, remove the **keras** line, since tensorflow-gpu > 2.0, already includes keras. Save the changes.
+
 
 - Install the modified **requirements.txt**, this time with **tensorflow-gpu** (Keras-gpu included) instead of just **keras** (you may need to fix some package versions in the readme for the requirements of your current tensorflow-gpu version, if some error appears):
 
     ```bash
     pip uninstall -y numpy scipy pandas tensorflow keras
     pip install -r requirements.txt --no-cache-dir 
+    pip install nvidia-cudnn-cu11==8.9.5.29
     ```
+Please the cudnn by your current version if the one used does not work.
 
 - Since tensorflow-gpu version 2.0, the keras-gpu package comes included and do not need separate installation, for previous versions, install the keras package with: pip install keras
 
 - To test if Keras is using the GPU:
 
     ```bash
-    python
-    from keras import backend as K
-    K.tensorflow_backend._get_available_gpus()
+    from tensorflow.python.client import device_lib
+
+    def get_available_gpus():
+        local_device_protos = device_lib.list_local_devices()
+        return [x.name for x in local_device_protos if x.device_type == 'GPU']
+
+    print(get_available_gpus())
     exit()
     ```
 - If the previous test is passed, the GPU can be used, and no other changes in this repo code are required since it detects if a gpu is available automatically for training and evalation of trained models.

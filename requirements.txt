@@ -1,5 +1,4 @@
-tensorflow
-keras
+tensorflow-gpu
 numpy
 pandas
 h5py

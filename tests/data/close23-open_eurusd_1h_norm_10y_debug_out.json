@@ -1,0 +1,21 @@
+{
+    "execution_time": 0.13315868377685547,
+    "input_rows": 62181,
+    "output_rows": 62181,
+    "input_columns": 1,
+    "output_columns": 1,
+    "min_val": {
+        "col_0": -0.04533
+    },
+    "max_val": {
+        "col_0": 0.03926
+    },
+    "mean": null,
+    "std": null,
+    "range": [
+        -1,
+        1
+    ],
+    "method": null,
+    "mae_per_pip": 0.002364345667336565
+}

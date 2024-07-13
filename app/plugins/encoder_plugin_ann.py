@@ -9,8 +9,7 @@ class Plugin:
     """
 
     plugin_params = {
-        'epochs': 10,
-        'batch_size': 256
+
     }
 
     plugin_debug_vars = ['epochs', 'batch_size', 'input_dim', 'encoding_dim']

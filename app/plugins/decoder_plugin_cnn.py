@@ -63,7 +63,7 @@ class Plugin:
             upsample_factor = next_size // reshape_size
             if upsample_factor > 1:
                 self.model.add(UpSampling1D(size=upsample_factor))
-        self.model.add(Conv1DTranspose(output_shape, kernel_size=kernel_size, padding='same', activation='tanh', name="last_layer"))
+        self.model.add(Conv1DTranspose(output_shape, kernel_size=kernel_size, padding='same', activation='relu', name="last_layer"))
         last_layer_shape = self.model.layers[-1].output_shape
         new_shape = (last_layer_shape[2], last_layer_shape[1])
         self.model.add(Reshape(new_shape))

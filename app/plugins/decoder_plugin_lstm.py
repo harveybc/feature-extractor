@@ -69,7 +69,7 @@ class Plugin:
             print(f"Added Bi-LSTM layer with size: {reshape_size}")
 
         # Adding the final TimeDistributed Dense layer to match the output shape
-        self.model.add(TimeDistributed(Dense(1)))
+        self.model.add(TimeDistributed(Dense(1, activation='tanh')))
         print(f"Added TimeDistributed Dense layer with size: 1")
 
         self.model.compile(optimizer=Adam(), loss='mean_squared_error')

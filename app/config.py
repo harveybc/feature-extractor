@@ -10,7 +10,7 @@ DEFAULT_VALUES = {
     'encoder_plugin': 'default',
     'decoder_plugin': 'default',
     'window_size': 128,
-    'threshold_error': 0.003,
+    'threshold_error': 0.0001,
     'initial_size': 32,
     'step_size': 16,
     'save_log': './debug_out.json',
@@ -25,7 +25,7 @@ DEFAULT_VALUES = {
     'force_date': False,
     'incremental_search': True,
     'headers': False,
-    'epochs': 10,  # Add epochs here
-    'batch_size': 256  # Add batch_size here
+    'epochs': 20,  # Add epochs here
+    'batch_size': 512  # Add batch_size here
 }
 

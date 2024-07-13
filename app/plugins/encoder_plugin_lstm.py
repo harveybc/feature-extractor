@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import LSTM, Bidirectional, Dense, Input, Flatten
+from keras.layers import LSTM, Bidirectional, Dense, Input, Flatten, Dropout
 from keras.optimizers import Adam
 
 class Plugin:
@@ -12,7 +12,8 @@ class Plugin:
         'epochs': 10,
         'batch_size': 256,
         'intermediate_layers': 1,
-        'layer_size_divisor': 2
+        'layer_size_divisor': 2,
+        'dropout_rate': 0.1
     }
 
     plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers']
@@ -63,9 +64,10 @@ class Plugin:
                 x = Bidirectional(LSTM(units=size, activation='tanh', return_sequences=True))(x)
             else:
                 x = Bidirectional(LSTM(units=size, activation='tanh', return_sequences=(layers_index < len(layers))))(x)
-        
+            x = Dropout(self.params['dropout_rate'])(x)
+
         x = Flatten()(x)
-        outputs = Dense(interface_size)(x)
+        outputs = Dense(interface_size, activation='tanh')(x)
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
         self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')

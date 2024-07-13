@@ -81,7 +81,7 @@ class Plugin:
 
         x = GlobalAveragePooling1D()(x)
         x = Flatten()(x)
-        outputs = Dense(interface_size)(x)
+        outputs = Dense(interface_size, activation='tanh')(x)
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
         self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')

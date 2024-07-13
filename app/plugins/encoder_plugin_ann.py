@@ -36,7 +36,7 @@ class Plugin:
 
         # Encoder
         encoder_input = Input(shape=(input_dim,), name="encoder_input")
-        encoder_output = Dense(encoding_dim, activation='relu', name="encoder_output")(encoder_input)
+        encoder_output = Dense(encoding_dim, activation='tanh', name="encoder_output")(encoder_input)
         self.encoder_model = Model(inputs=encoder_input, outputs=encoder_output, name="encoder")
         self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
 

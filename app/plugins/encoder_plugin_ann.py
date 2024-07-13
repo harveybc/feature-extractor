@@ -12,7 +12,7 @@ class Plugin:
 
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size', 'input_dim', 'encoding_dim']
+    plugin_debug_vars = ['input_dim', 'encoding_dim']
 
     def __init__(self):
         self.params = self.plugin_params.copy()

@@ -3,6 +3,7 @@ from keras.models import Model, load_model, save_model
 from keras.layers import Input, Dense, Flatten, Reshape, GlobalAveragePooling1D, LayerNormalization, Dropout, Add, Activation
 from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     plugin_params = {

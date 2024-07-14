@@ -11,7 +11,9 @@ class Plugin:
 
     plugin_params = {
         'intermediate_layers': 1,
-        'layer_size_divisor': 2
+        'layer_size_divisor': 2,
+        'learning_rate': 0.01,
+        'dropout_rate': 0.1,
     }
 
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
@@ -71,7 +73,16 @@ class Plugin:
         self.model.add(TimeDistributed(Dense(1, activation='tanh', kernel_initializer=GlorotUniform())))
         print(f"Added TimeDistributed Dense layer with size: 1")
 
-        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+                # Define the Adam optimizer with custom parameters
+        adam_optimizer = Adam(
+            learning_rate= self.params['learning_rate'],   # Set the learning rate
+            beta_1=0.9,            # Default value
+            beta_2=0.999,          # Default value
+            epsilon=1e-7,          # Default value
+            amsgrad=False          # Default value
+        )
+
+        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
 
     def train(self, encoded_data, original_data):
         # Debugging message

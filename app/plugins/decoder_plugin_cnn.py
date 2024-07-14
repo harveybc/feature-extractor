@@ -7,7 +7,9 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 class Plugin:
     plugin_params = {
         'intermediate_layers': 1,
-        'layer_size_divisor': 2
+        'layer_size_divisor': 2,
+        'learning_rate': 0.01,
+        'dropout_rate': 0.1,
     }
 
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
@@ -68,7 +70,16 @@ class Plugin:
         self.model.add(Reshape(new_shape))
         self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_output"))
         self.model.add(Reshape((output_shape,)))
-        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+                # Define the Adam optimizer with custom parameters
+        adam_optimizer = Adam(
+            learning_rate= self.params['learning_rate'],   # Set the learning rate
+            beta_1=0.9,            # Default value
+            beta_2=0.999,          # Default value
+            epsilon=1e-7,          # Default value
+            amsgrad=False          # Default value
+        )
+
+        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
 
     def train(self, encoded_data, original_data):
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))

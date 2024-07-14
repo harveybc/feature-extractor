@@ -2,6 +2,7 @@ import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input
 from keras.optimizers import Adam
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     """
@@ -68,14 +69,14 @@ class Plugin:
             if size > 512:
                 kernel_size = 7
             # add the conv and maxpooling layers
-            x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', padding='same')(x)
+            x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', kernel_initializer=HeNormal(), padding='same')(x)
             if pool_size < 2:
                 pool_size = 2
             x = MaxPooling1D(pool_size=pool_size)(x)
 
         x = Flatten()(x)
         
-        outputs = Dense(interface_size, activation='tanh')(x)
+        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
         self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
 

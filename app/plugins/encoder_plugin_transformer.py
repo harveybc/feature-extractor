@@ -3,6 +3,7 @@ from keras.models import Model, load_model, save_model
 from keras.layers import Input, Dense, Flatten, GlobalAveragePooling1D, LayerNormalization, Dropout, Add, Activation
 from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     """
@@ -72,7 +73,7 @@ class Plugin:
             x = LayerNormalization(epsilon=1e-6)(x)
             x = Dropout(dropout_rate)(x)
             
-            ffn_output = Dense(ff_dim, activation='relu')(x)
+            ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal())(x)
             ffn_output = Dense(size)(ffn_output)
             ffn_output = Dropout(dropout_rate)(ffn_output)
             x = Add()([x, ffn_output])
@@ -80,7 +81,7 @@ class Plugin:
 
         x = GlobalAveragePooling1D()(x)
         x = Flatten()(x)
-        outputs = Dense(interface_size, activation='tanh')(x)
+        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
         self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')

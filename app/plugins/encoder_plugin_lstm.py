@@ -2,6 +2,7 @@ import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import LSTM, Bidirectional, Dense, Input, Flatten, Dropout
 from keras.optimizers import Adam
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     """
@@ -60,13 +61,13 @@ class Plugin:
 
             # add the Bi-LSTM layers
             if layers_index == 1:
-                x = Bidirectional(LSTM(units=size, activation='tanh', return_sequences=True))(x)
+                x = Bidirectional(LSTM(units=size, activation='tanh', kernel_initializer=GlorotUniform(), return_sequences=True))(x)
             else:
-                x = Bidirectional(LSTM(units=size, activation='tanh', return_sequences=(layers_index < len(layers))))(x)
+                x = Bidirectional(LSTM(units=size, activation='tanh', kernel_initializer=GlorotUniform(), return_sequences=(layers_index < len(layers))))(x)
             x = Dropout(self.params['dropout_rate'])(x)
 
         x = Flatten()(x)
-        outputs = Dense(interface_size, activation='tanh')(x)
+        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
         self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')

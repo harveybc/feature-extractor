@@ -1,7 +1,8 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input
+from keras.layers import Dense, Input, Dropout
 from keras.optimizers import Adam
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     """
@@ -9,7 +10,11 @@ class Plugin:
     """
 
     plugin_params = {
-
+        'dropout_rate': 0.1,
+        'intermediate_layers': 1,
+        'layer_size_divisor': 2,
+        'learning_rate': 0.01,
+        'activation': 'tanh'
     }
 
     plugin_debug_vars = ['input_dim', 'encoding_dim']
@@ -33,11 +38,50 @@ class Plugin:
         self.params['input_dim'] = input_dim
         self.params['encoding_dim'] = encoding_dim
 
-        # Encoder
-        encoder_input = Input(shape=(input_dim,), name="encoder_input")
-        encoder_output = Dense(encoding_dim, activation='tanh', name="encoder_output")(encoder_input)
-        self.encoder_model = Model(inputs=encoder_input, outputs=encoder_output, name="encoder")
-        self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+        layers = []
+        current_size = input_dim
+        layer_size_divisor = self.params['layer_size_divisor'] 
+        current_location = input_dim
+        int_layers = 0
+        while (current_size > encoding_dim) and (int_layers < (self.params['intermediate_layers']+1)):
+            layers.append(current_location)
+            current_size = max(current_size // layer_size_divisor, encoding_dim)
+            current_location = encoding_dim + current_size
+            int_layers += 1
+        layers.append(encoding_dim)
+        # Debugging message
+        print(f"Encoder Layer sizes: {layers}")
+
+        # Encoder: set input layer
+        inputs = Input(shape=(input_dim,), name="encoder_input")
+        x = inputs
+
+        # add dense and dropout layers
+        layers_index = 0
+        for size in layers:
+            layers_index += 1
+            # add the conv and maxpooling layers
+            x = Dense(encoding_dim, activation='relu', kernel_initializer=HeNormal(), name="encoder_intermediate_layer" + str(layers_index))(x)
+            # add dropout layer
+            x = Dropout(self.params['dropout_rate'])(x)
+
+        # Encoder: set output layer        
+        outputs = Dense(encoding_dim, activation=self.params['activation'], kernel_initializer=GlorotUniform(), name="encoder_output" )(x)
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder ANN")
+
+
+        # Define the Adam optimizer with custom parameters
+        adam_optimizer = Adam(
+            learning_rate= self.params['learning_rate'],   # Set the learning rate
+            beta_1=0.9,            # Default value
+            beta_2=0.999,          # Default value
+            epsilon=1e-7,          # Default value
+            amsgrad=False          # Default value
+        )
+
+        self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+
+
 
         # Debugging messages to trace the model configuration
         print("Encoder Model Summary:")

@@ -67,7 +67,7 @@ class Plugin:
 
         # Encoder: set output layer        
         outputs = Dense(encoding_dim, activation=self.params['activation'], kernel_initializer=GlorotUniform(), name="encoder_output" )(x)
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder ANN")
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_ANN")
 
 
         # Define the Adam optimizer with custom parameters

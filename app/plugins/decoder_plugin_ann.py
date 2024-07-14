@@ -54,7 +54,7 @@ class Plugin:
         # Debugging message
         print(f"ANN Layer sizes: {layer_sizes}")
 
-        self.model = Sequential(name="decoder ANN")
+        self.model = Sequential(name="decoder_ANN")
         self.model.add(Dense(layer_sizes[0], input_shape=(encoding_dim,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
         
         next_size = layer_sizes[0]

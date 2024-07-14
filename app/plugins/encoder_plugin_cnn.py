@@ -2,6 +2,7 @@ import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input
 from keras.optimizers import Adam
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     """
@@ -9,13 +10,14 @@ class Plugin:
     """
 
     plugin_params = {
-        'epochs': 10,
-        'batch_size': 256,
+
         'intermediate_layers': 1,
-        'layer_size_divisor': 2
+        'layer_size_divisor': 2,
+        'learning_rate': 0.00001,
+        'dropout_rate': 0.1,
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers']
+    plugin_debug_vars = ['input_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -69,17 +71,26 @@ class Plugin:
             if size > 512:
                 kernel_size = 7
             # add the conv and maxpooling layers
-            x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', padding='same')(x)
+            x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', kernel_initializer=HeNormal(), padding='same')(x)
             if pool_size < 2:
                 pool_size = 2
             x = MaxPooling1D(pool_size=pool_size)(x)
 
         x = Flatten()(x)
-        #x = Dense(layers[len(layers)-1], activation='relu')(x)
-        outputs = Dense(interface_size)(x)
         
+        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
-        self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+
+                # Define the Adam optimizer with custom parameters
+        adam_optimizer = Adam(
+            learning_rate= self.params['learning_rate'],   # Set the learning rate
+            beta_1=0.9,            # Default value
+            beta_2=0.999,          # Default value
+            epsilon=1e-7,          # Default value
+            amsgrad=False          # Default value
+        )
+
+        self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
 
     def train(self, data):
         print(f"Training encoder with data shape: {data.shape}")

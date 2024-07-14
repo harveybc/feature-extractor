@@ -3,18 +3,18 @@ from keras.models import Model, load_model, save_model
 from keras.layers import Input, Dense, Flatten, Reshape, GlobalAveragePooling1D, LayerNormalization, Dropout, Add, Activation
 from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     plugin_params = {
-        'epochs': 10,
-        'batch_size': 256,
         'intermediate_layers': 1,
         'layer_size_divisor': 2,
         'ff_dim_divisor': 2,
-        'dropout_rate': 0.1
+        'learning_rate': 0.00001,
+        'dropout_rate': 0.1,
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size', 'interface_size', 'output_shape', 'intermediate_layers']
+    plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -68,17 +68,26 @@ class Plugin:
             x = LayerNormalization(epsilon=1e-6)(x)
             x = Dropout(dropout_rate)(x)
             
-            ffn_output = Dense(ff_dim, activation='relu')(x)
+            ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal())(x)
             ffn_output = Dense(size)(ffn_output)
             ffn_output = Dropout(dropout_rate)(ffn_output)
             x = Add()([x, ffn_output])
             x = LayerNormalization(epsilon=1e-6)(x)
 
         x = Flatten()(x)
-        outputs = Dense(output_shape, activation='tanh')(x)
+        outputs = Dense(output_shape, activation='tanh', kernel_initializer=GlorotUniform())(x)
         
         self.model = Model(inputs=inputs, outputs=outputs, name="decoder")
-        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+                # Define the Adam optimizer with custom parameters
+        adam_optimizer = Adam(
+            learning_rate= self.params['learning_rate'],   # Set the learning rate
+            beta_1=0.9,            # Default value
+            beta_2=0.999,          # Default value
+            epsilon=1e-7,          # Default value
+            amsgrad=False          # Default value
+        )
+
+        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
 
     def train(self, encoded_data, original_data):
         print(f"Training decoder with encoded data shape: {encoded_data.shape} and original data shape: {original_data.shape}")

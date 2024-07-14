@@ -1,7 +1,8 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense
+from keras.layers import Dense, Dropout
 from keras.optimizers import Adam
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     """
@@ -9,11 +10,13 @@ class Plugin:
     """
 
     plugin_params = {
-        'epochs': 10,
-        'batch_size': 256
+        'intermediate_layers': 1,
+        'layer_size_divisor': 2,
+        'learning_rate': 0.00001,
+        'dropout_rate': 0.1,
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size']
+    plugin_debug_vars = []
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -35,13 +38,43 @@ class Plugin:
         self.params['encoding_dim'] = encoding_dim
         self.params['output_dim'] = output_dim
 
-        # Debugging message
-        print(f"Configuring size with encoding_dim: {encoding_dim} and output_dim: {output_dim}")
+        layer_sizes = []
+        current_size = output_dim
+        layer_size_divisor = self.params['layer_size_divisor']
+        current_location = output_dim
+        int_layers = 0
+        while (current_size > encoding_dim) and (int_layers < (self.params['intermediate_layers']+1)):
+            layer_sizes.append(current_location)
+            current_size = max(current_size // layer_size_divisor, encoding_dim)
+            current_location = encoding_dim + current_size
+            int_layers += 1
+        layer_sizes.append(encoding_dim)
+        layer_sizes.reverse()
 
-        self.model = Sequential(name="decoder")
-        self.model.add(Dense(encoding_dim, input_shape=(encoding_dim,), activation='relu', name="decoder_input"))
-        self.model.add(Dense(output_dim, activation='tanh', name="decoder_output"))
-        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+        # Debugging message
+        print(f"ANN Layer sizes: {layer_sizes}")
+
+        self.model = Sequential(name="decoder_ANN")
+        self.model.add(Dense(layer_sizes[0], input_shape=(encoding_dim,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
+        
+        next_size = layer_sizes[0]
+        for i in range(0, len(layer_sizes) - 1):
+            self.model.add(Dense(next_size, activation='relu', kernel_initializer=HeNormal(), name="decoder_intermediate_layer_" + str(i)))
+            self.model.add(Dropout(self.params['dropout_rate']))
+            next_size = layer_sizes[i + 1]
+
+        self.model.add(Dense(output_dim, activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_output"))
+
+        # Define the Adam optimizer with custom parameters
+        adam_optimizer = Adam(
+            learning_rate= self.params['learning_rate'],   # Set the learning rate
+            beta_1=0.9,            # Default value
+            beta_2=0.999,          # Default value
+            epsilon=1e-7,          # Default value
+            amsgrad=False          # Default value
+        )
+
+        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
 
         # Debugging messages to trace the model configuration
         print("Decoder Model Summary:")

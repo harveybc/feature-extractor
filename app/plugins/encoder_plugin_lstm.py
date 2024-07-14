@@ -1,7 +1,8 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import LSTM, Bidirectional, Dense, Input, Flatten
+from keras.layers import LSTM, Bidirectional, Dense, Input, Flatten, Dropout
 from keras.optimizers import Adam
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     """
@@ -9,13 +10,14 @@ class Plugin:
     """
 
     plugin_params = {
-        'epochs': 10,
-        'batch_size': 256,
+
         'intermediate_layers': 1,
-        'layer_size_divisor': 2
+        'layer_size_divisor': 2,
+        'learning_rate': 0.00001,
+        'dropout_rate': 0.1,
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers']
+    plugin_debug_vars = ['input_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -60,15 +62,25 @@ class Plugin:
 
             # add the Bi-LSTM layers
             if layers_index == 1:
-                x = Bidirectional(LSTM(units=size, activation='tanh', return_sequences=True))(x)
+                x = Bidirectional(LSTM(units=size, activation='tanh', kernel_initializer=GlorotUniform(), return_sequences=True))(x)
             else:
-                x = Bidirectional(LSTM(units=size, activation='tanh', return_sequences=(layers_index < len(layers))))(x)
-        
+                x = Bidirectional(LSTM(units=size, activation='tanh', kernel_initializer=GlorotUniform(), return_sequences=(layers_index < len(layers))))(x)
+            x = Dropout(self.params['dropout_rate'])(x)
+
         x = Flatten()(x)
-        outputs = Dense(interface_size)(x)
+        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
         
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
-        self.encoder_model.compile(optimizer=Adam(), loss='mean_squared_error')
+                # Define the Adam optimizer with custom parameters
+        adam_optimizer = Adam(
+            learning_rate= self.params['learning_rate'],   # Set the learning rate
+            beta_1=0.9,            # Default value
+            beta_2=0.999,          # Default value
+            epsilon=1e-7,          # Default value
+            amsgrad=False          # Default value
+        )
+
+        self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
 
     def train(self, data):
         print(f"Training encoder with data shape: {data.shape}")

@@ -26,11 +26,16 @@ setup(
         ]
     },
     install_requires=[
-        'keras',
-        'numpy',
-        'pandas',
-        'scikit-learn',
-        'tensorflow'
+            'tensorflow-gpu',
+            'nvidia-cudnn-cu11',
+            'numpy',
+            'pandas',
+            'h5py',
+            'scipy',
+            'build',
+            'pytest',
+            'pdoc3',
+            'keras-multi-head',
     ],
     author='Harvey Bastidas',
     author_email='your.email@example.com',

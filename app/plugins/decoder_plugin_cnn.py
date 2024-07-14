@@ -2,16 +2,17 @@ import numpy as np
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten, Conv1DTranspose
 from keras.optimizers import Adam
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     plugin_params = {
-        'epochs': 10,
-        'batch_size': 256,
         'intermediate_layers': 1,
-        'layer_size_divisor': 2
+        'layer_size_divisor': 2,
+        'learning_rate': 0.00001,
+        'dropout_rate': 0.1,
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size', 'interface_size', 'output_shape', 'intermediate_layers']
+    plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -47,7 +48,7 @@ class Plugin:
         layer_sizes.reverse()
 
         self.model = Sequential(name="decoder")
-        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', name="decoder_input"))
+        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
         self.model.add(Reshape((layer_sizes[0], 1)))
         reshape_size = layer_sizes[0]
         next_size = layer_sizes[0]
@@ -57,19 +58,28 @@ class Plugin:
                 kernel_size = 5
             if layer_sizes[i] > 512:
                 kernel_size = 7
-            self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu'))
+            self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal()))
             reshape_size = layer_sizes[i]
             next_size = layer_sizes[i + 1]
             upsample_factor = next_size // reshape_size
             if upsample_factor > 1:
                 self.model.add(UpSampling1D(size=upsample_factor))
-        self.model.add(Conv1DTranspose(output_shape, kernel_size=kernel_size, padding='same', activation='tanh', name="last_layer"))
+        self.model.add(Conv1DTranspose(output_shape, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), name="last_layer"))
         last_layer_shape = self.model.layers[-1].output_shape
         new_shape = (last_layer_shape[2], last_layer_shape[1])
         self.model.add(Reshape(new_shape))
-        self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', name="decoder_output"))
+        self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_output"))
         self.model.add(Reshape((output_shape,)))
-        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+                # Define the Adam optimizer with custom parameters
+        adam_optimizer = Adam(
+            learning_rate= self.params['learning_rate'],   # Set the learning rate
+            beta_1=0.9,            # Default value
+            beta_2=0.999,          # Default value
+            epsilon=1e-7,          # Default value
+            amsgrad=False          # Default value
+        )
+
+        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
 
     def train(self, encoded_data, original_data):
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))

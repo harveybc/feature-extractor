@@ -2,6 +2,7 @@ import numpy as np
 from keras.models import Sequential, load_model
 from keras.layers import Dense, LSTM, Bidirectional, RepeatVector, TimeDistributed
 from keras.optimizers import Adam
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     """
@@ -9,13 +10,13 @@ class Plugin:
     """
 
     plugin_params = {
-        'epochs': 10,
-        'batch_size': 256,
         'intermediate_layers': 1,
-        'layer_size_divisor': 2
+        'layer_size_divisor': 2,
+        'learning_rate': 0.00001,
+        'dropout_rate': 0.1,
     }
 
-    plugin_debug_vars = ['epochs', 'batch_size', 'interface_size', 'output_shape', 'intermediate_layers']
+    plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -56,7 +57,7 @@ class Plugin:
         self.model = Sequential(name="decoder")
 
         # Adding a single Dense layer
-        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', name="decoder_input"))
+        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
         print(f"Added Dense layer with size: {layer_sizes[0]} as decoder_input")
             
         self.model.add(RepeatVector(output_shape))
@@ -65,14 +66,23 @@ class Plugin:
         # Adding Bi-LSTM layers
         for i in range(0, len(layer_sizes)):
             reshape_size = layer_sizes[i]
-            self.model.add(Bidirectional(LSTM(units=reshape_size, activation='tanh', return_sequences=True)))
+            self.model.add(Bidirectional(LSTM(units=reshape_size, activation='tanh', kernel_initializer=GlorotUniform(), return_sequences=True)))
             print(f"Added Bi-LSTM layer with size: {reshape_size}")
 
         # Adding the final TimeDistributed Dense layer to match the output shape
-        self.model.add(TimeDistributed(Dense(1)))
+        self.model.add(TimeDistributed(Dense(1, activation='tanh', kernel_initializer=GlorotUniform())))
         print(f"Added TimeDistributed Dense layer with size: 1")
 
-        self.model.compile(optimizer=Adam(), loss='mean_squared_error')
+                # Define the Adam optimizer with custom parameters
+        adam_optimizer = Adam(
+            learning_rate= self.params['learning_rate'],   # Set the learning rate
+            beta_1=0.9,            # Default value
+            beta_2=0.999,          # Default value
+            epsilon=1e-7,          # Default value
+            amsgrad=False          # Default value
+        )
+
+        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
 
     def train(self, encoded_data, original_data):
         # Debugging message

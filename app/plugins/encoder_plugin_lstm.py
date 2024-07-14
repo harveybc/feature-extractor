@@ -13,7 +13,7 @@ class Plugin:
 
         'intermediate_layers': 1,
         'layer_size_divisor': 2,
-        'learning_rate': 0.01,
+        'learning_rate': 0.00001,
         'dropout_rate': 0.1,
     }
 

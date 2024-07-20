@@ -37,10 +37,10 @@ def main():
 
     if config['load_encoder']:
         print("Loading and evaluating encoder...")
-        load_and_evaluate_encoder(cli_args)
+        load_and_evaluate_encoder(config)
     elif config['load_decoder']:
         print("Loading and evaluating decoder...")
-        load_and_evaluate_decoder(cli_args)
+        load_and_evaluate_decoder(config)
     else:
         encoder_plugin_name = config['encoder_plugin']
         decoder_plugin_name = config['decoder_plugin']

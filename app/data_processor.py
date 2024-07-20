@@ -154,6 +154,7 @@ def load_and_evaluate_encoder(config):
     np.savetxt(evaluate_filename, encoded_data, delimiter=",")
     print(f"Encoded data saved to {evaluate_filename}")
 
+
 def load_and_evaluate_decoder(config):
     model = load_model(config['load_decoder'])
     print(f"Decoder model loaded from {config['load_decoder']}")

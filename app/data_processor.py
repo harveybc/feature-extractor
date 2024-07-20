@@ -7,6 +7,7 @@ from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import load_csv, write_csv
 from app.reconstruction import unwindow_data
 from app.config_handler import save_debug_info, remote_log
+from keras.models import Sequential, Model, load_model
 
 def create_sliding_windows(data, window_size):
     data_array = data.to_numpy()
@@ -137,36 +138,35 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 
     print(f"Execution time: {execution_time} seconds")
 
-def load_and_evaluate_encoder(config, encoder_plugin):
-    # Load the encoder model
-    encoder_plugin.load(config['load_encoder'])
-
+def load_and_evaluate_encoder(config):
+    model = load_model(config['load_encoder'])
+    print(f"Encoder model loaded from {config['load_encoder']}")
     # Load the input data
     processed_data = process_data(config)
     column = list(processed_data.keys())[0]
     windowed_data = processed_data[column]
-    
     # Encode the data
-    encoded_data = encoder_plugin.encode(windowed_data)
-
+    print(f"Encoding data with shape: {windowed_data.shape}")
+    encoded_data = model.predict(windowed_data)
+    print(f"Encoded data shape: {encoded_data.shape}")
     # Save the encoded data to CSV
     evaluate_filename = config['evaluate_encoder']
     np.savetxt(evaluate_filename, encoded_data, delimiter=",")
     print(f"Encoded data saved to {evaluate_filename}")
 
-def load_and_evaluate_decoder(config, decoder_plugin):
-    # Load the decoder model
-    decoder_plugin.load(config['load_decoder'])
 
+def load_and_evaluate_decoder(config):
+    model = load_model(config['load_decoder'])
+    print(f"Decoder model loaded from {config['load_decoder']}")
     # Load the input data
     processed_data = process_data(config)
     column = list(processed_data.keys())[0]
     windowed_data = processed_data[column]
-
     # Decode the data
-    decoded_data = decoder_plugin.decode(windowed_data)
-
-    # Save the decoded data to CSV
+    print(f"Decoding data with shape: {windowed_data.shape}")
+    decoded_data = model.predict(windowed_data)
+    print(f"Decoded data shape: {decoded_data.shape}")
+    # Save the encoded data to CSV
     evaluate_filename = config['evaluate_decoder']
     np.savetxt(evaluate_filename, decoded_data, delimiter=",")
     print(f"Decoded data saved to {evaluate_filename}")

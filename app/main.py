@@ -17,7 +17,7 @@ def main():
     cli_args = vars(args)
 
     print("Loading default configuration...")
-    config = DEFAULT_VALUES.copy()
+    default_config = DEFAULT_VALUES.copy()
 
     file_config = {}
     # remote config file load
@@ -30,44 +30,49 @@ def main():
         file_config = load_config(args.load_config)
         print(f"Loaded local config: {file_config}")
   
-    encoder_plugin_name = cli_args['encoder_plugin']
-    decoder_plugin_name = cli_args['decoder_plugin']
-
-    print(f"Loading encoder plugin: {encoder_plugin_name}")
-    encoder_plugin_class, _ = load_plugin('feature_extractor.encoders', encoder_plugin_name)
-    print(f"Loading decoder plugin: {decoder_plugin_name}")
-    decoder_plugin_class, _ = load_plugin('feature_extractor.decoders', decoder_plugin_name)
-
-    encoder_plugin = encoder_plugin_class()
-    decoder_plugin = decoder_plugin_class()
-
-    print("Merging configuration with CLI arguments and unknown args...")
+    print("Merging configuration with CLI arguments and unknown args without plugin-specific parameters...")
     unknown_args_dict = process_unknown_args(unknown_args)
-    config = merge_config(config, encoder_plugin.plugin_params, decoder_plugin.plugin_params, file_config, cli_args, unknown_args_dict)
-    
-    encoder_plugin.set_params(**config)
-    decoder_plugin.set_params(**config)
+    config = merge_config(default_config, {}, {}, file_config, cli_args, unknown_args_dict)
+        
 
     if config['load_encoder']:
         print("Loading and evaluating encoder...")
-        load_and_evaluate_encoder(config, encoder_plugin)
+        load_and_evaluate_encoder(config)
     elif config['load_decoder']:
         print("Loading and evaluating decoder...")
-        load_and_evaluate_decoder(config, decoder_plugin)
+        load_and_evaluate_decoder(config)
     else:
+        encoder_plugin_name = config['encoder_plugin']
+        decoder_plugin_name = config['decoder_plugin']
+
+        print(f"Loading encoder plugin: {encoder_plugin_name}")
+        encoder_plugin_class, _ = load_plugin('feature_extractor.encoders', encoder_plugin_name)
+        print(f"Loading decoder plugin: {decoder_plugin_name}")
+        decoder_plugin_class, _ = load_plugin('feature_extractor.decoders', decoder_plugin_name)
+
+        encoder_plugin = encoder_plugin_class()
+        decoder_plugin = decoder_plugin_class()
+
+        print("Merging configuration with CLI arguments and unknown args with plugin-specific parameters...")
+        unknown_args_dict = process_unknown_args(unknown_args)
+        config = merge_config(default_config, encoder_plugin.plugin_params, decoder_plugin.plugin_params, file_config, cli_args, unknown_args_dict)
+        
+        encoder_plugin.set_params(**config)
+        decoder_plugin.set_params(**config)
+
         print("Processing and running autoencoder pipeline...")
         run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin)
 
-    if 'save_config' in config:
-        if config['save_config'] != None:
-            save_config(config, config['save_config'])
-            print(f"Configuration saved to {config['save_config']}.")
+        if 'save_config' in config:
+            if config['save_config'] != None:
+                save_config(config, config['save_config'])
+                print(f"Configuration saved to {config['save_config']}.")
 
-    if 'remote_save_config' in config:
-        if config['remote_save_config'] != None:
-            print(f"Remote saving configuration to {config['remote_save_config']}")
-            remote_save_config(config, config['remote_save_config'], config['username'], config['password'])
-            print(f"Remote configuration saved.")
+        if 'remote_save_config' in config:
+            if config['remote_save_config'] != None:
+                print(f"Remote saving configuration to {config['remote_save_config']}")
+                remote_save_config(config, config['remote_save_config'], config['username'], config['password'])
+                print(f"Remote configuration saved.")
 
 if __name__ == "__main__":
     main()

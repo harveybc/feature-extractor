@@ -32,7 +32,7 @@ def main():
   
     print("Merging configuration with CLI arguments and unknown args before pluging loading.")
     unknown_args_dict = process_unknown_args(unknown_args)
-    config = merge_config(default_config, [], [], file_config, cli_args, unknown_args_dict)
+    config = merge_config(default_config, None, None, file_config, cli_args, unknown_args_dict)
 
 
     if config['load_encoder']:

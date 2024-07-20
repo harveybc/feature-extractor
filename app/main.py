@@ -17,7 +17,7 @@ def main():
     cli_args = vars(args)
 
     print("Loading default configuration...")
-    config = DEFAULT_VALUES.copy()
+    default_config = DEFAULT_VALUES.copy()
 
     file_config = {}
     # remote config file load
@@ -30,6 +30,11 @@ def main():
         file_config = load_config(args.load_config)
         print(f"Loaded local config: {file_config}")
   
+    print("Merging configuration with CLI arguments and unknown args before pluging loading.")
+    unknown_args_dict = process_unknown_args(unknown_args)
+    config = merge_config(default_config, [], [], file_config, cli_args, unknown_args_dict)
+
+
     if config['load_encoder']:
         print("Loading and evaluating encoder...")
         load_and_evaluate_encoder(config)
@@ -48,9 +53,9 @@ def main():
         encoder_plugin = encoder_plugin_class()
         decoder_plugin = decoder_plugin_class()
 
-        print("Merging configuration with CLI arguments and unknown args...")
+        print("Merging configuration with CLI arguments and unknown args with plugin-specific parameters...")
         unknown_args_dict = process_unknown_args(unknown_args)
-        config = merge_config(config, encoder_plugin.plugin_params, decoder_plugin.plugin_params, file_config, cli_args, unknown_args_dict)
+        config = merge_config(default_config, encoder_plugin.plugin_params, decoder_plugin.plugin_params, file_config, cli_args, unknown_args_dict)
         
         encoder_plugin.set_params(**config)
         decoder_plugin.set_params(**config)

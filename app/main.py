@@ -30,17 +30,12 @@ def main():
         file_config = load_config(args.load_config)
         print(f"Loaded local config: {file_config}")
   
-    print("Merging configuration with CLI arguments and unknown args before pluging loading.")
-    unknown_args_dict = process_unknown_args(unknown_args)
-    config = merge_config(default_config, None, None, file_config, cli_args, unknown_args_dict)
-
-
-    if config['load_encoder']:
+    if cli_args['load_encoder']:
         print("Loading and evaluating encoder...")
-        load_and_evaluate_encoder(config)
-    elif config['load_decoder']:
+        load_and_evaluate_encoder(cli_args)
+    elif cli_args['load_decoder']:
         print("Loading and evaluating decoder...")
-        load_and_evaluate_decoder(config)
+        load_and_evaluate_decoder(cli_args)
     else:
         encoder_plugin_name = cli_args['encoder_plugin']
         decoder_plugin_name = cli_args['decoder_plugin']

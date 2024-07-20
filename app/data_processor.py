@@ -6,7 +6,7 @@ import time
 from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import load_csv, write_csv
 from app.reconstruction import unwindow_data
-from app.config_handler import save_debug_info0, remote_log
+from app.config_handler import save_debug_info, remote_log
 from keras.models import Sequential, Model, load_model
 
 def create_sliding_windows(data, window_size):

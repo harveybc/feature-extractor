@@ -99,30 +99,30 @@ usage: feature-extractor.bat tests\data\csv_sel_unb_norm_512.csv
 
 #### Optional Arguments
 
-- `-of, --output_file` (str): Path to the output CSV file.
-- `-se, --save_encoder` (str): Filename to save the trained encoder model.
-- `-sd, --save_decoder` (str): Filename to save the trained decoder model.
-- `-le, --load_encoder` (str): Filename to load encoder parameters from.
-- `-ld, --load_decoder` (str): Filename to load decoder parameters from.
-- `-ee, --evaluate_encoder` (str): Filename for outputting encoder evaluation results.
-- `-ed, --evaluate_decoder` (str): Filename for outputting decoder evaluation results.
-- `-ep, --encoder_plugin` (str, default='default'): Name of the encoder plugin to use.
-- `-dp, --decoder_plugin` (str, default='default'): Name of the decoder plugin to use.
-- `-ws, --window_size` (int): Sliding window size to use for processing time series data.
-- `-me, --threshold_error` (float): MSE error threshold to stop the training processes.
-- `-is, --initial_size` (int): Initial size of the encoder/decoder interface.
-- `-ss, --step_size` (int): Step size to adjust the size of the encoder/decoder interface.
-- `-rl, --remote_log` (str): URL of a remote API endpoint for saving debug variables in JSON format.
-- `-rlc, --remote_load_config` (str): URL of a remote JSON configuration file to download and execute.
-- `-rsc, --remote_save_config` (str): URL of a remote API endpoint for saving configuration in JSON format.
-- `-u, --username` (str): Username for the API endpoint.
-- `-p, --password` (str): Password for the API endpoint.
-- `-lc, --load_config` (str): Path to load a configuration file.
-- `-sc, --save_config` (str): Path to save the current configuration.
-- `-sl, --save_log` (str): Path to save the current debug info.
-- `-qm, --quiet_mode` (flag): Suppress output messages.
-- `-fd, --force_date` (flag): Include date in the output CSV files.
-- `-inc, --incremental_search` (flag): Enable incremental search for interface size.
+- `--output_file` (str): Path to the output CSV file.
+- `--save_encoder` (str): Filename to save the trained encoder model.
+- `--save_decoder` (str): Filename to save the trained decoder model.
+- `--load_encoder` (str): Filename to load encoder parameters from.
+- `--load_decoder` (str): Filename to load decoder parameters from.
+- `--evaluate_encoder` (str): Filename for outputting encoder evaluation results.
+- `--evaluate_decoder` (str): Filename for outputting decoder evaluation results.
+- `--encoder_plugin` (str, default='default'): Name of the encoder plugin to use.(i.e: cnm, lstm, transformer)
+- `--decoder_plugin` (str, default='default'): Name of the decoder plugin to use.
+- `--window_size` (int): Sliding window size to use for processing time series data.
+- `--threshold_error` (float): MSE error threshold to stop the training processes.
+- `--initial_size` (int): Initial size of the encoder/decoder interface.
+- `--step_size` (int): Step size to adjust the size of the encoder/decoder interface.
+- `--remote_log` (str): URL of a remote API endpoint for saving debug variables in JSON format.
+- `--remote_load_config` (str): URL of a remote JSON configuration file to download and execute.
+- `--remote_save_config` (str): URL of a remote API endpoint for saving configuration in JSON format.
+- `--username` (str): Username for the API endpoint.
+- `--password` (str): Password for the API endpoint.
+- `--load_config` (str): Path to load a configuration file.
+- `--save_config` (str): Path to save the current configuration.
+- `--save_log` (str): Path to save the current debug info.
+- `--quiet_mode` (flag): Suppress output messages.
+- `--force_date` (flag): Include date in the output CSV files.
+- `--incremental_search` (flag): Enable incremental search for interface size.
 - `-hdr, --headers` (flag): Indicate if the CSV file has headers.
 
 ### Examples of Use

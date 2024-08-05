@@ -59,7 +59,7 @@ class Plugin:
             if layer_sizes[i] > 512:
                 kernel_size = 7
             self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal()))
-            self.model.add(Dropout(self.params['dropout_rate']))
+            # self.model.add(Dropout(self.params['dropout_rate'])) 
             reshape_size = layer_sizes[i]
             next_size = layer_sizes[i + 1]
             upsample_factor = next_size // reshape_size

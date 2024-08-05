@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
@@ -75,6 +75,7 @@ class Plugin:
             if pool_size < 2:
                 pool_size = 2
             x = MaxPooling1D(pool_size=pool_size)(x)
+            x = Dropout(self.params['dropout_rate'])(x)
 
         x = Flatten()(x)
         

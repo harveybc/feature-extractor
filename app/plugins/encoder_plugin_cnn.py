@@ -75,7 +75,7 @@ class Plugin:
             if pool_size < 2:
                 pool_size = 2
             x = MaxPooling1D(pool_size=pool_size)(x)
-            x = Dropout(self.params['dropout_rate'])(x)
+            x = Dropout(self.params['dropout_rate'])(x) 
 
         x = Flatten()(x)
         

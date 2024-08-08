@@ -6,10 +6,10 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     plugin_params = {
-        'intermediate_layers': 3, 
-        'layer_size_divisor': 2,
+        'intermediate_layers': 5, 
+        'layer_size_divisor': 4,
         'learning_rate': 0.000001,
-        'dropout_rate': 0.5,
+        'dropout_rate': 0.1,
     }
 
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
@@ -59,7 +59,7 @@ class Plugin:
             if layer_sizes[i] > 512:
                 kernel_size = 7
             self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal()))
-            # self.model.add(Dropout(self.params['dropout_rate'])) 
+            self.model.add(Dropout(self.params['dropout_rate'])) 
             reshape_size = layer_sizes[i]
             next_size = layer_sizes[i + 1]
             upsample_factor = next_size // reshape_size

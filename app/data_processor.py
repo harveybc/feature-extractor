@@ -97,8 +97,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             reconstructed_trimmed = reconstructed_data[:min_size]
 
             # Calculate the MSE and MAE
-            mse = autoencoder_manager.calculate_mse(validation_trimmed, reconstructed_trimmed)
-            mae = autoencoder_manager.calculate_mae(validation_trimmed, reconstructed_trimmed)
+            mse = autoencoder_manager.calculate_mse(validation_trimmed.to_numpy(), reconstructed_trimmed.to_numpy())
+            mae = autoencoder_manager.calculate_mae(validation_trimmed.to_numpy(), reconstructed_trimmed.to_numpy())
             print(f"Mean Squared Error for column {column} with interface size {current_size}: {mse}")
             print(f"Mean Absolute Error for column {column} with interface size {current_size}: {mae}")
 

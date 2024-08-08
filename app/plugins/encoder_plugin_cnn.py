@@ -70,11 +70,11 @@ class Plugin:
                 kernel_size = 7
             # add the conv and maxpooling layers
             x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', kernel_initializer=HeNormal(), padding='same')(x)
-            if pool_size < 2:
-                pool_size = 2
-            x = MaxPooling1D(pool_size=pool_size)(x)
-            x = Dropout(self.params['dropout_rate'])(x) 
 
+            x = Dropout(self.params['dropout_rate'])(x) 
+        if pool_size < 2:
+            pool_size = 2
+        x = MaxPooling1D(pool_size=pool_size)(x)
         x = Flatten()(x)
         
         outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)

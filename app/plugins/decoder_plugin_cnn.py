@@ -6,8 +6,8 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 class Plugin:
     plugin_params = {
-        'intermediate_layers': 3, 
-        'learning_rate': 0.0001,
+        'intermediate_layers': 10, 
+        'learning_rate': 0.000001,
         'dropout_rate': 0.1,
     }
 

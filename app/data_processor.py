@@ -81,7 +81,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             autoencoder_manager.train_autoencoder(windowed_data, epochs=epochs, batch_size=training_batch_size)
 
             # Encode and decode the validation data
-            encoded_data = autoencoder_manager.encode_data(validation_data.values)  
+            encoded_data = autoencoder_manager.encode_data(validation_data[column]])  
             decoded_data = autoencoder_manager.decode_data(encoded_data)
 
             # Check if the decoded data needs reshaping

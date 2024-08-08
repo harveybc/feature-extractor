@@ -47,11 +47,11 @@ class Plugin:
         layers.append(interface_size)
 
         # For the decoder, reverses the order of the generted layers.
-        layer_sizes.reverse()
         layer_sizes=layers
-
+        layer_sizes.reverse()
+        
         # Debugging message
-        print(f"Dencoder Layer sizes: {layers}")
+        print(f"Decoder Layer sizes: {layer_sizes}")
         self.model = Sequential(name="decoder")
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
         self.model.add(Reshape((layer_sizes[0], 1)))

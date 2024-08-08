@@ -25,7 +25,7 @@ DEFAULT_VALUES = {
     'force_date': False,
     'incremental_search': True,
     'headers': False,
-    'epochs': 200,  # Add epochs here
-    'batch_size': 256  # Add batch_size here
+    'epochs': 500,  # Add epochs here
+    'batch_size': 512  # Add batch_size here
 }
 

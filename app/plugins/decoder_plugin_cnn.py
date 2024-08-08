@@ -7,7 +7,6 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 class Plugin:
     plugin_params = {
         'intermediate_layers': 5, 
-        'layer_size_divisor': 4,
         'learning_rate': 0.000001,
         'dropout_rate': 0.1,
     }
@@ -33,6 +32,8 @@ class Plugin:
     def configure_size(self, interface_size, output_shape):
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
+
+        layer_sizes = []
 
         # Calculate the sizes of the intermediate layers
         num_intermediate_layers = self.params['intermediate_layers']

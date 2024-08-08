@@ -12,8 +12,8 @@ class Plugin:
     plugin_params = {
 
         'intermediate_layers': 3, 
-        'learning_rate': 0.1,
-        'dropout_rate': 0.1,
+        'learning_rate': 0.0001,
+        'dropout_rate': 0.5,
     }
 
     plugin_debug_vars = ['input_shape', 'intermediate_layers']

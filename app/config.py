@@ -1,5 +1,6 @@
 DEFAULT_VALUES = {
-    'input_file': './csv_input.csv',
+    'input_file': '.\\test\\\data\\y_training_close_EURUSD_1h_2005_2012.csv.csv',
+    'validation_file': '\\test\\\data\\y_validation_close_EURUSD_1h_2012_2020.csv',
     'output_file': './csv_output.csv',
     'save_encoder': './encoder_model.h5',
     'save_decoder': './decoder_model.h5',
@@ -25,7 +26,7 @@ DEFAULT_VALUES = {
     'force_date': False,
     'incremental_search': True,
     'headers': False,
-    'epochs': 300,  # Add epochs here
-    'batch_size': 25  # Add batch_size here
+    'epochs': 150,  # Add epochs here
+    'batch_size': 32  # Add batch_size here
 }
 

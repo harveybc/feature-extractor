@@ -35,14 +35,22 @@ def process_data(config):
     windowed_data = create_sliding_windows(data, window_size)
     print(f"Windowed data shape: {windowed_data.shape}")
 
+    # now do the same for the csv filename in the config validation_file  parameter
+    print(f"Loading validation data from CSV file: {config['validation_file']}")
+    validation_data = load_csv(config['validation_file'], headers=config['headers'])
+    print(f"Validation data loaded with shape: {validation_data.shape}")
+    windowed_validation_data = create_sliding_windows(validation_data, window_size)
+    print(f"Windowed validation data shape: {windowed_validation_data.shape}")
+
     processed_data = {col: windowed_data.values for col in data.columns}
-    return processed_data
+    validation_data = {col: windowed_validation_data.values for col in validation_data.columns}
+    return processed_data, validation_data
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     start_time = time.time()
     
     print("Running process_data...")
-    processed_data = process_data(config)
+    processed_data,validation_data = process_data(config)
     print("Processed data received.")
     mse=0
     mae=0
@@ -57,6 +65,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         epochs = config['epochs']
         incremental_search = config['incremental_search']
         
+        # Perform unwindowing of the decoded data once
+        reconstructed_data = []
         current_size = initial_size
         while True:
             print(f"Training with interface size: {current_size}")
@@ -70,17 +80,21 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             # Train the autoencoder model
             autoencoder_manager.train_autoencoder(windowed_data, epochs=epochs, batch_size=training_batch_size)
 
-            # Encode and decode the data
-            encoded_data = autoencoder_manager.encode_data(windowed_data)
+
+            # Encode and decode the validation data
+            encoded_data = autoencoder_manager.encode_data(validation_data)
             decoded_data = autoencoder_manager.decode_data(encoded_data)
 
             # Check if the decoded data needs reshaping
             if len(decoded_data.shape) == 3:
                 decoded_data = decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])
 
+            # Perform unwindowing of the decoded data once
+            reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
+
             # Calculate the MSE and MAE
-            mse = autoencoder_manager.calculate_mse(windowed_data, decoded_data)
-            mae = autoencoder_manager.calculate_mae(windowed_data, decoded_data)
+            mse = autoencoder_manager.calculate_mse(validation_data, reconstructed_data)
+            mae = autoencoder_manager.calculate_mae(validation_data, reconstructed_data)
             print(f"Mean Squared Error for column {column} with interface size {current_size}: {mse}")
             print(f"Mean Absolute Error for column {column} with interface size {current_size}: {mae}")
 
@@ -103,9 +117,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         print(f"Saved encoder model to {encoder_model_filename}")
         print(f"Saved decoder model to {decoder_model_filename}")
 
-        # Perform unwindowing of the decoded data once
-        reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
-
+        # save reconstructed data
         output_filename = os.path.splitext(config['output_file'])[0] + f"_{column}.csv"
         write_csv(output_filename, reconstructed_data, include_date=config['force_date'], headers=config['headers'])
         print(f"Output written to {output_filename}")

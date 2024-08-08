@@ -82,7 +82,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 
 
             # Encode and decode the validation data
-            encoded_data = autoencoder_manager.encode_data(validation_data)
+            encoded_data = autoencoder_manager.encode_data(pd.DataFrame(validation_data))
             decoded_data = autoencoder_manager.decode_data(encoded_data)
 
             # Check if the decoded data needs reshaping

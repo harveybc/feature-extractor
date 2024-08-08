@@ -37,16 +37,15 @@ class Plugin:
     def configure_size(self, input_shape, interface_size):
         self.params['input_shape'] = input_shape
 
-        layers = []
-        current_size = input_shape
-        layer_size_divisor = self.params['layer_size_divisor'] 
-        current_location = input_shape
-        int_layers = 0
-        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
-            layers.append(current_location)
-            current_size = max(current_size // layer_size_divisor, interface_size)
-            current_location = interface_size + current_size
-            int_layers += 1
+        # Calculate the sizes of the intermediate layers
+        num_intermediate_layers = self.params['intermediate_layers']
+        layers = [input_shape]
+        step_size = (input_shape - interface_size) / (num_intermediate_layers + 1)
+        
+        for i in range(1, num_intermediate_layers + 1):
+            layer_size = input_shape - i * step_size
+            layers.append(int(layer_size))
+
         layers.append(interface_size)
         # Debugging message
         print(f"Encoder Layer sizes: {layers}")

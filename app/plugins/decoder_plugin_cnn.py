@@ -34,19 +34,23 @@ class Plugin:
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
-        layer_sizes = []
-        current_size = output_shape
-        layer_size_divisor = self.params['layer_size_divisor']
-        current_location = output_shape
-        int_layers = 0
-        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
-            layer_sizes.append(current_location)
-            current_size = max(current_size // layer_size_divisor, interface_size)
-            current_location = interface_size + current_size
-            int_layers += 1
-        layer_sizes.append(interface_size)
-        layer_sizes.reverse()
+        # Calculate the sizes of the intermediate layers
+        num_intermediate_layers = self.params['intermediate_layers']
+        layers = [output_shape]
+        step_size = (output_shape - interface_size) / (num_intermediate_layers + 1)
+        
+        for i in range(1, num_intermediate_layers + 1):
+            layer_size = output_shape - i * step_size
+            layers.append(int(layer_size))
 
+        layers.append(interface_size)
+
+        # For the decoder, reverses the order of the generted layers.
+        layer_sizes.reverse()
+        layer_sizes=layers
+
+        # Debugging message
+        print(f"Dencoder Layer sizes: {layers}")
         self.model = Sequential(name="decoder")
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
         self.model.add(Reshape((layer_sizes[0], 1)))

@@ -80,9 +80,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             # Train the autoencoder model
             autoencoder_manager.train_autoencoder(windowed_data, epochs=epochs, batch_size=training_batch_size)
 
-
             # Encode and decode the validation data
-            encoded_data = autoencoder_manager.encode_data(pd.DataFrame(validation_data))
+            encoded_data = autoencoder_manager.encode_data(validation_data.values)  
             decoded_data = autoencoder_manager.decode_data(encoded_data)
 
             # Check if the decoded data needs reshaping

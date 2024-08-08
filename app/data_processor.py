@@ -91,9 +91,14 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             # Perform unwindowing of the decoded data once
             reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
 
+            # Trim the data to match sizes
+            min_size = min(validation_data[column].shape[0], reconstructed_data.shape[0])
+            validation_trimmed = validation_data[column][:min_size]
+            reconstructed_trimmed = reconstructed_data[:min_size]
+
             # Calculate the MSE and MAE
-            mse = autoencoder_manager.calculate_mse(validation_data[column], reconstructed_data.values)
-            mae = autoencoder_manager.calculate_mae(validation_data[column], reconstructed_data.values)
+            mse = autoencoder_manager.calculate_mse(validation_trimmed, reconstructed_trimmed)
+            mae = autoencoder_manager.calculate_mae(validation_trimmed, reconstructed_trimmed)
             print(f"Mean Squared Error for column {column} with interface size {current_size}: {mse}")
             print(f"Mean Absolute Error for column {column} with interface size {current_size}: {mae}")
 

@@ -10,7 +10,7 @@ class Plugin:
     """
 
     plugin_params = {
-        'intermediate_layers': 1,
+        'intermediate_layers': 0,
         'layer_size_divisor': 2,
         'learning_rate': 0.00001,
         'dropout_rate': 0.1,

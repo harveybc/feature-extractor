@@ -11,7 +11,7 @@ class Plugin:
 
     plugin_params = {
         'dropout_rate': 0.1,
-        'intermediate_layers': 1,
+        'intermediate_layers': 0,
         'layer_size_divisor': 2,
         'learning_rate': 0.00001,
         'activation': 'tanh'

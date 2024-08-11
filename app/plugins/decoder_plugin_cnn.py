@@ -67,7 +67,7 @@ class Plugin:
         # 1. Start with the inverse of the Flatten layer
         flatten_shape = interface_size # This calculation assumes output_shape was halved by MaxPooling in the encoder.
         print(f"Flatten Shape: {flatten_shape}")
-        kernel_size = 3 if size <= 64 else 5 if size <= 512 else 7
+        kernel_size = 3 if flatten_shape <= 64 else 5 if flatten_shape <= 512 else 7
         self.model.add(Conv1DTranspose(flatten_shape, kernel_size=kernel_size, input_shape=(1,interface_size), activation='relu', kernel_initializer=HeNormal(), name="decoder_in", kernel_regularizer=l2(0.01)))
         print(f"After 1st conv: {self.model.layers[-1].output_shape}")
         self.model.add(BatchNormalization())

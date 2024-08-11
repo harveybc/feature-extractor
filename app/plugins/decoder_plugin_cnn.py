@@ -63,22 +63,33 @@ class Plugin:
         self.model.add(BatchNormalization())
         self.model.add(Reshape((layer_sizes[0], 1)))  # Reshape to prepare for Conv1DTranspose
 
-        # 2. Upsample and Conv1DTranspose layers
+        # 2. Conv1DTranspose layers with upsampling and downsampling based on feature size
+        current_feature_num = layer_sizes[0]
         for i in range(len(layer_sizes) - 1):
             kernel_size = 3 if layer_sizes[i] <= 64 else 5 if layer_sizes[i] <= 512 else 7
-            # Conv1DTranspose with upsampling
-            self.model.add(Conv1DTranspose(filters=layer_sizes[i+1], kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
+            # Conv1DTranspose layer
+            self.model.add(Conv1DTranspose(filters=layer_sizes[i + 1], kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
             self.model.add(BatchNormalization())
-            self.model.add(Dropout(self.params['dropout_rate']))
-            # Ensure upsampling to match the original sequence length
-            if i < len(layer_sizes) - 2:  # Skip the last layer to avoid upsampling twice
-                self.model.add(UpSampling1D(size=2))  # Adjust the size as necessary to achieve 128 time steps
+            self.model.add(Dropout(self.params['dropout_rate'] / 2))
+
+            # Upsampling if needed
+            if current_feature_num < output_shape:
+                upsample_factor = min(2, output_shape // current_feature_num)
+                self.model.add(UpSampling1D(size=upsample_factor))
+                current_feature_num *= upsample_factor
+
+            # Downsampling if current features exceed output_shape after upsampling
+            if current_feature_num > output_shape:
+                downsample_factor = current_feature_num // output_shape
+                self.model.add(Conv1D(filters=layer_sizes[i + 1], kernel_size=downsample_factor, strides=downsample_factor, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
+                current_feature_num = output_shape
 
         # 3. Final Conv1DTranspose to match the original input dimensions
         self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
 
-        # 4. Reshape the output to ensure the final output is (None, 128, 1)
+        # 4. Reshape the output to ensure the final output is (None, output_shape, 1)
         self.model.add(Reshape((output_shape, 1)))
+
 
 
                 # Define the Adam optimizer with custom parameters

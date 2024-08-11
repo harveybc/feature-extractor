@@ -6,7 +6,7 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
-from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D
+from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU
 import math
 
 class Plugin:

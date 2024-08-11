@@ -6,7 +6,7 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
-from keras.layers import BatchNormalization
+from keras.layers import BatchNormalization, LeakyReLU
 
 class Plugin:
     """

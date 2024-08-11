@@ -92,9 +92,12 @@ class Plugin:
         # 2. UpSampling1D as the inverse of MaxPooling1D in the encoder
         #self.model.add(UpSampling1D(size=2))  # Assuming the original max pooling used pool_size=2
         #print(f"After UpSampling1D (inverse of MaxPooling1D): {self.model.layers[-1].output_shape}")
-
+        kernel_size = 3 if output_shape <= 64 else 5 if output_shape <= 512 else 7
         # 4. Final Conv1DTranspose to match the original input dimensions
-        self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
+        self.model.add(Conv1DTranspose(filters=output_shape, kernel_size=kernel_size, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
+        #print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
+            
+        #self.model.add(Conv1DTranspose(filters=, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
         print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
 
         # 5. Reshape the output to ensure the final output is (None, output_shape, 1)

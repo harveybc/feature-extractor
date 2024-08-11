@@ -71,9 +71,9 @@ class Plugin:
         print(f"After Reshape: {self.model.layers[-1].output_shape}")
 
         # 2. Upsample directly to exceed or match the output size
-        #upsample_factor = output_shape
-        #self.model.add(UpSampling1D(size=upsample_factor))
-        #print(f"After UpSampling1D: {self.model.layers[-1].output_shape}")
+        upsample_factor = output_shape//layer_sizes[0]
+        self.model.add(UpSampling1D(size=upsample_factor))
+        print(f"After UpSampling1D: {self.model.layers[-1].output_shape}")
 
         # 3. Continue with Conv1DTranspose layers
         for size in layer_sizes:

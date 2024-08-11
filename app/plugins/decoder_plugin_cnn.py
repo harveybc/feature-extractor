@@ -85,15 +85,15 @@ class Plugin:
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
             self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
-            self.model.add(Dropout(self.params['dropout_rate'] / 2))
-            print(f"After Dropout: {self.model.layers[-1].output_shape}")
+            #self.model.add(Dropout(self.params['dropout_rate'] / 2))
+            $print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
         # 4. Final Conv1DTranspose to match the original input dimensions
         self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
         print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
 
         # 5. Reshape the output to ensure the final output is (None, output_shape, 1)
-        self.model.add(Reshape((output_shape, 1)))
+        #self.model.add(Reshape((output_shape, 1)))
         print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
 
 

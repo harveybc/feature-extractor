@@ -13,7 +13,7 @@ class Plugin:
     plugin_params = {
         'intermediate_layers': 3, 
         'learning_rate': 0.001,
-        'dropout_rate': 0.01,
+        'dropout_rate': 0.5,
     }
 
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
@@ -85,8 +85,8 @@ class Plugin:
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
             self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
-            #self.model.add(Dropout(self.params['dropout_rate'] / 2))
-        #print(f"After Dropout: {self.model.layers[-1].output_shape}")
+            self.model.add(Dropout(self.params['dropout_rate'] / 2))
+            print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
         # 4. Final Conv1DTranspose to match the original input dimensions
         self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))

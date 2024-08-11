@@ -54,7 +54,7 @@ class Plugin:
         print(f"Encoder Layer sizes: {layers}")
 
         # set input layer
-        inputs = Input(shape=(input_shape, 1))
+        inputs = Input(shape=(1, input_shape))
         x = inputs
 
         # add conv and maxpooling layers, calculating their kernel and pool sizes
@@ -95,7 +95,7 @@ class Plugin:
             amsgrad=False          # Default value
         )
 
-        self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        self.encoder_model.compile(optimizer=adam_optimizer, loss='mae')
 
     def train(self, data):
         print(f"Training encoder with data shape: {data.shape}")

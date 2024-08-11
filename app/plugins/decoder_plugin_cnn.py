@@ -69,7 +69,10 @@ class Plugin:
         self.model.add(BatchNormalization())
         self.model.add(Reshape((layer_sizes[0], 1)))
         print(f"After Reshape: {self.model.layers[-1].output_shape}")
-
+        upsample_factor = math.ceil(output_shape / layer_sizes[0])
+        if upsample_factor > 1:
+            self.model.add(UpSampling1D(size=upsample_factor))
+        print(f"After UpSampling1D: {self.model.layers[-1].output_shape}")
         
         # 3. Continue with Conv1DTranspose layers
         for size in layer_sizes:
@@ -79,10 +82,7 @@ class Plugin:
             self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
             # Upsample the output to match the next layer size
-            upsample_factor = self.model.layers[-1].output_shape[1] // size
-            if upsample_factor > 1:
-                self.model.add(UpSampling1D(size=upsample_factor))
-            print(f"After UpSampling1D: {self.model.layers[-1].output_shape}")
+  
 
             self.model.add(Dropout(self.params['dropout_rate'] / 2))
             print(f"After Dropout: {self.model.layers[-1].output_shape}")
@@ -92,10 +92,7 @@ class Plugin:
         if current_shape > output_shape:
             self.model.add(Cropping1D(cropping=(0, current_shape - output_shape)))
             print(f"After Cropping1D: {self.model.layers[-1].output_shape}")
-        elif current_shape < output_shape:
-            self.model.add(UpSampling1D(size=output_shape // current_shape))
-            print(f"After Fine-tune UpSampling1D: {self.model.layers[-1].output_shape}")
-
+        
         # 6. Final Conv1DTranspose to match the original input dimensions
         self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
         print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")

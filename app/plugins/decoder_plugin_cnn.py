@@ -69,7 +69,7 @@ class Plugin:
         print(f"Flatten Shape: {flatten_shape}")
         self.model.add(Dense(flatten_shape, input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
         print(f"After Dense: {self.model.layers[-1].output_shape}")
-       #self.model.add(BatchNormalization())
+        self.model.add(BatchNormalization())
         self.model.add(Reshape((1, interface_size)))
         print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
 

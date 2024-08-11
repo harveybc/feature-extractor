@@ -75,7 +75,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
             
             # Build new autoencoder model with the current size
-            autoencoder_manager.build_autoencoder(config['window_size'], current_size)
+            autoencoder_manager.build_autoencoder(config['window_size'], current_size, config)
 
             # Train the autoencoder model
             autoencoder_manager.train_autoencoder(windowed_data, epochs=epochs, batch_size=training_batch_size)

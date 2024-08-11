@@ -53,39 +53,46 @@ class Plugin:
         # Debugging message
         print(f"Encoder Layer sizes: {layers}")
 
-        # set input layer
+        # Set input layer
         inputs = Input(shape=(1, input_shape))
         x = inputs
-        x = Reshape((1, input_shape)) (x)
-        # add conv and maxpooling layers, calculating their kernel and pool sizes
-        pool_size = 2
+
+        # Add Conv1D and MaxPooling1D layers, using channels as features
         layers_index = 0
-        # use the layers except the first one nad the last one
-        for size in layers[1:-1]:
+        for size in layers[1:-1]:  # Use the layers except the first and the last one
             layers_index += 1
-            # pool size calculation
+            
+            # Calculate pool size
             if layers_index >= len(layers):
-                pool_size = round(size/interface_size)
+                pool_size = round(size / interface_size)
             else:
-                pool_size = round(size/layers[layers_index])
-            # kernel size configuration based on the layer's size
-            kernel_size = 3 
+                pool_size = round(size / layers[layers_index])
+            
+            # Configure kernel size based on the layer's size
+            kernel_size = 3
             if size > 64:
                 kernel_size = 5
             if size > 512:
                 kernel_size = 7
-            # add the conv and maxpooling layers
+            
+            # Add Conv1D and BatchNormalization layers
             x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), padding='same')(x)
             x = BatchNormalization()(x)
-            x = Dropout(self.params['dropout_rate'])(x) 
-        if pool_size < 2:
-            pool_size = 2
-        #x = MaxPooling1D(pool_size=pool_size)(x)
-        x = Flatten()(x)
-        
-        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
+            x = Dropout(self.params['dropout_rate'])(x)
+            
+            # Add MaxPooling1D layer if necessary
+            if pool_size < 2:
+                pool_size = 2
+            x = MaxPooling1D(pool_size=pool_size)(x)
 
+        # Flatten the output to prepare for the Dense layer
+        x = Flatten()(x)
+
+        # Add the final Dense layer to reduce to the interface size
+        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)
+
+        # Build the encoder model
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
                 # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(
             learning_rate= self.params['learning_rate'],   # Set the learning rate

@@ -81,9 +81,9 @@ class Plugin:
             x = Dropout(self.params['dropout_rate'])(x)
             
             # Add MaxPooling1D layer if necessary
-            if pool_size < 2:
-                pool_size = 2
-            x = MaxPooling1D(pool_size=pool_size)(x)
+            #if pool_size < 2:
+            #    pool_size = 2
+            #x = MaxPooling1D(pool_size=pool_size)(x)
 
         # Flatten the output to prepare for the Dense layer
         x = Flatten()(x)

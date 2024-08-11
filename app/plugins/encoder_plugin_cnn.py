@@ -80,7 +80,7 @@ class Plugin:
             
             # Add Conv1D and BatchNormalization layers
             x = Conv1D(filters=size, kernel_size=kernel_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), padding='same')(x)
-            #x = BatchNormalization()(x)
+            x = BatchNormalization()(x)
             x = Dropout(self.params['dropout_rate'])(x)
             
             # Add MaxPooling1D layer if necessary

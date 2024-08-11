@@ -84,7 +84,7 @@ class Plugin:
             kernel_size = 3 if size <= 64 else 5 if size <= 512 else 7
             self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01)))
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
-            #self.model.add(BatchNormalization())
+            self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
             self.model.add(Dropout(self.params['dropout_rate'] / 2))
             print(f"After Dropout: {self.model.layers[-1].output_shape}")

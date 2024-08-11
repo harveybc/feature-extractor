@@ -17,7 +17,7 @@ class Plugin:
 
         'intermediate_layers': 3, 
         'learning_rate': 0.00001,
-        'dropout_rate': 0.5,
+        'dropout_rate': 1,
     }
 
     plugin_debug_vars = ['input_shape', 'intermediate_layers']
@@ -82,8 +82,6 @@ class Plugin:
         x = Flatten()(x)
         
         x = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)
-        outputs = Dropout(self.params['dropout_rate'])(x) 
-
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
 
                 # Define the Adam optimizer with custom parameters

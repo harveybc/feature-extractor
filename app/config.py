@@ -28,6 +28,6 @@ DEFAULT_VALUES = {
     'headers': False,
     'epochs': 5,  # Add epochs here
     'batch_size': 32,  # Add batch_size here
-    'learning_rate': 0.1,  # Add learning_rate here
+    'learning_rate': 0.000001,  # Add learning_rate here
 }
 

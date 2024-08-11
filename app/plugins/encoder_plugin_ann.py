@@ -13,7 +13,7 @@ class Plugin:
         'dropout_rate': 0.1,
         'intermediate_layers': 0,
         'layer_size_divisor': 2,
-        'learning_rate': 0.001,
+        'learning_rate': 0.000001,
         'activation': 'tanh'
     }
 

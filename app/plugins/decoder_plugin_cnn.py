@@ -12,7 +12,7 @@ import math
 class Plugin:
     plugin_params = {
         'intermediate_layers': 3, 
-        'learning_rate': 0.001,
+        'learning_rate': 0.00001,
         'dropout_rate': 0.5,
     }
 
@@ -71,6 +71,8 @@ class Plugin:
         self.model.add(Dense(flatten_shape, input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
         print(f"After Dense: {self.model.layers[-1].output_shape}")
         self.model.add(BatchNormalization())
+        self.model.add(Dropout(self.params['dropout_rate'] / 2))
+        print(f"After Dropout: {self.model.layers[-1].output_shape}")
         self.model.add(Reshape((output_shape // 2, interface_size)))
         print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
 

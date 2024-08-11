@@ -58,42 +58,27 @@ class Plugin:
         print(f"Decoder Layer sizes: {layer_sizes}")
         self.model = Sequential(name="decoder")
 
-        # Dense and initial reshape to start decoding
-        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', 
-                            kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="decoder_input"))
-        print(f"After Dense layer: {self.model.layers[-1].output_shape}")
+        # 1. Dense layer to start the decoding process, reshaping from the latent space
+        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="decoder_input"))
+        self.model.add(BatchNormalization())
+        self.model.add(Reshape((layer_sizes[0], 1)))  # Reshape to prepare for Conv1DTranspose
 
-        self.model.add(BatchNormalization())  # BatchNormalization layer
-        print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
-
-        self.model.add(Reshape((layer_sizes[0], 1)))  # Reshape to 3D tensor for Conv1DTranspose layers
-        print(f"After Reshape (to (layer_sizes[0], 1)): {self.model.layers[-1].output_shape}")
-
+        # 2. Upsample and Conv1DTranspose layers
         for i in range(len(layer_sizes) - 1):
             kernel_size = 3 if layer_sizes[i] <= 64 else 5 if layer_sizes[i] <= 512 else 7
-            self.model.add(Conv1DTranspose(filters=layer_sizes[i+1], kernel_size=kernel_size, padding='same', 
-                                        activation='relu', kernel_initializer=HeNormal(), 
-                                        kernel_regularizer=l2(0.01)))  # Conv1DTranspose layer
-            print(f"After Conv1DTranspose (filters={layer_sizes[i+1]}, kernel_size={kernel_size}): {self.model.layers[-1].output_shape}")
-            self.model.add(BatchNormalization())  # BatchNormalization layer
-            print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
-            self.model.add(Dropout(self.params['dropout_rate']))  # Dropout layer
-            print(f"After Dropout: {self.model.layers[-1].output_shape}")
+            # Conv1DTranspose with upsampling
+            self.model.add(Conv1DTranspose(filters=layer_sizes[i+1], kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
+            self.model.add(BatchNormalization())
+            self.model.add(Dropout(self.params['dropout_rate']))
+            # Ensure upsampling to match the original sequence length
+            if i < len(layer_sizes) - 2:  # Skip the last layer to avoid upsampling twice
+                self.model.add(UpSampling1D(size=2))  # Adjust the size as necessary to achieve 128 time steps
 
-        # Add a Conv1DTranspose layer to upscale the features back to 128
-        self.model.add(Conv1DTranspose(filters=128, kernel_size=kernel_size, padding='same', 
-                                    activation='relu', kernel_initializer=HeNormal(), 
-                                    kernel_regularizer=l2(0.01), name="upsample_layer"))
-        print(f"After upsample Conv1DTranspose (filters=128, kernel_size={kernel_size}): {self.model.layers[-1].output_shape}")
+        # 3. Final Conv1DTranspose to match the original input dimensions
+        self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
 
-        self.model.add(BatchNormalization())  # BatchNormalization layer
-        print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
-
-        # Final Conv1DTranspose layer to ensure correct output shape
-        self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', 
-                                    activation='tanh', kernel_initializer=GlorotUniform(), 
-                                    kernel_regularizer=l2(0.01), name="decoder_output"))
-        print(f"After final Conv1DTranspose (filters=1, kernel_size=3): {self.model.layers[-1].output_shape}")
+        # 4. Reshape the output to ensure the final output is (None, 128, 1)
+        self.model.add(Reshape((output_shape, 1)))
 
 
                 # Define the Adam optimizer with custom parameters

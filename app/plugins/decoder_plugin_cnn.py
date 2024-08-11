@@ -7,6 +7,7 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
 from keras.layers import BatchNormalization
+import math
 
 class Plugin:
     plugin_params = {
@@ -56,31 +57,50 @@ class Plugin:
         
         # Debugging message
         print(f"Decoder Layer sizes: {layer_sizes}")
+       
+
         self.model = Sequential(name="decoder")
+
+        # 1. Dense layer to start the decoding process
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
-        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="decoder_input"))
+        print(f"After Dense: {self.model.layers[-1].output_shape}")
         self.model.add(BatchNormalization())
+        print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
         self.model.add(Reshape((layer_sizes[0], 1)))
-        reshape_size = layer_sizes[0]
-        next_size = layer_sizes[0]
-        for i in range(0, len(layer_sizes) - 1):
-            kernel_size = 3
-            if layer_sizes[i] > 64:
-                kernel_size = 5
-            if layer_sizes[i] > 512:
-                kernel_size = 7
-            self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal()))
-            self.model.add(Dropout(self.params['dropout_rate'])) 
-            reshape_size = layer_sizes[i]
-            next_size = layer_sizes[i + 1]
-            upsample_factor = next_size // reshape_size
-            if upsample_factor > 1:
-                self.model.add(UpSampling1D(size=upsample_factor))
-        self.model.add(Conv1DTranspose(output_shape, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), name="last_layer"))
-        last_layer_shape = self.model.layers[-1].output_shape
-        new_shape = (last_layer_shape[2], last_layer_shape[1])
-        self.model.add(Reshape(new_shape))
-        self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_output"))
+        print(f"After Reshape: {self.model.layers[-1].output_shape}")
+
+        # 2. Upsample directly to exceed or match the output size
+        upsample_factor = math.ceil(output_shape / layer_sizes[0]) + 1
+        self.model.add(UpSampling1D(size=upsample_factor))
+        print(f"After UpSampling1D: {self.model.layers[-1].output_shape}")
+
+        # 3. Continue with Conv1DTranspose layers
+        for size in layer_sizes:
+            kernel_size = 3 if size <= 64 else 5 if size <= 512 else 7
+            self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
+            print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
+            self.model.add(BatchNormalization())
+            print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
+            self.model.add(Dropout(self.params['dropout_rate'] / 2))
+            print(f"After Dropout: {self.model.layers[-1].output_shape}")
+
+        # 4. Downsample to the exact output size if needed
+        if (layer_sizes[-1] * upsample_factor) > output_shape:
+            self.model.add(Conv1D(filters=output_shape, kernel_size=3, padding='same', activation='relu', kernel_initializer=HeNormal()))
+            print(f"After Downsample Conv1D (to {output_shape}): {self.model.layers[-1].output_shape}")
+
+        # 5. Final Conv1DTranspose to match the original input dimensions
+        self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
+        print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
+
+        # 6. Reshape the output to ensure the final output is (None, 128, 1)
+        self.model.add(Reshape((output_shape, 1)))
+        print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
+
+
+
+
+
                 # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(
             learning_rate= self.params['learning_rate'],   # Set the learning rate

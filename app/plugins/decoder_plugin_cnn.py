@@ -4,11 +4,15 @@ from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten, Conv1DTr
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
+from keras.regularizers import l2
+from keras.callbacks import EarlyStopping
+from keras.layers import BatchNormalization
+
 class Plugin:
     plugin_params = {
         'intermediate_layers': 3, 
         'learning_rate': 0.001,
-        'dropout_rate': 0.1,
+        'dropout_rate': 0.01,
     }
 
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
@@ -53,29 +57,21 @@ class Plugin:
         # Debugging message
         print(f"Decoder Layer sizes: {layer_sizes}")
         self.model = Sequential(name="decoder")
-        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
+        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="decoder_input"))
+        self.model.add(BatchNormalization())
         self.model.add(Reshape((layer_sizes[0], 1)))
-        reshape_size = layer_sizes[0]
-        next_size = layer_sizes[0]
-        for i in range(0, len(layer_sizes) - 1):
-            kernel_size = 3
-            if layer_sizes[i] > 64:
-                kernel_size = 5
-            if layer_sizes[i] > 512:
-                kernel_size = 7
-            self.model.add(Conv1DTranspose(next_size, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal()))
-            self.model.add(Dropout(self.params['dropout_rate'])) 
-            reshape_size = layer_sizes[i]
-            next_size = layer_sizes[i + 1]
-            upsample_factor = next_size // reshape_size
-            if upsample_factor > 1:
-                self.model.add(UpSampling1D(size=upsample_factor))
-        self.model.add(Conv1DTranspose(output_shape, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), name="last_layer"))
-        last_layer_shape = self.model.layers[-1].output_shape
-        new_shape = (last_layer_shape[2], last_layer_shape[1])
-        self.model.add(Reshape(new_shape))
-        self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_output"))
+
+        for i in range(len(layer_sizes) - 1):
+            kernel_size = 3 if layer_sizes[i] <= 64 else 5 if layer_sizes[i] <= 512 else 7
+            self.model.add(Conv1DTranspose(filters=layer_sizes[i+1], kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
+            self.model.add(BatchNormalization())
+            self.model.add(Dropout(self.params['dropout_rate']/2)) 
+
+        self.model.add(Conv1DTranspose(filters=output_shape, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="last_layer"))
+        self.model.add(BatchNormalization())
         self.model.add(Reshape((output_shape,)))
+        self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
+
                 # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(
             learning_rate= self.params['learning_rate'],   # Set the learning rate

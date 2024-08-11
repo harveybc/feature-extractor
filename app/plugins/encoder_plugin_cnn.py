@@ -4,6 +4,10 @@ from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
+from keras.regularizers import l2
+from keras.callbacks import EarlyStopping
+from keras.layers import BatchNormalization
+
 class Plugin:
     """
     An encoder plugin using a convolutional neural network (CNN) based on Keras, with dynamically configurable size.
@@ -53,7 +57,7 @@ class Plugin:
         inputs = Input(shape=(input_shape, 1))
         x = inputs
 
-        # add conv and maxpooling layers, calculating their kernel and pool sizes
+       # add conv and maxpooling layers, calculating their kernel and pool sizes
         layers_index = 0
         for size in layers:
             layers_index += 1
@@ -69,15 +73,15 @@ class Plugin:
             if size > 512:
                 kernel_size = 7
             # add the conv and maxpooling layers
-            x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', kernel_initializer=HeNormal(), padding='same')(x)
-
+            x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), padding='same')(x)
+            x = BatchNormalization()(x)
             x = Dropout(self.params['dropout_rate'])(x) 
         if pool_size < 2:
             pool_size = 2
         x = MaxPooling1D(pool_size=pool_size)(x)
         x = Flatten()(x)
         
-        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
+        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
 
                 # Define the Adam optimizer with custom parameters
@@ -93,7 +97,9 @@ class Plugin:
 
     def train(self, data):
         print(f"Training encoder with data shape: {data.shape}")
-        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+         # early stopping
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping])
         print("Training completed.")
 
     def encode(self, data):

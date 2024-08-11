@@ -65,24 +65,24 @@ class Plugin:
         self.model = Sequential(name="decoder")
 
         # 1. Start with the inverse of the Flatten layer
-        #flatten_shape = interface_size # This calculation assumes output_shape was halved by MaxPooling in the encoder.
-        #print(f"Flatten Shape: {flatten_shape}")
-        #self.model.add(Dense(flatten_shape, input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
-        #print(f"After Dense: {self.model.layers[-1].output_shape}")
-        #self.model.add(BatchNormalization())
+        flatten_shape = interface_size # This calculation assumes output_shape was halved by MaxPooling in the encoder.
+        print(f"Flatten Shape: {flatten_shape}")
+        self.model.add(Conv1DTranspose(flatten_shape, input_shape=(1,interface_size), activation='relu', kernel_initializer=HeNormal(), name="decoder_in", kernel_regularizer=l2(0.01)))
+        print(f"After 1st conv: {self.model.layers[-1].output_shape}")
+        self.model.add(BatchNormalization())
         #self.model.add(Reshape((1, interface_size)))
-        #print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
+        print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
 
         # 3. Add Conv1DTranspose layers according to the provided layer_sizes (order maintained)
         # for layers_sizes except the first one and the last one
         for size in layer_sizes[1:-1]:
             kernel_size = 3 if size <= 64 else 5 if size <= 512 else 7
             self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
-            #print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
+            print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
             self.model.add(BatchNormalization())
-            #print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
+            print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
             self.model.add(Dropout(self.params['dropout_rate'] / 2))
-            #print(f"After Dropout: {self.model.layers[-1].output_shape}")
+            print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
         # 2. UpSampling1D as the inverse of MaxPooling1D in the encoder
         #self.model.add(UpSampling1D(size=2))  # Assuming the original max pooling used pool_size=2
@@ -90,11 +90,11 @@ class Plugin:
 
         # 4. Final Conv1DTranspose to match the original input dimensions
         self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
-        #print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
+        print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
 
         # 5. Reshape the output to ensure the final output is (None, output_shape, 1)
         #self.model.add(Reshape((output_shape, 1)))
-        #print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
+        print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
 
 
 

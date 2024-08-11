@@ -66,12 +66,12 @@ class Plugin:
 
         # 1. Start with the inverse of th
         # e Flatten layer
-        flatten_shape = interface_size * (output_shape // 2)  # This calculation assumes output_shape was halved by MaxPooling in the encoder.
+        flatten_shape = interface_size * (output_shape)  # This calculation assumes output_shape was halved by MaxPooling in the encoder.
         print(f"Flatten Shape: {flatten_shape}")
         self.model.add(Dense(flatten_shape, input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
         print(f"After Dense: {self.model.layers[-1].output_shape}")
        #self.model.add(BatchNormalization())
-        self.model.add(Reshape((output_shape // 2, interface_size)))
+        self.model.add(Reshape((output_shape, interface_size)))
         print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
 
         # 3. Add Conv1DTranspose layers according to the provided layer_sizes (order maintained)

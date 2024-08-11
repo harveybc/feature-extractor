@@ -80,7 +80,7 @@ class Plugin:
             x = Dropout(self.params['dropout_rate'])(x) 
         if pool_size < 2:
             pool_size = 2
-        x = MaxPooling1D(pool_size=pool_size)(x)
+        #x = MaxPooling1D(pool_size=pool_size)(x)
         x = Flatten()(x)
         
         outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)

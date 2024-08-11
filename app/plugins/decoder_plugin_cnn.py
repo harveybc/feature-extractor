@@ -67,7 +67,7 @@ class Plugin:
         # 1. Dense layer to start the decoding process
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
         self.model.add(BatchNormalization())
-        self.model.add(Reshape(1, (layer_sizes[0])))
+        self.model.add(Reshape((1, layer_sizes[0])))
         print(f"After Reshape: {self.model.layers[-1].output_shape}")
 
         # 2. Upsample directly to exceed or match the output size

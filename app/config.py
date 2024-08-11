@@ -12,7 +12,7 @@ DEFAULT_VALUES = {
     'decoder_plugin': 'default',
     'window_size': 128,
     'threshold_error': 0.01,
-    'initial_size': 126,
+    'initial_size': 32,
     'step_size': 16,
     'save_log': './debug_out.json',
     'remote_log': None,

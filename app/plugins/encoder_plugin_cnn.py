@@ -73,7 +73,7 @@ class Plugin:
             if size > 512:
                 kernel_size = 7
             # add the conv and maxpooling layers
-            x = Conv1D(filters=size, kernel_size=kernel_size, activation='keras.layers.LeakyReLU() ', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), padding='same')(x)
+            x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu ', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), padding='same')(x)
             x = BatchNormalization()(x)
             x = Dropout(self.params['dropout_rate'])(x) 
         if pool_size < 2:
@@ -81,7 +81,7 @@ class Plugin:
         x = MaxPooling1D(pool_size=pool_size)(x)
         x = Flatten()(x)
         
-        outputs = Dense(interface_size, activation='keras.layers.LeakyReLU()', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)
+        outputs = Dense(interface_size, activation='relu', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
 
                 # Define the Adam optimizer with custom parameters

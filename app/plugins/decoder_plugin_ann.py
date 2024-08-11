@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Dropout
+from keras.layers import Dense, Dropout,Input
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
@@ -55,12 +55,13 @@ class Plugin:
         print(f"ANN Layer sizes: {layer_sizes}")
 
         self.model = Sequential(name="decoder_ANN")
-        self.model.add(Dense(layer_sizes[0], input_shape=(encoding_dim,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
+        self.model.add(Input(shape=(encoding_dim), name="decoder_input"))
+        #self.model.add(Dense(layer_sizes[0], input_shape=(encoding_dim,), activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_input"))
         
         next_size = layer_sizes[0]
-        for i in range(0, len(layer_sizes) - 1):
-            self.model.add(Dense(next_size, activation='relu', kernel_initializer=HeNormal(), name="decoder_intermediate_layer_" + str(i)))
-            self.model.add(Dropout(self.params['dropout_rate']))
+        for i in range(1, len(layer_sizes) - 1):
+            self.model.add(Dense(next_size, activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_intermediate_layer_" + str(i)))
+            #self.model.add(Dropout(self.params['dropout_rate']))
             next_size = layer_sizes[i + 1]
 
         self.model.add(Dense(output_dim, activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_output"))

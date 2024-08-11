@@ -74,7 +74,7 @@ class Plugin:
         #add the input layer
         self.model.add(Input(shape=(1,flatten_shape)))
         
-        #self.model.add(BatchNormalization())
+        self.model.add(BatchNormalization())
         ##self.model.add(Reshape((1, interface_size)))
         #print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
 

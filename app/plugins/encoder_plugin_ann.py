@@ -61,9 +61,9 @@ class Plugin:
         for size in layers:
             layers_index += 1
             # add the conv and maxpooling layers
-            x = Dense(encoding_dim, activation='relu', kernel_initializer=HeNormal(), name="encoder_intermediate_layer" + str(layers_index))(x)
+            x = Dense(encoding_dim, activation='tanh', kernel_initializer=GlorotUniform(), name="encoder_intermediate_layer" + str(layers_index))(x)
             # add dropout layer
-            x = Dropout(self.params['dropout_rate'])(x)
+            #x = Dropout(self.params['dropout_rate'])(x)
 
         # Encoder: set output layer        
         outputs = Dense(encoding_dim, activation=self.params['activation'], kernel_initializer=GlorotUniform(), name="encoder_output" )(x)

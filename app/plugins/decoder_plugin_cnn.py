@@ -83,22 +83,15 @@ class Plugin:
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
             # Upsample the output to match the next layer size
   
-
             self.model.add(Dropout(self.params['dropout_rate'] / 2))
             print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
         # 5. Fine-tune to exact output size if necessary
-        current_shape = self.model.layers[-1].output_shape[1]
-        if current_shape > output_shape:
-            self.model.add(Cropping1D(cropping=(0, current_shape - output_shape)))
-            print(f"After Cropping1D: {self.model.layers[-1].output_shape}")
-        
-        # 6. Final Conv1DTranspose to match the original input dimensions
-        self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
-        print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
-
-        # 7. Reshape the output to ensure the final output is (None, 128, 1)
-        self.model.add(Reshape((output_shape, 1)))
+        #self.model.add(Conv1DTranspose(output_shape, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), name="last_layer"))
+        last_layer_shape = self.model.layers[-1].output_shape
+        new_shape = (last_layer_shape[2], last_layer_shape[1])
+        self.model.add(Reshape(new_shape))
+        self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_output"))
         print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
 
 

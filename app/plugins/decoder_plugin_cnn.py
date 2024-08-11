@@ -69,24 +69,28 @@ class Plugin:
             kernel_size = 3 if layer_sizes[i] <= 64 else 5 if layer_sizes[i] <= 512 else 7
             self.model.add(Conv1DTranspose(filters=layer_sizes[i+1], kernel_size=kernel_size, padding='same', 
                                         activation='relu', kernel_initializer=HeNormal(), 
-                                        kernel_regularizer=l2(0.01)))  # After Conv1DTranspose (filters=layer_sizes[i+1], kernel_size=kernel_size)
+                                        kernel_regularizer=l2(0.01)))  # Conv1DTranspose layer
             print(f"After Conv1DTranspose (filters={layer_sizes[i+1]}, kernel_size={kernel_size}): {self.model.layers[-1].output_shape}")
-            self.model.add(BatchNormalization())  # After BatchNormalization
+            self.model.add(BatchNormalization())  # BatchNormalization layer
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
-            self.model.add(Dropout(self.params['dropout_rate']))  # After Dropout
+            self.model.add(Dropout(self.params['dropout_rate']))  # Dropout layer
             print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
         self.model.add(Conv1DTranspose(filters=output_shape, kernel_size=kernel_size, padding='same', 
                                     activation='relu', kernel_initializer=HeNormal(), 
-                                    kernel_regularizer=l2(0.01), name="last_layer"))  # After last Conv1DTranspose (filters=output_shape, kernel_size=kernel_size)
+                                    kernel_regularizer=l2(0.01), name="last_layer"))  # Last Conv1DTranspose layer
         print(f"After last Conv1DTranspose (filters={output_shape}, kernel_size={kernel_size}): {self.model.layers[-1].output_shape}")
-        self.model.add(BatchNormalization())  # After BatchNormalization
+        self.model.add(BatchNormalization())  # BatchNormalization layer
         print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
-        self.model.add(Reshape((output_shape,)))  # After Reshape (to (output_shape,))
-        print(f"After Reshape (to (output_shape,)): {self.model.layers[-1].output_shape}")
+
+        # Correct Reshape: Flatten the output by combining the time steps and feature dimensions
+        flattened_size = 32 * 128  # 32 time steps * 128 features
+        self.model.add(Reshape((flattened_size,)))  # Reshape to flattened size
+        print(f"After Reshape (to (flattened_size,)): {self.model.layers[-1].output_shape}")
+
         self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', 
                                     kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), 
-                                    name="decoder_output"))  # After final Conv1DTranspose (filters=1, kernel_size=3)
+                                    name="decoder_output"))  # Final Conv1DTranspose layer
         print(f"After final Conv1DTranspose (filters=1, kernel_size=3): {self.model.layers[-1].output_shape}")
 
 

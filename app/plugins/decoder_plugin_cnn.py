@@ -96,7 +96,6 @@ class Plugin:
         print(f"After final Conv1DTranspose (filters=1, kernel_size=3): {self.model.layers[-1].output_shape}")
 
 
-
                 # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(
             learning_rate= self.params['learning_rate'],   # Set the learning rate

@@ -64,19 +64,21 @@ class Plugin:
 
         self.model = Sequential(name="decoder")
 
-        # 1. Start with the inverse of the Flatten layer
-        # Calculate the shape before the Flatten layer in the encoder
-        flatten_shape = (output_shape // 2) * layer_sizes[-1]  # Assuming MaxPooling1D halved the sequence length
+        # 1. Start with the inverse of th
+        # e Flatten layer
+        flatten_shape = interface_size * (output_shape // 2)  # This calculation assumes output_shape was halved by MaxPooling in the encoder.
+        print(f"Flatten Shape: {flatten_shape}")
         self.model.add(Dense(flatten_shape, input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
+        priunt(f"After Dense: {self.model.layers[-1].output_shape}")
         self.model.add(BatchNormalization())
-        self.model.add(Reshape((output_shape // 2, layer_sizes[-1])))  # Reshape back to match the pre-flatten shape
+        self.model.add(Reshape((output_shape // 2, interface_size)))
         print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
 
         # 2. UpSampling1D as the inverse of MaxPooling1D in the encoder
-        self.model.add(UpSampling1D(size=2))  # Assuming the original MaxPooling1D used pool_size=2
+        self.model.add(UpSampling1D(size=2))  # Assuming the original max pooling used pool_size=2
         print(f"After UpSampling1D (inverse of MaxPooling1D): {self.model.layers[-1].output_shape}")
 
-        # 3. Add Conv1DTranspose layers in the order specified by layer_sizes
+        # 3. Add Conv1DTranspose layers according to the provided layer_sizes (order maintained)
         for size in layer_sizes:
             kernel_size = 3 if size <= 64 else 5 if size <= 512 else 7
             self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
@@ -93,6 +95,8 @@ class Plugin:
         # 5. Reshape the output to ensure the final output is (None, output_shape, 1)
         self.model.add(Reshape((output_shape, 1)))
         print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
+
+
 
 
 

@@ -80,6 +80,15 @@ class Plugin:
             self.model.add(Dropout(self.params['dropout_rate']))  # Dropout layer
             print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
+        # Add a Conv1DTranspose layer to upscale the features back to 128
+        self.model.add(Conv1DTranspose(filters=128, kernel_size=kernel_size, padding='same', 
+                                    activation='relu', kernel_initializer=HeNormal(), 
+                                    kernel_regularizer=l2(0.01), name="upsample_layer"))
+        print(f"After upsample Conv1DTranspose (filters=128, kernel_size={kernel_size}): {self.model.layers[-1].output_shape}")
+
+        self.model.add(BatchNormalization())  # BatchNormalization layer
+        print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
+
         # Final Conv1DTranspose layer to ensure correct output shape
         self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', 
                                     activation='tanh', kernel_initializer=GlorotUniform(), 

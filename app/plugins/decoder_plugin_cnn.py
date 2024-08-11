@@ -58,47 +58,34 @@ class Plugin:
         print(f"Decoder Layer sizes: {layer_sizes}")
         self.model = Sequential(name="decoder")
 
+        # Dense and initial reshape to start decoding
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', 
-                            kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="decoder_input"))  # After Dense layer
+                            kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="decoder_input"))
         print(f"After Dense layer: {self.model.layers[-1].output_shape}")
-
-        self.model.add(BatchNormalization())  # After BatchNormalization
-        print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
-
-        self.model.add(Reshape((layer_sizes[0], 1)))  # Reshape to 3D tensor
-        print(f"After Reshape (to (layer_sizes[0], 1)): {self.model.layers[-1].output_shape}")
-
-        for i in range(len(layer_sizes) - 1):
-            kernel_size = 3 if layer_sizes[i] <= 64 else 5 if layer_sizes[i] <= 512 else 7
-
-            self.model.add(Conv1DTranspose(filters=layer_sizes[i+1], kernel_size=kernel_size, padding='same', 
-                                        activation='relu', kernel_initializer=HeNormal(), 
-                                        kernel_regularizer=l2(0.01)))  # Conv1DTranspose layer
-            print(f"After Conv1DTranspose (filters={layer_sizes[i+1]}, kernel_size={kernel_size}): {self.model.layers[-1].output_shape}")
-
-            self.model.add(BatchNormalization())  # BatchNormalization layer
-            print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
-
-            self.model.add(Dropout(self.params['dropout_rate']))  # Dropout layer
-            print(f"After Dropout: {self.model.layers[-1].output_shape}")
-
-        # Continue with the final Conv1DTranspose layer
-        self.model.add(Conv1DTranspose(filters=output_shape, kernel_size=kernel_size, padding='same', 
-                                    activation='relu', kernel_initializer=HeNormal(), 
-                                    kernel_regularizer=l2(0.01), name="last_layer"))  # Last Conv1DTranspose layer
-        print(f"After last Conv1DTranspose (filters={output_shape}, kernel_size={kernel_size}): {self.model.layers[-1].output_shape}")
 
         self.model.add(BatchNormalization())  # BatchNormalization layer
         print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
 
-        # Reshape back to the original expected 3D structure for the final layer
-        self.model.add(Reshape((32, output_shape)))  # Adjust this based on expected dimensions
-        print(f"After Reshape (to (32, output_shape)): {self.model.layers[-1].output_shape}")
+        self.model.add(Reshape((layer_sizes[0], 1)))  # Reshape to 3D tensor for Conv1DTranspose layers
+        print(f"After Reshape (to (layer_sizes[0], 1)): {self.model.layers[-1].output_shape}")
 
-        self.model.add(Conv1DTranspose(1, kernel_size=3, padding='same', activation='tanh', 
-                                    kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), 
-                                    name="decoder_output"))  # Final Conv1DTranspose layer
+        for i in range(len(layer_sizes) - 1):
+            kernel_size = 3 if layer_sizes[i] <= 64 else 5 if layer_sizes[i] <= 512 else 7
+            self.model.add(Conv1DTranspose(filters=layer_sizes[i+1], kernel_size=kernel_size, padding='same', 
+                                        activation='relu', kernel_initializer=HeNormal(), 
+                                        kernel_regularizer=l2(0.01)))  # Conv1DTranspose layer
+            print(f"After Conv1DTranspose (filters={layer_sizes[i+1]}, kernel_size={kernel_size}): {self.model.layers[-1].output_shape}")
+            self.model.add(BatchNormalization())  # BatchNormalization layer
+            print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
+            self.model.add(Dropout(self.params['dropout_rate']))  # Dropout layer
+            print(f"After Dropout: {self.model.layers[-1].output_shape}")
+
+        # Final Conv1DTranspose layer to ensure correct output shape
+        self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', 
+                                    activation='tanh', kernel_initializer=GlorotUniform(), 
+                                    kernel_regularizer=l2(0.01), name="decoder_output"))
         print(f"After final Conv1DTranspose (filters=1, kernel_size=3): {self.model.layers[-1].output_shape}")
+
 
 
                 # Define the Adam optimizer with custom parameters

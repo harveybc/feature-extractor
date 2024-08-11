@@ -56,7 +56,7 @@ class Plugin:
         # set input layer
         inputs = Input(shape=(1, input_shape))
         x = inputs
-        x = Reshape((0, 1, input_shape)) (x)
+        x = Reshape((1, input_shape)) (x)
         # add conv and maxpooling layers, calculating their kernel and pool sizes
         pool_size = 2
         layers_index = 0

@@ -95,13 +95,10 @@ class Plugin:
         kernel_size = 3 if output_shape <= 64 else 5 if output_shape <= 512 else 7
         # 4. Final Conv1DTranspose to match the original input dimensions
         self.model.add(Conv1DTranspose(filters=output_shape, kernel_size=kernel_size, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
-        #print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
-            
-        #self.model.add(Conv1DTranspose(filters=, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
         print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
-
+        
         # 5. Reshape the output to ensure the final output is (None, output_shape, 1)
-        #self.model.add(Reshape((output_shape, 1)))
+        self.model.add(Reshape((output_shape, 1)))
         print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
 
 

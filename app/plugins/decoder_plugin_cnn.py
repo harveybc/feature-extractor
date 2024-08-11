@@ -2,7 +2,7 @@ import numpy as np
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten, Conv1DTranspose,Dropout
 from keras.optimizers import Adam
-from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from tensorflow.keras.initializers import GlorotUniform, HeNormal, MaxPooling1D
 
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
@@ -59,13 +59,14 @@ class Plugin:
         print(f"Decoder Layer sizes: {layer_sizes}")
        
 
+
+
+
         self.model = Sequential(name="decoder")
 
         # 1. Dense layer to start the decoding process
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
-        print(f"After Dense: {self.model.layers[-1].output_shape}")
         self.model.add(BatchNormalization())
-        print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
         self.model.add(Reshape((layer_sizes[0], 1)))
         print(f"After Reshape: {self.model.layers[-1].output_shape}")
 
@@ -85,9 +86,9 @@ class Plugin:
             print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
         # 4. Downsample to the exact output size if needed
-        if (layer_sizes[-1] * upsample_factor) > output_shape:
-            self.model.add(Conv1D(filters=output_shape, kernel_size=3, padding='same', activation='relu', kernel_initializer=HeNormal()))
-            print(f"After Downsample Conv1D (to {output_shape}): {self.model.layers[-1].output_shape}")
+        downsample_factor = self.model.layers[-1].output_shape[1] // output_shape
+        self.model.add(MaxPooling1D(pool_size=downsample_factor))
+        print(f"After MaxPooling1D (to {output_shape}): {self.model.layers[-1].output_shape}")
 
         # 5. Final Conv1DTranspose to match the original input dimensions
         self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
@@ -96,6 +97,7 @@ class Plugin:
         # 6. Reshape the output to ensure the final output is (None, 128, 1)
         self.model.add(Reshape((output_shape, 1)))
         print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
+
 
 
 
@@ -115,7 +117,8 @@ class Plugin:
     def train(self, encoded_data, original_data):
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
         original_data = original_data.reshape((original_data.shape[0], -1))
-        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping])
 
     def decode(self, encoded_data):
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))

@@ -85,10 +85,10 @@ class Plugin:
             self.model.add(Dropout(self.params['dropout_rate'] / 2))
             print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
-        # 4. Downsample to approximate output size
-        downsample_factor = self.model.layers[-1].output_shape[1] // output_shape
-        self.model.add(MaxPooling1D(pool_size=downsample_factor))
-        print(f"After MaxPooling1D: {self.model.layers[-1].output_shape}")
+            # 4. Downsample to approximate output size
+            downsample_factor = self.model.layers[-1].output_shape[1] // output_shape
+            self.model.add(MaxPooling1D(pool_size=downsample_factor))
+            print(f"After MaxPooling1D: {self.model.layers[-1].output_shape}")
 
         # 5. Fine-tune to exact output size if necessary
         current_shape = self.model.layers[-1].output_shape[1]

@@ -81,7 +81,7 @@ class Plugin:
         # 3. Add Conv1DTranspose layers according to the provided layer_sizes (order maintained)
         for size in layer_sizes:
             kernel_size = 3 if size <= 64 else 5 if size <= 512 else 7
-            self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, padding='same', activation='relu ', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
+            self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
             self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
@@ -89,7 +89,7 @@ class Plugin:
             print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
         # 4. Final Conv1DTranspose to match the original input dimensions
-        self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='linear ', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
+        self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='linear', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
         print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
 
         # 5. Reshape the output to ensure the final output is (None, output_shape, 1)

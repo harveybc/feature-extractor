@@ -57,7 +57,7 @@ class Plugin:
         # Debugging message
         print(f"Decoder Layer sizes: {layer_sizes}")
         self.model = Sequential(name="decoder")
-        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
+        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="decoder_input"))
         self.model.add(BatchNormalization())
         self.model.add(Reshape((layer_sizes[0], 1)))

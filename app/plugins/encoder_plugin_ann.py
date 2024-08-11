@@ -39,29 +39,30 @@ class Plugin:
         self.params['encoding_dim'] = encoding_dim
 
         layers = []
-        current_size = input_dim
-        layer_size_divisor = self.params['layer_size_divisor'] 
-        current_location = input_dim
-        int_layers = 0
-        while (current_size > encoding_dim) and (int_layers < (self.params['intermediate_layers']+1)):
-            layers.append(current_location)
-            current_size = max(current_size // layer_size_divisor, encoding_dim)
-            current_location = encoding_dim + current_size
-            int_layers += 1
-        layers.append(encoding_dim)
+        input_shape = input_dim
+        interface_size = encoding_dim
+        # Calculate the sizes of the intermediate layers
+        num_intermediate_layers = self.params['intermediate_layers']
+        layers = [input_shape]
+        step_size = (input_shape - interface_size) / (num_intermediate_layers + 1)
+        
+        for i in range(1, num_intermediate_layers + 1):
+            layer_size = input_shape - i * step_size
+            layers.append(int(layer_size))
+
+        layers.append(interface_size)
         # Debugging message
         print(f"Encoder Layer sizes: {layers}")
-
         # Encoder: set input layer
         inputs = Input(shape=(input_dim,), name="encoder_input")
         x = inputs
 
         # add dense and dropout layers
         layers_index = 0
-        for size in layers:
+        for size in layers[1:-1]:
             layers_index += 1
             # add the conv and maxpooling layers
-            x = Dense(encoding_dim, activation='tanh', kernel_initializer=GlorotUniform(), name="encoder_intermediate_layer" + str(layers_index))(x)
+            x = Dense(size, activation='tanh', kernel_initializer=GlorotUniform(), name="encoder_intermediate_layer" + str(layers_index))(x)
             # add dropout layer
             #x = Dropout(self.params['dropout_rate'])(x)
 

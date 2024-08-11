@@ -6,7 +6,7 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
-from keras.layers import BatchNormalization, MaxPooling1D
+from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D
 import math
 
 class Plugin:
@@ -85,18 +85,28 @@ class Plugin:
             self.model.add(Dropout(self.params['dropout_rate'] / 2))
             print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
-        # 4. Downsample to the exact output size if needed
+        # 4. Downsample to approximate output size
         downsample_factor = self.model.layers[-1].output_shape[1] // output_shape
         self.model.add(MaxPooling1D(pool_size=downsample_factor))
-        print(f"After MaxPooling1D (to {output_shape}): {self.model.layers[-1].output_shape}")
+        print(f"After MaxPooling1D: {self.model.layers[-1].output_shape}")
 
-        # 5. Final Conv1DTranspose to match the original input dimensions
+        # 5. Fine-tune to exact output size if necessary
+        current_shape = self.model.layers[-1].output_shape[1]
+        if current_shape > output_shape:
+            self.model.add(Cropping1D(cropping=(0, current_shape - output_shape)))
+            print(f"After Cropping1D: {self.model.layers[-1].output_shape}")
+        elif current_shape < output_shape:
+            self.model.add(UpSampling1D(size=output_shape // current_shape))
+            print(f"After Fine-tune UpSampling1D: {self.model.layers[-1].output_shape}")
+
+        # 6. Final Conv1DTranspose to match the original input dimensions
         self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
         print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
 
-        # 6. Reshape the output to ensure the final output is (None, 128, 1)
+        # 7. Reshape the output to ensure the final output is (None, 128, 1)
         self.model.add(Reshape((output_shape, 1)))
         print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
+
 
 
 

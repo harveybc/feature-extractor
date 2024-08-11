@@ -6,7 +6,7 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
-from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU
+from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU,Input
 import math
 
 class Plugin:
@@ -66,13 +66,17 @@ class Plugin:
 
         # 1. Start with the inverse of the Flatten layer
         flatten_shape = interface_size # This calculation assumes output_shape was halved by MaxPooling in the encoder.
-        print(f"Flatten Shape: {flatten_shape}")
-        kernel_size = 3 if flatten_shape <= 64 else 5 if flatten_shape <= 512 else 7
-        self.model.add(Conv1DTranspose(flatten_shape, kernel_size=kernel_size, input_shape=(1,flatten_shape), activation='relu', kernel_initializer=HeNormal(), name="decoder_in", kernel_regularizer=l2(0.01), padding='same'))
-        print(f"After 1st conv: {self.model.layers[-1].output_shape}")
+        #print(f"Flatten Shape: {flatten_shape}")
+        #kernel_size = 3 if flatten_shape <= 64 else 5 if flatten_shape <= 512 else 7
+        #self.model.add(Conv1DTranspose(flatten_shape, kernel_size=kernel_size, input_shape=(1,flatten_shape), activation='relu', kernel_initializer=HeNormal(), name="decoder_in", kernel_regularizer=l2(0.01), padding='same'))
+        #print(f"After 1st conv: {self.model.layers[-1].output_shape}")
+        
+        #add the input layer
+        self.model.add(Input(shape=(1,flatten_shape)))
+        
         self.model.add(BatchNormalization())
-        #self.model.add(Reshape((1, interface_size)))
-        print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
+        ##self.model.add(Reshape((1, interface_size)))
+        #print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
 
         # 3. Add Conv1DTranspose layers according to the provided layer_sizes (order maintained)
         # for layers_sizes except the first one and the last one

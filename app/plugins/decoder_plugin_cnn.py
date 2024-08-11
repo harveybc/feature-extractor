@@ -71,7 +71,7 @@ class Plugin:
         print(f"After Reshape: {self.model.layers[-1].output_shape}")
 
         # 2. Upsample directly to exceed or match the output size
-        upsample_factor = math.ceil(output_shape / layer_sizes[0]) + 1
+        upsample_factor = output_shape
         self.model.add(UpSampling1D(size=upsample_factor))
         print(f"After UpSampling1D: {self.model.layers[-1].output_shape}")
 

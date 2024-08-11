@@ -54,8 +54,11 @@ class Plugin:
         print(f"Encoder Layer sizes: {layers}")
 
         # Set input layer
-        inputs = Input(shape=(1, input_shape))
+        inputs = Input(shape=(input_shape,1))
         x = inputs
+
+        # Perform reshaping if needed to adjust for the expected input shape
+        x = Reshape((1, input_shape))(inputs)
 
         # Add Conv1D and MaxPooling1D layers, using channels as features
         layers_index = 0

@@ -74,16 +74,22 @@ class Plugin:
 
             # Upsample conditionally, ensuring alignment with output shape
             next_feature_num = feature_num * 2
-            if next_feature_num <= output_shape:
+            if next_feature_num < output_shape:
                 self.model.add(UpSampling1D(size=2))
                 feature_num = next_feature_num
             else:
                 feature_num = output_shape
 
-        # 3. Final Conv1DTranspose to match the original input dimensions
+        # 3. Adjust to match the final output shape
+        if feature_num != output_shape:
+            # Add a Conv1DTranspose layer with appropriate padding or upsampling
+            self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='relu'))
+            feature_num = output_shape
+
+        # 4. Final Conv1DTranspose to match the original input dimensions
         self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
 
-        # 4. Reshape the output to ensure the final output is (None, output_shape, 1)
+        # 5. Reshape the output to ensure the final output is (None, output_shape, 1)
         self.model.add(Reshape((output_shape, 1)))
 
 

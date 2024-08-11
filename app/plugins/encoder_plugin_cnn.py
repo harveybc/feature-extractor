@@ -81,7 +81,9 @@ class Plugin:
         x = MaxPooling1D(pool_size=pool_size)(x)
         x = Flatten()(x)
         
-        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)
+        x = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)
+        outputs = Dropout(self.params['dropout_rate'])(x) 
+
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
 
                 # Define the Adam optimizer with custom parameters

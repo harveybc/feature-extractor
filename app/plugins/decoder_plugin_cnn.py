@@ -58,41 +58,34 @@ class Plugin:
         print(f"Decoder Layer sizes: {layer_sizes}")
         self.model = Sequential(name="decoder")
 
-        # 1. Dense layer to start the decoding process, reshaping from the latent space
+        # 1. Dense layer to start the decoding process
         self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
         self.model.add(BatchNormalization())
-        self.model.add(Reshape((layer_sizes[0], 1)))  # Reshape to prepare for Conv1DTranspose
+        self.model.add(Reshape((layer_sizes[0], 1)))
 
         # 2. Conv1DTranspose layers with conditional upsampling
         feature_num = layer_sizes[0]
         for i in range(len(layer_sizes) - 1):
             kernel_size = 3 if layer_sizes[i] <= 64 else 5 if layer_sizes[i] <= 512 else 7
-            # Conv1DTranspose
-            self.model.add(Conv1DTranspose(filters=layer_sizes[i+1], kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
+            self.model.add(Conv1DTranspose(filters=layer_sizes[i + 1], kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
             self.model.add(BatchNormalization())
             self.model.add(Dropout(self.params['dropout_rate']/2))
 
-            # Upsample conditionally, ensuring alignment with output shape
+            # Ensure the sequence length reaches 128
             next_feature_num = feature_num * 2
-            if next_feature_num < output_shape:
+            if next_feature_num <= output_shape:
                 self.model.add(UpSampling1D(size=2))
                 feature_num = next_feature_num
             else:
                 feature_num = output_shape
 
-        # 3. Adjust to match the final output shape
-        if feature_num != output_shape:
-            # Add a Conv1DTranspose layer with appropriate padding or upsampling
-            self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='relu'))
-            feature_num = output_shape
-
-        # 4. Final Conv1DTranspose to match the original input dimensions
+        # 3. Final Conv1DTranspose to match the original input dimensions
+        if feature_num < output_shape:
+            self.model.add(UpSampling1D(size=output_shape // feature_num))
         self.model.add(Conv1DTranspose(filters=1, kernel_size=3, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), name="decoder_output"))
 
-        # 5. Reshape the output to ensure the final output is (None, output_shape, 1)
+        # 4. Reshape the output to ensure the final output is (None, 128, 1)
         self.model.add(Reshape((output_shape, 1)))
-
-
 
                 # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(

@@ -57,7 +57,8 @@ class Plugin:
         inputs = Input(shape=(input_shape, 1))
         x = inputs
 
-       # add conv and maxpooling layers, calculating their kernel and pool sizes
+        # add conv and maxpooling layers, calculating their kernel and pool sizes
+        pool_size = 2
         layers_index = 0
         # use the layers except the first one nad the last one
         for size in layers[1:-1]:

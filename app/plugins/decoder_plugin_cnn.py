@@ -70,11 +70,7 @@ class Plugin:
         self.model.add(Reshape((layer_sizes[0], 1)))
         print(f"After Reshape: {self.model.layers[-1].output_shape}")
 
-        # 2. Upsample directly to exceed or match the output size
-        upsample_factor = output_shape//layer_sizes[0]
-        self.model.add(UpSampling1D(size=upsample_factor))
-        print(f"After UpSampling1D: {self.model.layers[-1].output_shape}")
-
+        
         # 3. Continue with Conv1DTranspose layers
         for size in layer_sizes:
             kernel_size = 3 if size <= 64 else 5 if size <= 512 else 7
@@ -82,13 +78,13 @@ class Plugin:
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
             self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
+            # Upsample the output to match the next layer size
+            upsample_factor = self.model.layers[-1].output_shape[1] // size
+            self.model.add(UpSampling1D(size=upsample_factor))
+            print(f"After UpSampling1D: {self.model.layers[-1].output_shape}")
+
             self.model.add(Dropout(self.params['dropout_rate'] / 2))
             print(f"After Dropout: {self.model.layers[-1].output_shape}")
-
-        # 4. Downsample to approximate output size
-        #downsample_factor = self.model.layers[-1].output_shape[1] // output_shape
-        #self.model.add(MaxPooling1D(pool_size=downsample_factor))
-        #print(f"After MaxPooling1D: {self.model.layers[-1].output_shape}")
 
         # 5. Fine-tune to exact output size if necessary
         current_shape = self.model.layers[-1].output_shape[1]

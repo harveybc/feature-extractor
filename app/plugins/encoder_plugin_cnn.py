@@ -89,10 +89,10 @@ class Plugin:
             #x = MaxPooling1D(pool_size=pool_size)(x)
 
         # Flatten the output to prepare for the Dense layer
-        x = Flatten()(x)
+        #x = Flatten()(x)
 
         # Add the final Dense layer to reduce to the interface size
-        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)
+        outputs = x = Conv1D(filters=interface_size, kernel_size=kernel_size, activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), padding='same')(x)
 
         # Build the encoder model
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")

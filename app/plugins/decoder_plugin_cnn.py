@@ -65,13 +65,13 @@ class Plugin:
         self.model = Sequential(name="decoder")
 
         # 1. Start with the inverse of the Flatten layer
-        flatten_shape = interface_size # This calculation assumes output_shape was halved by MaxPooling in the encoder.
-        print(f"Flatten Shape: {flatten_shape}")
-        self.model.add(Dense(flatten_shape, input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
-        print(f"After Dense: {self.model.layers[-1].output_shape}")
-        self.model.add(BatchNormalization())
-        self.model.add(Reshape((1, interface_size)))
-        print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
+        #flatten_shape = interface_size # This calculation assumes output_shape was halved by MaxPooling in the encoder.
+        #print(f"Flatten Shape: {flatten_shape}")
+        #self.model.add(Dense(flatten_shape, input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
+        #print(f"After Dense: {self.model.layers[-1].output_shape}")
+        #self.model.add(BatchNormalization())
+        #self.model.add(Reshape((1, interface_size)))
+        #print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
 
         # 3. Add Conv1DTranspose layers according to the provided layer_sizes (order maintained)
         # for layers_sizes except the first one and the last one

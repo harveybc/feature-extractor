@@ -15,8 +15,8 @@ class Plugin:
 
     plugin_params = {
 
-        'intermediate_layers': 3, 
-        'learning_rate': 0.001,
+        'intermediate_layers': 1, 
+        'learning_rate': 0.0001,
         'dropout_rate': 0.5,
     }
 
@@ -81,7 +81,7 @@ class Plugin:
         x = MaxPooling1D(pool_size=pool_size)(x)
         x = Flatten()(x)
         
-        outputs = Dense(interface_size, activation='relu', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)
+        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))(x)
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
 
                 # Define the Adam optimizer with custom parameters

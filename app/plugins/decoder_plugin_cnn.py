@@ -80,7 +80,8 @@ class Plugin:
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
             # Upsample the output to match the next layer size
             upsample_factor = self.model.layers[-1].output_shape[1] // size
-            self.model.add(UpSampling1D(size=upsample_factor))
+            if upsample_factor > 1:
+                self.model.add(UpSampling1D(size=upsample_factor))
             print(f"After UpSampling1D: {self.model.layers[-1].output_shape}")
 
             self.model.add(Dropout(self.params['dropout_rate'] / 2))

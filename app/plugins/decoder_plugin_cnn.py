@@ -70,12 +70,13 @@ class Plugin:
         print(f"Flatten Shape: {flatten_shape}")
         self.model.add(Dense(flatten_shape, input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_in"))
         print(f"After Dense: {self.model.layers[-1].output_shape}")
-        self.model.add(BatchNormalization())
+       #self.model.add(BatchNormalization())
         self.model.add(Reshape((output_shape // 2, interface_size)))
         print(f"After Reshape (inverse of Flatten): {self.model.layers[-1].output_shape}")
 
         # 3. Add Conv1DTranspose layers according to the provided layer_sizes (order maintained)
-        for size in layer_sizes:
+        # for layers_sizes except the last one
+        for size in layer_sizes[:-1]:
             kernel_size = 3 if size <= 64 else 5 if size <= 512 else 7
             self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")

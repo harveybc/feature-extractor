@@ -59,7 +59,8 @@ class Plugin:
 
        # add conv and maxpooling layers, calculating their kernel and pool sizes
         layers_index = 0
-        for size in layers:
+        # use the layers except the first one
+        for size in layers[1:]:
             layers_index += 1
             # pool size calculation
             if layers_index >= len(layers):

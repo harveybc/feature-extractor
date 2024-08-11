@@ -82,7 +82,7 @@ class Plugin:
         # for layers_sizes except the first one and the last one
         for size in layer_sizes[1:-1]:
             kernel_size = 3 if size <= 64 else 5 if size <= 512 else 7
-            self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, padding='same', activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01)))
+            self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, padding='same', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01)))
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
             self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")

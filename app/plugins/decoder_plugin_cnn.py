@@ -2,11 +2,11 @@ import numpy as np
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten, Conv1DTranspose,Dropout
 from keras.optimizers import Adam
-from tensorflow.keras.initializers import GlorotUniform, HeNormal, MaxPooling1D
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
-from keras.layers import BatchNormalization
+from keras.layers import BatchNormalization, MaxPooling1D
 import math
 
 class Plugin:

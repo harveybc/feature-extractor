@@ -190,9 +190,14 @@ def load_and_evaluate_decoder(config):
     windowed_data = processed_data[column]
     # Decode the data
     print(f"Decoding data with shape: {windowed_data.shape}")
-    decoded_data = model.predict(windowed_data)
+    decoded_data = model.decode(windowed_data)
     print(f"Decoded data shape: {decoded_data.shape}")
+    # Check if the decoded data needs reshaping
+    if len(decoded_data.shape) == 3:
+        decoded_data = decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])
+    # Perform unwindowing of the decoded data once
+    reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))    
     # Save the encoded data to CSV
     evaluate_filename = config['evaluate_decoder']
-    np.savetxt(evaluate_filename, decoded_data, delimiter=",")
+    np.savetxt(evaluate_filename, reconstructed_data, delimiter=",")
     print(f"Decoded data saved to {evaluate_filename}")

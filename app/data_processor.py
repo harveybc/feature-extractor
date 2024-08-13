@@ -171,10 +171,10 @@ def load_and_evaluate_encoder(config):
     encoded_data = model.predict(windowed_data)
     print(f"Encoded data shape: {encoded_data.shape}")
     # Check if the decoded data needs reshaping
-    if len(decoded_data.shape) == 3:
-        decoded_data = decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])
+    #if len(encoded_data.shape) == 3:
+    #    encoded_data = encoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])
     # Perform unwindowing of the decoded data once
-    reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
+    reconstructed_data = unwindow_data(pd.DataFrame(encoded_data))
     # Save the encoded data to CSV
     evaluate_filename = config['evaluate_encoder']
     np.savetxt(evaluate_filename, reconstructed_data, delimiter=",")

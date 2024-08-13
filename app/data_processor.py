@@ -172,7 +172,7 @@ def load_and_evaluate_encoder(config):
     print(f"Encoded data shape: {encoded_data.shape}")
     # Check if the decoded data needs reshaping
     if len(encoded_data.shape) == 3:
-        encoded_data = encoded_data.reshape(encoded_data.shape[0], encoded_data.shape[2])
+        encoded_data = encoded_data.reshape(encoded_data.shape[0], encoded_data.shape[1])
     # Save the encoded data to CSV
     evaluate_filename = config['evaluate_encoder']
     np.savetxt(evaluate_filename, encoded_data, delimiter=",")

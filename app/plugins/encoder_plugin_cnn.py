@@ -16,7 +16,7 @@ class Plugin:
     plugin_params = {
 
         'intermediate_layers': 3, 
-        'learning_rate': 0.00005,
+        'learning_rate': 0.00008,
         'dropout_rate': 0.001,
     }
 
@@ -79,7 +79,7 @@ class Plugin:
                 kernel_size = 7
             
             # Add Conv1D and BatchNormalization layers
-            x = Conv1D(filters=size, kernel_size=kernel_size, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), padding='same')(x)
+            x = Conv1D(filters=size, kernel_size=kernel_size, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same')(x)
             x = BatchNormalization()(x)
             x = Dropout(self.params['dropout_rate'])(x)
             
@@ -89,11 +89,10 @@ class Plugin:
             #x = MaxPooling1D(pool_size=pool_size)(x)
 
         # Flatten the output to prepare for the Dense layer
-        #x = Flatten()(x)
+        x = Flatten()(x)
 
-        # Add the final Dense layer to reduce to the interface size
-        outputs = x = Conv1D(filters=interface_size, kernel_size=kernel_size, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), padding='same')(x)
-
+        #Add the last dense layer
+        outputs = Dense(interface_size, input_shape=(interface_size,), activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001))(x)
         # Build the encoder model
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
                 # Define the Adam optimizer with custom parameters

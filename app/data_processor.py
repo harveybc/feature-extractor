@@ -175,7 +175,7 @@ def load_and_evaluate_encoder(config):
         encoded_data = encoded_data.reshape(encoded_data.shape[0], encoded_data.shape[2])
     # Save the encoded data to CSV
     evaluate_filename = config['evaluate_encoder']
-    np.savetxt(evaluate_filename, reconstructed_data, delimiter=",")
+    np.savetxt(evaluate_filename, encoded_data, delimiter=",")
     print(f"Encoded data saved to {evaluate_filename}")
 
 
@@ -195,5 +195,5 @@ def load_and_evaluate_decoder(config):
         decoded_data = decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[2])
     # Save the encoded data to CSV
     evaluate_filename = config['evaluate_decoder']
-    np.savetxt(evaluate_filename, reconstructed_data, delimiter=",")
+    np.savetxt(evaluate_filename, decoded_data, delimiter=",")
     print(f"Decoded data saved to {evaluate_filename}")

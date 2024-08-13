@@ -79,7 +79,7 @@ class Plugin:
                 kernel_size = 7
             
             # Add Conv1D and BatchNormalization layers
-            x = Conv1D(filters=size, kernel_size=kernel_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), padding='same')(x)
+            x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), padding='same')(x)
             x = BatchNormalization()(x)
             x = Dropout(self.params['dropout_rate'])(x)
             
@@ -92,7 +92,7 @@ class Plugin:
         #x = Flatten()(x)
 
         # Add the final Dense layer to reduce to the interface size
-        outputs = x = Conv1D(filters=interface_size, kernel_size=kernel_size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), padding='same')(x)
+        outputs = x = Conv1D(filters=interface_size, kernel_size=kernel_size, activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), padding='same')(x)
 
         # Build the encoder model
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")

@@ -168,7 +168,7 @@ def load_and_evaluate_encoder(config):
     windowed_data = processed_data[column]
     # Encode the data
     print(f"Encoding data with shape: {windowed_data.shape}")
-    encoded_data = model.encode(windowed_data)
+    encoded_data = model.predict(windowed_data)
     print(f"Encoded data shape: {encoded_data.shape}")
     # Check if the decoded data needs reshaping
     if len(decoded_data.shape) == 3:
@@ -190,7 +190,7 @@ def load_and_evaluate_decoder(config):
     windowed_data = processed_data[column]
     # Decode the data
     print(f"Decoding data with shape: {windowed_data.shape}")
-    decoded_data = model.decode(windowed_data)
+    decoded_data = model.predict(windowed_data)
     print(f"Decoded data shape: {decoded_data.shape}")
     # Check if the decoded data needs reshaping
     if len(decoded_data.shape) == 3:

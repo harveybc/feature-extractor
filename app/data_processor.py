@@ -169,10 +169,10 @@ def load_and_evaluate_encoder(config):
     # Encode the data
     print(f"Encoding data with shape: {windowed_data.shape}")
     encoded_data = model.predict(windowed_data)
-    print(f"Encoded data shape: {encoded_data.shape, config['window_size']}")
+    print(f"Encoded data shape: {encoded_data.shape, model.output_shape}")
     # Check if the decoded data needs reshaping
     if len(encoded_data.shape) == 3:
-        encoded_data = encoded_data.reshape(encoded_data.shape[0], config['window_size'])
+        encoded_data = encoded_data.reshape(encoded_data.shape[0], model.output_shape)
     # Save the encoded data to CSV
     evaluate_filename = config['evaluate_encoder']
     np.savetxt(evaluate_filename, encoded_data, delimiter=",")

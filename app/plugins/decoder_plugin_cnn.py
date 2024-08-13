@@ -12,8 +12,8 @@ import math
 class Plugin:
     plugin_params = {
         'intermediate_layers': 3, 
-        'learning_rate': 0.0001,
-        'dropout_rate': 0.01,
+        'learning_rate': 0.001,
+        'dropout_rate': 0.001,
     }
 
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']

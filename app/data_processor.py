@@ -163,7 +163,7 @@ def load_and_evaluate_encoder(config):
     model = load_model(config['load_encoder'])
     print(f"Encoder model loaded from {config['load_encoder']}")
     # Load the input data
-    processed_data = process_data(config)
+    processed_data, validation_data = process_data(config)
     column = list(processed_data.keys())[0]
     windowed_data = processed_data[column]
     # Encode the data

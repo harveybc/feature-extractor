@@ -86,7 +86,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 
             # Check if the decoded data needs reshaping
             if len(decoded_data.shape) == 3:
-                decoded_data = decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[2])
+                decoded_data = decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])
 
             # Perform unwindowing of the decoded data once
             reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))

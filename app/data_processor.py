@@ -107,7 +107,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             print(f"Mean Squared Error for column {column} with interface size {current_size}: {mse}")
             print(f"Mean Absolute Error for column {column} with interface size {current_size}: {mae}")
 
-            if (incremental_search and mse <= threshold_error) or (not incremental_search and mse >= threshold_error):
+            if (incremental_search and mae <= threshold_error) or (not incremental_search and mae >= threshold_error):
                 print(f"Optimal interface size found: {current_size} with MSE: {mse} and MAE: {mae}")
                 break
             else:

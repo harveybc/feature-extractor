@@ -86,8 +86,8 @@ class Plugin:
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
             self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
-            self.model.add(Dropout(self.params['dropout_rate'] / 2))
-            print(f"After Dropout: {self.model.layers[-1].output_shape}")
+            #self.model.add(Dropout(self.params['dropout_rate'] / 2))
+            #print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
         # 2. UpSampling1D as the inverse of MaxPooling1D in the encoder
         #self.model.add(UpSampling1D(size=2))  # Assuming the original max pooling used pool_size=2

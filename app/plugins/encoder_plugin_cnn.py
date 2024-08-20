@@ -15,7 +15,7 @@ class Plugin:
 
     plugin_params = {
 
-        'intermediate_layers': 3, 
+        'intermediate_layers': 2, 
         'learning_rate': 0.00008,
         'dropout_rate': 0.001,
     }

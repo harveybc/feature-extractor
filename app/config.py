@@ -1,6 +1,6 @@
 DEFAULT_VALUES = {
-    'input_file': './tests/data/y_d1_c.csv',
-    'validation_file': './tests/data/y_d2_c.csv',
+    'input_file': './tests/data/y_d1_co.csv',
+    'validation_file': './tests/data/y_d2_co.csv',
     'output_file': './csv_output.csv',
     'save_encoder': './encoder_model.h5',
     'save_decoder': './decoder_model.h5',

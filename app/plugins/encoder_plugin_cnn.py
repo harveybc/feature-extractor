@@ -57,8 +57,11 @@ class Plugin:
         inputs = Input(shape=(input_shape,1))
         x = inputs
 
+        # Add the initial dense layer
+        x = Dense(layers[0], input_shape=(input_shape,), activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001))(x)
+        x = BatchNormalization()(x)
         # Perform reshaping if needed to adjust for the expected input shape
-        x = Reshape((1, input_shape))(inputs)
+        #x = Reshape((1, input_shape))(inputs)
 
         # Add Conv1D and MaxPooling1D layers, using channels as features
         layers_index = 0
@@ -79,7 +82,7 @@ class Plugin:
                 kernel_size = 7
             
             # Add Conv1D and BatchNormalization layers
-            x = Conv1D(filters=size, kernel_size=kernel_size, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same')(x)
+            x = Conv1D(filters=size, kernel_size=kernel_size, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='valid' )(x)
             x = BatchNormalization()(x)
             #x = Dropout(self.params['dropout_rate'])(x)
             

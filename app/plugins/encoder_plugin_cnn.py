@@ -15,7 +15,7 @@ class Plugin:
 
     plugin_params = {
 
-        'intermediate_layers': 2, 
+        'intermediate_layers': 3, 
         'learning_rate': 0.00008,
         'dropout_rate': 0.001,
     }
@@ -59,14 +59,10 @@ class Plugin:
 
         # Perform reshaping if needed to adjust for the expected input shape
         x = Reshape((1, input_shape))(inputs)
-        # Add the initial dense layer
-        x = Dense(layers[0], input_shape=(input_shape,), activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001))(x)
-        x = BatchNormalization()(x)
-        
 
         # Add Conv1D and MaxPooling1D layers, using channels as features
         layers_index = 0
-        for size in layers[1:-1]:  # Use the layers except the first and the last one
+        for size in layers[0:-1]:  # Use the layers except the first and the last one
             layers_index += 1
             
             # Calculate pool size

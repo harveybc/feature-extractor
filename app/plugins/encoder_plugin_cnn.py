@@ -92,9 +92,9 @@ class Plugin:
         x = Flatten()(x)
 
         # Add the last dense layer
-        x = Dense(interface_size, input_shape=(interface_size,), activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001))(x)
+        outputs = Dense(interface_size, input_shape=(interface_size,), activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001))(x)
         # Add the output reshape layer
-        outputs = Reshape((1, interface_size))(x)
+        #outputs = Reshape((1, interface_size))(x)
         # Build the encoder model
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
                 # Define the Adam optimizer with custom parameters

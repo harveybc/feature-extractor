@@ -82,7 +82,7 @@ class Plugin:
         # for layers_sizes except the first one and the last one
         for size in layer_sizes[1:-1]:
             kernel_size = 3 if size <= 64 else 5 if size <= 512 else 7
-            self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, padding='same', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
+            self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, padding='valid', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
             self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
@@ -94,7 +94,7 @@ class Plugin:
         #print(f"After UpSampling1D (inverse of MaxPooling1D): {self.model.layers[-1].output_shape}")
         kernel_size = 3 if output_shape <= 64 else 5 if output_shape <= 512 else 7
         # 4. Final Conv1DTranspose to match the original input dimensions
-        self.model.add(Conv1DTranspose(filters=output_shape, kernel_size=kernel_size, padding='same', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
+        self.model.add(Conv1DTranspose(filters=output_shape, kernel_size=kernel_size, padding='valid', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
         print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
         
         # 5. Reshape the output to ensure the final output is (None, output_shape, 1)

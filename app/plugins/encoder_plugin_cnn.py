@@ -62,7 +62,7 @@ class Plugin:
 
         # Add Conv1D and MaxPooling1D layers, using channels as features
         layers_index = 0
-        for size in layers[1:-1]:  # Use the layers except the first and the last one
+        for size in layers[0:-1]:  # Use the layers except the first and the last one
             layers_index += 1
             
             # Calculate pool size

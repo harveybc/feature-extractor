@@ -58,7 +58,7 @@ class Plugin:
         x = inputs
 
         # Perform reshaping if needed to adjust for the expected input shape
-        x = Reshape((1, input_shape))(inputs)
+        #x = Reshape((1, input_shape))(inputs)
 
         # Add Conv1D and MaxPooling1D layers, using channels as features
         layers_index = 0

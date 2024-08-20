@@ -56,13 +56,21 @@ class Plugin:
         # Set input layer
         inputs = Input(shape=(input_shape,1))
         x = inputs
-
+        print(f"Input shape: {x.shape}")
+        # flatten the input
+        x = Flatten()(x)
+        print(f"Flattened shape: {x.shape}")
+        # add the first dense layer of size input_shape
+        x = Dense(input_shape, input_shape=(1,input_shape), activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001))(x)
+        print(f"First dense layer shape: {x.shape}")
+        x = BatchNormalization()(x)
+        print(f"Batch Normalization shape: {x.shape}")
         # Perform reshaping if needed to adjust for the expected input shape
-        #x = Reshape((1, input_shape))(inputs)
-
+        x = Reshape((input_shape,1))(x)
+        print(f"Reshaped shape: {x.shape}")
         # Add Conv1D and MaxPooling1D layers, using channels as features
         layers_index = 0
-        for size in layers[0:-1]:  # Use the layers except the first and the last one
+        for size in layers[1:-1]:  # Use the layers except the first and the last one
             layers_index += 1
             
             # Calculate pool size
@@ -77,10 +85,20 @@ class Plugin:
                 kernel_size = 5
             if size > 512:
                 kernel_size = 7
-            
+            # if the size is half of less of the current sequence lengthn (second componenty of the output shape of the last layer) use trides of 2
+            last_shape = x.shape
+            # Extract the sequence length from the output shape
+            sequence_length = int(last_shape[1])  # This is the sequence length
+            if sequence_length >= 2*size:
+                strides = 2  # Reduce sequence length
+            else:
+                strides = 1  # Keep sequence length the same
+
             # Add Conv1D and BatchNormalization layers
-            x = Conv1D(filters=size, kernel_size=kernel_size, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='valid' )(x)
+            x = Conv1D(filters=size, kernel_size=kernel_size, strides=strides, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='valid' )(x)
+            print(f"After Conv1D (filters={size}): {x.shape}")
             x = BatchNormalization()(x)
+            print(f"After BatchNormalization: {x.shape}")
             #x = Dropout(self.params['dropout_rate'])(x)
             
             # Add MaxPooling1D layer if necessary

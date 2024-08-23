@@ -1,8 +1,9 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Dropout,Input
+from keras.layers import Dense, Dropout,Input, LeakyReLU,BatchNormalization
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from keras.regularizers import l2
 
 class Plugin:
     """
@@ -10,10 +11,8 @@ class Plugin:
     """
 
     plugin_params = {
-        'intermediate_layers': 0,
-        'layer_size_divisor': 2,
-        'learning_rate': 0.000001,
-        'dropout_rate': 0.1,
+        'intermediate_layers': 2,
+        'learning_rate': 0.0001
     }
 
     plugin_debug_vars = []
@@ -65,10 +64,12 @@ class Plugin:
         layers_index = 0
         for size in layer_sizes[1:-1]:
             layers_index += 1
-            self.model.add(Dense(size, activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_intermediate_layer" + str(layers_index) ))
-            #self.model.add(Dropout(self.params['dropout_rate']))
+            self.model.add(Dense(size, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_intermediate_layer" + str(layers_index) ))
+            # batch normalization layer
+            self.model.add(BatchNormalization(name="decoder_batch_norm" + str(layers_index)))
 
-        self.model.add(Dense(output_dim, activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_output"))
+
+        self.model.add(Dense(output_dim, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
 
         # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(

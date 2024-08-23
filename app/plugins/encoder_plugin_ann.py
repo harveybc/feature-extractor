@@ -1,8 +1,9 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Dropout
+from keras.layers import Dense, Input, Dropout, LeakyReLU, BatchNormalization
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from keras.regularizers import l2
 
 class Plugin:
     """
@@ -10,11 +11,8 @@ class Plugin:
     """
 
     plugin_params = {
-        'dropout_rate': 0.1,
-        'intermediate_layers': 0,
-        'layer_size_divisor': 2,
+        'intermediate_layers': 2,
         'learning_rate': 0.000001,
-        'activation': 'tanh'
     }
 
     plugin_debug_vars = ['input_dim', 'encoding_dim']
@@ -62,12 +60,19 @@ class Plugin:
         for size in layers[1:-1]:
             layers_index += 1
             # add the conv and maxpooling layers
-            x = Dense(size, activation='tanh', kernel_initializer=GlorotUniform(), name="encoder_intermediate_layer" + str(layers_index))(x)
-            # add dropout layer
-            #x = Dropout(self.params['dropout_rate'])(x)
+            x = Dense(size, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="encoder_intermediate_layer" + str(layers_index))(x)
+            # add batch normalization layer
+            x = BatchNormalization(name="encoder_batch_norm" + str(layers_index))(x)
+
+
 
         # Encoder: set output layer        
-        outputs = Dense(encoding_dim, activation=self.params['activation'], kernel_initializer=GlorotUniform(), name="encoder_output" )(x)
+        x = Dense(encoding_dim, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="encoder_last_dense_layer" )(x)
+        # Encoder: Last batch normalization layer
+        outputs = BatchNormalization(name="encoder_last_batch_norm")(x)
+
+
+
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_ANN")
 
 

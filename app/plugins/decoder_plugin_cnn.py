@@ -70,6 +70,7 @@ class Plugin:
                         kernel_initializer=HeNormal(), 
                         kernel_regularizer=l2(0.001),
                         input_shape=(interface_size,)))  # input_shape must match the encoder's output size
+        print(f"After Dense (interface_size): {self.model.layers[-1].output_shape}")
 
         # Step 2: Reshape the Dense output to (sequence_length, 1)
         # Since we don't have sequence length or channels, treat the entire interface_size as sequence_length with 1 channel
@@ -78,6 +79,7 @@ class Plugin:
 
         # Add the Reshape layer
         self.model.add(Reshape((sequence_length, num_channels)))
+        print(f"After Reshape: {self.model.layers[-1].output_shape}")
 
         # Step 3: Apply BatchNormalization
         self.model.add(BatchNormalization())

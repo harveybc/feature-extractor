@@ -89,7 +89,7 @@ class Plugin:
             last_shape = x.shape
             # Extract the sequence length from the output shape
             sequence_length = int(last_shape[1])  # This is the sequence length
-            if sequence_length >= 2*size:
+            if sequence_length <= 2*size:
                 strides = 2  # Reduce sequence length
             else:
                 strides = 1  # Keep sequence length the same
@@ -111,7 +111,7 @@ class Plugin:
         print(f"Flattened shape: {x.shape}")
         # Add the last dense layer
         outputs = Dense(interface_size, input_shape=(interface_size,), activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001))(x)
-        print(f"Output shape: {outputs.shape}")
+        print(f"Last Dense Output shape: {outputs.shape}")
         # Add the output reshape layer
         #outputs = Reshape((1, interface_size))(x)
         # Build the encoder model

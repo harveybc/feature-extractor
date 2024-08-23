@@ -86,15 +86,31 @@ class AutoencoderManager:
         print(f"[load_decoder] Decoder model loaded from {file_path}")
 
     def calculate_mse(self, original_data, reconstructed_data):
+        # print the shapes of the original data and the reconstructed_data
+        print(f"[calculate_mse] Original data shape: {original_data.shape}")
+        print(f"[calculate_mse] Reconstructed data shape: {reconstructed_data.shape}")
+        #if isinstance(original_data, tuple):
+        #    original_data = original_data[1] 
+        #if isinstance(reconstructed_data, tuple):
+        #    reconstructed_data = reconstructed_data[1]
+
         original_data = original_data.reshape((original_data.shape[0], -1))
         reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))
+        print(f"[calculate_mse] Original data shape after reshaping: {original_data.shape}")
+        print(f"[calculate_mse] Reconstructed data shape after reshaping: {reconstructed_data.shape}")
+        
         mse = np.mean(np.square(original_data - reconstructed_data))
         print(f"[calculate_mse] Calculated MSE: {mse}")
         return mse
 
     def calculate_mae(self, original_data, reconstructed_data):
+        # print the shapes of the original data and the reconstructed_data
+        print(f"[calculate_mae] Original data shape: {original_data.shape}")
+        print(f"[calculate_mae] Reconstructed data shape: {reconstructed_data.shape}")
         original_data = original_data.reshape((original_data.shape[0], -1))
         reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))
+        print(f"[calculate_mae] Original data shape after reshaping: {original_data.shape}")
+        print(f"[calculate_mae] Reconstructed data shape after reshaping: {reconstructed_data.shape}")
         mae = np.mean(np.abs(original_data - reconstructed_data))
         print(f"[calculate_mae] Calculated MAE: {mae}")
         return mae

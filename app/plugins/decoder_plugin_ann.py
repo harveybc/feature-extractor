@@ -77,11 +77,10 @@ class Plugin:
             beta_1=0.9,            # Default value
             beta_2=0.999,          # Default value
             epsilon=1e-7,          # Default value
-            amsgrad=False,          # Default value
-            loss='mae'
+            amsgrad=False
         )
 
-        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        self.model.compile(optimizer=adam_optimizer, loss='mae')
 
         # Debugging messages to trace the model configuration
         print("Decoder Model Summary:")

@@ -94,7 +94,7 @@ class Plugin:
             else:
                 strides = 1  # Keep sequence length the same
 
-            self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, strides=strides, padding='valid', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
+            self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, strides=strides, padding='same', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
             self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
@@ -106,7 +106,7 @@ class Plugin:
         #print(f"After Flatten: {self.model.layers[-1].output_shape}")
         # 2. UpSampling1D as the inverse of MaxPooling1D in the encoder
         kernel_size = 3 
-        self.model.add(Conv1DTranspose(filters=1, kernel_size=kernel_size, padding='valid', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
+        self.model.add(Conv1DTranspose(filters=1, kernel_size=kernel_size, padding='same', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
         print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
         #Final Dense lLayer
         #self.model.add(Dense(output_shape, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))

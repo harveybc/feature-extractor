@@ -92,7 +92,7 @@ class Plugin:
             last_shape =self.model.layers[-1].output_shape
             sequence_length = int(last_shape[1])  # This is the sequence length
             strides = 1
-            if sequence_length <= size:
+            if sequence_length < size:
                 strides = 2  # Reduce sequence length
             else:
                 strides = 1  # Keep sequence length the same

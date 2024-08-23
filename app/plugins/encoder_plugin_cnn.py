@@ -89,7 +89,7 @@ class Plugin:
             last_shape = x.shape
             # Extract the sequence length from the output shape
             sequence_length = int(last_shape[1])  # This is the sequence length
-            if sequence_length > size:
+            if sequence_length > 2*size:
                 strides = 2  # Reduce sequence length
             else:
                 strides = 1  # Keep sequence length the same

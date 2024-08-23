@@ -108,9 +108,10 @@ class Plugin:
 
         # Flatten the output to prepare for the Dense layer
         x = Flatten()(x)
-
+        print(f"Flattened shape: {x.shape}")
         # Add the last dense layer
         outputs = Dense(interface_size, input_shape=(interface_size,), activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001))(x)
+        print(f"Output shape: {outputs.shape}")
         # Add the output reshape layer
         #outputs = Reshape((1, interface_size))(x)
         # Build the encoder model

@@ -102,15 +102,15 @@ class Plugin:
             #print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
         # add a flatten layer
-        self.model.add(Flatten())
-        print(f"After Flatten: {self.model.layers[-1].output_shape}")
+        #self.model.add(Flatten())
+        #print(f"After Flatten: {self.model.layers[-1].output_shape}")
         # 2. UpSampling1D as the inverse of MaxPooling1D in the encoder
         kernel_size = 3 if output_shape <= 64 else 5 if output_shape <= 512 else 7
-        #self.model.add(Conv1DTranspose(filters=output_shape, kernel_size=kernel_size, padding='valid', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
-        #print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
+        self.model.add(Conv1DTranspose(filters=1, kernel_size=kernel_size, strides=1, padding='valid', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
+        print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
         #Final Dense lLayer
-        self.model.add(Dense(output_shape, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
-        print(f"After Final Dense: {self.model.layers[-1].output_shape}")
+        #self.model.add(Dense(output_shape, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
+        #print(f"After Final Dense: {self.model.layers[-1].output_shape}")
 
         # 5. Reshape the output to ensure the final output is (None, output_shape, 1)
         self.model.add(Reshape((output_shape, 1)))

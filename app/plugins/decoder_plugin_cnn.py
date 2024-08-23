@@ -98,7 +98,7 @@ class Plugin:
                 strides = 1  # Keep sequence length the same
 
             self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, strides=strides, padding='same', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
-            print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
+            print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}, strides: {strides}")
             self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
             #self.model.add(Dropout(self.params['dropout_rate'] / 2))

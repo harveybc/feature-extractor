@@ -82,7 +82,7 @@ class Plugin:
         # Step 3: Apply BatchNormalization
         self.model.add(BatchNormalization())
 
-        for size in layer_sizes[1:-1]:
+        for size in layer_sizes[1:]:
 
 
             kernel_size = 3 if size <= 64 else 5 if size <= 512 else 7
@@ -105,8 +105,8 @@ class Plugin:
         #self.model.add(Flatten())
         #print(f"After Flatten: {self.model.layers[-1].output_shape}")
         # 2. UpSampling1D as the inverse of MaxPooling1D in the encoder
-        kernel_size = 3 if output_shape <= 64 else 5 if output_shape <= 512 else 7
-        self.model.add(Conv1DTranspose(filters=1, kernel_size=kernel_size, strides=1, padding='valid', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
+        kernel_size = 3 
+        self.model.add(Conv1DTranspose(filters=1, kernel_size=kernel_size, padding='valid', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
         print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
         #Final Dense lLayer
         #self.model.add(Dense(output_shape, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
@@ -115,14 +115,7 @@ class Plugin:
         # 5. Reshape the output to ensure the final output is (None, output_shape, 1)
         self.model.add(Reshape((output_shape, 1)))
         print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
-
-
-
-
-
-
-
-                # Define the Adam optimizer with custom parameters
+        # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(
             learning_rate= self.params['learning_rate'],   # Set the learning rate
             beta_1=0.9,            # Default value

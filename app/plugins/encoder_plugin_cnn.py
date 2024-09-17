@@ -37,7 +37,7 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, input_shape, interface_size, num_channels=1):
+    def configure_size(self, input_shape, interface_size, num_channels):
         self.params['input_shape'] = input_shape
 
         # Calculate the sizes of the intermediate layers

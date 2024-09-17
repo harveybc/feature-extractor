@@ -34,7 +34,7 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, interface_size, output_shape):
+    def configure_size(self, interface_size, output_shape, num_channels):
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
@@ -75,7 +75,7 @@ class Plugin:
         # Step 2: Reshape the Dense output to (sequence_length, 1)
         # Since we don't have sequence length or channels, treat the entire interface_size as sequence_length with 1 channel
         sequence_length = interface_size  # Treat interface_size as sequence length
-        num_channels = 1  # Single channel, as no other information is available
+          
 
         # Add the Reshape layer
         self.model.add(Reshape((sequence_length, num_channels)))

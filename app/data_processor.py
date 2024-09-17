@@ -10,20 +10,29 @@ from app.config_handler import save_debug_info, remote_log
 from keras.models import Sequential, Model, load_model
 
 def create_sliding_windows(data, window_size):
-    data_array = data.to_numpy()
-    dataset = tf.keras.preprocessing.timeseries_dataset_from_array(
-        data=data_array,
-        targets=None,
-        sequence_length=window_size,
-        sequence_stride=1,
-        batch_size=1
-    )
+    """
+    Create sliding windows for the entire dataset, returning a 3D array suitable for Conv1D.
+    
+    Args:
+        data (pd.DataFrame): Dataframe containing the time series features.
+        window_size (int): The length of the sliding window.
+    
+    Returns:
+        np.ndarray: Array with shape (num_samples, window_size, num_features).
+    """
+    data_array = data.to_numpy()  # Convert dataframe to numpy array
+    num_features = data_array.shape[1]  # Number of columns/features
+    num_samples = data_array.shape[0] - window_size + 1  # Calculate the number of sliding windows
+    
+    # Create a 3D array to store the windows
+    windows = np.zeros((num_samples, window_size, num_features))
+    
+    # Slide the window over the data and create the 3D array
+    for i in range(num_samples):
+        windows[i] = data_array[i:i+window_size]  # Slice window_size rows across all columns
+    
+    return windows
 
-    windows = []
-    for batch in dataset:
-        windows.append(batch.numpy().flatten())
-
-    return pd.DataFrame(windows)
 
 def process_data(config):
     print(f"Loading data from CSV file: {config['input_file']}")
@@ -32,19 +41,22 @@ def process_data(config):
 
     window_size = config['window_size']
     print(f"Applying sliding window of size: {window_size}")
+    
+    # Apply sliding windows to the entire dataset (multi-column)
     windowed_data = create_sliding_windows(data, window_size)
-    print(f"Windowed data shape: {windowed_data.shape}")
+    print(f"Windowed data shape: {windowed_data.shape}")  # Should be (num_samples, window_size, num_features)
 
-    # now do the same for the csv filename in the config validation_file  parameter
+    # Now do the same for the validation dataset
     print(f"Loading validation data from CSV file: {config['validation_file']}")
     validation_data = load_csv(config['validation_file'], headers=config['headers'])
     print(f"Validation data loaded with shape: {validation_data.shape}")
+    
+    # Apply sliding windows to the validation dataset
     windowed_validation_data = create_sliding_windows(validation_data, window_size)
     print(f"Windowed validation data shape: {windowed_validation_data.shape}")
 
-    processed_data = {col: windowed_data.values for col in data.columns}
-    validation_data = {col: windowed_validation_data.values for col in validation_data.columns}
-    return processed_data, validation_data
+    # Return the processed datasets (windowed)
+    return windowed_data, windowed_validation_data
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     start_time = time.time()

@@ -57,17 +57,13 @@ class Plugin:
         inputs = Input(shape=(input_shape,1))
         x = inputs
         print(f"Input shape: {x.shape}")
-        # flatten the input
-        x = Flatten()(x)
-        print(f"Flattened shape: {x.shape}")
-        # add the first dense layer of size input_shape
-        x = Dense(input_shape, input_shape=(1,input_shape), activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001))(x)
-        print(f"First dense layer shape: {x.shape}")
+        # fAdd the initial conv1d layer and print its shape
+        x = Conv1D(filters=layers[0], kernel_size=3, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='valid')(x)
+        print(f"After Conv1D (filters={layers[0]}) shape: {x.shape}")
         x = BatchNormalization()(x)
         print(f"Batch Normalization shape: {x.shape}")
         # Perform reshaping if needed to adjust for the expected input shape
-        x = Reshape((input_shape,1))(x)
-        print(f"Reshaped shape: {x.shape}")
+
         # Add Conv1D and MaxPooling1D layers, using channels as features
         layers_index = 0
         for size in layers[1:-1]:  # Use the layers except the first and the last one

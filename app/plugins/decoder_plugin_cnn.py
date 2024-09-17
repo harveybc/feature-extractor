@@ -113,7 +113,7 @@ class Plugin:
 
         # Add the final Conv1DTranspose layer to match the original number of channels
         self.model.add(Conv1DTranspose(filters=num_channels,
-                                    kernel_size=3,
+                                    kernel_size=1,
                                     padding='valid',
                                     activation=LeakyReLU(alpha=0.1),
                                     kernel_initializer=HeNormal(),

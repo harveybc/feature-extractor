@@ -160,7 +160,7 @@ def load_and_evaluate_encoder(config):
     # Load the input data
     processed_data, validation_data = process_data(config)
     
-    # No need to use keys since processed_data is a NumPy array
+    # Use processed data directly
     windowed_data = processed_data  # This already holds the entire windowed data
     
     # Encode the data
@@ -168,14 +168,19 @@ def load_and_evaluate_encoder(config):
     encoded_data = model.predict(windowed_data)
     print(f"Encoded data shape: {encoded_data.shape}")
     
-    # Check if the encoded data needs reshaping
+    # Adjust the reshaping logic
+    # Instead of reshaping based on model.output_shape[2], reshape it to maintain the original encoded shape
+    # Ensure we flatten it only if necessary or handle it based on the next step in the process
+    # Example: Flatten the second and third dimensions if needed
     if len(encoded_data.shape) == 3:
-        encoded_data = encoded_data.reshape(encoded_data.shape[0], model.output_shape[2])
+        # Flatten the last two dimensions
+        encoded_data = encoded_data.reshape(encoded_data.shape[0], -1)  # (27798, 128)
     
     # Save the encoded data to CSV
     evaluate_filename = config['evaluate_encoder']
     np.savetxt(evaluate_filename, encoded_data, delimiter=",")
     print(f"Encoded data saved to {evaluate_filename}")
+
 
 
 

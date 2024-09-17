@@ -37,7 +37,7 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, input_shape, interface_size):
+    def configure_size(self, input_shape, interface_size, num_channels=1):
         self.params['input_shape'] = input_shape
 
         # Calculate the sizes of the intermediate layers
@@ -54,7 +54,7 @@ class Plugin:
         print(f"Encoder Layer sizes: {layers}")
 
         # Set input layer
-        inputs = Input(shape=(input_shape,1))
+        inputs = Input(shape=(input_shape, num_channels))
         x = inputs
         print(f"Input shape: {x.shape}")
         # Add the initial conv1d layer and print its shape
@@ -124,11 +124,20 @@ class Plugin:
         self.encoder_model.compile(optimizer=adam_optimizer, loss='mae')
 
     def train(self, data):
+        num_channels = data.shape[-1]  # Get number of channels from the data shape
+        input_shape = data.shape[1]  # Get the input sequence length
+        interface_size = self.params.get('interface_size', 4)  # Assuming interface size is in params
+        
+        # Rebuild the model with dynamic channel size
+        self.configure_size(input_shape, interface_size, num_channels)
+        
+        # Now proceed with training
         print(f"Training encoder with data shape: {data.shape}")
-         # early stopping
+        # early stopping
         early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
         self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping])
         print("Training completed.")
+
 
     def encode(self, data):
         print(f"Encoding data with shape: {data.shape}")

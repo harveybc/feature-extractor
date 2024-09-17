@@ -104,7 +104,7 @@ class Plugin:
             else:
                 strides = 1
 
-            self.model.add(Conv1DTranspose(filters=size+kernel_size, kernel_size=kernel_size, strides=strides, padding='valid', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
+            self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, strides=strides, padding='valid', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}, strides: {strides}")
             self.model.add(BatchNormalization())
             print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
@@ -114,7 +114,7 @@ class Plugin:
         # Add the final Conv1DTranspose layer to match the original number of channels
         self.model.add(Conv1DTranspose(filters=num_channels,
                                     kernel_size=3,
-                                    padding='valid',
+                                    padding='same',
                                     activation=LeakyReLU(alpha=0.1),
                                     kernel_initializer=HeNormal(),
                                     kernel_regularizer=l2(0.001),

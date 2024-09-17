@@ -38,90 +38,71 @@ class Plugin:
         debug_info.update(plugin_debug_info)
 
     def configure_size(self, input_shape, interface_size, num_channels):
+        print(f"[DEBUG] Starting encoder configuration with input_shape={input_shape}, interface_size={interface_size}, num_channels={num_channels}")
+        
         self.params['input_shape'] = input_shape
 
-        # Calculate the sizes of the intermediate layers
-        num_intermediate_layers = self.params['intermediate_layers']
+        # Initialize layers array with input_shape
         layers = [input_shape]
-        step_size = (input_shape - interface_size) / (num_intermediate_layers + 1)
+        num_intermediate_layers = self.params['intermediate_layers']
         
-        for i in range(1, num_intermediate_layers + 1):
-            layer_size = input_shape - i * step_size
-            layers.append(int(layer_size))
+        # Calculate sizes of intermediate layers based on downscaling by 2
+        current_size = input_shape
+        for i in range(num_intermediate_layers):
+            next_size = current_size // 2  # Scale down by half
+            if next_size < interface_size:
+                next_size = interface_size  # Ensure we don't go below the interface_size
+            layers.append(next_size)
+            current_size = next_size
 
+        # Append the final layer which is the interface size
         layers.append(interface_size)
-        print(f"Encoder Layer sizes: {layers}")
+        print(f"[DEBUG] Encoder Layer sizes: {layers}")
 
-        # Set input layer with dynamically determined number of channels
-        inputs = Input(shape=(input_shape, num_channels))  # Correct input shape
+        # Input layer
+        inputs = Input(shape=(input_shape, num_channels))
         x = inputs
-        print(f"Input shape: {x.shape}")
-        
-        # Add the initial Conv1D layer
-        x = Conv1D(filters=layers[0], kernel_size=3, activation=LeakyReLU(alpha=0.1),
-                kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='valid')(x)
-        print(f"After Conv1D (filters={layers[0]}) shape: {x.shape}")
+        print(f"[DEBUG] Input shape: {x.shape}")
+
+        # Initial Conv1D layer
+        x = Conv1D(filters=layers[0], kernel_size=3, strides=1, activation=LeakyReLU(alpha=0.1),
+                kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same')(x)
+        print(f"[DEBUG] After Conv1D (filters={layers[0]}) shape: {x.shape}")
         x = BatchNormalization()(x)
-        print(f"Batch Normalization shape: {x.shape}")
-        # Perform reshaping if needed to adjust for the expected input shape
+        print(f"[DEBUG] After BatchNormalization shape: {x.shape}")
 
-        # Add Conv1D and MaxPooling1D layers, using channels as features
-        layers_index = 0
-        for size in layers[1:-1]:  # Use the layers except the first and the last one
-            layers_index += 1
-            
-            # Calculate pool size
-            if layers_index >= len(layers):
-                pool_size = round(size / interface_size)
-            else:
-                pool_size = round(size / layers[layers_index])
-            
-            # Configure kernel size based on the layer's size
-            kernel_size = 3
-            if size > 64:
-                kernel_size = 5
-            if size > 512:
-                kernel_size = 7
-            # if the size is half of less of the current sequence lengthn (second componenty of the output shape of the last layer) use trides of 2
-            last_shape = x.shape
-            # Extract the sequence length from the output shape
-            sequence_length = int(last_shape[1])  # This is the sequence length
-            if sequence_length > size:
-                strides = 2  # Reduce sequence length
-            else:
-                strides = 1  # Keep sequence length the same
-
-            # Add Conv1D and BatchNormalization layers
-            x = Conv1D(filters=size, kernel_size=kernel_size, strides=strides, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='valid' )(x)
-            print(f"After Conv1D (filters={size}): {x.shape}")
+        # Add intermediate layers with stride=2
+        for i, size in enumerate(layers[1:-1]):
+            x = Conv1D(filters=size, kernel_size=3, strides=2, activation=LeakyReLU(alpha=0.1),
+                    kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same')(x)
+            print(f"[DEBUG] After Conv1D (filters={size}, strides=2) shape: {x.shape}")
             x = BatchNormalization()(x)
-            print(f"After BatchNormalization: {x.shape}")
-            #x = Dropout(self.params['dropout_rate'])(x)
-            
-            # Add MaxPooling1D layer if necessary
-            #if pool_size < 2:
-            #    pool_size = 2
-            #x = MaxPooling1D(pool_size=pool_size)(x)
+            print(f"[DEBUG] After BatchNormalization shape: {x.shape}")
 
-       # Use a Conv1D layer to reduce the number of filters to interface_size
-        x = Conv1D(filters=interface_size, kernel_size=1, activation=LeakyReLU(alpha=0.1),
-                        kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='valid')(x)
-        #output batch normalization layuer
+        # Final Conv1D layer to match the interface size
+        x = Conv1D(filters=interface_size, kernel_size=1, strides=1, activation=LeakyReLU(alpha=0.1),
+                kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same')(x)
+        print(f"[DEBUG] After Final Conv1D (interface_size) shape: {x.shape}")
+
+        # Output batch normalization layer
         outputs = BatchNormalization()(x)
+        print(f"[DEBUG] Final Output shape: {outputs.shape}")
 
-        print(f"Output shape: {outputs.shape}")
         # Build the encoder model
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
-                # Define the Adam optimizer with custom parameters
+
+        # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(
-            learning_rate= self.params['learning_rate'],   # Set the learning rate
-            beta_1=0.9,            # Default value
-            beta_2=0.999,          # Default value
-            epsilon=1e-7,          # Default value
-            amsgrad=False          # Default value
+            learning_rate=self.params['learning_rate'],  # Set the learning rate
+            beta_1=0.9,  # Default value
+            beta_2=0.999,  # Default value
+            epsilon=1e-7,  # Default value
+            amsgrad=False  # Default value
         )
 
         self.encoder_model.compile(optimizer=adam_optimizer, loss='mae')
+        print(f"[DEBUG] Encoder model compiled successfully.")
+
 
     def train(self, data):
         num_channels = data.shape[-1]  # Get number of channels from the data shape

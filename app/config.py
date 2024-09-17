@@ -12,7 +12,7 @@ DEFAULT_VALUES = {
     'decoder_plugin': 'cnn',
     'window_size': 128,
     'threshold_error': 0.04,
-    'initial_size': 64,
+    'initial_size': 8,
     'step_size': 2,
     'save_log': './debug_out.json',
     'remote_log': None,
@@ -26,8 +26,8 @@ DEFAULT_VALUES = {
     'force_date': False,
     'incremental_search': True,
     'headers': False,
-    'epochs': 100,  # Add epochs here
+    'epochs': 5,  # Add epochs here
     'batch_size': 32,  # Add batch_size here
-    'learning_rate': 0.0001,  # Add learning_rate here
+    'learning_rate': 0.001,  # Add learning_rate here
 }
 

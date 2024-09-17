@@ -173,21 +173,27 @@ def load_and_evaluate_encoder(config):
     print(f"Encoded data saved to {evaluate_filename}")
 
 
-def load_and_evaluate_decoder(config):
-    model = load_model(config['load_decoder'])
-    print(f"Decoder model loaded from {config['load_decoder']}")
+def load_and_evaluate_encoder(config):
+    model = load_model(config['load_encoder'])
+    print(f"Encoder model loaded from {config['load_encoder']}")
+    
     # Load the input data
-    processed_data = process_data(config)
-    column = list(processed_data.keys())[0]
-    windowed_data = processed_data[column]
-    # Decode the data
-    print(f"Decoding data with shape: {windowed_data.shape}")
-    decoded_data = model.predict(windowed_data)
-    print(f"Decoded data shape: {decoded_data.shape}")
-    # Check if the decoded data needs reshaping
-    if len(decoded_data.shape) == 3:
-        decoded_data = decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[2])
+    processed_data, validation_data = process_data(config)
+    
+    # No need to use keys since processed_data is a NumPy array
+    windowed_data = processed_data  # This already holds the entire windowed data
+    
+    # Encode the data
+    print(f"Encoding data with shape: {windowed_data.shape}")
+    encoded_data = model.predict(windowed_data)
+    print(f"Encoded data shape: {encoded_data.shape}")
+    
+    # Check if the encoded data needs reshaping
+    if len(encoded_data.shape) == 3:
+        encoded_data = encoded_data.reshape(encoded_data.shape[0], model.output_shape[2])
+    
     # Save the encoded data to CSV
-    evaluate_filename = config['evaluate_decoder']
-    np.savetxt(evaluate_filename, decoded_data, delimiter=",")
-    print(f"Decoded data saved to {evaluate_filename}")
+    evaluate_filename = config['evaluate_encoder']
+    np.savetxt(evaluate_filename, encoded_data, delimiter=",")
+    print(f"Encoded data saved to {evaluate_filename}")
+

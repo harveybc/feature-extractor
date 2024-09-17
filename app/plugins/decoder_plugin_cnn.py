@@ -106,7 +106,7 @@ class Plugin:
             #print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
         # Add the final Conv1DTranspose layer to match the original number of channels
-        self.model.add(Conv1DTranspose(filters=self.params['num_channels'],
+        self.model.add(Conv1DTranspose(filters=num_channels,
                                     kernel_size=3,
                                     padding='same',
                                     activation=LeakyReLU(alpha=0.1),

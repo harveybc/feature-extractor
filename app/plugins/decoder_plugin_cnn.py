@@ -8,6 +8,7 @@ from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
 from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU,Input
 import math
+from tensorflow.keras.layers import ZeroPadding1D
 
 class Plugin:
     plugin_params = {

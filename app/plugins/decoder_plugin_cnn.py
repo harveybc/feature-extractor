@@ -92,11 +92,17 @@ class Plugin:
             
             last_shape =self.model.layers[-1].output_shape
             sequence_length = int(last_shape[1])  # This is the sequence length
-            strides = 1
-            if sequence_length*2 == size:
-                strides = 2  # Reduce sequence length
+            # Decide whether to upsample in this layer
+            if sequence_length < self.params['output_shape']:
+                # Calculate the remaining upsampling factor
+                remaining_upsampling = self.params['output_shape'] // sequence_length
+                if remaining_upsampling >= 2:
+                    strides = 2
+                    sequence_length *= strides  # Update sequence length
+                else:
+                    strides = 1
             else:
-                strides = 1  # Keep sequence length the same
+                strides = 1
 
             self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, strides=strides, padding='same', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}, strides: {strides}")

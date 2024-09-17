@@ -50,15 +50,16 @@ class Plugin:
             layers.append(int(layer_size))
 
         layers.append(interface_size)
-        # Debugging message
         print(f"Encoder Layer sizes: {layers}")
 
-        # Set input layer
-        inputs = Input(shape=(input_shape, num_channels))
+        # Set input layer with dynamically determined number of channels
+        inputs = Input(shape=(input_shape, num_channels))  # Correct input shape
         x = inputs
         print(f"Input shape: {x.shape}")
-        # Add the initial conv1d layer and print its shape
-        x = Conv1D(filters=layers[0], kernel_size=3, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='valid')(x)
+        
+        # Add the initial Conv1D layer
+        x = Conv1D(filters=layers[0], kernel_size=3, activation=LeakyReLU(alpha=0.1),
+                kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='valid')(x)
         print(f"After Conv1D (filters={layers[0]}) shape: {x.shape}")
         x = BatchNormalization()(x)
         print(f"Batch Normalization shape: {x.shape}")
@@ -133,10 +134,10 @@ class Plugin:
         
         # Now proceed with training
         print(f"Training encoder with data shape: {data.shape}")
-        # early stopping
         early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
         self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping])
         print("Training completed.")
+
 
 
     def encode(self, data):

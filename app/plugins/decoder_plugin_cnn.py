@@ -65,7 +65,7 @@ class Plugin:
         self.model = Sequential(name="decoder")
 
         # Define the input layer matching the encoder's output
-        self.model.add(Input(input_shape=(sequence_length, interface_size)))
+        self.model.add(Input(input_shape=(interface_size, num_channels)))
         print(f"Decoder input shape: {self.model.layers[-1].output_shape}")
 
         # Apply Conv1DTranspose to inverse the last Conv1D in the encoder

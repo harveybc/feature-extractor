@@ -35,36 +35,44 @@ class Plugin:
         debug_info.update(plugin_debug_info)
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape):
+        print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}")
         
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
         # Extract sequence_length and num_filters from encoder_output_shape
-        sequence_length, num_filters = encoder_output_shape  # For example, (53, 64)
+        sequence_length, num_filters = encoder_output_shape
+        print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
 
         layer_sizes = []
 
         # Calculate the sizes of the intermediate layers
         num_intermediate_layers = self.params['intermediate_layers']
+        print(f"[DEBUG] Number of intermediate layers={num_intermediate_layers}")
+        
         layers = [output_shape]
         step_size = (output_shape - interface_size) / (num_intermediate_layers + 1)
+        print(f"[DEBUG] Calculated step_size={step_size}")
 
         for i in range(1, num_intermediate_layers + 1):
             layer_size = output_shape - i * step_size
+            print(f"[DEBUG] Calculated layer_size for layer {i}: {layer_size}")
             layers.append(int(layer_size))
 
         layers.append(interface_size)
+        print(f"[DEBUG] Appended interface_size={interface_size} to layers: {layers}")
 
         # Reverse the layers for the decoder
         layer_sizes = layers
         layer_sizes.reverse()
+        print(f"[DEBUG] Reversed layer sizes: {layer_sizes}")
 
-        # Debugging message
-        print(f"Decoder Layer sizes: {layer_sizes}")
-
+        # Initialize Sequential model
         self.model = Sequential(name="decoder")
+        print(f"[DEBUG] Initialized Sequential model for decoder.")
 
         # First Conv1DTranspose layer
+        print(f"[DEBUG] Adding first Conv1DTranspose layer with input_shape=(sequence_length={sequence_length}, num_filters={num_filters})")
         self.model.add(Conv1DTranspose(filters=layer_sizes[0],
                                     kernel_size=3,
                                     strides=1,
@@ -73,21 +81,33 @@ class Plugin:
                                     kernel_regularizer=l2(0.001),
                                     padding='same',
                                     input_shape=(sequence_length, num_filters)))
-        print(f"After Conv1DTranspose: {self.model.layers[-1].output_shape}")
+        print(f"[DEBUG] After first Conv1DTranspose: {self.model.layers[-1].output_shape}")
 
         self.model.add(BatchNormalization())
-        print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
+        print(f"[DEBUG] After first BatchNormalization: {self.model.layers[-1].output_shape}")
+
+        # Explicit tracking of sequence length
+        current_sequence_length = sequence_length
+        print(f"[DEBUG] Current sequence length after first Conv1DTranspose: {current_sequence_length}")
 
         # Upsampling loop
-        for size in layer_sizes[1:]:
-            # Check for upsampling requirement
+        for idx, size in enumerate(layer_sizes[1:], start=1):
+            print(f"[DEBUG] Processing layer {idx} with target filter size={size}")
             last_shape = self.model.layers[-1].output_shape
-            sequence_length = int(last_shape[1])
+            current_sequence_length = int(last_shape[1])
+            print(f"[DEBUG] Current sequence length before upsampling: {current_sequence_length}")
 
-            if sequence_length < self.params['output_shape']:
-                strides = 2 if sequence_length * 2 <= self.params['output_shape'] else 1
+            # Check for upsampling requirement
+            if current_sequence_length < self.params['output_shape']:
+                strides = 2 if current_sequence_length * 2 <= self.params['output_shape'] else 1
+                print(f"[DEBUG] Strides set to {strides} for this layer (current_sequence_length={current_sequence_length})")
             else:
                 strides = 1
+                print(f"[DEBUG] No upsampling required, strides set to {strides}")
+
+            # Manually track the new sequence length
+            new_sequence_length = current_sequence_length * strides
+            print(f"[DEBUG] New sequence length after applying strides: {new_sequence_length}")
 
             self.model.add(Conv1DTranspose(filters=size,
                                         kernel_size=3,
@@ -96,11 +116,13 @@ class Plugin:
                                         activation=LeakyReLU(alpha=0.1),
                                         kernel_initializer=HeNormal(),
                                         kernel_regularizer=l2(0.001)))
-            print(f"After Conv1DTranspose (filters={size}, strides={strides}): {self.model.layers[-1].output_shape}")
+            print(f"[DEBUG] After Conv1DTranspose (filters={size}, strides={strides}): {self.model.layers[-1].output_shape}")
+
             self.model.add(BatchNormalization())
-            print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
+            print(f"[DEBUG] After BatchNormalization: {self.model.layers[-1].output_shape}")
 
         # Final Conv1DTranspose layer to match the original number of channels
+        print(f"[DEBUG] Adding final Conv1DTranspose layer to match num_channels={num_channels}")
         self.model.add(Conv1DTranspose(filters=num_channels,
                                     kernel_size=3,
                                     padding='same',
@@ -108,10 +130,11 @@ class Plugin:
                                     kernel_initializer=HeNormal(),
                                     kernel_regularizer=l2(0.001),
                                     name="decoder_output"))
-        print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
+        print(f"[DEBUG] After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
         
         # Final Output Shape
-        print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
+        final_output_shape = self.model.layers[-1].output_shape
+        print(f"[DEBUG] Final Output Shape: {final_output_shape}")
 
         # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(
@@ -121,8 +144,11 @@ class Plugin:
             epsilon=1e-7,  # Default value
             amsgrad=False  # Default value
         )
+        print(f"[DEBUG] Adam optimizer initialized.")
 
         self.model.compile(optimizer=adam_optimizer, loss='mae')
+        print(f"[DEBUG] Model compiled successfully.")
+
 
     def train(self, encoded_data, original_data):
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))

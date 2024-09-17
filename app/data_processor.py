@@ -65,7 +65,6 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
 
-    # Training loop to optimize the latent space size
     mse = 0
     mae = 0
     initial_size = config['initial_size']
@@ -79,10 +78,9 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     while True:
         print(f"Training with interface size: {current_size}")
         
-        # Create a new instance of AutoencoderManager for each iteration
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
-        
         num_channels = processed_data.shape[-1]
+
         # Build new autoencoder model with the current size
         autoencoder_manager.build_autoencoder(config['window_size'], current_size, config, num_channels)
 
@@ -93,26 +91,21 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         encoded_data = autoencoder_manager.encode_data(validation_data)  
         decoded_data = autoencoder_manager.decode_data(encoded_data)
 
-        # Check if the decoded data needs reshaping
-        if len(decoded_data.shape) == 3:
-            decoded_data = decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[1])
-
-        # Perform unwindowing of the decoded data once
-        reconstructed_data = unwindow_data(pd.DataFrame(decoded_data))
-
-        # Trim the data to match sizes
-        min_size = min(validation_data.shape[0], reconstructed_data.shape[0])
+        # Since both the original validation data and decoded data now have the same shape,
+        # directly calculate the MSE and MAE without unwindowing.
+        # Trim the data to ensure sizes match
+        min_size = min(validation_data.shape[0], decoded_data.shape[0])
         validation_trimmed = validation_data[:min_size]
-        reconstructed_trimmed = reconstructed_data[:min_size]
+        decoded_trimmed = decoded_data[:min_size]
 
         # Ensure both trimmed arrays are NumPy arrays
         validation_trimmed = np.asarray(validation_trimmed)
-        reconstructed_trimmed = np.asarray(reconstructed_trimmed)
+        decoded_trimmed = np.asarray(decoded_trimmed)
 
-        # Calculate the MSE and MAE
-        mse = autoencoder_manager.calculate_mse(validation_trimmed, reconstructed_trimmed)
-        mae = autoencoder_manager.calculate_mae(validation_trimmed, reconstructed_trimmed)
-       
+        # Calculate the MSE and MAE directly
+        mse = autoencoder_manager.calculate_mse(validation_trimmed, decoded_trimmed)
+        mae = autoencoder_manager.calculate_mae(validation_trimmed, decoded_trimmed)
+
         print(f"Mean Squared Error with interface size {current_size}: {mse}")
         print(f"Mean Absolute Error with interface size {current_size}: {mae}")
 
@@ -146,17 +139,18 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         'mae': mae
     }
 
-    # save debug info
+    # Save debug info
     if 'save_log' in config and config['save_log']:
         save_debug_info(debug_info, config['save_log'])
         print(f"Debug info saved to {config['save_log']}.")
 
-    # remote log debug info and config
+    # Remote log debug info and config
     if 'remote_log' in config and config['remote_log']:
         remote_log(config, debug_info, config['remote_log'], config['username'], config['password'])
         print(f"Debug info saved to {config['remote_log']}.")
 
     print(f"Execution time: {execution_time} seconds")
+
 
 
 def load_and_evaluate_encoder(config):

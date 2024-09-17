@@ -61,9 +61,10 @@ class Plugin:
             current_size = next_size
 
         layers.append(interface_size)  # Ensure the last layer size is the interface size
+        print(f"[DEBUG] Calculated decoder layer sizes: {layers}")
 
         # Reverse the layers for the decoder
-        layer_sizes = layers[::-1]  # Properly reverse the layer sizes
+        layer_sizes = layers
         print(f"[DEBUG] Decoder layer sizes: {layer_sizes}")
 
         # Initialize Sequential model for decoder
@@ -134,6 +135,7 @@ class Plugin:
 
         self.model.compile(optimizer=adam_optimizer, loss='mae')
         print(f"[DEBUG] Model compiled successfully.")
+
 
 
 

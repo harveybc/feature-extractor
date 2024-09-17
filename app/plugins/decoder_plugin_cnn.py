@@ -104,20 +104,20 @@ class Plugin:
             #self.model.add(Dropout(self.params['dropout_rate'] / 2))
             #print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
-        # add a flatten layer
-        #self.model.add(Flatten())
-        #print(f"After Flatten: {self.model.layers[-1].output_shape}")
-        # 2. UpSampling1D as the inverse of MaxPooling1D in the encoder
-        kernel_size = 3 
-        self.model.add(Conv1DTranspose(filters=1, kernel_size=kernel_size, padding='same', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
-        print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
-        #Final Dense lLayer
-        #self.model.add(Dense(output_shape, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001)))
-        #print(f"After Final Dense: {self.model.layers[-1].output_shape}")
+        # Extract the number of channels from the previous layer's shape
+        last_layer_shape = self.model.layers[-1].output_shape
+        num_channels = last_layer_shape[-1]  # The number of channels from the last layer
 
-        # 5. Reshape the output to ensure the final output is (None, output_shape, 1)
-        self.model.add(Reshape((output_shape, 1)))
+        # Add the final Conv1DTranspose layer, using the number of channels dynamically
+        kernel_size = 3  # Adjust the kernel size as necessary
+        self.model.add(Conv1DTranspose(filters=num_channels, kernel_size=kernel_size, padding='same', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
+        print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
+
+        # Reshape the output back to the original input shape of the encoder
+        output_shape = last_layer_shape[1]  # The sequence length (timesteps) of the last layer
+        self.model.add(Reshape((output_shape, num_channels)))
         print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
+
         # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(
             learning_rate= self.params['learning_rate'],   # Set the learning rate

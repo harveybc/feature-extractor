@@ -57,7 +57,7 @@ class Plugin:
         inputs = Input(shape=(input_shape,1))
         x = inputs
         print(f"Input shape: {x.shape}")
-        # fAdd the initial conv1d layer and print its shape
+        # Add the initial conv1d layer and print its shape
         x = Conv1D(filters=layers[0], kernel_size=3, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='valid')(x)
         print(f"After Conv1D (filters={layers[0]}) shape: {x.shape}")
         x = BatchNormalization()(x)

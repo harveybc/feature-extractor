@@ -82,8 +82,9 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         # Create a new instance of AutoencoderManager for each iteration
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         
+        num_channels = processed_data.shape[-1]
         # Build new autoencoder model with the current size
-        autoencoder_manager.build_autoencoder(config['window_size'], current_size, config)
+        autoencoder_manager.build_autoencoder(config['window_size'], current_size, config, num_channels)
 
         # Train the autoencoder model
         autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size)

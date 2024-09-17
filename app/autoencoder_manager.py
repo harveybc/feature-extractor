@@ -89,12 +89,16 @@ class AutoencoderManager:
         print(f"[decode_data] Decoding data with shape: {encoded_data.shape}")
         decoded_data = self.decoder_model.predict(encoded_data)
 
-        # Reshape decoded data back to the original windowed format if necessary
-        if len(decoded_data.shape) == 3:
-            decoded_data = decoded_data.reshape((decoded_data.shape[0], decoded_data.shape[1] * decoded_data.shape[2]))
-
+        # Reshape decoded data back to the original (27798, 128, 8) format
+        # Ensure that the decoded data has the correct number of timesteps and channels
+        if len(decoded_data.shape) == 2:
+            # Reshape the flattened data back to (27798, 128, 8)
+            decoded_data = decoded_data.reshape((decoded_data.shape[0], 128, 8))
+        
         print(f"[decode_data] Decoded data shape: {decoded_data.shape}")
         return decoded_data
+
+
 
 
     def save_encoder(self, file_path):

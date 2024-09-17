@@ -48,8 +48,12 @@ class AutoencoderManager:
 
     def train_autoencoder(self, data, epochs=100, batch_size=32):
         try:
-            if isinstance(data, tuple):
-                data = data[0]
+            # Ensure the data has the correct shape for Conv1D: (batch_size, sequence_length, num_channels)
+            if len(data.shape) == 2:
+                # This assumes the second dimension is the flattened windowed data
+                num_channels = data.shape[1] // config['window_size']
+                data = data.reshape((data.shape[0], config['window_size'], num_channels))
+
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
             self.autoencoder_model.fit(data, data, epochs=epochs, batch_size=batch_size, verbose=1)
             print("[train_autoencoder] Training completed.")
@@ -57,8 +61,14 @@ class AutoencoderManager:
             print(f"[train_autoencoder] Exception occurred during training: {e}")
             raise
 
+
     def encode_data(self, data):
         print(f"[encode_data] Encoding data with shape: {data.shape}")
+        # Ensure the data is reshaped correctly before encoding
+        if len(data.shape) == 2:
+            num_channels = data.shape[1] // config['window_size']
+            data = data.reshape((data.shape[0], config['window_size'], num_channels))
+
         encoded_data = self.encoder_model.predict(data)
         print(f"[encode_data] Encoded data shape: {encoded_data.shape}")
         return encoded_data
@@ -66,8 +76,14 @@ class AutoencoderManager:
     def decode_data(self, encoded_data):
         print(f"[decode_data] Decoding data with shape: {encoded_data.shape}")
         decoded_data = self.decoder_model.predict(encoded_data)
+
+        # Reshape decoded data back to the original windowed format if necessary
+        if len(decoded_data.shape) == 3:
+            decoded_data = decoded_data.reshape((decoded_data.shape[0], decoded_data.shape[1] * decoded_data.shape[2]))
+
         print(f"[decode_data] Decoded data shape: {decoded_data.shape}")
         return decoded_data
+
 
     def save_encoder(self, file_path):
         self.encoder_model.save(file_path)

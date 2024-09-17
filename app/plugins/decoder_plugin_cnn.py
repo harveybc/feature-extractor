@@ -34,9 +34,13 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, interface_size, output_shape, num_channels):
+    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape):
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
+
+        # Extract sequence_length and num_filters from encoder_output_shape
+        sequence_length, num_filters = encoder_output_shape  # For example, (53, 64)
+
 
         layer_sizes = []
 
@@ -65,10 +69,16 @@ class Plugin:
         self.model = Sequential(name="decoder")
 
         
-        # Apply Conv1DTranspose with input_shape specified
-        self.model.add(Conv1DTranspose(filters=layer_sizes[0], kernel_size=1, activation=LeakyReLU(alpha=0.1),
-                                    kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same',
-                                    input_shape=(interface_size, num_channels)))
+        # Apply Conv1DTranspose with input_shape matching the encoder's output shape
+        self.model.add(Conv1DTranspose(filters=layer_sizes[0],
+                                    kernel_size=1,
+                                    activation=LeakyReLU(alpha=0.1),
+                                    kernel_initializer=HeNormal(),
+                                    kernel_regularizer=l2(0.001),
+                                    padding='same',
+                                    input_shape=(sequence_length, num_filters)))
+        
+        
         print(f"After Conv1DTranspose: {self.model.layers[-1].output_shape}")
 
         # Apply BatchNormalization (inverse of the encoder's last BatchNormalization)
@@ -95,18 +105,15 @@ class Plugin:
             #self.model.add(Dropout(self.params['dropout_rate'] / 2))
             #print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
-        # Extract the number of channels from the previous layer's shape
-        last_layer_shape = self.model.layers[-1].output_shape
-        num_channels = last_layer_shape[-1]  # The number of channels from the last layer
-
-        # Add the final Conv1DTranspose layer, using the number of channels dynamically
-        kernel_size = 3  # Adjust the kernel size as necessary
-        self.model.add(Conv1DTranspose(filters=num_channels, kernel_size=kernel_size, padding='same', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
+        # Add the final Conv1DTranspose layer to match the original number of channels
+        self.model.add(Conv1DTranspose(filters=self.params['num_channels'],
+                                    kernel_size=3,
+                                    padding='same',
+                                    activation=LeakyReLU(alpha=0.1),
+                                    kernel_initializer=HeNormal(),
+                                    kernel_regularizer=l2(0.001),
+                                    name="decoder_output"))
         print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
-
-        # Reshape the output back to the original input shape of the encoder
-        output_shape = last_layer_shape[1]  # The sequence length (timesteps) of the last layer
-        self.model.add(Reshape((output_shape, num_channels)))
         print(f"Final Output Shape: {self.model.layers[-1].output_shape}")
 
         # Define the Adam optimizer with custom parameters

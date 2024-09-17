@@ -15,25 +15,35 @@ class AutoencoderManager:
         try:
             print("[build_autoencoder] Starting to build autoencoder...")
             
-            # Configure encoder and decoder sizes with num_channels
+            # Configure encoder size
             self.encoder_plugin.configure_size(input_shape, interface_size, num_channels)
-            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels)
             
-            # Get the encoder and decoder models
+            # Get the encoder model
             self.encoder_model = self.encoder_plugin.encoder_model
-            self.decoder_model = self.decoder_plugin.model
+            print("[build_autoencoder] Encoder model built and compiled successfully")
+            self.encoder_model.summary()
             
+            # Get the encoder's output shape
+            encoder_output_shape = self.encoder_model.output_shape[1:]  # Exclude batch size
+            print(f"Encoder output shape: {encoder_output_shape}")
+            
+            # Configure the decoder size, passing the encoder's output shape
+            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_output_shape)
+            
+            # Get the decoder model
+            self.decoder_model = self.decoder_plugin.model
+            print("[build_autoencoder] Decoder model built and compiled successfully")
+            self.decoder_model.summary()
+
             # Build autoencoder model
             autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
-            
-            # Compile the autoencoder
             adam_optimizer = Adam(
-                learning_rate=config['learning_rate'],
-                beta_1=0.9,
-                beta_2=0.999,
-                epsilon=1e-7,
-                amsgrad=False
+                learning_rate=config['learning_rate'],  # Set the learning rate
+                beta_1=0.9,           # Default value
+                beta_2=0.999,         # Default value
+                epsilon=1e-7,         # Default value
+                amsgrad=False         # Default value
             )
             self.autoencoder_model.compile(optimizer=adam_optimizer, loss='mae')
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
@@ -41,6 +51,7 @@ class AutoencoderManager:
         except Exception as e:
             print(f"[build_autoencoder] Exception occurred: {e}")
             raise
+
 
 
 

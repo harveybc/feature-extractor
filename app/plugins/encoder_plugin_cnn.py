@@ -103,14 +103,13 @@ class Plugin:
             #    pool_size = 2
             #x = MaxPooling1D(pool_size=pool_size)(x)
 
-        # Flatten the output to prepare for the Dense layer
-        x = Flatten()(x)
-        print(f"Flattened shape: {x.shape}")
-        # Add the last dense layer
-        outputs = Dense(interface_size, input_shape=(interface_size,), activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001))(x)
-        print(f"Last Dense Output shape: {outputs.shape}")
-        # Add the output reshape layer
-        #outputs = Reshape((1, interface_size))(x)
+       # Use a Conv1D layer to reduce the number of filters to interface_size
+        x = Conv1D(filters=interface_size, kernel_size=1, activation=LeakyReLU(alpha=0.1),
+                        kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='valid')(x)
+        #output batch normalization layuer
+        outputs = BatchNormalization()(x)
+
+        print(f"Output shape: {outputs.shape}")
         # Build the encoder model
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
                 # Define the Adam optimizer with custom parameters

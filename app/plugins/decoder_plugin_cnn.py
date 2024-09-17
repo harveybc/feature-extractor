@@ -64,25 +64,18 @@ class Plugin:
 
         self.model = Sequential(name="decoder")
 
-        # Step 1: Add the Dense layer corresponding to the encoder's output layer
-        self.model.add(Dense(interface_size, 
-                        activation=LeakyReLU(alpha=0.1), 
-                        kernel_initializer=HeNormal(), 
-                        kernel_regularizer=l2(0.001),
-                        input_shape=(interface_size,)))  # input_shape must match the encoder's output size
-        print(f"After Dense (interface_size): {self.model.layers[-1].output_shape}")
+        # Define the input layer matching the encoder's output
+        self.model.add(Input(input_shape=(sequence_length, interface_size)))
+        print(f"Decoder input shape: {self.model.layers[-1].output_shape}")
 
-        # Step 2: Reshape the Dense output to (sequence_length, 1)
-        # Since we don't have sequence length or channels, treat the entire interface_size as sequence_length with 1 channel
-        sequence_length = interface_size  # Treat interface_size as sequence length
-          
+        # Apply Conv1DTranspose to inverse the last Conv1D in the encoder
+        self.model.add(Conv1DTranspose(filters=layer_sizes[0], kernel_size=1, activation=LeakyReLU(alpha=0.1),
+                                    kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same'))
+        print(f"After Conv1DTranspose: {self.model.layers[-1].output_shape}")
 
-        # Add the Reshape layer
-        self.model.add(Reshape((sequence_length, num_channels)))
-        print(f"After Reshape: {self.model.layers[-1].output_shape}")
-
-        # Step 3: Apply BatchNormalization
+        # Apply BatchNormalization (inverse of the encoder's last BatchNormalization)
         self.model.add(BatchNormalization())
+        print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
 
         for size in layer_sizes[1:]:
 

@@ -65,11 +65,14 @@ class Plugin:
         # Reverse the layers for the decoder
         layer_sizes = layers
         layer_sizes.reverse()
-        print(f"[DEBUG] Reversed layer sizes: {layer_sizes}")
+        print(f"[DEBUG] Reversed layer sizes: {layer_sizes} [DESIRED FINAL SHAPE: (None, 128, {num_channels})]")
 
         # Initialize Sequential model
         self.model = Sequential(name="decoder")
         print(f"[DEBUG] Initialized Sequential model for decoder.")
+
+        # Desired shape after first Conv1DTranspose (should be the same as the encoder output shape)
+        desired_shape = (None, sequence_length, num_filters)
 
         # First Conv1DTranspose layer
         print(f"[DEBUG] Adding first Conv1DTranspose layer with input_shape=(sequence_length={sequence_length}, num_filters={num_filters})")
@@ -81,10 +84,12 @@ class Plugin:
                                     kernel_regularizer=l2(0.001),
                                     padding='same',
                                     input_shape=(sequence_length, num_filters)))
-        print(f"[DEBUG] After first Conv1DTranspose: {self.model.layers[-1].output_shape}")
+        actual_shape = self.model.layers[-1].output_shape
+        print(f"[DEBUG] After first Conv1DTranspose: {actual_shape} [DESIRED: {desired_shape}]")
 
         self.model.add(BatchNormalization())
-        print(f"[DEBUG] After first BatchNormalization: {self.model.layers[-1].output_shape}")
+        actual_shape = self.model.layers[-1].output_shape
+        print(f"[DEBUG] After first BatchNormalization: {actual_shape} [DESIRED: {desired_shape}]")
 
         # Explicit tracking of sequence length
         current_sequence_length = sequence_length
@@ -105,13 +110,11 @@ class Plugin:
                 strides = 1
                 print(f"[DEBUG] No upsampling required, strides set to {strides}")
 
-            # Adjust strides or kernel to hit 128
-            if current_sequence_length * strides == 106 and self.params['output_shape'] == 128:
-                strides = 2  # Force upsampling to reach 128 in one final step
-
             # Manually track the new sequence length
             new_sequence_length = current_sequence_length * strides
-            print(f"[DEBUG] New sequence length after applying strides: {new_sequence_length}")
+
+            desired_shape = (None, new_sequence_length, size)
+            print(f"[DEBUG] Desired shape for layer {idx}: {desired_shape}")
 
             self.model.add(Conv1DTranspose(filters=size,
                                         kernel_size=3,
@@ -120,10 +123,12 @@ class Plugin:
                                         activation=LeakyReLU(alpha=0.1),
                                         kernel_initializer=HeNormal(),
                                         kernel_regularizer=l2(0.001)))
-            print(f"[DEBUG] After Conv1DTranspose (filters={size}, strides={strides}): {self.model.layers[-1].output_shape}")
+            actual_shape = self.model.layers[-1].output_shape
+            print(f"[DEBUG] After Conv1DTranspose (filters={size}, strides={strides}): {actual_shape} [DESIRED: {desired_shape}]")
 
             self.model.add(BatchNormalization())
-            print(f"[DEBUG] After BatchNormalization: {self.model.layers[-1].output_shape}")
+            actual_shape = self.model.layers[-1].output_shape
+            print(f"[DEBUG] After BatchNormalization: {actual_shape} [DESIRED: {desired_shape}]")
 
         # Final Conv1DTranspose layer to match the original number of channels
         print(f"[DEBUG] Adding final Conv1DTranspose layer to match num_channels={num_channels}")
@@ -134,11 +139,13 @@ class Plugin:
                                     kernel_initializer=HeNormal(),
                                     kernel_regularizer=l2(0.001),
                                     name="decoder_output"))
-        print(f"[DEBUG] After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
+        actual_shape = self.model.layers[-1].output_shape
+        desired_shape = (None, 128, num_channels)
+        print(f"[DEBUG] After Final Conv1DTranspose: {actual_shape} [DESIRED: {desired_shape}]")
         
         # Final Output Shape
         final_output_shape = self.model.layers[-1].output_shape
-        print(f"[DEBUG] Final Output Shape: {final_output_shape}")
+        print(f"[DEBUG] Final Output Shape: {final_output_shape} [DESIRED FINAL SHAPE: (None, 128, {num_channels})]")
 
         # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(

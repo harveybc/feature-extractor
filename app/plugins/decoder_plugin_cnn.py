@@ -64,13 +64,11 @@ class Plugin:
 
         self.model = Sequential(name="decoder")
 
-        # Define the input layer matching the encoder's output
-        self.model.add(Input(input_shape=(interface_size, num_channels)))
-        print(f"Decoder input shape: {self.model.layers[-1].output_shape}")
-
-        # Apply Conv1DTranspose to inverse the last Conv1D in the encoder
+        
+        # Apply Conv1DTranspose with input_shape specified
         self.model.add(Conv1DTranspose(filters=layer_sizes[0], kernel_size=1, activation=LeakyReLU(alpha=0.1),
-                                    kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same'))
+                                    kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same',
+                                    input_shape=(interface_size, num_channels)))
         print(f"After Conv1DTranspose: {self.model.layers[-1].output_shape}")
 
         # Apply BatchNormalization (inverse of the encoder's last BatchNormalization)

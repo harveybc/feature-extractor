@@ -34,7 +34,8 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape):def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape):
+    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape):
+        
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 

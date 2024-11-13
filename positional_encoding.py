@@ -28,8 +28,8 @@ def main():
     # Set up command line arguments
     parser = argparse.ArgumentParser(description="Add positional encoding to multiple CSV files.")
     parser.add_argument("input_file", type=str, help="Filename of the first CSV input file.")
-    parser.add_argument("--file2", type=str, default="file2.csv", help="Filename of the second CSV input file (default: file2.csv).")
-    parser.add_argument("--file3", type=str, default="file3.csv", help="Filename of the third CSV input file (default: file3.csv).")
+    parser.add_argument("--file2", type=str, default='..\\Documents\\encoder_eval_d2_indicators_128.csv', help="Filename of the second CSV input file (default: file2.csv).")
+    parser.add_argument("--file3", type=str, default='..\\Documents\\encoder_eval_d3_indicators_128.csv', help="Filename of the third CSV input file (default: file3.csv).")
     parser.add_argument("--output1", type=str, default="pos_encoded_file1.csv", help="Output filename for the first file (default: pos_encoded_file1.csv).")
     parser.add_argument("--output2", type=str, default="pos_encoded_file2.csv", help="Output filename for the second file (default: pos_encoded_file2.csv).")
     parser.add_argument("--output3", type=str, default="pos_encoded_file3.csv", help="Output filename for the third file (default: pos_encoded_file3.csv).")

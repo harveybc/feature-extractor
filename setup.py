@@ -14,7 +14,8 @@ setup(
             'rnn=app.plugins.encoder_plugin_rnn:Plugin',
             'transformer=app.plugins.encoder_plugin_transformer:Plugin',
             'lstm=app.plugins.encoder_plugin_lstm:Plugin',
-            'cnn=app.plugins.encoder_plugin_cnn:Plugin'
+            'cnn=app.plugins.encoder_plugin_cnn:Plugin',
+            'cnn_signed=app.plugins.encoder_plugin_cnn_signed:Plugin'
         ],
         'feature_extractor.decoders': [
             'default=app.plugins.decoder_plugin_ann:Plugin',
@@ -22,7 +23,8 @@ setup(
             'rnn=app.plugins.decoder_plugin_rnn:Plugin',
             'transformer=app.plugins.decoder_plugin_transformer:Plugin',
             'lstm=app.plugins.decoder_plugin_lstm:Plugin',
-            'cnn=app.plugins.decoder_plugin_cnn:Plugin'
+            'cnn=app.plugins.decoder_plugin_cnn:Plugin',
+            'cnn_signed=app.plugins.decoder_plugin_cnn_signed:Plugin'
         ]
     },
     install_requires=[

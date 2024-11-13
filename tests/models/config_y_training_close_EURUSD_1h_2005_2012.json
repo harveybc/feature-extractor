@@ -1,0 +1,7 @@
+{
+    "input_file": "tests\\data\\y_training_close_EURUSD_1h_2005_2012.csv",
+    "encoder_plugin": "cnn",
+    "decoder_plugin": "cnn",
+    "batch_size": 256,
+    "intermediate_laters": 3
+}

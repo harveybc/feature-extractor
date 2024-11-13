@@ -1,8 +1,12 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+
+from keras.regularizers import l2
+from keras.callbacks import EarlyStopping
+from keras.layers import BatchNormalization, LeakyReLU, Reshape
 
 class Plugin:
     """
@@ -11,10 +15,9 @@ class Plugin:
 
     plugin_params = {
 
-        'intermediate_layers': 1,
-        'layer_size_divisor': 2,
-        'learning_rate': 0.00001,
-        'dropout_rate': 0.1,
+        'intermediate_layers': 3, 
+        'learning_rate': 0.0001,
+        'dropout_rate': 0.001,
     }
 
     plugin_debug_vars = ['input_shape', 'intermediate_layers']
@@ -34,68 +37,88 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, input_shape, interface_size):
+    def configure_size(self, input_shape, interface_size, num_channels):
+        print(f"[DEBUG] Starting encoder configuration with input_shape={input_shape}, interface_size={interface_size}, num_channels={num_channels}")
+        
         self.params['input_shape'] = input_shape
 
-        layers = []
-        current_size = input_shape
-        layer_size_divisor = self.params['layer_size_divisor'] 
-        current_location = input_shape
-        int_layers = 0
-        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
-            layers.append(current_location)
-            current_size = max(current_size // layer_size_divisor, interface_size)
-            current_location = interface_size + current_size
-            int_layers += 1
-        layers.append(interface_size)
-        # Debugging message
-        print(f"Encoder Layer sizes: {layers}")
-
-        # set input layer
-        inputs = Input(shape=(input_shape, 1))
-        x = inputs
-
-        # add conv and maxpooling layers, calculating their kernel and pool sizes
-        layers_index = 0
-        for size in layers:
-            layers_index += 1
-            # pool size calculation
-            if layers_index >= len(layers):
-                pool_size = round(size/interface_size)
-            else:
-                pool_size = round(size/layers[layers_index])
-            # kernel size configuration based on the layer's size
-            kernel_size = 3 
-            if size > 64:
-                kernel_size = 5
-            if size > 512:
-                kernel_size = 7
-            # add the conv and maxpooling layers
-            x = Conv1D(filters=size, kernel_size=kernel_size, activation='relu', kernel_initializer=HeNormal(), padding='same')(x)
-            if pool_size < 2:
-                pool_size = 2
-            x = MaxPooling1D(pool_size=pool_size)(x)
-
-        x = Flatten()(x)
+        # Initialize layers array with input_shape
+        layers = [input_shape]
+        num_intermediate_layers = self.params['intermediate_layers']
         
-        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
+        # Calculate sizes of intermediate layers based on downscaling by 2
+        current_size = input_shape
+        for i in range(num_intermediate_layers):
+            next_size = current_size // 2  # Scale down by half
+            if next_size < interface_size:
+                next_size = interface_size  # Ensure we don't go below the interface_size
+            layers.append(next_size)
+            current_size = next_size
+
+        # Append the final layer which is the interface size
+        layers.append(interface_size)
+        print(f"[DEBUG] Encoder Layer sizes: {layers}")
+
+        # Input layer
+        inputs = Input(shape=(input_shape, num_channels))
+        x = inputs
+        print(f"[DEBUG] Input shape: {x.shape}")
+
+        # Initial Conv1D layer
+        x = Conv1D(filters=layers[0], kernel_size=3, strides=1, activation=LeakyReLU(alpha=0.1),
+                kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same')(x)
+        print(f"[DEBUG] After Conv1D (filters={layers[0]}) shape: {x.shape}")
+        x = BatchNormalization()(x)
+        print(f"[DEBUG] After BatchNormalization shape: {x.shape}")
+
+        # Add intermediate layers with stride=2
+        for i, size in enumerate(layers[1:-1]):
+            x = Conv1D(filters=size, kernel_size=3, strides=2, activation=LeakyReLU(alpha=0.1),
+                    kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same')(x)
+            print(f"[DEBUG] After Conv1D (filters={size}, strides=2) shape: {x.shape}")
+            x = BatchNormalization()(x)
+            print(f"[DEBUG] After BatchNormalization shape: {x.shape}")
+
+        # Final Conv1D layer to match the interface size
+        x = Conv1D(filters=interface_size, kernel_size=1, strides=1, activation=LeakyReLU(alpha=0.1),
+                kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same')(x)
+        print(f"[DEBUG] After Final Conv1D (interface_size) shape: {x.shape}")
+
+        # Output batch normalization layer
+        outputs = BatchNormalization()(x)
+        print(f"[DEBUG] Final Output shape: {outputs.shape}")
+
+        # Build the encoder model
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
 
-                # Define the Adam optimizer with custom parameters
+        # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(
-            learning_rate= self.params['learning_rate'],   # Set the learning rate
-            beta_1=0.9,            # Default value
-            beta_2=0.999,          # Default value
-            epsilon=1e-7,          # Default value
-            amsgrad=False          # Default value
+            learning_rate=self.params['learning_rate'],  # Set the learning rate
+            beta_1=0.9,  # Default value
+            beta_2=0.999,  # Default value
+            epsilon=1e-7,  # Default value
+            amsgrad=False  # Default value
         )
 
-        self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        self.encoder_model.compile(optimizer=adam_optimizer, loss='mae')
+        print(f"[DEBUG] Encoder model compiled successfully.")
+
 
     def train(self, data):
+        num_channels = data.shape[-1]  # Get number of channels from the data shape
+        input_shape = data.shape[1]  # Get the input sequence length
+        interface_size = self.params.get('interface_size', 4)  # Assuming interface size is in params
+        
+        # Rebuild the model with dynamic channel size
+        self.configure_size(input_shape, interface_size, num_channels)
+        
+        # Now proceed with training
         print(f"Training encoder with data shape: {data.shape}")
-        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping])
         print("Training completed.")
+
+
 
     def encode(self, data):
         print(f"Encoding data with shape: {data.shape}")

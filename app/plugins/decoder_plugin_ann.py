@@ -1,8 +1,9 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Dropout
+from keras.layers import Dense, Dropout,Input, LeakyReLU,BatchNormalization
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from keras.regularizers import l2
 
 class Plugin:
     """
@@ -10,10 +11,8 @@ class Plugin:
     """
 
     plugin_params = {
-        'intermediate_layers': 1,
-        'layer_size_divisor': 2,
-        'learning_rate': 0.00001,
-        'dropout_rate': 0.1,
+        'intermediate_layers': 2,
+        'learning_rate': 0.0001
     }
 
     plugin_debug_vars = []
@@ -39,31 +38,38 @@ class Plugin:
         self.params['output_dim'] = output_dim
 
         layer_sizes = []
-        current_size = output_dim
-        layer_size_divisor = self.params['layer_size_divisor']
-        current_location = output_dim
-        int_layers = 0
-        while (current_size > encoding_dim) and (int_layers < (self.params['intermediate_layers']+1)):
-            layer_sizes.append(current_location)
-            current_size = max(current_size // layer_size_divisor, encoding_dim)
-            current_location = encoding_dim + current_size
-            int_layers += 1
-        layer_sizes.append(encoding_dim)
-        layer_sizes.reverse()
+        output_shape = output_dim
+        interface_size = encoding_dim
+        # Calculate the sizes of the intermediate layers
+        num_intermediate_layers = self.params['intermediate_layers']
+        layers = [output_shape]
+        step_size = (output_shape - interface_size) / (num_intermediate_layers + 1)
+        
+        for i in range(1, num_intermediate_layers + 1):
+            layer_size = output_shape - i * step_size
+            layers.append(int(layer_size))
 
+        layers.append(interface_size)
+
+        # For the decoder, reverses the order of the generted layers.
+        layer_sizes=layers
+        layer_sizes.reverse()
+        
         # Debugging message
-        print(f"ANN Layer sizes: {layer_sizes}")
+        print(f"Decoder Layer sizes: {layer_sizes}")
 
         self.model = Sequential(name="decoder_ANN")
-        self.model.add(Dense(layer_sizes[0], input_shape=(encoding_dim,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
-        
-        next_size = layer_sizes[0]
-        for i in range(0, len(layer_sizes) - 1):
-            self.model.add(Dense(next_size, activation='relu', kernel_initializer=HeNormal(), name="decoder_intermediate_layer_" + str(i)))
-            self.model.add(Dropout(self.params['dropout_rate']))
-            next_size = layer_sizes[i + 1]
+        self.model.add(Input(shape=(encoding_dim), name="decoder_input"))
+        #self.model.add(Dense(layer_sizes[0], input_shape=(encoding_dim,), activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_input"))
+        layers_index = 0
+        for size in layer_sizes[1:-1]:
+            layers_index += 1
+            self.model.add(Dense(size, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_intermediate_layer" + str(layers_index) ))
+            # batch normalization layer
+            self.model.add(BatchNormalization(name="decoder_batch_norm" + str(layers_index)))
 
-        self.model.add(Dense(output_dim, activation='tanh', kernel_initializer=GlorotUniform(), name="decoder_output"))
+
+        self.model.add(Dense(output_dim, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
 
         # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(
@@ -71,10 +77,10 @@ class Plugin:
             beta_1=0.9,            # Default value
             beta_2=0.999,          # Default value
             epsilon=1e-7,          # Default value
-            amsgrad=False          # Default value
+            amsgrad=False
         )
 
-        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        self.model.compile(optimizer=adam_optimizer, loss='mae')
 
         # Debugging messages to trace the model configuration
         print("Decoder Model Summary:")

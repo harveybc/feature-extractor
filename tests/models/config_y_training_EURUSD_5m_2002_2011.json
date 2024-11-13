@@ -1,0 +1,7 @@
+{
+    "input_file": "tests\\data\\y_training_close_EURUSD_5m_2002_2011.csv",
+    "encoder_plugin": "cnn",
+    "decoder_plugin": "cnn",
+    "window_size": 512,
+    "intermediate_layers": 4
+}

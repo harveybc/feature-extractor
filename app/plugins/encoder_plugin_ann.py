@@ -1,8 +1,9 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Dropout
+from keras.layers import Dense, Input, Dropout, LeakyReLU, BatchNormalization
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from keras.regularizers import l2
 
 class Plugin:
     """
@@ -10,11 +11,8 @@ class Plugin:
     """
 
     plugin_params = {
-        'dropout_rate': 0.1,
-        'intermediate_layers': 1,
-        'layer_size_divisor': 2,
-        'learning_rate': 0.00001,
-        'activation': 'tanh'
+        'intermediate_layers': 2,
+        'learning_rate': 0.000001,
     }
 
     plugin_debug_vars = ['input_dim', 'encoding_dim']
@@ -39,34 +37,42 @@ class Plugin:
         self.params['encoding_dim'] = encoding_dim
 
         layers = []
-        current_size = input_dim
-        layer_size_divisor = self.params['layer_size_divisor'] 
-        current_location = input_dim
-        int_layers = 0
-        while (current_size > encoding_dim) and (int_layers < (self.params['intermediate_layers']+1)):
-            layers.append(current_location)
-            current_size = max(current_size // layer_size_divisor, encoding_dim)
-            current_location = encoding_dim + current_size
-            int_layers += 1
-        layers.append(encoding_dim)
+        input_shape = input_dim
+        interface_size = encoding_dim
+        # Calculate the sizes of the intermediate layers
+        num_intermediate_layers = self.params['intermediate_layers']
+        layers = [input_shape]
+        step_size = (input_shape - interface_size) / (num_intermediate_layers + 1)
+        
+        for i in range(1, num_intermediate_layers + 1):
+            layer_size = input_shape - i * step_size
+            layers.append(int(layer_size))
+
+        layers.append(interface_size)
         # Debugging message
         print(f"Encoder Layer sizes: {layers}")
-
         # Encoder: set input layer
         inputs = Input(shape=(input_dim,), name="encoder_input")
         x = inputs
 
         # add dense and dropout layers
         layers_index = 0
-        for size in layers:
+        for size in layers[1:-1]:
             layers_index += 1
             # add the conv and maxpooling layers
-            x = Dense(encoding_dim, activation='relu', kernel_initializer=HeNormal(), name="encoder_intermediate_layer" + str(layers_index))(x)
-            # add dropout layer
-            x = Dropout(self.params['dropout_rate'])(x)
+            x = Dense(size, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="encoder_intermediate_layer" + str(layers_index))(x)
+            # add batch normalization layer
+            x = BatchNormalization(name="encoder_batch_norm" + str(layers_index))(x)
+
+
 
         # Encoder: set output layer        
-        outputs = Dense(encoding_dim, activation=self.params['activation'], kernel_initializer=GlorotUniform(), name="encoder_output" )(x)
+        x = Dense(encoding_dim, activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="encoder_last_dense_layer" )(x)
+        # Encoder: Last batch normalization layer
+        outputs = BatchNormalization(name="encoder_last_batch_norm")(x)
+
+
+
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_ANN")
 
 
@@ -76,10 +82,10 @@ class Plugin:
             beta_1=0.9,            # Default value
             beta_2=0.999,          # Default value
             epsilon=1e-7,          # Default value
-            amsgrad=False          # Default value
+            amsgrad=False
         )
 
-        self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        self.encoder_model.compile(optimizer=adam_optimizer, loss='mae')
 
 
 

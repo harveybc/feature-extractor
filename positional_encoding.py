@@ -51,16 +51,18 @@ def main():
     
     # Generate positional encoding for the entire dataset sequence
     encoding = generate_positional_encoding(num_positions, num_features)
-    
+
     # Split the encoding based on the length of each dataset and add to each DataFrame
     start_idx = 0
     for i, df in enumerate(dfs):
         end_idx = start_idx + len(df)
         df_encoding = encoding[start_idx:end_idx, :]
         
-        # Add positional encoding columns to the DataFrame
-        for j in range(num_features):
-            df[f'pos_enc_{j}'] = df_encoding[:, j]
+        # Create a DataFrame for positional encoding columns
+        encoding_df = pd.DataFrame(df_encoding, columns=[f'pos_enc_{j}' for j in range(num_features)])
+        
+        # Concatenate the original DataFrame with the positional encoding DataFrame
+        df = pd.concat([df.reset_index(drop=True), encoding_df.reset_index(drop=True)], axis=1)
         
         # Save each DataFrame with positional encoding to a new CSV file
         output_filename = getattr(args, f"output{i+1}")
@@ -69,6 +71,5 @@ def main():
         
         # Update the starting index for the next file
         start_idx = end_idx
-
 if __name__ == "__main__":
     main()

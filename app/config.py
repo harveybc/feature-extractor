@@ -27,7 +27,7 @@ DEFAULT_VALUES = {
     'incremental_search': True,
     'headers': False,
     'epochs': 200,  # Add epochs here
-    'batch_size': 128,  # Add batch_size here
+    'batch_size': 64,  # Add batch_size here
     'learning_rate': 0.001,  # Add learning_rate here
     'dataset_periodicity': '1h'  # Add dataset_periodicity here, can be 1m, 5m, 15m, 30m, 1h, 4h, daily
 }

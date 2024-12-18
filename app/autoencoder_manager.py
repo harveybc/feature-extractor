@@ -60,24 +60,26 @@ class AutoencoderManager:
 
 
 
-
     def train_autoencoder(self, data, epochs=100, batch_size=32, config=None):
         try:
             num_channels = data.shape[-1]
             input_shape = data.shape[1]
             interface_size = self.encoder_plugin.params.get('interface_size', 4)
-            
+
             # Build autoencoder with the correct num_channels
             if not self.autoencoder_model:
                 self.build_autoencoder(input_shape, interface_size, config, num_channels)
-            
+
             # Validate data for NaN values before training
             if np.isnan(data).any():
                 raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
             
+            # Calculate entropy and useful information using Shannon-Hartley theorem
+            self.calculate_dataset_information(data, config)
+
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
             history = self.autoencoder_model.fit(data, data, epochs=epochs, batch_size=batch_size, verbose=1)
-            
+
             # Log training loss
             print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
             print("[train_autoencoder] Training completed.")
@@ -85,6 +87,60 @@ class AutoencoderManager:
             print(f"[train_autoencoder] Exception occurred during training: {e}")
             raise
 
+
+
+    def calculate_dataset_information(self, data, config):
+        try:
+            print("[calculate_dataset_information] Calculating dataset entropy and useful information...")
+            
+            # Flatten data vertically by concatenating all columns after normalization
+            normalized_columns = []
+            for col in range(data.shape[-1]):
+                column_data = data[:, :, col].flatten()  # Flatten the column data
+                min_val, max_val = column_data.min(), column_data.max()
+                normalized_column = (column_data - min_val) / (max_val - min_val)  # Min-max normalization
+                normalized_columns.append(normalized_column)
+            
+            concatenated_data = np.concatenate(normalized_columns, axis=0)
+            
+            # Calculate signal-to-noise ratio (SNR)
+            mean_val = np.mean(concatenated_data)
+            std_dev = np.std(concatenated_data)
+            if std_dev != 0:
+                snr = (mean_val / std_dev) ** 2
+            else:
+                snr = 'E'
+                print("[WARNING] Standard deviation of normalized data is zero, SNR will be 'E'.")
+            
+            # Retrieve dataset periodicity and calculate sampling frequency
+            periodicity = config['dataset_periodicity']
+            periodicity_seconds_map = {
+                "1min": 60,
+                "5min": 5 * 60,
+                "15min": 15 * 60,
+                "1h": 60 * 60,
+                "4h": 4 * 60 * 60,
+                "daily": 24 * 60 * 60
+            }
+            sampling_period_seconds = periodicity_seconds_map.get(periodicity, None)
+            sampling_frequency = 1 / sampling_period_seconds if sampling_period_seconds else 'E'
+
+            # Calculate Shannon-Hartley channel capacity and total useful information
+            if snr != 'E' and sampling_frequency != 'E':
+                channel_capacity = sampling_frequency * np.log2(1 + snr)  # in bits per second
+                total_information_bits = channel_capacity * data.shape[0] * sampling_period_seconds
+            else:
+                channel_capacity = 'E'
+                total_information_bits = 'E'
+
+            # Log calculated information
+            print(f"[calculate_dataset_information] Calculated SNR: {snr}")
+            print(f"[calculate_dataset_information] Sampling frequency: {sampling_frequency} Hz")
+            print(f"[calculate_dataset_information] Channel capacity: {channel_capacity} bits/second")
+            print(f"[calculate_dataset_information] Total useful information: {total_information_bits} bits")
+        except Exception as e:
+            print(f"[calculate_dataset_information] Exception occurred: {e}")
+            raise
 
 
 

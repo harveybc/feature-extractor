@@ -3,6 +3,8 @@ from keras.models import Model, load_model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 import tensorflow as tf
 from keras.optimizers import Adam
+from tensorflow.keras.losses import Huber
+from keras.metrics import R2Score
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
@@ -41,39 +43,6 @@ class AutoencoderManager:
             autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
 
-            # Define custom loss function
-            def custom_loss(y_true, y_pred):
-                # MAE term
-                mae_loss = tf.reduce_mean(tf.abs(y_true - y_pred))
-                
-                # SNR term (min-max normalize each column, then flatten and compute SNR)
-                latent_space_output = self.encoder_model.output  # Use the already computed encoder output
-                
-                # Min-max normalization of each column
-                min_vals = tf.reduce_min(latent_space_output, axis=1, keepdims=True)  # Min for each column
-                max_vals = tf.reduce_max(latent_space_output, axis=1, keepdims=True)  # Max for each column
-                normalized_output = (latent_space_output - min_vals) / (max_vals - min_vals + 1e-10)  # Avoid divide-by-zero
-                
-                # Flatten all normalized columns
-                flattened_output = tf.reshape(normalized_output, [-1])
-                
-                # Calculate mean and std deviation for SNR
-                mean_val = tf.reduce_mean(flattened_output)
-                std_val = tf.math.reduce_std(flattened_output)
-                snr = tf.where(
-                    tf.greater(std_val, 0),
-                    (mean_val / std_val) ** 2,
-                    tf.constant(0.0, dtype=tf.float32)
-                )
-                
-                # Combine MAE and SNR into a hybrid loss
-                alpha = 1.0  # Weight for MAE
-                beta = 0.01  # Weight for SNR
-                hybrid_loss = alpha * mae_loss - beta * snr
-                return hybrid_loss
-
-
-
             # Define optimizer
             adam_optimizer = Adam(
                 learning_rate=config['learning_rate'],  # Set the learning rate
@@ -86,7 +55,12 @@ class AutoencoderManager:
             )
             
             # Compile autoencoder with the custom loss function
-            self.autoencoder_model.compile(optimizer=adam_optimizer, loss=mae, run_eagerly=True)
+            self.autoencoder_model.compile(
+                optimizer=adam_optimizer, 
+                loss=Huber(delta=1.0), 
+                metrics=['mae'],
+                run_eagerly=True
+            )
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
             self.autoencoder_model.summary()
         except Exception as e:

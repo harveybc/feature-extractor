@@ -46,19 +46,23 @@ class AutoencoderManager:
                 # MAE term
                 mae_loss = tf.reduce_mean(tf.abs(y_true - y_pred))
                 
-                # SNR term (min-max normalize, concatenate columns, compute SNR)
-                latent_space_output = self.encoder_model(self.encoder_model.input)
-                flattened_output = tf.reshape(latent_space_output, [-1])  # Flatten all columns
-                min_val = tf.reduce_min(flattened_output)
-                max_val = tf.reduce_max(flattened_output)
-                normalized_output = (flattened_output - min_val) / (max_val - min_val)
+                # SNR term (min-max normalize each column, then flatten and compute SNR)
+                latent_space_output = self.encoder_model.output  # Use the already computed encoder output
                 
-                mean_val = tf.reduce_mean(normalized_output)
-                std_val = tf.math.reduce_std(normalized_output)
+                # Min-max normalization of each column
+                min_vals = tf.reduce_min(latent_space_output, axis=1, keepdims=True)  # Min for each column
+                max_vals = tf.reduce_max(latent_space_output, axis=1, keepdims=True)  # Max for each column
+                normalized_output = (latent_space_output - min_vals) / (max_vals - min_vals + 1e-10)  # Avoid divide-by-zero
+                
+                # Flatten all normalized columns
+                flattened_output = tf.reshape(normalized_output, [-1])
+                
+                # Calculate mean and std deviation for SNR
+                mean_val = tf.reduce_mean(flattened_output)
+                std_val = tf.math.reduce_std(flattened_output)
                 snr = tf.cond(
                     std_val > 0,
-                    #lambda: (mean_val / std_val) ** 2,
-                    lambda: (mean_val / std_val),
+                    lambda: (mean_val / std_val) ** 2,
                     lambda: tf.constant(0.0)
                 )
                 
@@ -67,6 +71,7 @@ class AutoencoderManager:
                 beta = 0.01  # Weight for SNR
                 hybrid_loss = alpha * mae_loss - beta * snr
                 return hybrid_loss
+
 
             # Define optimizer
             adam_optimizer = Adam(

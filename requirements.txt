@@ -1,4 +1,4 @@
-tensorflow-gpu==2.12.0
+tensorflow-gpu==2.13.0
 nvidia-cudnn-cu11==8.5.0.96
 numpy==1.24.2
 pandas==1.5.3

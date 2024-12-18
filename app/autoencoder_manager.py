@@ -4,7 +4,6 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 import tensorflow as tf
 from keras.optimizers import Adam
 from tensorflow.keras.losses import Huber
-from keras.metrics import R2Score
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
@@ -54,11 +53,19 @@ class AutoencoderManager:
                 clipvalue=0.5  # Gradient clipping
             )
             
+            # Define custom R² score metric
+            def r2_score(y_true, y_pred):
+                """Calculate R² score."""
+                ss_res = tf.reduce_sum(tf.square(y_true - y_pred))  # Residual sum of squares
+                ss_tot = tf.reduce_sum(tf.square(y_true - tf.reduce_mean(y_true)))  # Total sum of squares
+                return 1 - (ss_res / (ss_tot + tf.keras.backend.epsilon()))  # Avoid division by zero
+
+
             # Compile autoencoder with the custom loss function
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer, 
                 loss=Huber(delta=1.0), 
-                metrics=['mae', R2Score(name='r2')] ,
+                metrics=['mae', r2_score] ,
                 run_eagerly=True
             )
             print("[build_autoencoder] Autoencoder model built and compiled successfully")

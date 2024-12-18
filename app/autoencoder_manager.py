@@ -38,19 +38,25 @@ class AutoencoderManager:
             # Build autoencoder model
             autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
+            
+            # Add gradient clipping to Adam optimizer
             adam_optimizer = Adam(
                 learning_rate=config['learning_rate'],  # Set the learning rate
-                beta_1=0.9,           # Default value
-                beta_2=0.999,         # Default value
-                epsilon=1e-7,         # Default value
-                amsgrad=False         # Default value
+                beta_1=0.9,  # Default value
+                beta_2=0.999,  # Default value
+                epsilon=1e-7,  # Default value
+                amsgrad=False,  # Default value
+                clipnorm=1.0,  # Clip gradients by norm
+                clipvalue=0.5  # Clip gradients by value
             )
-            self.autoencoder_model.compile(optimizer=adam_optimizer, loss='mae')
+            
+            self.autoencoder_model.compile(optimizer=adam_optimizer, loss='mae', run_eagerly=True)
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
             self.autoencoder_model.summary()
         except Exception as e:
             print(f"[build_autoencoder] Exception occurred: {e}")
             raise
+
 
 
 

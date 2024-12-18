@@ -132,16 +132,17 @@ class AutoencoderManager:
                 normalized_columns.append(normalized_column)
             
             concatenated_data = np.concatenate(normalized_columns, axis=0)
+            num_samples = concatenated_data.shape[0]  # Correct number of samples is the length of concatenated vector
             
             # Calculate signal-to-noise ratio (SNR)
             mean_val = np.mean(concatenated_data)
-            std_dev = np.std(concatenated_data)
-            if std_dev != 0:
-                snr = (mean_val / std_dev) ** 2
+            std_val = np.std(concatenated_data)
+            if std_val != 0:
+                snr = (mean_val / std_val) ** 2
             else:
                 snr = 'E'
                 print("[WARNING] Standard deviation of normalized data is zero, SNR will be 'E'.")
-            
+
             # Retrieve dataset periodicity and calculate sampling frequency
             periodicity = config['dataset_periodicity']
             periodicity_seconds_map = {
@@ -158,19 +159,26 @@ class AutoencoderManager:
             # Calculate Shannon-Hartley channel capacity and total useful information
             if snr != 'E' and sampling_frequency != 'E':
                 channel_capacity = sampling_frequency * np.log2(1 + snr)  # in bits per second
-                total_information_bits = channel_capacity * data.shape[0] * sampling_period_seconds
+                total_information_bits = channel_capacity * num_samples * sampling_period_seconds
             else:
                 channel_capacity = 'E'
                 total_information_bits = 'E'
+
+            # Calculate entropy in bits
+            unique, counts = np.unique(concatenated_data, return_counts=True)
+            probabilities = counts / num_samples
+            entropy = -np.sum(probabilities * np.log2(probabilities + 1e-10))  # Add 1e-10 to avoid log(0)
 
             # Log calculated information
             print(f"[calculate_dataset_information] Calculated SNR: {snr}")
             print(f"[calculate_dataset_information] Sampling frequency: {sampling_frequency} Hz")
             print(f"[calculate_dataset_information] Channel capacity: {channel_capacity} bits/second")
             print(f"[calculate_dataset_information] Total useful information: {total_information_bits} bits")
+            print(f"[calculate_dataset_information] Entropy: {entropy} bits")
         except Exception as e:
             print(f"[calculate_dataset_information] Exception occurred: {e}")
             raise
+
 
 
 

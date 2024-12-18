@@ -49,8 +49,8 @@ class Plugin:
         num_intermediate_layers = self.params['intermediate_layers']
         print(f"[DEBUG] Number of intermediate layers={num_intermediate_layers}")
         
-        layers = [output_shape]  # Start with output_shape
-        current_size = output_shape
+        layers = [output_shape*2]  # Start with output_shape
+        current_size = output_shape*2
 
         # Calculate the layer sizes by halving, similar to the encoder but reversed
         for i in range(num_intermediate_layers):

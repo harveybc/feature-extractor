@@ -43,11 +43,11 @@ class Plugin:
         self.params['input_shape'] = input_shape
 
         # Initialize layers array with input_shape
-        layers = [input_shape]
+        layers = [input_shape*2]
         num_intermediate_layers = self.params['intermediate_layers']
         
         # Calculate sizes of intermediate layers based on downscaling by 2
-        current_size = input_shape
+        current_size = input_shape*2
         for i in range(num_intermediate_layers):
             next_size = current_size // 2  # Scale down by half
             if next_size < interface_size:

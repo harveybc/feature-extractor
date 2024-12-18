@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model
-from keras.optimizers import Adam
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
@@ -78,7 +78,23 @@ class AutoencoderManager:
             self.calculate_dataset_information(data, config)
 
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
-            history = self.autoencoder_model.fit(data, data, epochs=epochs, batch_size=batch_size, verbose=1)
+
+            # Implement Early Stopping
+            early_stopping = EarlyStopping(
+                monitor='loss',         # Monitor training loss
+                patience=2            # Number of epochs with no improvement before stopping
+                restore_best_weights=True  # Restore model weights from the best epoch
+            )
+
+            # Start training with early stopping
+            history = self.autoencoder_model.fit(
+                data, 
+                data, 
+                epochs=epochs, 
+                batch_size=batch_size, 
+                verbose=1, 
+                callbacks=[early_stopping]
+            )
 
             # Log training loss
             print(f"[train_autoencoder] Training loss values: {history.history['loss']}")

@@ -85,7 +85,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         autoencoder_manager.build_autoencoder(config['window_size'], current_size, config, num_channels)
 
         # Train the autoencoder model
-        autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size)
+        autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
 
         # Encode and decode the validation data
         encoded_data = autoencoder_manager.encode_data(validation_data)  

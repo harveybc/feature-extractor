@@ -1,8296 +1,0 @@
-%PDF-1.3
-%ÿÿÿÿ
-9 0 obj
-<<
-/Type /ExtGState
-/ca 1
->>
-endobj
-8 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 6 0 R
-/Resources 7 0 R
-/UserUnit 1
->>
-endobj
-7 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-14 0 obj
-<<
-/S /URI
-/URI (https://storm.genie.stanford.edu/article/8991)
->>
-endobj
-15 0 obj
-<<
-/Subtype /Link
-/A 14 0 R
-/Type /Annot
-/Rect [83.288 761.090013 356.708 776.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-16 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-17 0 obj
-<<
-/Subtype /Link
-/A 16 0 R
-/Type /Annot
-/Rect [286.46 381.089996 292.02 403.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-18 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-19 0 obj
-<<
-/Subtype /Link
-/A 18 0 R
-/Type /Annot
-/Rect [292.02 381.089996 303.14 403.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-20 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-21 0 obj
-<<
-/Subtype /Link
-/A 20 0 R
-/Type /Annot
-/Rect [303.14 381.089996 308.7 403.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-22 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-23 0 obj
-<<
-/Subtype /Link
-/A 22 0 R
-/Type /Annot
-/Rect [308.7 381.089996 314.26 403.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-24 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-25 0 obj
-<<
-/Subtype /Link
-/A 24 0 R
-/Type /Annot
-/Rect [314.26 381.089996 325.38 403.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-26 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-27 0 obj
-<<
-/Subtype /Link
-/A 26 0 R
-/Type /Annot
-/Rect [325.38 381.089996 330.94 403.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-28 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-29 0 obj
-<<
-/Subtype /Link
-/A 28 0 R
-/Type /Annot
-/Rect [500.18 249.089996 505.74 271.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-30 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-31 0 obj
-<<
-/Subtype /Link
-/A 30 0 R
-/Type /Annot
-/Rect [505.74 249.089996 516.86 271.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-32 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-33 0 obj
-<<
-/Subtype /Link
-/A 32 0 R
-/Type /Annot
-/Rect [516.86 249.089996 522.42 271.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-34 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-35 0 obj
-<<
-/Subtype /Link
-/A 34 0 R
-/Type /Annot
-/Rect [522.42 249.089996 527.98 271.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-36 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-37 0 obj
-<<
-/Subtype /Link
-/A 36 0 R
-/Type /Annot
-/Rect [527.98 249.089996 539.1 271.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-38 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-39 0 obj
-<<
-/Subtype /Link
-/A 38 0 R
-/Type /Annot
-/Rect [539.1 249.089996 544.66 271.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-40 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-41 0 obj
-<<
-/Subtype /Link
-/A 40 0 R
-/Type /Annot
-/Rect [525.040029 161.089996 530.600029 183.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-42 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-43 0 obj
-<<
-/Subtype /Link
-/A 42 0 R
-/Type /Annot
-/Rect [530.600029 161.089996 541.720029 183.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-44 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-45 0 obj
-<<
-/Subtype /Link
-/A 44 0 R
-/Type /Annot
-/Rect [541.720029 161.089996 555.280029 183.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-46 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-47 0 obj
-<<
-/Subtype /Link
-/A 46 0 R
-/Type /Annot
-/Rect [40 139.089996 45.56 161.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-48 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-49 0 obj
-<<
-/Subtype /Link
-/A 48 0 R
-/Type /Annot
-/Rect [45.56 139.089996 56.68 161.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-50 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-51 0 obj
-<<
-/Subtype /Link
-/A 50 0 R
-/Type /Annot
-/Rect [56.68 139.089996 62.24 161.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-52 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-53 0 obj
-<<
-/Subtype /Link
-/A 52 0 R
-/Type /Annot
-/Rect [409.08 73.089996 414.64 95.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-54 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-55 0 obj
-<<
-/Subtype /Link
-/A 54 0 R
-/Type /Annot
-/Rect [414.64 73.089996 425.76 95.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-56 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-57 0 obj
-<<
-/Subtype /Link
-/A 56 0 R
-/Type /Annot
-/Rect [425.76 73.089996 431.32 95.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-58 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-59 0 obj
-<<
-/Subtype /Link
-/A 58 0 R
-/Type /Annot
-/Rect [431.32 73.089996 436.88 95.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-60 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-61 0 obj
-<<
-/Subtype /Link
-/A 60 0 R
-/Type /Annot
-/Rect [436.88 73.089996 448 95.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-62 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-63 0 obj
-<<
-/Subtype /Link
-/A 62 0 R
-/Type /Annot
-/Rect [448 73.089996 453.56 95.089996]
-/Border [0 0 0]
-/F 4
->>
-endobj
-13 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 11 0 R
-/Resources 12 0 R
-/UserUnit 1
-/Annots [15 0 R 17 0 R 19 0 R 21 0 R 23 0 R 25 0 R 27 0 R 29 0 R 31 0 R 33 0 R 35 0 R 37 0 R 39 0 R 41 0 R 43 0 R 45 0 R 47 0 R 49 0 R 51 0 R 53 0 R 55 0 R 57 0 R 59 0 R 61 0 R 63 0 R]
->>
-endobj
-12 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-67 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-68 0 obj
-<<
-/Subtype /Link
-/A 67 0 R
-/Type /Annot
-/Rect [530.684473 613.890015 536.202251 635.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-69 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-70 0 obj
-<<
-/Subtype /Link
-/A 69 0 R
-/Type /Annot
-/Rect [536.202251 613.890015 555.280029 635.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-71 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-72 0 obj
-<<
-/Subtype /Link
-/A 71 0 R
-/Type /Annot
-/Rect [40 591.890015 45.56 613.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-73 0 obj
-<<
-/S /URI
-/URI (https://builtin.com/data-science/step-step-explanation-principal-component-analysis)
->>
-endobj
-74 0 obj
-<<
-/Subtype /Link
-/A 73 0 R
-/Type /Annot
-/Rect [45.56 591.890015 51.12 613.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-75 0 obj
-<<
-/S /URI
-/URI (https://builtin.com/data-science/step-step-explanation-principal-component-analysis)
->>
-endobj
-76 0 obj
-<<
-/Subtype /Link
-/A 75 0 R
-/Type /Annot
-/Rect [51.12 591.890015 73.36 613.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-77 0 obj
-<<
-/S /URI
-/URI (https://builtin.com/data-science/step-step-explanation-principal-component-analysis)
->>
-endobj
-78 0 obj
-<<
-/Subtype /Link
-/A 77 0 R
-/Type /Annot
-/Rect [73.36 591.890015 78.92 613.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-79 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-80 0 obj
-<<
-/Subtype /Link
-/A 79 0 R
-/Type /Annot
-/Rect [78.92 591.890015 84.48 613.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-81 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-82 0 obj
-<<
-/Subtype /Link
-/A 81 0 R
-/Type /Annot
-/Rect [84.48 591.890015 106.72 613.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-83 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-84 0 obj
-<<
-/Subtype /Link
-/A 83 0 R
-/Type /Annot
-/Rect [106.72 591.890015 112.28 613.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-85 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-86 0 obj
-<<
-/Subtype /Link
-/A 85 0 R
-/Type /Annot
-/Rect [313.74 349.890015 319.3 371.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-87 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-88 0 obj
-<<
-/Subtype /Link
-/A 87 0 R
-/Type /Annot
-/Rect [319.3 349.890015 341.54 371.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-89 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-90 0 obj
-<<
-/Subtype /Link
-/A 89 0 R
-/Type /Annot
-/Rect [341.54 349.890015 347.1 371.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-91 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-92 0 obj
-<<
-/Subtype /Link
-/A 91 0 R
-/Type /Annot
-/Rect [347.1 349.890015 352.66 371.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-93 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-94 0 obj
-<<
-/Subtype /Link
-/A 93 0 R
-/Type /Annot
-/Rect [352.66 349.890015 374.9 371.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-95 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-96 0 obj
-<<
-/Subtype /Link
-/A 95 0 R
-/Type /Annot
-/Rect [374.9 349.890015 380.46 371.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-97 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-98 0 obj
-<<
-/Subtype /Link
-/A 97 0 R
-/Type /Annot
-/Rect [40 319.490015 43.892 334.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-99 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-100 0 obj
-<<
-/Subtype /Link
-/A 99 0 R
-/Type /Annot
-/Rect [43.892 319.490015 51.676 334.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-101 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-102 0 obj
-<<
-/Subtype /Link
-/A 101 0 R
-/Type /Annot
-/Rect [51.676 319.490015 55.568 334.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-103 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-104 0 obj
-<<
-/Subtype /Link
-/A 103 0 R
-/Type /Annot
-/Rect [40 304.090015 43.892 319.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-105 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-106 0 obj
-<<
-/Subtype /Link
-/A 105 0 R
-/Type /Annot
-/Rect [43.892 304.090015 51.676 319.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-107 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-108 0 obj
-<<
-/Subtype /Link
-/A 107 0 R
-/Type /Annot
-/Rect [51.676 304.090015 55.568 319.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-109 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-110 0 obj
-<<
-/Subtype /Link
-/A 109 0 R
-/Type /Annot
-/Rect [40 273.290015 43.892 288.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-111 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-112 0 obj
-<<
-/Subtype /Link
-/A 111 0 R
-/Type /Annot
-/Rect [43.892 273.290015 51.676 288.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-113 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-114 0 obj
-<<
-/Subtype /Link
-/A 113 0 R
-/Type /Annot
-/Rect [51.676 273.290015 55.568 288.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-115 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-116 0 obj
-<<
-/Subtype /Link
-/A 115 0 R
-/Type /Annot
-/Rect [40 257.890015 43.892 273.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-117 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-118 0 obj
-<<
-/Subtype /Link
-/A 117 0 R
-/Type /Annot
-/Rect [43.892 257.890015 51.676 273.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-119 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-120 0 obj
-<<
-/Subtype /Link
-/A 119 0 R
-/Type /Annot
-/Rect [51.676 257.890015 55.568 273.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-121 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-122 0 obj
-<<
-/Subtype /Link
-/A 121 0 R
-/Type /Annot
-/Rect [40 227.090015 43.892 242.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-123 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-124 0 obj
-<<
-/Subtype /Link
-/A 123 0 R
-/Type /Annot
-/Rect [43.892 227.090015 51.676 242.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-125 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-126 0 obj
-<<
-/Subtype /Link
-/A 125 0 R
-/Type /Annot
-/Rect [51.676 227.090015 55.568 242.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-127 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-128 0 obj
-<<
-/Subtype /Link
-/A 127 0 R
-/Type /Annot
-/Rect [40 211.690015 43.892 227.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-129 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-130 0 obj
-<<
-/Subtype /Link
-/A 129 0 R
-/Type /Annot
-/Rect [43.892 211.690015 51.676 227.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-131 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-132 0 obj
-<<
-/Subtype /Link
-/A 131 0 R
-/Type /Annot
-/Rect [51.676 211.690015 55.568 227.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-133 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-134 0 obj
-<<
-/Subtype /Link
-/A 133 0 R
-/Type /Annot
-/Rect [40 180.890015 43.892 196.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-135 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-136 0 obj
-<<
-/Subtype /Link
-/A 135 0 R
-/Type /Annot
-/Rect [43.892 180.890015 51.676 196.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-137 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-138 0 obj
-<<
-/Subtype /Link
-/A 137 0 R
-/Type /Annot
-/Rect [51.676 180.890015 55.196183 196.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-139 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-140 0 obj
-<<
-/Subtype /Link
-/A 139 0 R
-/Type /Annot
-/Rect [40 165.490015 43.892 180.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-141 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-142 0 obj
-<<
-/Subtype /Link
-/A 141 0 R
-/Type /Annot
-/Rect [43.892 165.490015 51.676 180.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-143 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-144 0 obj
-<<
-/Subtype /Link
-/A 143 0 R
-/Type /Annot
-/Rect [51.676 165.490015 55.539002 180.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-145 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-146 0 obj
-<<
-/Subtype /Link
-/A 145 0 R
-/Type /Annot
-/Rect [40 150.090015 43.892 165.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-147 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-148 0 obj
-<<
-/Subtype /Link
-/A 147 0 R
-/Type /Annot
-/Rect [43.892 150.090015 51.676 165.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-149 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-150 0 obj
-<<
-/Subtype /Link
-/A 149 0 R
-/Type /Annot
-/Rect [51.676 150.090015 55.568 165.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-151 0 obj
-<<
-/S /URI
-/URI (https://builtin.com/data-science/step-step-explanation-principal-component-analysis)
->>
-endobj
-152 0 obj
-<<
-/Subtype /Link
-/A 151 0 R
-/Type /Annot
-/Rect [40 119.290015 43.892 134.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-153 0 obj
-<<
-/S /URI
-/URI (https://builtin.com/data-science/step-step-explanation-principal-component-analysis)
->>
-endobj
-154 0 obj
-<<
-/Subtype /Link
-/A 153 0 R
-/Type /Annot
-/Rect [43.892 119.290015 59.46 134.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-155 0 obj
-<<
-/S /URI
-/URI (https://builtin.com/data-science/step-step-explanation-principal-component-analysis)
->>
-endobj
-156 0 obj
-<<
-/Subtype /Link
-/A 155 0 R
-/Type /Annot
-/Rect [59.46 119.290015 63.352 134.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-157 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-158 0 obj
-<<
-/Subtype /Link
-/A 157 0 R
-/Type /Annot
-/Rect [40 88.490015 43.892 103.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-159 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-160 0 obj
-<<
-/Subtype /Link
-/A 159 0 R
-/Type /Annot
-/Rect [43.892 88.490015 59.46 103.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-161 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-162 0 obj
-<<
-/Subtype /Link
-/A 161 0 R
-/Type /Annot
-/Rect [59.46 88.490015 63.352 103.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-163 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-164 0 obj
-<<
-/Subtype /Link
-/A 163 0 R
-/Type /Annot
-/Rect [40 73.090015 43.892 88.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-165 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-166 0 obj
-<<
-/Subtype /Link
-/A 165 0 R
-/Type /Annot
-/Rect [43.892 73.090015 59.46 88.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-167 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-168 0 obj
-<<
-/Subtype /Link
-/A 167 0 R
-/Type /Annot
-/Rect [59.46 73.090015 63.352 88.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-66 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 64 0 R
-/Resources 65 0 R
-/UserUnit 1
-/Annots [68 0 R 70 0 R 72 0 R 74 0 R 76 0 R 78 0 R 80 0 R 82 0 R 84 0 R 86 0 R 88 0 R 90 0 R 92 0 R 94 0 R 96 0 R 98 0 R 100 0 R 102 0 R 104 0 R 106 0 R 108 0 R 110 0 R 112 0 R 114 0 R 116 0 R 118 0 R 120 0 R 122 0 R 124 0 R 126 0 R 128 0 R 130 0 R 132 0 R 134 0 R 136 0 R 138 0 R 140 0 R 142 0 R 144 0 R 146 0 R 148 0 R 150 0 R 152 0 R 154 0 R 156 0 R 158 0 R 160 0 R 162 0 R 164 0 R 166 0 R 168 0 R]
->>
-endobj
-65 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-172 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-173 0 obj
-<<
-/Subtype /Link
-/A 172 0 R
-/Type /Annot
-/Rect [98.352 668.090013 102.244 683.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-174 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-175 0 obj
-<<
-/Subtype /Link
-/A 174 0 R
-/Type /Annot
-/Rect [102.244 668.090013 110.028 683.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-176 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-177 0 obj
-<<
-/Subtype /Link
-/A 176 0 R
-/Type /Annot
-/Rect [110.028 668.090013 113.92 683.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-178 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-179 0 obj
-<<
-/Subtype /Link
-/A 178 0 R
-/Type /Annot
-/Rect [269.67 591.090013 273.562 606.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-180 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-181 0 obj
-<<
-/Subtype /Link
-/A 180 0 R
-/Type /Annot
-/Rect [273.562 591.090013 281.346 606.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-182 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-183 0 obj
-<<
-/Subtype /Link
-/A 182 0 R
-/Type /Annot
-/Rect [281.346 591.090013 285.238 606.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-184 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-185 0 obj
-<<
-/Subtype /Link
-/A 184 0 R
-/Type /Annot
-/Rect [285.238 591.090013 289.13 606.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-186 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-187 0 obj
-<<
-/Subtype /Link
-/A 186 0 R
-/Type /Annot
-/Rect [289.13 591.090013 296.914 606.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-188 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-189 0 obj
-<<
-/Subtype /Link
-/A 188 0 R
-/Type /Annot
-/Rect [296.914 591.090013 300.806 606.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-190 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-191 0 obj
-<<
-/Subtype /Link
-/A 190 0 R
-/Type /Annot
-/Rect [300.806 591.090013 304.698 606.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-192 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-193 0 obj
-<<
-/Subtype /Link
-/A 192 0 R
-/Type /Annot
-/Rect [304.698 591.090013 312.482 606.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-194 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-195 0 obj
-<<
-/Subtype /Link
-/A 194 0 R
-/Type /Annot
-/Rect [312.482 591.090013 316.374 606.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-196 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-197 0 obj
-<<
-/Subtype /Link
-/A 196 0 R
-/Type /Annot
-/Rect [522.734 529.490013 526.626 544.890013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-198 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-199 0 obj
-<<
-/Subtype /Link
-/A 198 0 R
-/Type /Annot
-/Rect [526.626 529.490013 534.41 544.890013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-200 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-201 0 obj
-<<
-/Subtype /Link
-/A 200 0 R
-/Type /Annot
-/Rect [534.41 529.490013 538.302 544.890013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-202 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-203 0 obj
-<<
-/Subtype /Link
-/A 202 0 R
-/Type /Annot
-/Rect [363.904 467.890013 367.796 483.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-204 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-205 0 obj
-<<
-/Subtype /Link
-/A 204 0 R
-/Type /Annot
-/Rect [367.796 467.890013 375.58 483.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-206 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-207 0 obj
-<<
-/Subtype /Link
-/A 206 0 R
-/Type /Annot
-/Rect [375.58 467.890013 379.472 483.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-208 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-209 0 obj
-<<
-/Subtype /Link
-/A 208 0 R
-/Type /Annot
-/Rect [379.472 467.890013 383.364 483.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-210 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-211 0 obj
-<<
-/Subtype /Link
-/A 210 0 R
-/Type /Annot
-/Rect [383.364 467.890013 391.148 483.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-212 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-213 0 obj
-<<
-/Subtype /Link
-/A 212 0 R
-/Type /Annot
-/Rect [391.148 467.890013 395.04 483.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-214 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-215 0 obj
-<<
-/Subtype /Link
-/A 214 0 R
-/Type /Annot
-/Rect [395.04 467.890013 398.932 483.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-216 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-217 0 obj
-<<
-/Subtype /Link
-/A 216 0 R
-/Type /Annot
-/Rect [398.932 467.890013 406.716 483.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-218 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-219 0 obj
-<<
-/Subtype /Link
-/A 218 0 R
-/Type /Annot
-/Rect [406.716 467.890013 410.608 483.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-220 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-221 0 obj
-<<
-/Subtype /Link
-/A 220 0 R
-/Type /Annot
-/Rect [343.296 390.890013 347.188 406.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-222 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-223 0 obj
-<<
-/Subtype /Link
-/A 222 0 R
-/Type /Annot
-/Rect [347.188 390.890013 354.972 406.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-224 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-225 0 obj
-<<
-/Subtype /Link
-/A 224 0 R
-/Type /Annot
-/Rect [354.972 390.890013 358.864 406.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-226 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-227 0 obj
-<<
-/Subtype /Link
-/A 226 0 R
-/Type /Annot
-/Rect [358.864 390.890013 362.756 406.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-228 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-229 0 obj
-<<
-/Subtype /Link
-/A 228 0 R
-/Type /Annot
-/Rect [362.756 390.890013 370.54 406.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-230 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-231 0 obj
-<<
-/Subtype /Link
-/A 230 0 R
-/Type /Annot
-/Rect [370.54 390.890013 374.432 406.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-232 0 obj
-<<
-/S /URI
-/URI (https://builtin.com/data-science/step-step-explanation-principal-component-analysis)
->>
-endobj
-233 0 obj
-<<
-/Subtype /Link
-/A 232 0 R
-/Type /Annot
-/Rect [374.432 390.890013 378.324 406.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-234 0 obj
-<<
-/S /URI
-/URI (https://builtin.com/data-science/step-step-explanation-principal-component-analysis)
->>
-endobj
-235 0 obj
-<<
-/Subtype /Link
-/A 234 0 R
-/Type /Annot
-/Rect [378.324 390.890013 393.892 406.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-236 0 obj
-<<
-/S /URI
-/URI (https://builtin.com/data-science/step-step-explanation-principal-component-analysis)
->>
-endobj
-237 0 obj
-<<
-/Subtype /Link
-/A 236 0 R
-/Type /Annot
-/Rect [393.892 390.890013 397.784 406.290013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-238 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-239 0 obj
-<<
-/Subtype /Link
-/A 238 0 R
-/Type /Annot
-/Rect [139.162 344.690013 143.054 360.090013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-240 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-241 0 obj
-<<
-/Subtype /Link
-/A 240 0 R
-/Type /Annot
-/Rect [143.054 344.690013 158.622 360.090013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-242 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-243 0 obj
-<<
-/Subtype /Link
-/A 242 0 R
-/Type /Annot
-/Rect [158.622 344.690013 162.514 360.090013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-244 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-245 0 obj
-<<
-/Subtype /Link
-/A 244 0 R
-/Type /Annot
-/Rect [434.394 231.690039 438.286 247.090039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-246 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-247 0 obj
-<<
-/Subtype /Link
-/A 246 0 R
-/Type /Annot
-/Rect [438.286 231.690039 446.07 247.090039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-248 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-249 0 obj
-<<
-/Subtype /Link
-/A 248 0 R
-/Type /Annot
-/Rect [446.07 231.690039 449.962 247.090039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-250 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-251 0 obj
-<<
-/Subtype /Link
-/A 250 0 R
-/Type /Annot
-/Rect [449.962 231.690039 453.854 247.090039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-252 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-253 0 obj
-<<
-/Subtype /Link
-/A 252 0 R
-/Type /Annot
-/Rect [453.854 231.690039 461.638 247.090039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-254 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-255 0 obj
-<<
-/Subtype /Link
-/A 254 0 R
-/Type /Annot
-/Rect [461.638 231.690039 465.53 247.090039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-256 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-257 0 obj
-<<
-/Subtype /Link
-/A 256 0 R
-/Type /Annot
-/Rect [448.38 138.490063 452.272 153.890063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-258 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-259 0 obj
-<<
-/Subtype /Link
-/A 258 0 R
-/Type /Annot
-/Rect [452.272 138.490063 467.84 153.890063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-260 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-261 0 obj
-<<
-/Subtype /Link
-/A 260 0 R
-/Type /Annot
-/Rect [467.84 138.490063 471.732 153.890063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-262 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-263 0 obj
-<<
-/Subtype /Link
-/A 262 0 R
-/Type /Annot
-/Rect [471.732 138.490063 475.624 153.890063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-264 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-265 0 obj
-<<
-/Subtype /Link
-/A 264 0 R
-/Type /Annot
-/Rect [475.624 138.490063 491.192 153.890063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-266 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-267 0 obj
-<<
-/Subtype /Link
-/A 266 0 R
-/Type /Annot
-/Rect [491.192 138.490063 495.084 153.890063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-268 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-classification/)
->>
-endobj
-269 0 obj
-<<
-/Subtype /Link
-/A 268 0 R
-/Type /Annot
-/Rect [490.534 107.690063 494.426 123.090063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-270 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-classification/)
->>
-endobj
-271 0 obj
-<<
-/Subtype /Link
-/A 270 0 R
-/Type /Annot
-/Rect [494.426 107.690063 509.994 123.090063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-272 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-classification/)
->>
-endobj
-273 0 obj
-<<
-/Subtype /Link
-/A 272 0 R
-/Type /Annot
-/Rect [509.994 107.690063 513.886 123.090063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-274 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-regression/)
->>
-endobj
-275 0 obj
-<<
-/Subtype /Link
-/A 274 0 R
-/Type /Annot
-/Rect [513.886 107.690063 517.778 123.090063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-276 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-regression/)
->>
-endobj
-277 0 obj
-<<
-/Subtype /Link
-/A 276 0 R
-/Type /Annot
-/Rect [517.778 107.690063 533.346 123.090063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-278 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-regression/)
->>
-endobj
-279 0 obj
-<<
-/Subtype /Link
-/A 278 0 R
-/Type /Annot
-/Rect [533.346 107.690063 537.238 123.090063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-280 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-281 0 obj
-<<
-/Subtype /Link
-/A 280 0 R
-/Type /Annot
-/Rect [270.482 46.090063 274.374 61.490063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-282 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-283 0 obj
-<<
-/Subtype /Link
-/A 282 0 R
-/Type /Annot
-/Rect [274.374 46.090063 289.942 61.490063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-284 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-285 0 obj
-<<
-/Subtype /Link
-/A 284 0 R
-/Type /Annot
-/Rect [289.942 46.090063 293.834 61.490063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-286 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-287 0 obj
-<<
-/Subtype /Link
-/A 286 0 R
-/Type /Annot
-/Rect [482.176 30.690063 486.068 46.090063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-288 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-289 0 obj
-<<
-/Subtype /Link
-/A 288 0 R
-/Type /Annot
-/Rect [486.068 30.690063 501.636 46.090063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-290 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-291 0 obj
-<<
-/Subtype /Link
-/A 290 0 R
-/Type /Annot
-/Rect [501.636 30.690063 505.528 46.090063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-171 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 169 0 R
-/Resources 170 0 R
-/UserUnit 1
-/Annots [173 0 R 175 0 R 177 0 R 179 0 R 181 0 R 183 0 R 185 0 R 187 0 R 189 0 R 191 0 R 193 0 R 195 0 R 197 0 R 199 0 R 201 0 R 203 0 R 205 0 R 207 0 R 209 0 R 211 0 R 213 0 R 215 0 R 217 0 R 219 0 R 221 0 R 223 0 R 225 0 R 227 0 R 229 0 R 231 0 R 233 0 R 235 0 R 237 0 R 239 0 R 241 0 R 243 0 R 245 0 R 247 0 R 249 0 R 251 0 R 253 0 R 255 0 R 257 0 R 259 0 R 261 0 R 263 0 R 265 0 R 267 0 R 269 0 R 271 0 R 273 0 R 275 0 R 277 0 R 279 0 R 281 0 R 283 0 R 285 0 R 287 0 R 289 0 R 291 0 R]
->>
-endobj
-170 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-295 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-296 0 obj
-<<
-/Subtype /Link
-/A 295 0 R
-/Type /Annot
-/Rect [206.607233 718.690015 210.499233 734.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-297 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-298 0 obj
-<<
-/Subtype /Link
-/A 297 0 R
-/Type /Annot
-/Rect [210.499233 718.690015 218.283233 734.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-299 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-300 0 obj
-<<
-/Subtype /Link
-/A 299 0 R
-/Type /Annot
-/Rect [218.283233 718.690015 222.175233 734.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-301 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-302 0 obj
-<<
-/Subtype /Link
-/A 301 0 R
-/Type /Annot
-/Rect [90.899416 687.890015 94.769844 703.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-303 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-304 0 obj
-<<
-/Subtype /Link
-/A 303 0 R
-/Type /Annot
-/Rect [94.769844 687.890015 102.532271 703.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-305 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-306 0 obj
-<<
-/Subtype /Link
-/A 305 0 R
-/Type /Annot
-/Rect [102.532271 687.890015 106.402698 703.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-307 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-308 0 obj
-<<
-/Subtype /Link
-/A 307 0 R
-/Type /Annot
-/Rect [200.442006 657.090015 204.334006 672.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-309 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-310 0 obj
-<<
-/Subtype /Link
-/A 309 0 R
-/Type /Annot
-/Rect [204.334006 657.090015 212.118006 672.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-311 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-312 0 obj
-<<
-/Subtype /Link
-/A 311 0 R
-/Type /Annot
-/Rect [212.118006 657.090015 216.010006 672.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-313 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-314 0 obj
-<<
-/Subtype /Link
-/A 313 0 R
-/Type /Annot
-/Rect [216.010006 657.090015 219.902006 672.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-315 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-316 0 obj
-<<
-/Subtype /Link
-/A 315 0 R
-/Type /Annot
-/Rect [219.902006 657.090015 235.470006 672.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-317 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-318 0 obj
-<<
-/Subtype /Link
-/A 317 0 R
-/Type /Annot
-/Rect [235.470006 657.090015 239.362006 672.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-319 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-320 0 obj
-<<
-/Subtype /Link
-/A 319 0 R
-/Type /Annot
-/Rect [391.33 641.690015 395.222 657.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-321 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-322 0 obj
-<<
-/Subtype /Link
-/A 321 0 R
-/Type /Annot
-/Rect [395.222 641.690015 403.006 657.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-323 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-324 0 obj
-<<
-/Subtype /Link
-/A 323 0 R
-/Type /Annot
-/Rect [403.006 641.690015 406.898 657.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-325 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-326 0 obj
-<<
-/Subtype /Link
-/A 325 0 R
-/Type /Annot
-/Rect [77.325408 533.090018 81.212976 548.490018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-327 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-328 0 obj
-<<
-/Subtype /Link
-/A 327 0 R
-/Type /Annot
-/Rect [81.212976 533.090018 96.772112 548.490018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-329 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-330 0 obj
-<<
-/Subtype /Link
-/A 329 0 R
-/Type /Annot
-/Rect [96.772112 533.090018 100.65968 548.490018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-331 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-332 0 obj
-<<
-/Subtype /Link
-/A 331 0 R
-/Type /Annot
-/Rect [165.062 502.290018 168.954 517.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-333 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-334 0 obj
-<<
-/Subtype /Link
-/A 333 0 R
-/Type /Annot
-/Rect [168.954 502.290018 184.522 517.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-335 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-336 0 obj
-<<
-/Subtype /Link
-/A 335 0 R
-/Type /Annot
-/Rect [184.522 502.290018 188.414 517.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-337 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-338 0 obj
-<<
-/Subtype /Link
-/A 337 0 R
-/Type /Annot
-/Rect [528.036029 425.290018 531.928029 440.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-339 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-340 0 obj
-<<
-/Subtype /Link
-/A 339 0 R
-/Type /Annot
-/Rect [531.928029 425.290018 547.496029 440.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-341 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-342 0 obj
-<<
-/Subtype /Link
-/A 341 0 R
-/Type /Annot
-/Rect [547.496029 425.290018 551.388029 440.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-343 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/pulse/feature-extraction-natural-language-processing-vivekanandan)
->>
-endobj
-344 0 obj
-<<
-/Subtype /Link
-/A 343 0 R
-/Type /Annot
-/Rect [291.972 316.690039 295.864 332.090039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-345 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/pulse/feature-extraction-natural-language-processing-vivekanandan)
->>
-endobj
-346 0 obj
-<<
-/Subtype /Link
-/A 345 0 R
-/Type /Annot
-/Rect [295.864 316.690039 311.432 332.090039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-347 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/pulse/feature-extraction-natural-language-processing-vivekanandan)
->>
-endobj
-348 0 obj
-<<
-/Subtype /Link
-/A 347 0 R
-/Type /Annot
-/Rect [311.432 316.690039 315.324 332.090039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-349 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/pulse/feature-extraction-natural-language-processing-vivekanandan)
->>
-endobj
-350 0 obj
-<<
-/Subtype /Link
-/A 349 0 R
-/Type /Annot
-/Rect [107.69 285.890039 111.582 301.290039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-351 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/pulse/feature-extraction-natural-language-processing-vivekanandan)
->>
-endobj
-352 0 obj
-<<
-/Subtype /Link
-/A 351 0 R
-/Type /Annot
-/Rect [111.582 285.890039 127.15 301.290039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-353 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/pulse/feature-extraction-natural-language-processing-vivekanandan)
->>
-endobj
-354 0 obj
-<<
-/Subtype /Link
-/A 353 0 R
-/Type /Annot
-/Rect [127.15 285.890039 131.042 301.290039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-355 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-356 0 obj
-<<
-/Subtype /Link
-/A 355 0 R
-/Type /Annot
-/Rect [325.922 161.68999 329.814 177.08999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-357 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-358 0 obj
-<<
-/Subtype /Link
-/A 357 0 R
-/Type /Annot
-/Rect [329.814 161.68999 337.598 177.08999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-359 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-360 0 obj
-<<
-/Subtype /Link
-/A 359 0 R
-/Type /Annot
-/Rect [337.598 161.68999 341.49 177.08999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-361 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-362 0 obj
-<<
-/Subtype /Link
-/A 361 0 R
-/Type /Annot
-/Rect [528.876029 130.88999 532.768029 146.28999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-363 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-364 0 obj
-<<
-/Subtype /Link
-/A 363 0 R
-/Type /Annot
-/Rect [532.768029 130.88999 548.336029 146.28999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-365 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-366 0 obj
-<<
-/Subtype /Link
-/A 365 0 R
-/Type /Annot
-/Rect [548.336029 130.88999 552.228029 146.28999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-367 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-368 0 obj
-<<
-/Subtype /Link
-/A 367 0 R
-/Type /Annot
-/Rect [104.778 84.68999 108.67 100.08999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-369 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-370 0 obj
-<<
-/Subtype /Link
-/A 369 0 R
-/Type /Annot
-/Rect [108.67 84.68999 116.454 100.08999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-371 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-372 0 obj
-<<
-/Subtype /Link
-/A 371 0 R
-/Type /Annot
-/Rect [116.454 84.68999 120.346 100.08999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-294 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 292 0 R
-/Resources 293 0 R
-/UserUnit 1
-/Annots [296 0 R 298 0 R 300 0 R 302 0 R 304 0 R 306 0 R 308 0 R 310 0 R 312 0 R 314 0 R 316 0 R 318 0 R 320 0 R 322 0 R 324 0 R 326 0 R 328 0 R 330 0 R 332 0 R 334 0 R 336 0 R 338 0 R 340 0 R 342 0 R 344 0 R 346 0 R 348 0 R 350 0 R 352 0 R 354 0 R 356 0 R 358 0 R 360 0 R 362 0 R 364 0 R 366 0 R 368 0 R 370 0 R 372 0 R]
->>
-endobj
-293 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-376 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-377 0 obj
-<<
-/Subtype /Link
-/A 376 0 R
-/Type /Annot
-/Rect [522.16 765.690015 526.052 781.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-378 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-379 0 obj
-<<
-/Subtype /Link
-/A 378 0 R
-/Type /Annot
-/Rect [526.052 765.690015 541.62 781.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-380 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-381 0 obj
-<<
-/Subtype /Link
-/A 380 0 R
-/Type /Annot
-/Rect [541.62 765.690015 545.512 781.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-382 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-383 0 obj
-<<
-/Subtype /Link
-/A 382 0 R
-/Type /Annot
-/Rect [247.599261 719.490015 251.491261 734.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-384 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-385 0 obj
-<<
-/Subtype /Link
-/A 384 0 R
-/Type /Annot
-/Rect [251.491261 719.490015 267.059261 734.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-386 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-387 0 obj
-<<
-/Subtype /Link
-/A 386 0 R
-/Type /Annot
-/Rect [267.059261 719.490015 270.951261 734.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-388 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-389 0 obj
-<<
-/Subtype /Link
-/A 388 0 R
-/Type /Annot
-/Rect [326.16 688.690015 330.052 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-390 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-391 0 obj
-<<
-/Subtype /Link
-/A 390 0 R
-/Type /Annot
-/Rect [330.052 688.690015 345.62 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-392 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-393 0 obj
-<<
-/Subtype /Link
-/A 392 0 R
-/Type /Annot
-/Rect [345.62 688.690015 349.512 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-394 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-395 0 obj
-<<
-/Subtype /Link
-/A 394 0 R
-/Type /Annot
-/Rect [150.348 595.490018 154.24 610.890018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-396 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-397 0 obj
-<<
-/Subtype /Link
-/A 396 0 R
-/Type /Annot
-/Rect [154.24 595.490018 169.808 610.890018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-398 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-399 0 obj
-<<
-/Subtype /Link
-/A 398 0 R
-/Type /Annot
-/Rect [169.808 595.490018 173.7 610.890018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-400 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2022/05/a-complete-guide-on-feature-extraction-techniques/)
->>
-endobj
-401 0 obj
-<<
-/Subtype /Link
-/A 400 0 R
-/Type /Annot
-/Rect [173.7 595.490018 177.592 610.890018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-402 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2022/05/a-complete-guide-on-feature-extraction-techniques/)
->>
-endobj
-403 0 obj
-<<
-/Subtype /Link
-/A 402 0 R
-/Type /Annot
-/Rect [177.592 595.490018 193.16 610.890018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-404 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2022/05/a-complete-guide-on-feature-extraction-techniques/)
->>
-endobj
-405 0 obj
-<<
-/Subtype /Link
-/A 404 0 R
-/Type /Annot
-/Rect [193.16 595.490018 197.052 610.890018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-406 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-407 0 obj
-<<
-/Subtype /Link
-/A 406 0 R
-/Type /Annot
-/Rect [274.542 533.890018 278.434 549.290018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-408 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-409 0 obj
-<<
-/Subtype /Link
-/A 408 0 R
-/Type /Annot
-/Rect [278.434 533.890018 286.218 549.290018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-410 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-411 0 obj
-<<
-/Subtype /Link
-/A 410 0 R
-/Type /Annot
-/Rect [286.218 533.890018 290.11 549.290018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-412 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-413 0 obj
-<<
-/Subtype /Link
-/A 412 0 R
-/Type /Annot
-/Rect [290.11 533.890018 294.002 549.290018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-414 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-415 0 obj
-<<
-/Subtype /Link
-/A 414 0 R
-/Type /Annot
-/Rect [294.002 533.890018 301.786 549.290018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-416 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-417 0 obj
-<<
-/Subtype /Link
-/A 416 0 R
-/Type /Annot
-/Rect [301.786 533.890018 305.678 549.290018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-418 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-419 0 obj
-<<
-/Subtype /Link
-/A 418 0 R
-/Type /Annot
-/Rect [474.098 503.090018 477.99 518.490018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-420 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-421 0 obj
-<<
-/Subtype /Link
-/A 420 0 R
-/Type /Annot
-/Rect [477.99 503.090018 493.558 518.490018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-422 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-423 0 obj
-<<
-/Subtype /Link
-/A 422 0 R
-/Type /Annot
-/Rect [493.558 503.090018 497.45 518.490018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-424 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-425 0 obj
-<<
-/Subtype /Link
-/A 424 0 R
-/Type /Annot
-/Rect [123.058645 394.490027 126.934032 409.890027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-426 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-427 0 obj
-<<
-/Subtype /Link
-/A 426 0 R
-/Type /Annot
-/Rect [126.934032 394.490027 142.468806 409.890027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-428 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-429 0 obj
-<<
-/Subtype /Link
-/A 428 0 R
-/Type /Annot
-/Rect [142.468806 394.490027 146.344193 409.890027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-430 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-431 0 obj
-<<
-/Subtype /Link
-/A 430 0 R
-/Type /Annot
-/Rect [506.018 332.890027 509.91 348.290027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-432 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-433 0 obj
-<<
-/Subtype /Link
-/A 432 0 R
-/Type /Annot
-/Rect [509.91 332.890027 517.694 348.290027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-434 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-435 0 obj
-<<
-/Subtype /Link
-/A 434 0 R
-/Type /Annot
-/Rect [517.694 332.890027 521.586 348.290027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-436 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-437 0 obj
-<<
-/Subtype /Link
-/A 436 0 R
-/Type /Annot
-/Rect [521.586 332.890027 525.478 348.290027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-438 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-439 0 obj
-<<
-/Subtype /Link
-/A 438 0 R
-/Type /Annot
-/Rect [525.478 332.890027 541.046 348.290027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-440 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-441 0 obj
-<<
-/Subtype /Link
-/A 440 0 R
-/Type /Annot
-/Rect [541.046 332.890027 544.938 348.290027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-442 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-443 0 obj
-<<
-/Subtype /Link
-/A 442 0 R
-/Type /Annot
-/Rect [209.22601 224.290015 213.11801 239.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-444 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-445 0 obj
-<<
-/Subtype /Link
-/A 444 0 R
-/Type /Annot
-/Rect [213.11801 224.290015 220.90201 239.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-446 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-447 0 obj
-<<
-/Subtype /Link
-/A 446 0 R
-/Type /Annot
-/Rect [220.90201 224.290015 224.79401 239.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-448 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-449 0 obj
-<<
-/Subtype /Link
-/A 448 0 R
-/Type /Annot
-/Rect [93.284 193.490015 97.176 208.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-450 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-451 0 obj
-<<
-/Subtype /Link
-/A 450 0 R
-/Type /Annot
-/Rect [97.176 193.490015 112.744 208.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-452 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-453 0 obj
-<<
-/Subtype /Link
-/A 452 0 R
-/Type /Annot
-/Rect [112.744 193.490015 116.636 208.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-454 0 obj
-<<
-/S /URI
-/URI (https://www.sciencedirect.com/topics/computer-science/feature-extraction)
->>
-endobj
-455 0 obj
-<<
-/Subtype /Link
-/A 454 0 R
-/Type /Annot
-/Rect [467.56 178.090015 471.452 193.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-456 0 obj
-<<
-/S /URI
-/URI (https://www.sciencedirect.com/topics/computer-science/feature-extraction)
->>
-endobj
-457 0 obj
-<<
-/Subtype /Link
-/A 456 0 R
-/Type /Annot
-/Rect [471.452 178.090015 487.02 193.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-458 0 obj
-<<
-/S /URI
-/URI (https://www.sciencedirect.com/topics/computer-science/feature-extraction)
->>
-endobj
-459 0 obj
-<<
-/Subtype /Link
-/A 458 0 R
-/Type /Annot
-/Rect [487.02 178.090015 490.912 193.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-460 0 obj
-<<
-/S /URI
-/URI (https://www.hindawi.com/journals/isrn/2014/730218/)
->>
-endobj
-461 0 obj
-<<
-/Subtype /Link
-/A 460 0 R
-/Type /Annot
-/Rect [261.049647 54.090027 264.941647 69.490027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-462 0 obj
-<<
-/S /URI
-/URI (https://www.hindawi.com/journals/isrn/2014/730218/)
->>
-endobj
-463 0 obj
-<<
-/Subtype /Link
-/A 462 0 R
-/Type /Annot
-/Rect [264.941647 54.090027 280.509647 69.490027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-464 0 obj
-<<
-/S /URI
-/URI (https://www.hindawi.com/journals/isrn/2014/730218/)
->>
-endobj
-465 0 obj
-<<
-/Subtype /Link
-/A 464 0 R
-/Type /Annot
-/Rect [280.509647 54.090027 284.401647 69.490027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-375 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 373 0 R
-/Resources 374 0 R
-/UserUnit 1
-/Annots [377 0 R 379 0 R 381 0 R 383 0 R 385 0 R 387 0 R 389 0 R 391 0 R 393 0 R 395 0 R 397 0 R 399 0 R 401 0 R 403 0 R 405 0 R 407 0 R 409 0 R 411 0 R 413 0 R 415 0 R 417 0 R 419 0 R 421 0 R 423 0 R 425 0 R 427 0 R 429 0 R 431 0 R 433 0 R 435 0 R 437 0 R 439 0 R 441 0 R 443 0 R 445 0 R 447 0 R 449 0 R 451 0 R 453 0 R 455 0 R 457 0 R 459 0 R 461 0 R 463 0 R 465 0 R]
->>
-endobj
-374 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-469 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-470 0 obj
-<<
-/Subtype /Link
-/A 469 0 R
-/Type /Annot
-/Rect [414.654 605.690021 418.546 621.090021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-471 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-472 0 obj
-<<
-/Subtype /Link
-/A 471 0 R
-/Type /Annot
-/Rect [418.546 605.690021 426.33 621.090021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-473 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-474 0 obj
-<<
-/Subtype /Link
-/A 473 0 R
-/Type /Annot
-/Rect [426.33 605.690021 430.222 621.090021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-475 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-476 0 obj
-<<
-/Subtype /Link
-/A 475 0 R
-/Type /Annot
-/Rect [498.540026 559.490021 502.432026 574.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-477 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-478 0 obj
-<<
-/Subtype /Link
-/A 477 0 R
-/Type /Annot
-/Rect [502.432026 559.490021 518.000026 574.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-479 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-480 0 obj
-<<
-/Subtype /Link
-/A 479 0 R
-/Type /Annot
-/Rect [518.000026 559.490021 521.892026 574.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-481 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-482 0 obj
-<<
-/Subtype /Link
-/A 481 0 R
-/Type /Annot
-/Rect [84.338 513.290021 88.23 528.690021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-483 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-484 0 obj
-<<
-/Subtype /Link
-/A 483 0 R
-/Type /Annot
-/Rect [88.23 513.290021 103.798 528.690021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-485 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-486 0 obj
-<<
-/Subtype /Link
-/A 485 0 R
-/Type /Annot
-/Rect [103.798 513.290021 107.69 528.690021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-487 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-488 0 obj
-<<
-/Subtype /Link
-/A 487 0 R
-/Type /Annot
-/Rect [520.116 435.490039 524.008 450.890039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-489 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-490 0 obj
-<<
-/Subtype /Link
-/A 489 0 R
-/Type /Annot
-/Rect [524.008 435.490039 531.792 450.890039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-491 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-492 0 obj
-<<
-/Subtype /Link
-/A 491 0 R
-/Type /Annot
-/Rect [531.792 435.490039 535.684 450.890039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-493 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-494 0 obj
-<<
-/Subtype /Link
-/A 493 0 R
-/Type /Annot
-/Rect [193.146 389.290039 197.038 404.690039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-495 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-496 0 obj
-<<
-/Subtype /Link
-/A 495 0 R
-/Type /Annot
-/Rect [197.038 389.290039 204.822 404.690039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-497 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-498 0 obj
-<<
-/Subtype /Link
-/A 497 0 R
-/Type /Annot
-/Rect [204.822 389.290039 208.714 404.690039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-499 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-500 0 obj
-<<
-/Subtype /Link
-/A 499 0 R
-/Type /Annot
-/Rect [510.008 358.490039 513.9 373.890039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-501 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-502 0 obj
-<<
-/Subtype /Link
-/A 501 0 R
-/Type /Annot
-/Rect [513.9 358.490039 529.468 373.890039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-503 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-504 0 obj
-<<
-/Subtype /Link
-/A 503 0 R
-/Type /Annot
-/Rect [529.468 358.490039 533.36 373.890039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-505 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-506 0 obj
-<<
-/Subtype /Link
-/A 505 0 R
-/Type /Annot
-/Rect [202.988 312.290039 206.88 327.690039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-507 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-508 0 obj
-<<
-/Subtype /Link
-/A 507 0 R
-/Type /Annot
-/Rect [206.88 312.290039 222.448 327.690039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-509 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-510 0 obj
-<<
-/Subtype /Link
-/A 509 0 R
-/Type /Annot
-/Rect [222.448 312.290039 226.34 327.690039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-511 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-512 0 obj
-<<
-/Subtype /Link
-/A 511 0 R
-/Type /Annot
-/Rect [152.14946 219.090039 156.04146 234.490039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-513 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-514 0 obj
-<<
-/Subtype /Link
-/A 513 0 R
-/Type /Annot
-/Rect [156.04146 219.090039 171.60946 234.490039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-515 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-516 0 obj
-<<
-/Subtype /Link
-/A 515 0 R
-/Type /Annot
-/Rect [171.60946 219.090039 175.50146 234.490039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-517 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-518 0 obj
-<<
-/Subtype /Link
-/A 517 0 R
-/Type /Annot
-/Rect [276.804178 172.890039 280.681713 188.290039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-519 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-520 0 obj
-<<
-/Subtype /Link
-/A 519 0 R
-/Type /Annot
-/Rect [280.681713 172.890039 296.220782 188.290039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-521 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-522 0 obj
-<<
-/Subtype /Link
-/A 521 0 R
-/Type /Annot
-/Rect [296.220782 172.890039 300.098317 188.290039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-523 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-524 0 obj
-<<
-/Subtype /Link
-/A 523 0 R
-/Type /Annot
-/Rect [287.996 142.090039 291.888 157.490039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-525 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-526 0 obj
-<<
-/Subtype /Link
-/A 525 0 R
-/Type /Annot
-/Rect [291.888 142.090039 307.456 157.490039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-527 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-528 0 obj
-<<
-/Subtype /Link
-/A 527 0 R
-/Type /Annot
-/Rect [307.456 142.090039 311.348 157.490039]
-/Border [0 0 0]
-/F 4
->>
-endobj
-529 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-530 0 obj
-<<
-/Subtype /Link
-/A 529 0 R
-/Type /Annot
-/Rect [358.56535 64.290027 362.45735 79.690027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-531 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-532 0 obj
-<<
-/Subtype /Link
-/A 531 0 R
-/Type /Annot
-/Rect [362.45735 64.290027 378.02535 79.690027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-533 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-534 0 obj
-<<
-/Subtype /Link
-/A 533 0 R
-/Type /Annot
-/Rect [378.02535 64.290027 381.91735 79.690027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-468 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 466 0 R
-/Resources 467 0 R
-/UserUnit 1
-/Annots [470 0 R 472 0 R 474 0 R 476 0 R 478 0 R 480 0 R 482 0 R 484 0 R 486 0 R 488 0 R 490 0 R 492 0 R 494 0 R 496 0 R 498 0 R 500 0 R 502 0 R 504 0 R 506 0 R 508 0 R 510 0 R 512 0 R 514 0 R 516 0 R 518 0 R 520 0 R 522 0 R 524 0 R 526 0 R 528 0 R 530 0 R 532 0 R 534 0 R]
->>
-endobj
-467 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-538 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-539 0 obj
-<<
-/Subtype /Link
-/A 538 0 R
-/Type /Annot
-/Rect [396.944 781.090015 400.836 796.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-540 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-541 0 obj
-<<
-/Subtype /Link
-/A 540 0 R
-/Type /Annot
-/Rect [400.836 781.090015 416.404 796.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-542 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-543 0 obj
-<<
-/Subtype /Link
-/A 542 0 R
-/Type /Annot
-/Rect [416.404 781.090015 420.296 796.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-544 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-545 0 obj
-<<
-/Subtype /Link
-/A 544 0 R
-/Type /Annot
-/Rect [528.876029 606.490021 532.768029 621.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-546 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-547 0 obj
-<<
-/Subtype /Link
-/A 546 0 R
-/Type /Annot
-/Rect [532.768029 606.490021 548.336029 621.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-548 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-549 0 obj
-<<
-/Subtype /Link
-/A 548 0 R
-/Type /Annot
-/Rect [548.336029 606.490021 552.228029 621.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-550 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-551 0 obj
-<<
-/Subtype /Link
-/A 550 0 R
-/Type /Annot
-/Rect [192.824 529.490021 196.716 544.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-552 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-553 0 obj
-<<
-/Subtype /Link
-/A 552 0 R
-/Type /Annot
-/Rect [196.716 529.490021 212.284 544.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-554 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-555 0 obj
-<<
-/Subtype /Link
-/A 554 0 R
-/Type /Annot
-/Rect [212.284 529.490021 216.176 544.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-556 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-557 0 obj
-<<
-/Subtype /Link
-/A 556 0 R
-/Type /Annot
-/Rect [408.816 498.690021 412.708 514.090021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-558 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-559 0 obj
-<<
-/Subtype /Link
-/A 558 0 R
-/Type /Annot
-/Rect [412.708 498.690021 420.492 514.090021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-560 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-561 0 obj
-<<
-/Subtype /Link
-/A 560 0 R
-/Type /Annot
-/Rect [420.492 498.690021 424.384 514.090021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-562 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2023/05/unleashing-the-power-of-autoencoders-applications-and-use-cases/)
->>
-endobj
-563 0 obj
-<<
-/Subtype /Link
-/A 562 0 R
-/Type /Annot
-/Rect [211.49401 452.490021 215.38601 467.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-564 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2023/05/unleashing-the-power-of-autoencoders-applications-and-use-cases/)
->>
-endobj
-565 0 obj
-<<
-/Subtype /Link
-/A 564 0 R
-/Type /Annot
-/Rect [215.38601 452.490021 230.95401 467.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-566 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2023/05/unleashing-the-power-of-autoencoders-applications-and-use-cases/)
->>
-endobj
-567 0 obj
-<<
-/Subtype /Link
-/A 566 0 R
-/Type /Annot
-/Rect [230.95401 452.490021 234.84601 467.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-568 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-classification/)
->>
-endobj
-569 0 obj
-<<
-/Subtype /Link
-/A 568 0 R
-/Type /Annot
-/Rect [399.31 406.290021 403.202 421.690021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-570 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-classification/)
->>
-endobj
-571 0 obj
-<<
-/Subtype /Link
-/A 570 0 R
-/Type /Annot
-/Rect [403.202 406.290021 418.77 421.690021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-572 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-classification/)
->>
-endobj
-573 0 obj
-<<
-/Subtype /Link
-/A 572 0 R
-/Type /Annot
-/Rect [418.77 406.290021 422.662 421.690021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-574 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-575 0 obj
-<<
-/Subtype /Link
-/A 574 0 R
-/Type /Annot
-/Rect [277.468 329.290021 281.36 344.690021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-576 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-577 0 obj
-<<
-/Subtype /Link
-/A 576 0 R
-/Type /Annot
-/Rect [281.36 329.290021 296.928 344.690021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-578 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-579 0 obj
-<<
-/Subtype /Link
-/A 578 0 R
-/Type /Annot
-/Rect [296.928 329.290021 300.82 344.690021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-580 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-581 0 obj
-<<
-/Subtype /Link
-/A 580 0 R
-/Type /Annot
-/Rect [516.238 298.490021 520.13 313.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-582 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-583 0 obj
-<<
-/Subtype /Link
-/A 582 0 R
-/Type /Annot
-/Rect [520.13 298.490021 527.914 313.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-584 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-585 0 obj
-<<
-/Subtype /Link
-/A 584 0 R
-/Type /Annot
-/Rect [527.914 298.490021 531.806 313.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-586 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-587 0 obj
-<<
-/Subtype /Link
-/A 586 0 R
-/Type /Annot
-/Rect [531.806 298.490021 535.698 313.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-588 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-589 0 obj
-<<
-/Subtype /Link
-/A 588 0 R
-/Type /Annot
-/Rect [535.698 298.490021 543.482 313.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-590 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-591 0 obj
-<<
-/Subtype /Link
-/A 590 0 R
-/Type /Annot
-/Rect [543.482 298.490021 547.374 313.890021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-592 0 obj
-<<
-/S /URI
-/URI (https://link.springer.com/chapter/10.1007/978-1-4615-3950-6_6)
->>
-endobj
-593 0 obj
-<<
-/Subtype /Link
-/A 592 0 R
-/Type /Annot
-/Rect [296.774 139.289966 300.666 154.689966]
-/Border [0 0 0]
-/F 4
->>
-endobj
-594 0 obj
-<<
-/S /URI
-/URI (https://link.springer.com/chapter/10.1007/978-1-4615-3950-6_6)
->>
-endobj
-595 0 obj
-<<
-/Subtype /Link
-/A 594 0 R
-/Type /Annot
-/Rect [300.666 139.289966 316.234 154.689966]
-/Border [0 0 0]
-/F 4
->>
-endobj
-596 0 obj
-<<
-/S /URI
-/URI (https://link.springer.com/chapter/10.1007/978-1-4615-3950-6_6)
->>
-endobj
-597 0 obj
-<<
-/Subtype /Link
-/A 596 0 R
-/Type /Annot
-/Rect [316.234 139.289966 320.126 154.689966]
-/Border [0 0 0]
-/F 4
->>
-endobj
-598 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-599 0 obj
-<<
-/Subtype /Link
-/A 598 0 R
-/Type /Annot
-/Rect [494.594 46.889966 498.486 62.289966]
-/Border [0 0 0]
-/F 4
->>
-endobj
-600 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-601 0 obj
-<<
-/Subtype /Link
-/A 600 0 R
-/Type /Annot
-/Rect [498.486 46.889966 514.054 62.289966]
-/Border [0 0 0]
-/F 4
->>
-endobj
-602 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-603 0 obj
-<<
-/Subtype /Link
-/A 602 0 R
-/Type /Annot
-/Rect [514.054 46.889966 517.946 62.289966]
-/Border [0 0 0]
-/F 4
->>
-endobj
-537 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 535 0 R
-/Resources 536 0 R
-/UserUnit 1
-/Annots [539 0 R 541 0 R 543 0 R 545 0 R 547 0 R 549 0 R 551 0 R 553 0 R 555 0 R 557 0 R 559 0 R 561 0 R 563 0 R 565 0 R 567 0 R 569 0 R 571 0 R 573 0 R 575 0 R 577 0 R 579 0 R 581 0 R 583 0 R 585 0 R 587 0 R 589 0 R 591 0 R 593 0 R 595 0 R 597 0 R 599 0 R 601 0 R 603 0 R]
->>
-endobj
-536 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-607 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-608 0 obj
-<<
-/Subtype /Link
-/A 607 0 R
-/Type /Annot
-/Rect [320.042 688.690015 323.934 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-609 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-610 0 obj
-<<
-/Subtype /Link
-/A 609 0 R
-/Type /Annot
-/Rect [323.934 688.690015 331.718 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-611 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-612 0 obj
-<<
-/Subtype /Link
-/A 611 0 R
-/Type /Annot
-/Rect [331.718 688.690015 335.61 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-613 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-614 0 obj
-<<
-/Subtype /Link
-/A 613 0 R
-/Type /Annot
-/Rect [335.61 688.690015 339.502 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-615 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-616 0 obj
-<<
-/Subtype /Link
-/A 615 0 R
-/Type /Annot
-/Rect [339.502 688.690015 347.286 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-617 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-618 0 obj
-<<
-/Subtype /Link
-/A 617 0 R
-/Type /Annot
-/Rect [347.286 688.690015 351.178 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-619 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-620 0 obj
-<<
-/Subtype /Link
-/A 619 0 R
-/Type /Annot
-/Rect [351.178 688.690015 355.07 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-621 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-622 0 obj
-<<
-/Subtype /Link
-/A 621 0 R
-/Type /Annot
-/Rect [355.07 688.690015 370.638 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-623 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-624 0 obj
-<<
-/Subtype /Link
-/A 623 0 R
-/Type /Annot
-/Rect [370.638 688.690015 374.53 704.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-625 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-regression/)
->>
-endobj
-626 0 obj
-<<
-/Subtype /Link
-/A 625 0 R
-/Type /Annot
-/Rect [474.07 596.290015 477.962 611.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-627 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-regression/)
->>
-endobj
-628 0 obj
-<<
-/Subtype /Link
-/A 627 0 R
-/Type /Annot
-/Rect [477.962 596.290015 493.53 611.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-629 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-regression/)
->>
-endobj
-630 0 obj
-<<
-/Subtype /Link
-/A 629 0 R
-/Type /Annot
-/Rect [493.53 596.290015 497.422 611.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-631 0 obj
-<<
-/S /URI
-/URI (https://vitalflux.com/feature-extraction-pca-python-example/)
->>
-endobj
-632 0 obj
-<<
-/Subtype /Link
-/A 631 0 R
-/Type /Annot
-/Rect [497.422 596.290015 501.314 611.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-633 0 obj
-<<
-/S /URI
-/URI (https://vitalflux.com/feature-extraction-pca-python-example/)
->>
-endobj
-634 0 obj
-<<
-/Subtype /Link
-/A 633 0 R
-/Type /Annot
-/Rect [501.314 596.290015 516.882 611.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-635 0 obj
-<<
-/S /URI
-/URI (https://vitalflux.com/feature-extraction-pca-python-example/)
->>
-endobj
-636 0 obj
-<<
-/Subtype /Link
-/A 635 0 R
-/Type /Annot
-/Rect [516.882 596.290015 520.774 611.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-637 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2023/05/unleashing-the-power-of-autoencoders-applications-and-use-cases/)
->>
-endobj
-638 0 obj
-<<
-/Subtype /Link
-/A 637 0 R
-/Type /Annot
-/Rect [520.774 596.290015 524.666 611.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-639 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2023/05/unleashing-the-power-of-autoencoders-applications-and-use-cases/)
->>
-endobj
-640 0 obj
-<<
-/Subtype /Link
-/A 639 0 R
-/Type /Annot
-/Rect [524.666 596.290015 540.234 611.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-641 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2023/05/unleashing-the-power-of-autoencoders-applications-and-use-cases/)
->>
-endobj
-642 0 obj
-<<
-/Subtype /Link
-/A 641 0 R
-/Type /Annot
-/Rect [540.234 596.290015 544.126 611.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-643 0 obj
-<<
-/S /URI
-/URI (https://www.sciencedirect.com/topics/computer-science/feature-extraction)
->>
-endobj
-644 0 obj
-<<
-/Subtype /Link
-/A 643 0 R
-/Type /Annot
-/Rect [544.126 596.290015 553.618 611.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-645 0 obj
-<<
-/S /URI
-/URI (https://www.sciencedirect.com/topics/computer-science/feature-extraction)
->>
-endobj
-646 0 obj
-<<
-/Subtype /Link
-/A 645 0 R
-/Type /Annot
-/Rect [40 580.890015 55.568 596.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-647 0 obj
-<<
-/S /URI
-/URI (https://www.sciencedirect.com/topics/computer-science/feature-extraction)
->>
-endobj
-648 0 obj
-<<
-/Subtype /Link
-/A 647 0 R
-/Type /Annot
-/Rect [55.568 580.890015 59.46 596.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-649 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-650 0 obj
-<<
-/Subtype /Link
-/A 649 0 R
-/Type /Annot
-/Rect [59.46 580.890015 63.352 596.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-651 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-652 0 obj
-<<
-/Subtype /Link
-/A 651 0 R
-/Type /Annot
-/Rect [63.352 580.890015 78.92 596.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-653 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-654 0 obj
-<<
-/Subtype /Link
-/A 653 0 R
-/Type /Annot
-/Rect [78.92 580.890015 82.812 596.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-655 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-656 0 obj
-<<
-/Subtype /Link
-/A 655 0 R
-/Type /Annot
-/Rect [82.812 580.890015 86.704 596.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-657 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-658 0 obj
-<<
-/Subtype /Link
-/A 657 0 R
-/Type /Annot
-/Rect [86.704 580.890015 102.272 596.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-659 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-660 0 obj
-<<
-/Subtype /Link
-/A 659 0 R
-/Type /Annot
-/Rect [102.272 580.890015 106.164 596.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-661 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-662 0 obj
-<<
-/Subtype /Link
-/A 661 0 R
-/Type /Annot
-/Rect [365.906 297.690033 369.798 313.090033]
-/Border [0 0 0]
-/F 4
->>
-endobj
-663 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-664 0 obj
-<<
-/Subtype /Link
-/A 663 0 R
-/Type /Annot
-/Rect [369.798 297.690033 377.582 313.090033]
-/Border [0 0 0]
-/F 4
->>
-endobj
-665 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-666 0 obj
-<<
-/Subtype /Link
-/A 665 0 R
-/Type /Annot
-/Rect [377.582 297.690033 381.474 313.090033]
-/Border [0 0 0]
-/F 4
->>
-endobj
-667 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-668 0 obj
-<<
-/Subtype /Link
-/A 667 0 R
-/Type /Annot
-/Rect [414.08 251.490033 417.972 266.890033]
-/Border [0 0 0]
-/F 4
->>
-endobj
-669 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-670 0 obj
-<<
-/Subtype /Link
-/A 669 0 R
-/Type /Annot
-/Rect [417.972 251.490033 425.756 266.890033]
-/Border [0 0 0]
-/F 4
->>
-endobj
-671 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-672 0 obj
-<<
-/Subtype /Link
-/A 671 0 R
-/Type /Annot
-/Rect [425.756 251.490033 429.648 266.890033]
-/Border [0 0 0]
-/F 4
->>
-endobj
-673 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-674 0 obj
-<<
-/Subtype /Link
-/A 673 0 R
-/Type /Annot
-/Rect [40 143.890064 555.280029 163.690063]
-/Border [0 0 0]
-/F 4
->>
-endobj
-675 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-676 0 obj
-<<
-/Subtype /Link
-/A 675 0 R
-/Type /Annot
-/Rect [40 104.090065 555.280029 123.890064]
-/Border [0 0 0]
-/F 4
->>
-endobj
-677 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-678 0 obj
-<<
-/Subtype /Link
-/A 677 0 R
-/Type /Annot
-/Rect [40 64.290066 555.280029 84.090065]
-/Border [0 0 0]
-/F 4
->>
-endobj
-679 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-680 0 obj
-<<
-/Subtype /Link
-/A 679 0 R
-/Type /Annot
-/Rect [40 30.000015 555.280029 44.29007]
-/Border [0 0 0]
-/F 4
->>
-endobj
-606 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 604 0 R
-/Resources 605 0 R
-/UserUnit 1
-/Annots [608 0 R 610 0 R 612 0 R 614 0 R 616 0 R 618 0 R 620 0 R 622 0 R 624 0 R 626 0 R 628 0 R 630 0 R 632 0 R 634 0 R 636 0 R 638 0 R 640 0 R 642 0 R 644 0 R 646 0 R 648 0 R 650 0 R 652 0 R 654 0 R 656 0 R 658 0 R 660 0 R 662 0 R 664 0 R 666 0 R 668 0 R 670 0 R 672 0 R 674 0 R 676 0 R 678 0 R 680 0 R]
->>
-endobj
-605 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-684 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-685 0 obj
-<<
-/Subtype /Link
-/A 684 0 R
-/Type /Annot
-/Rect [40 792.090015 555.280029 811.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-686 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-687 0 obj
-<<
-/Subtype /Link
-/A 686 0 R
-/Type /Annot
-/Rect [104.778 673.490012 108.67 688.890012]
-/Border [0 0 0]
-/F 4
->>
-endobj
-688 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-689 0 obj
-<<
-/Subtype /Link
-/A 688 0 R
-/Type /Annot
-/Rect [108.67 673.490012 124.238 688.890012]
-/Border [0 0 0]
-/F 4
->>
-endobj
-690 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-691 0 obj
-<<
-/Subtype /Link
-/A 690 0 R
-/Type /Annot
-/Rect [124.238 673.490012 128.13 688.890012]
-/Border [0 0 0]
-/F 4
->>
-endobj
-692 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-693 0 obj
-<<
-/Subtype /Link
-/A 692 0 R
-/Type /Annot
-/Rect [84.324 627.290012 88.216 642.690012]
-/Border [0 0 0]
-/F 4
->>
-endobj
-694 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-695 0 obj
-<<
-/Subtype /Link
-/A 694 0 R
-/Type /Annot
-/Rect [88.216 627.290012 103.784 642.690012]
-/Border [0 0 0]
-/F 4
->>
-endobj
-696 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-697 0 obj
-<<
-/Subtype /Link
-/A 696 0 R
-/Type /Annot
-/Rect [103.784 627.290012 107.676 642.690012]
-/Border [0 0 0]
-/F 4
->>
-endobj
-698 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-699 0 obj
-<<
-/Subtype /Link
-/A 698 0 R
-/Type /Annot
-/Rect [265.288 534.090009 269.18 549.490009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-700 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-701 0 obj
-<<
-/Subtype /Link
-/A 700 0 R
-/Type /Annot
-/Rect [269.18 534.090009 284.748 549.490009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-702 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-703 0 obj
-<<
-/Subtype /Link
-/A 702 0 R
-/Type /Annot
-/Rect [284.748 534.090009 288.64 549.490009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-704 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-705 0 obj
-<<
-/Subtype /Link
-/A 704 0 R
-/Type /Annot
-/Rect [288.64 534.090009 292.532 549.490009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-706 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-707 0 obj
-<<
-/Subtype /Link
-/A 706 0 R
-/Type /Annot
-/Rect [292.532 534.090009 308.1 549.490009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-708 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-709 0 obj
-<<
-/Subtype /Link
-/A 708 0 R
-/Type /Annot
-/Rect [308.1 534.090009 311.992 549.490009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-710 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-711 0 obj
-<<
-/Subtype /Link
-/A 710 0 R
-/Type /Annot
-/Rect [163.298 487.890009 167.19 503.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-712 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-713 0 obj
-<<
-/Subtype /Link
-/A 712 0 R
-/Type /Annot
-/Rect [167.19 487.890009 182.758 503.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-714 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-715 0 obj
-<<
-/Subtype /Link
-/A 714 0 R
-/Type /Annot
-/Rect [182.758 487.890009 186.65 503.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-716 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-717 0 obj
-<<
-/Subtype /Link
-/A 716 0 R
-/Type /Annot
-/Rect [186.65 487.890009 190.542 503.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-718 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-719 0 obj
-<<
-/Subtype /Link
-/A 718 0 R
-/Type /Annot
-/Rect [190.542 487.890009 198.326 503.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-720 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-721 0 obj
-<<
-/Subtype /Link
-/A 720 0 R
-/Type /Annot
-/Rect [198.326 487.890009 202.218 503.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-722 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org//wiki/Feature_extraction)
->>
-endobj
-723 0 obj
-<<
-/Subtype /Link
-/A 722 0 R
-/Type /Annot
-/Rect [215.672 363.890015 219.564 379.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-724 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org//wiki/Feature_extraction)
->>
-endobj
-725 0 obj
-<<
-/Subtype /Link
-/A 724 0 R
-/Type /Annot
-/Rect [219.564 363.890015 235.132 379.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-726 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org//wiki/Feature_extraction)
->>
-endobj
-727 0 obj
-<<
-/Subtype /Link
-/A 726 0 R
-/Type /Annot
-/Rect [235.132 363.890015 239.024 379.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-728 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-729 0 obj
-<<
-/Subtype /Link
-/A 728 0 R
-/Type /Annot
-/Rect [239.024 363.890015 242.916 379.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-730 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-731 0 obj
-<<
-/Subtype /Link
-/A 730 0 R
-/Type /Annot
-/Rect [242.916 363.890015 258.484 379.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-732 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-733 0 obj
-<<
-/Subtype /Link
-/A 732 0 R
-/Type /Annot
-/Rect [258.484 363.890015 262.376 379.290015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-734 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-735 0 obj
-<<
-/Subtype /Link
-/A 734 0 R
-/Type /Annot
-/Rect [170.284 224.28999 174.176 239.68999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-736 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-737 0 obj
-<<
-/Subtype /Link
-/A 736 0 R
-/Type /Annot
-/Rect [174.176 224.28999 181.96 239.68999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-738 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-739 0 obj
-<<
-/Subtype /Link
-/A 738 0 R
-/Type /Annot
-/Rect [181.96 224.28999 185.852 239.68999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-740 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-741 0 obj
-<<
-/Subtype /Link
-/A 740 0 R
-/Type /Annot
-/Rect [417.888 193.48999 421.78 208.88999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-742 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-743 0 obj
-<<
-/Subtype /Link
-/A 742 0 R
-/Type /Annot
-/Rect [421.78 193.48999 437.348 208.88999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-744 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-745 0 obj
-<<
-/Subtype /Link
-/A 744 0 R
-/Type /Annot
-/Rect [437.348 193.48999 441.24 208.88999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-746 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2023/05/unleashing-the-power-of-autoencoders-applications-and-use-cases/)
->>
-endobj
-747 0 obj
-<<
-/Subtype /Link
-/A 746 0 R
-/Type /Annot
-/Rect [229.882 147.28999 233.774 162.68999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-748 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2023/05/unleashing-the-power-of-autoencoders-applications-and-use-cases/)
->>
-endobj
-749 0 obj
-<<
-/Subtype /Link
-/A 748 0 R
-/Type /Annot
-/Rect [233.774 147.28999 249.342 162.68999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-750 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2023/05/unleashing-the-power-of-autoencoders-applications-and-use-cases/)
->>
-endobj
-751 0 obj
-<<
-/Subtype /Link
-/A 750 0 R
-/Type /Annot
-/Rect [249.342 147.28999 253.234 162.68999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-752 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-753 0 obj
-<<
-/Subtype /Link
-/A 752 0 R
-/Type /Annot
-/Rect [253.234 147.28999 257.126 162.68999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-754 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-755 0 obj
-<<
-/Subtype /Link
-/A 754 0 R
-/Type /Annot
-/Rect [257.126 147.28999 272.694 162.68999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-756 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-757 0 obj
-<<
-/Subtype /Link
-/A 756 0 R
-/Type /Annot
-/Rect [272.694 147.28999 276.586 162.68999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-758 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-759 0 obj
-<<
-/Subtype /Link
-/A 758 0 R
-/Type /Annot
-/Rect [282.914 69.489978 286.806 84.889978]
-/Border [0 0 0]
-/F 4
->>
-endobj
-760 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-761 0 obj
-<<
-/Subtype /Link
-/A 760 0 R
-/Type /Annot
-/Rect [286.806 69.489978 302.374 84.889978]
-/Border [0 0 0]
-/F 4
->>
-endobj
-762 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-763 0 obj
-<<
-/Subtype /Link
-/A 762 0 R
-/Type /Annot
-/Rect [302.374 69.489978 306.266 84.889978]
-/Border [0 0 0]
-/F 4
->>
-endobj
-683 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 681 0 R
-/Resources 682 0 R
-/UserUnit 1
-/Annots [685 0 R 687 0 R 689 0 R 691 0 R 693 0 R 695 0 R 697 0 R 699 0 R 701 0 R 703 0 R 705 0 R 707 0 R 709 0 R 711 0 R 713 0 R 715 0 R 717 0 R 719 0 R 721 0 R 723 0 R 725 0 R 727 0 R 729 0 R 731 0 R 733 0 R 735 0 R 737 0 R 739 0 R 741 0 R 743 0 R 745 0 R 747 0 R 749 0 R 751 0 R 753 0 R 755 0 R 757 0 R 759 0 R 761 0 R 763 0 R]
->>
-endobj
-682 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-767 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-768 0 obj
-<<
-/Subtype /Link
-/A 767 0 R
-/Type /Annot
-/Rect [381.79202 796.490015 385.66322 811.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-769 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-770 0 obj
-<<
-/Subtype /Link
-/A 769 0 R
-/Type /Annot
-/Rect [385.66322 796.490015 393.42642 811.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-771 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-772 0 obj
-<<
-/Subtype /Link
-/A 771 0 R
-/Type /Annot
-/Rect [393.42642 796.490015 397.297621 811.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-773 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-774 0 obj
-<<
-/Subtype /Link
-/A 773 0 R
-/Type /Annot
-/Rect [397.297621 796.490015 401.168821 811.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-775 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-776 0 obj
-<<
-/Subtype /Link
-/A 775 0 R
-/Type /Annot
-/Rect [401.168821 796.490015 416.695222 811.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-777 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-778 0 obj
-<<
-/Subtype /Link
-/A 777 0 R
-/Type /Annot
-/Rect [416.695222 796.490015 420.566422 811.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-779 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/advice/0/what-real-world-applications-principal-component-analysis-crhxc)
->>
-endobj
-780 0 obj
-<<
-/Subtype /Link
-/A 779 0 R
-/Type /Annot
-/Rect [475.12 765.690015 479.012 781.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-781 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/advice/0/what-real-world-applications-principal-component-analysis-crhxc)
->>
-endobj
-782 0 obj
-<<
-/Subtype /Link
-/A 781 0 R
-/Type /Annot
-/Rect [479.012 765.690015 494.58 781.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-783 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/advice/0/what-real-world-applications-principal-component-analysis-crhxc)
->>
-endobj
-784 0 obj
-<<
-/Subtype /Link
-/A 783 0 R
-/Type /Annot
-/Rect [494.58 765.690015 498.472 781.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-785 0 obj
-<<
-/S /URI
-/URI (https://www.simplilearn.com/tutorials/machine-learning-tutorial/principal-component-analysis)
->>
-endobj
-786 0 obj
-<<
-/Subtype /Link
-/A 785 0 R
-/Type /Annot
-/Rect [498.472 765.690015 502.364 781.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-787 0 obj
-<<
-/S /URI
-/URI (https://www.simplilearn.com/tutorials/machine-learning-tutorial/principal-component-analysis)
->>
-endobj
-788 0 obj
-<<
-/Subtype /Link
-/A 787 0 R
-/Type /Annot
-/Rect [502.364 765.690015 517.932 781.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-789 0 obj
-<<
-/S /URI
-/URI (https://www.simplilearn.com/tutorials/machine-learning-tutorial/principal-component-analysis)
->>
-endobj
-790 0 obj
-<<
-/Subtype /Link
-/A 789 0 R
-/Type /Annot
-/Rect [517.932 765.690015 521.824 781.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-791 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-792 0 obj
-<<
-/Subtype /Link
-/A 791 0 R
-/Type /Annot
-/Rect [115.474 672.490018 119.366 687.890018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-793 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-794 0 obj
-<<
-/Subtype /Link
-/A 793 0 R
-/Type /Annot
-/Rect [119.366 672.490018 127.15 687.890018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-795 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-796 0 obj
-<<
-/Subtype /Link
-/A 795 0 R
-/Type /Annot
-/Rect [127.15 672.490018 131.042 687.890018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-797 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-798 0 obj
-<<
-/Subtype /Link
-/A 797 0 R
-/Type /Annot
-/Rect [365.57 626.290018 369.462 641.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-799 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-800 0 obj
-<<
-/Subtype /Link
-/A 799 0 R
-/Type /Annot
-/Rect [369.462 626.290018 385.03 641.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-801 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-802 0 obj
-<<
-/Subtype /Link
-/A 801 0 R
-/Type /Annot
-/Rect [385.03 626.290018 388.922 641.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-803 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-804 0 obj
-<<
-/Subtype /Link
-/A 803 0 R
-/Type /Annot
-/Rect [388.922 626.290018 392.814 641.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-805 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-806 0 obj
-<<
-/Subtype /Link
-/A 805 0 R
-/Type /Annot
-/Rect [392.814 626.290018 400.598 641.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-807 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-808 0 obj
-<<
-/Subtype /Link
-/A 807 0 R
-/Type /Annot
-/Rect [400.598 626.290018 404.49 641.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-809 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-810 0 obj
-<<
-/Subtype /Link
-/A 809 0 R
-/Type /Annot
-/Rect [183.192 517.690009 187.084 533.090009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-811 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-812 0 obj
-<<
-/Subtype /Link
-/A 811 0 R
-/Type /Annot
-/Rect [187.084 517.690009 194.868 533.090009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-813 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-814 0 obj
-<<
-/Subtype /Link
-/A 813 0 R
-/Type /Annot
-/Rect [194.868 517.690009 198.76 533.090009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-815 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/advice/0/what-real-world-applications-principal-component-analysis-crhxc)
->>
-endobj
-816 0 obj
-<<
-/Subtype /Link
-/A 815 0 R
-/Type /Annot
-/Rect [226.816 486.890009 230.708 502.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-817 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/advice/0/what-real-world-applications-principal-component-analysis-crhxc)
->>
-endobj
-818 0 obj
-<<
-/Subtype /Link
-/A 817 0 R
-/Type /Annot
-/Rect [230.708 486.890009 246.276 502.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-819 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/advice/0/what-real-world-applications-principal-component-analysis-crhxc)
->>
-endobj
-820 0 obj
-<<
-/Subtype /Link
-/A 819 0 R
-/Type /Annot
-/Rect [246.276 486.890009 250.168 502.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-821 0 obj
-<<
-/S /URI
-/URI (https://www.simplilearn.com/tutorials/machine-learning-tutorial/principal-component-analysis)
->>
-endobj
-822 0 obj
-<<
-/Subtype /Link
-/A 821 0 R
-/Type /Annot
-/Rect [250.168 486.890009 254.06 502.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-823 0 obj
-<<
-/S /URI
-/URI (https://www.simplilearn.com/tutorials/machine-learning-tutorial/principal-component-analysis)
->>
-endobj
-824 0 obj
-<<
-/Subtype /Link
-/A 823 0 R
-/Type /Annot
-/Rect [254.06 486.890009 269.628 502.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-825 0 obj
-<<
-/S /URI
-/URI (https://www.simplilearn.com/tutorials/machine-learning-tutorial/principal-component-analysis)
->>
-endobj
-826 0 obj
-<<
-/Subtype /Link
-/A 825 0 R
-/Type /Annot
-/Rect [269.628 486.890009 273.52 502.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-827 0 obj
-<<
-/S /URI
-/URI (https://www.sciencedirect.com/topics/computer-science/feature-extraction)
->>
-endobj
-828 0 obj
-<<
-/Subtype /Link
-/A 827 0 R
-/Type /Annot
-/Rect [387.098921 378.290015 390.966217 393.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-829 0 obj
-<<
-/S /URI
-/URI (https://www.sciencedirect.com/topics/computer-science/feature-extraction)
->>
-endobj
-830 0 obj
-<<
-/Subtype /Link
-/A 829 0 R
-/Type /Annot
-/Rect [390.966217 378.290015 406.484809 393.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-831 0 obj
-<<
-/S /URI
-/URI (https://www.sciencedirect.com/topics/computer-science/feature-extraction)
->>
-endobj
-832 0 obj
-<<
-/Subtype /Link
-/A 831 0 R
-/Type /Annot
-/Rect [406.484809 378.290015 410.352106 393.690015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-833 0 obj
-<<
-/S /URI
-/URI (https://www.snowflake.com/guides/feature-extraction-machine-learning)
->>
-endobj
-834 0 obj
-<<
-/Subtype /Link
-/A 833 0 R
-/Type /Annot
-/Rect [76.543999 280.690027 472.435997 296.090027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-835 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/feature-extraction-techniques-nlp/)
->>
-endobj
-836 0 obj
-<<
-/Subtype /Link
-/A 835 0 R
-/Type /Annot
-/Rect [76.543999 260.290003 413.201988 275.690002]
-/Border [0 0 0]
-/F 4
->>
-endobj
-837 0 obj
-<<
-/S /URI
-/URI (https://www.mygreatlearning.com/blog/feature-extraction-in-image-processing/)
->>
-endobj
-838 0 obj
-<<
-/Subtype /Link
-/A 837 0 R
-/Type /Annot
-/Rect [76.426826 224.489979 545.280006 255.289978]
-/Border [0 0 0]
-/F 4
->>
-endobj
-839 0 obj
-<<
-/S /URI
-/URI (https://domino.ai/data-science-dictionary/feature-extraction)
->>
-endobj
-840 0 obj
-<<
-/Subtype /Link
-/A 839 0 R
-/Type /Annot
-/Rect [76.543999 204.089991 505.671989 219.48999]
-/Border [0 0 0]
-/F 4
->>
-endobj
-841 0 obj
-<<
-/S /URI
-/URI (https://arnauddelorme.com/ica_for_dummies/)
->>
-endobj
-842 0 obj
-<<
-/Subtype /Link
-/A 841 0 R
-/Type /Annot
-/Rect [76.543999 183.689966 295.433998 199.089966]
-/Border [0 0 0]
-/F 4
->>
-endobj
-843 0 obj
-<<
-/S /URI
-/URI (https://www.geeksforgeeks.org/ml-independent-component-analysis/)
->>
-endobj
-844 0 obj
-<<
-/Subtype /Link
-/A 843 0 R
-/Type /Annot
-/Rect [76.543999 163.289942 426.80999 178.689941]
-/Border [0 0 0]
-/F 4
->>
-endobj
-845 0 obj
-<<
-/S /URI
-/URI (https://www.emerald.com/insight/content/doi/10.1016/j.aci.2018.08.006/full/html)
->>
-endobj
-846 0 obj
-<<
-/Subtype /Link
-/A 845 0 R
-/Type /Annot
-/Rect [76.543999 142.889917 490.999992 158.289917]
-/Border [0 0 0]
-/F 4
->>
-endobj
-847 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Principal_component_analysis)
->>
-endobj
-848 0 obj
-<<
-/Subtype /Link
-/A 847 0 R
-/Type /Annot
-/Rect [76.543999 122.489893 330.601997 137.889893]
-/Border [0 0 0]
-/F 4
->>
-endobj
-849 0 obj
-<<
-/S /URI
-/URI (https://medium.com/analytics-vidhya/the-math-of-principal-component-analysis-pca-bf7da48247fc)
->>
-endobj
-850 0 obj
-<<
-/Subtype /Link
-/A 849 0 R
-/Type /Annot
-/Rect [75.777565 86.689869 545.280037 117.489868]
-/Border [0 0 0]
-/F 4
->>
-endobj
-851 0 obj
-<<
-/S /URI
-/URI (https://builtin.com/data-science/step-step-explanation-principal-component-analysis)
->>
-endobj
-852 0 obj
-<<
-/Subtype /Link
-/A 851 0 R
-/Type /Annot
-/Rect [84.327999 66.289881 432.074001 81.68988]
-/Border [0 0 0]
-/F 4
->>
-endobj
-853 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2021/04/guide-for-feature-extraction-techniques/)
->>
-endobj
-854 0 obj
-<<
-/Subtype /Link
-/A 853 0 R
-/Type /Annot
-/Rect [84.327999 45.889856 467.549984 61.289856]
-/Border [0 0 0]
-/F 4
->>
-endobj
-855 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-856 0 obj
-<<
-/Subtype /Link
-/A 855 0 R
-/Type /Annot
-/Rect [50 30.000014 50 40.889832]
-/Border [0 0 0]
-/F 4
->>
-endobj
-766 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 764 0 R
-/Resources 765 0 R
-/UserUnit 1
-/Annots [768 0 R 770 0 R 772 0 R 774 0 R 776 0 R 778 0 R 780 0 R 782 0 R 784 0 R 786 0 R 788 0 R 790 0 R 792 0 R 794 0 R 796 0 R 798 0 R 800 0 R 802 0 R 804 0 R 806 0 R 808 0 R 810 0 R 812 0 R 814 0 R 816 0 R 818 0 R 820 0 R 822 0 R 824 0 R 826 0 R 828 0 R 830 0 R 832 0 R 834 0 R 836 0 R 838 0 R 840 0 R 842 0 R 844 0 R 846 0 R 848 0 R 850 0 R 852 0 R 854 0 R 856 0 R]
->>
-endobj
-765 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-860 0 obj
-<<
-/S /URI
-/URI (https://deepai.org/machine-learning-glossary-and-terms/feature-extraction)
->>
-endobj
-861 0 obj
-<<
-/Subtype /Link
-/A 860 0 R
-/Type /Annot
-/Rect [84.327999 796.490015 318.505993 811.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-862 0 obj
-<<
-/S /URI
-/URI (https://viso.ai/deep-learning/autoencoder/)
->>
-endobj
-863 0 obj
-<<
-/Subtype /Link
-/A 862 0 R
-/Type /Annot
-/Rect [84.327999 776.090015 484.924007 791.490015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-864 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-classification/)
->>
-endobj
-865 0 obj
-<<
-/Subtype /Link
-/A 864 0 R
-/Type /Annot
-/Rect [82.102936 755.690016 545.280029 771.090015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-866 0 obj
-<<
-/S /URI
-/URI (https://machinelearningmastery.com/autoencoder-for-regression/)
->>
-endobj
-867 0 obj
-<<
-/Subtype /Link
-/A 866 0 R
-/Type /Annot
-/Rect [82.404587 735.290018 545.280045 750.690018]
-/Border [0 0 0]
-/F 4
->>
-endobj
-868 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org/wiki/Independent_component_analysis)
->>
-endobj
-869 0 obj
-<<
-/Subtype /Link
-/A 868 0 R
-/Type /Annot
-/Rect [84.327999 714.890017 362.339993 730.290016]
-/Border [0 0 0]
-/F 4
->>
-endobj
-870 0 obj
-<<
-/S /URI
-/URI (https://www.mathworks.com/discovery/feature-extraction.html)
->>
-endobj
-871 0 obj
-<<
-/Subtype /Link
-/A 870 0 R
-/Type /Annot
-/Rect [84.327999 694.490015 400.167995 709.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-872 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/pulse/feature-extraction-natural-language-processing-vivekanandan)
->>
-endobj
-873 0 obj
-<<
-/Subtype /Link
-/A 872 0 R
-/Type /Annot
-/Rect [84.327999 674.090014 394.876003 689.490013]
-/Border [0 0 0]
-/F 4
->>
-endobj
-874 0 obj
-<<
-/S /URI
-/URI (https://medium.com/@eskandar.sahel/exploring-feature-extraction-techniques-for-natural-language-processing-46052ee6514)
->>
-endobj
-875 0 obj
-<<
-/Subtype /Link
-/A 874 0 R
-/Type /Annot
-/Rect [82.553116 638.290012 545.280014 669.090012]
-/Border [0 0 0]
-/F 4
->>
-endobj
-876 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2022/05/a-complete-guide-on-feature-extraction-techniques/)
->>
-endobj
-877 0 obj
-<<
-/Subtype /Link
-/A 876 0 R
-/Type /Annot
-/Rect [84.327999 617.890009 523.507992 633.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-878 0 obj
-<<
-/S /URI
-/URI (https://www.sciencedirect.com/topics/computer-science/feature-extraction)
->>
-endobj
-879 0 obj
-<<
-/Subtype /Link
-/A 878 0 R
-/Type /Annot
-/Rect [84.327999 597.490015 425.381985 612.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-880 0 obj
-<<
-/S /URI
-/URI (https://www.hindawi.com/journals/isrn/2014/730218/)
->>
-endobj
-881 0 obj
-<<
-/Subtype /Link
-/A 880 0 R
-/Type /Annot
-/Rect [82.1464 484.690018 545.280067 592.490021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-882 0 obj
-<<
-/S /URI
-/URI (https://www.analyticsvidhya.com/blog/2023/05/unleashing-the-power-of-autoencoders-applications-and-use-cases/)
->>
-endobj
-883 0 obj
-<<
-/Subtype /Link
-/A 882 0 R
-/Type /Annot
-/Rect [84.327999 464.290003 507.799984 479.690002]
-/Border [0 0 0]
-/F 4
->>
-endobj
-884 0 obj
-<<
-/S /URI
-/URI (https://link.springer.com/chapter/10.1007/978-1-4615-3950-6_6)
->>
-endobj
-885 0 obj
-<<
-/Subtype /Link
-/A 884 0 R
-/Type /Annot
-/Rect [84.327999 443.890009 431.541988 459.290009]
-/Border [0 0 0]
-/F 4
->>
-endobj
-886 0 obj
-<<
-/S /URI
-/URI (https://vitalflux.com/feature-extraction-pca-python-example/)
->>
-endobj
-887 0 obj
-<<
-/Subtype /Link
-/A 886 0 R
-/Type /Annot
-/Rect [84.327999 423.490015 479.701992 438.890015]
-/Border [0 0 0]
-/F 4
->>
-endobj
-888 0 obj
-<<
-/S /URI
-/URI (https://en.wikipedia.org//wiki/Feature_extraction)
->>
-endobj
-889 0 obj
-<<
-/Subtype /Link
-/A 888 0 R
-/Type /Annot
-/Rect [84.327999 403.090021 281.966 418.490021]
-/Border [0 0 0]
-/F 4
->>
-endobj
-890 0 obj
-<<
-/S /URI
-/URI (https://www.linkedin.com/advice/0/what-real-world-applications-principal-component-analysis-crhxc)
->>
-endobj
-891 0 obj
-<<
-/Subtype /Link
-/A 890 0 R
-/Type /Annot
-/Rect [84.327999 382.690027 521.100002 398.090027]
-/Border [0 0 0]
-/F 4
->>
-endobj
-892 0 obj
-<<
-/S /URI
-/URI (https://www.simplilearn.com/tutorials/machine-learning-tutorial/principal-component-analysis)
->>
-endobj
-893 0 obj
-<<
-/Subtype /Link
-/A 892 0 R
-/Type /Annot
-/Rect [84.327999 362.290033 328.837994 377.690033]
-/Border [0 0 0]
-/F 4
->>
-endobj
-859 0 obj
-<<
-/Type /Page
-/Parent 1 0 R
-/MediaBox [0 0 595.280029 841.890015]
-/Contents 857 0 R
-/Resources 858 0 R
-/UserUnit 1
-/Annots [861 0 R 863 0 R 865 0 R 867 0 R 869 0 R 871 0 R 873 0 R 875 0 R 877 0 R 879 0 R 881 0 R 883 0 R 885 0 R 887 0 R 889 0 R 891 0 R 893 0 R]
->>
-endobj
-858 0 obj
-<<
-/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-/ExtGState <<
-/Gs1 9 0 R
->>
-/Font <<
-/F1 10 0 R
->>
->>
-endobj
-895 0 obj
-(react-pdf)
-endobj
-896 0 obj
-(react-pdf)
-endobj
-897 0 obj
-(D:20240712060619Z)
-endobj
-894 0 obj
-<<
-/Producer 895 0 R
-/Creator 896 0 R
-/CreationDate 897 0 R
->>
-endobj
-10 0 obj
-<<
-/Type /Font
-/BaseFont /Helvetica
-/Subtype /Type1
-/Encoding /WinAnsiEncoding
->>
-endobj
-4 0 obj
-<<
->>
-endobj
-3 0 obj
-<<
-/Type /Catalog
-/Pages 1 0 R
-/Names 2 0 R
-/ViewerPreferences 5 0 R
->>
-endobj
-1 0 obj
-<<
-/Type /Pages
-/Count 12
-/Kids [8 0 R 13 0 R 66 0 R 171 0 R 294 0 R 375 0 R 468 0 R 537 0 R 606 0 R 683 0 R 766 0 R 859 0 R]
->>
-endobj
-2 0 obj
-<<
-/Dests <<
-  /Names [
-]
->>
->>
-endobj
-5 0 obj
-<<
-/DisplayDocTitle true
->>
-endobj
-6 0 obj
-<<
-/Length 1203
-/Filter /FlateDecode
->>
-stream
-xœİYMã6½çWø¬V¤$RsX´] ·)r+zhİ¤èa(èï/)ËvË‰g‘Ù8ù°dÃ|óøEAcåø ò=˜˜¬…Ğ´_vÿ”òhœm¼íú“`õ/ŸNQ0ó]éàÇÿşİ~ùü©i_w6O|m¿î>~~…æ¯W¹øe¸AåI>í‡›O†örçŸ Aßì»_Ÿ<=ëC>Q `Ï‘Zåª'r
-ŸõiŸÈ±§£ş¶¿5ûŸw?îå	† ¢7Ş79¬—z`eì%OĞ 2ŞÊ§ Ø%,DëB HÈ>ÈTã˜<Û#º€INQšN{ø‚t°ƒG€ÉßZED‚£Ë8Êƒ`ôİ~d,ã`(°h¢"åÎ9e›pà÷ $Øq ?»pË(W>(»8Uƒlûó˜kq£3¨q‡ÍÅí,)„AShŒ—(QèøÀ\=À¸&vïiì´¹ØGör’dJBƒÀN2 ä·¤¾/l’Q2ÁçÁ^vDOdÊE(iBUQÅäŒu3JMQCQ‹s,ñî`zè@`ê¨b!˜
-\J«ÑˆÁ$ºF!u ÃI_:)I$D›.y*œ{Xõ0ŒB7z>´œØ	ï„T}*–X×ôdˆV G`@ã"×‹¬fdŞ('y7åÓ ÉŠ±¿iÎ‘>ãU)“`ÀE3nÍÃ ‡“ÈOßfD9ãË
-R°H(8;% NÉìîäÛ2Ê— ß.¨å‚–Eş*K+6>lŞ&$Um1‡®<z{ñ¹T>±hzºX>mV÷Ó›½nˆŠX.®ÈÌ;D(NœÃTáú´¢AMN×—ZŒAÈ—fÎİW$4m'bTl"ò7¸ÂîiÙ
-³Œ|,W,”²Ş67‰+JèWÅ[&We¢ç­ ãr]‘K„¬îâ†§6ÙÁ—«ˆq±4®r‘›ï“=t(`&NZÉBöÆÁ'ı…M!ÙQ§ÿàQÀNï†¬KÖD_u„JM!Ş‘Ã™mŞ·ËìWN‹4-Ğä”Ÿ.)«¤“Ú1`ğr;æaê‰Årµ¹<­õ+t{Ã5Ã{Vóu)Boøz7gÛÁ\wŞ‰9åøµ^C5şÆÍ— ÒêEˆ·*­…Q#Ön¶şÇË²-û[MÀ5à 6w¾aFšûãEÚb`(6“rİãFSªçŒ%âÕœQ ä8ÌŠ˜»0®%r´“æ¯z3|˜-ÊÎÁiì÷)ñúe]Ş>ËTrd¢›Iğ#8v¯¼:
-N¡lÈ	"u«?Ê¾R¨ÆMŞØºê<Œ]÷6“ÊÁá*orI2döàïÖ³ÕíÚ´fï`Ë^İ+í©L¸.èl]Â'NRÅ`?,¸|s[V„8®illrå^´&ï·(VN¿wºSXV*V\ÿx’x9;‹</õ|”-k;ÖºM7KÄ»£Ô—@ |{Ššr¹,\¢FtÃCZĞ|Ñ8$nBrÎŠ‹‚dşw­æwZmÙ‚6»vŞ²ä»^T†ËöoYH‚cÃöêªè¢Ã¼Tÿ ÑÍ 
-endstream
-endobj
-857 0 obj
-<<
-/Length 2074
-/Filter /FlateDecode
->>
-stream
-xœí[ÛnÜ6}÷Wì„á}DÀğCÒ6@
-¤ñ[Ñ‡D»[h
-Úßï\H‰ÚUwc[2°ŞØÄ‹(òÌÌ™‹ÍNãçÁ7ªKZ›°ë¿Şü•?†;˜Óô/7”›†~5ï•;ømU¤{o¿;üı{øùÃ»]ÿp£¹ı¡ÿóæí‡³ûíÇ|ÆÍ¬éİ}5gÕt3ÿ€Oö»ûãÍ/·á‹3Î†½û|·zwkµÕw;ıëîşÇ›ïïñÃ;yål'ËıÈÿÈ¿Ç¥{ê)¥ñ=ñ^ÊtÚ%kBì¢°«òÆ@ô C×Y,N¨bšv{†­ğñí6†hÀC ƒÕ>àvìn¡Ã[öNì6šèÀÇñ€<wÀQob› ¯›hoøÂ§Ù-¶¸Çª=¦wúŞxÜº¯7¥/ÿ¨7òı§Ë7òÓûŸn>åã?'(µ8×FÁë®à%ğ/ÂÖ#øÑáo¨³V0ŠN xŒ{Á´æŞÜC60Dé‘ÀÛıÜÀØGjµ³¾=ö8ŠïÒ(ˆ<Ïñnçél(6ó¸÷Z«b÷¥}Ü{­‹m‚ß?ø­2Ú&_5øU€@$À}¯|}Ep¬®&=ãaråÆùö,d%\Tß^;:–É¥™ÖL{ápöé,œìÁ®±œé~œìjZØ«ÃÒââÉ~ÿÇVN¨_ØI×¾:Yz\hs=«Ë·Ãîßxß^ÁÉêº…õN±3^ù¾İvòÆx6o,kQÑŸÍºôD˜<qá`	rgòğÆ¦a5Éc»}¼hïçmT
-ÊvZÛÔ6Sc—,U4Ê¡‚ZªğT–Ê#%ïàU[ªM»Ğ‰eØ‘&	¶8 ip'ŒNˆÍƒ/KnKğ=?–)Ìòmz‚®ˆíü"aLì\f†sb£•"ÃÍ+ˆKgRâW·Qq‰W¯†Ä… H¨Ó,*~ºâØ9|sƒ‰ägôÀ8A»x ²s¿`ÍHdæ]qè”6¶	ÜÒ¾r‘©o³pÅì7„‘†ä\ÑÉÑOÔ5Yc	ÊŞ÷%–$êûÅüŸà
-Î÷Ù œ‘æû2$&¨Î7¡›×@º%k_[|wüå€g\
-¹àqC7Š›ö¬Ë)¦d"ĞŒAËŒÇ»ÒØ˜CµVÁ·ƒ©¥}\#‹í×n× `ÈNOÅÖCpÆ¼Ú¸ÒD'™ûšÀªaw1_Ï±VŸ•9&N™”&p§”şiÄDò‡[æïcõ¨¢±W:>ŸA¨b»Mã£XZƒ|ùèRLÃ„ÕĞùqh_Ü2ÄÖ¼¿d¢VÚUÆ¸’–PR0“ã(#ÖĞcH‚#é±¸Iûl¾ÚçsàXJãÔÉ›LHŸM¹±å—EŞwÔx’ˆÂu9d’Dq5<6ïny[kIóR²Ñä‘Ebo¢¯¤ãI\°YàD9«‚dT²Á…,†dŠå Ó,AÀP
--€t.KGĞ"&£2J‡G.·¯Q>`’rn›+"ğQY²"f"ñD•0Vı+ˆİ¿QM“¢.A_b’¦â©ááˆ³üt™cNKı‰üˆ	i¥8]7ğSC 	¢ =}¦ÈJ!°YùŒKËœ–Ìö˜–±¨t—TtKWÚ¯©¬ê¸©gís¤Õ +±¢Å5ii´Ú:Æ…Ø¡s>e'ZpHrcÌ-š±V’’¬ _Ô’1;ñ˜ĞÛ¯Nü?y5N¯â3jËz	ŞÉ6‹‚¶5ÌÇw®DâET) ä×x›«æ†ø,æ”‰'ÏÊŠ÷Íô0Ã UÀªtE™Ÿ§¬\è“!—5Âª »©*¢JuiÜ.*[˜NñÀ	Ú¶úˆ–Ş‚.C+‡Êq	ÈÚb_Ï}ğg[Qª/ãÆè{€Ä3U>MB}’*ô˜rğGUP´ÅB±N0ÛT¨¢æP@ì¥¡>±T³^xYÁvA@Z>dÙ÷¼õ®©‰® {Òá9AÆHÏ‹ã){PâÚÕÁ0ÖEA©ìh¢¬AäçI„„ÇL•Õ~¼rj$¼½
-q6€ŠsHIš±õP!^³i¨"ëN¢9@gèYøÏì@BR*-ß—Ce&ƒŠN¾Ò­‹¯f}¤õÂzfí›ĞĞ*èYh 4I|Æó„é°i\¶™eÓñµ“ ë`OˆäJì3Íª§YU?³úoäÿIXgN*ÙY¶(ıWğ¬³ì=›mæHíµ<_¶"”p§TYÕNo†oÈ–j'åò­\ÁÏši©|Ü¸Ï9º
-:Ó!7*-áå"MaHW„1:lØæÎ‹…·è©@»,¦´¯!Án;ñD¥ú¯]†â”Âü—–¨Æh«H+iûIö–DÆ/–ÅxPÖ,…S¥}¬Ã\åÀ@şDU¾¯ä—Â5ŒÈÏB‘•òÂ£¬C‘—Ä–cZ<6¸ºBˆÿ3×–È5"ŸÉKb¢åRP¸Ò¶0äö5„!¹vna2q-åmËSÈàpV`sYñ®I ¢kç‚KûOhÿAa·Íºs{­á•­Èhë«c{ğ4-‡²{»HzUÖKZ¤I¾™É¤§F¼chK]×y­F•A9Õè\ëîÂˆ¨`‰³çö5¤ş ¤a«ÎëµÀwN8€úr ¶¸ôöüææ—€oùü…ı;¤
-endstream
-endobj
-11 0 obj
-<<
-/Length 2863
-/Filter /FlateDecode
->>
-stream
-xœíËn$·ñ>_1?`šâXè`'1C Ç{rğÎL¢ ÁÙßOßì![²¼½jÒìJC6É"ë]E²Å™ãç;¿æ<çBŸ/§ÿ¦ÄYqú—äJAe©Ï5ø_2Cußÿéö¿]nÿé‡óåó‰‡çŸ/ÿ9}ÿÓgqşí3öù¹ôÌë‡Í˜Í£8ò_pFpş¸œşñA«|şÁr#Ì5|• |1Ú‚ÑFáoosÃÊ?şõôç9í=ÓŞÄUüæÔ~V8PšÇùºk†¸fãhuD„æ“äÃõbÒ¹¸¾Õì˜p\y)4$-hìÂ@kÀríœTZz¬2¾o¶Ã‚Œ³€n•úU.r±D³ÅÊ‡ówRãâaoÆâŠoHMıpÆQ°&´Xgˆm?P/ØRã*´\Œ£ ±±2ƒÕÊ)1D™´Š¢l'‚JŞÎKqÁa1‹XYàü/VÍØØCÃÆ4§/§D|È'%³<ÿİ.íÇ_^Î¿üø·Ó/CA¾4œ9ÕŒàÀ‹˜xm1â®uÄ:2˜ÅGó´EnÀ2XzeA5ƒH¢¦±¥6±ƒoxÌjú‚mE„¤B÷Ä¥¡À¿É1ã9Ã¼k¨8ÀWz6PNØY®õ
-×Ò1©ı+àHA!÷F¡Õ„$AèA-#*ˆ»£Kƒ>l®SU„ù”Tœ®•£å‰EÔcÌjÇ¬‘ÌVìÌ1+¸`†PkÖlì˜VêPË#P—!6UÀŒ"GÌ´…5À'¨@±Ş',®PŸ4´kD£WÂzÁœÎPí£8Ñlm ZXF˜F5Õ¡4“R‘‰â©Ñ‡–‹ø¿İ}…ÍÃo•[Ù<.-#TW•ƒdŠ‰hik¢Å#2Z[HGtÂ¡ÆT 	Ì©{"T<nĞ dtsüÚÍ‘bˆû×w$d"ªm®ø‰f?àÕÏ¦r—1á\°_Âİ9|î˜xàÉCÌòKúmRò#2«‘»U9:ÈÉáš×'Ó…_¹&–XŸôÃ5²/Y¸äj¾^P4YºÒ7AHDj¤åuÌ©^3+[B´x†c:®ÏıòËâƒš]yt„hœHiBô¸¤8%±kÿ[?
-ù)Ğ"3ÔdX_ ˆÎ‡µ„U)(j”sy_gä¡)Q°–ôdÖ¦KÆTõèH¥¶üOVsdï:BÔöYwDÉM)n‰bCº>ØƒÅ˜PJMl¥°©4Ê¶·‘Û‰¼h¡˜à¾ÎÁ¡‰–US$	Â˜”â©¢¥*«Ö`&aÀQ¢…µüEdŠ¢¤t!‹œ³a ä+4¹şªpÍÜP–Œ¹¯ü f”7^OcT
-Ò.h
-
-'7V€Ğ‰>N Öèˆ¿UC×BÇÊñ>ë>lI”+šô¤²º3P>ËÑD$ƒ!ò _ÛvÿSqÉ*f)Ëd$*\1eR`^&™hiGªzœÛ«­à³Q†%÷JpíÎÔÌŒ©#Ä¨RÛäßi‡ÆNˆêI%£‘ğİ§Àéº
-ËUEŒà“)BEÒ–Æ^‘%«²dM&äÀPØÉ¡fÙíØä(¸špÑû¶?—èÎòµ¼¬Bˆ@i~ÍB81AE™¯ä{©‡vfB==°ÿÂİ w©r|£j²?SCOø`AZd’›è7S/²,ã5²X˜‰ûE¹ AŠ$e`é¥8¶¥Jj*{?œÓNI!¢üÔÒtŒy—ììm´9ç©ª6fÃ¯œ¶ŞÉ´ƒ
-ğ{9ÔwF³‘Nµ¿·*KùGrt9'äuà°Hup‡¥0‹"×’é½KOå3LVİêh±ùTvË›‡Å’ş4æ¦>óÉ6:İb¼Kvœ©ë‰?>Òß0»Œ7·ŞÙe¿™‡Ù®Sxå`Æ—SRXõx’Z2.éûWßNÀ
- f°'°€€ad³+¬4>‚²À¤ÙV€Àœfèì¬ @`3¿ÅVj,Q_s£ËuT£s¦‹¶âÎIõ„îbÑÅÆıDÚY¼®\âœò*nïÙh	ƒ°_ºƒ‡ı¸tÅşpİÄZ²º{]Éw¥[W²HÃ(K©etñ›âª­è Â~à’YGšøÈËäıÔ§ó–a[y
-ßòõBšKWRëQ›~j^z99¤kÛB×:¼én²ƒ(7ñ¿9W»1óßAãıq<İGÒLºY Š1Ü}¥âÇÎ&È¸ÓÜ&š4%Û–İ5ã 5¾H“Z$úMÇÍı®]IÌçäp:*ñHmK<Òô\º’ZÚôSóÒïÀ>sÓ™Âİ8óUA…d¶–Hf‘­I/R¿³U¯0â6ÖÙÍİvÔ²z¯sSãÜÍí¹<¹äß½(1%İ ¹©äÁ“›iËÎ·iÛö$wJ:@çıºfó1o ÷¥s…5£)9¹„ SnRX]6/¯àïÄ“£šN£Ç}|zfšÙÇe4ÅIAÇN
-Nq…x×ˆÂĞßœŞà¯9j¡õ¼·Òş·è”G|ß¹Òªİµ®Ô4Û/gDQ£J{ì˜&ªïÂŠ'>Óµöõuİ@n›|SNı¹‹'Ò½`¥‡NÈ¼éüİø†Á{şî]†ìïìòÍg>ó!ÊÌWvI—k_NI}†lê\f÷ÌÏV ÌæöLšV ÌIºÄµ#°€€Yæ÷ÌĞV Ì{&ö„•Ç<itØaÿd069´¼…{cÌ
-°LKÉv¥[W])F±
-bY£¶\ŒQ~n£üÒséJılt×OÍK«yßÖ«Ø˜Ì!®fã6`tğm‡«·×4Ÿ[pgkÄºaçÁz6Ğn…œgÒ·´°9SµÁ×¹-sÛœÍ‹’Ê’ˆ D„éıŠ2ğ @´)}vğVÎÓZŞÄ›O±-¥Û ›ĞPÿ&hÓèt|MùAºáóáè»%t!œ'¾oŠùtÿf .ßx®Â¥SÑßäÛêQNøZW¶·§Ğ]ömT;ØisÔzX{{ºe+2&œT»3ù’½ ƒüècçŸêiøÁIõ‡³g¼9ÉWKñ6J¸æ½yÓäC…Œ×]Î¤¦=6z¦c«›cO.Sá˜öJI³O].›ddÂ@åŸÃrÅ³õ³'j•Ö8^h/5Ì•ânãÇònAP„"!Á¬ÜhVµ¼îà\ôvE×¼aÑ}«HG×Ú7'±ÂÎ„Íw}ÆW¶ãvˆw–¸G¸²Úí›HF{Vå²±îÎƒ51@x‡D{·1?ÛUæ4¤i2z<©¢ÊÚ)ÿxÍ!•ñOR2ù-N#j~ìTà ·ˆzÓ&ÄœŸR`ªàèìÇĞ40à’nò´Ût/:ÌØÜ}ÆfŞ$Tu”Àq²$	´<v’À˜ D®“÷¬uNÙ­¾<óM Ív¬€ö–Ìú®îèx©Zİ{Ü¸NèÇ/Ğ|@ĞpğBóò‘õuÍrµHßó÷êê_5q“¯”º»N:@*ªƒÛÇ7ìNÙwwê]Ï.î]^ÿ:’–®ú«IA•13{î@W Ìif÷ô‘+ æS{î@W Ì0·§O^<€ïº×Yb~è8ÿæØ¹l€””.>ˆnéÅ—ºÄ×G’ª›S~ÈıÏE~¥O¼=Ÿ}Î„×óN]MğrËjİ¼‹0şpêZ
-endstream
-endobj
-466 0 obj
-<<
-/Length 3905
-/Filter /FlateDecode
->>
-stream
-xœí]K·¾ï¯˜?šï è`'1C Eº9X³3A€8@  şû©*>šäÜ‘¢ÆkIÛİ$‹UM²¾z-~~'à/¯ósaÇ_Ÿş~Åñÿô ßPÕ¹x7ßƒ†³xï‡ßŸşóãé/?ÿx8~yâôüËñ_O?üüEşşê|(õ=øñSİæöè´üG ­ŸÎO}g•=Ûç÷PæãöhÍ{ìè;çmpÚÉ­°'«á_(è”ÃßÎÖJî¸“ğ›²î* ”“Ø‚€ûÎø]ÃïøËh§ #BGRP$RPËR;©-¸öT(>3jì›|¨–»H‚–şvøô§§?|ÁdÖ÷Ì({ Ùhä%ßŞÜÜNô…¿sÅˆÙöPt®è¾¯'U‘X%‹š ‰“<%!¼e‚Ë‘$‚d:Şı@Ošª9sÿëÇ©ÃqÊ„ç*Ha€9é´¢Lá¬vÜx/•‘nÙĞûò•I¾Z¤aM;ÀP-2ÂÁ˜[…ãÇ0ÜÒñÌˆ4$ÕP–J€PL%Ë¡ä¼dw1Ã…¼å×yÌäß`&¹Lz¸ïpêT—Û ¥eœr •e·¬Pb‹çbõÔAOiHC]~[ÇuoiaP0ˆ`ÙpÂ™J\Œ¬^÷qËrÏi92öˆ=ÍËç¢†.kí6¼–¬×Ï«×mÍ‡Ùâ(ƒÕšã„ÜFr3Çı—ÃÂp‰r…å^iÆPBFªË¬\–e¢â8/Ë¤÷aHÏ‘æ±_é²Ò©¼ú\½^Â.Ø«ú8IÆáHšo[š–5Qg@ÙkX4/%³,~¤•¡™$…eàätn41ĞJ8B}Åx«VE“µP}W«x÷fh†An@÷kí¶ÒZ¸­V0ÿœiål(5T¾Š3?U¾By¦P‡è2š™w {yR:T(á@Ó!Å8:iˆDe9ã`ËÅ™™\n«[–äpBÓÔÈ«n¦0ŸÊŒ$¡3"¼¦Æ±·ÖÇD¿Ó4fE¬íD=Ü/P;XMµÎ“‰ª=ŒJ–yÙCËÃ)Zı82Y!±;(Øæ^¶Z’äÏ›´,½3«#Ö&£ãxñ’H€°¾M°çtšY££´înBfAšÏãÎCqyç]Wc¹;æüİKıù+¥¾Ó4Bµd4ğ¯Á+IŞkº0Uß‚ƒ.öÕ²p©»ñŞoOyFøçğ+\‚®m¼ügÍñO¿ıe}üéÏOS7~ki I0v•Ú—bEÎ¤”;Q|]HTPC-"¸•0†Áv:™%Ûek†ÌË%×Ğg2‚æ¥QõKŠbİŒoi‰JdY®R6I[¬9muÆ’I*úLîœpeó¤Ã¾Wi:™‘@ë/²_g$Ğk}×xvCŒ9/˜$äúmKÄEÚÇjDs®½‹	bµ0N7n:“|’€1´«êèüIJŸˆè3@7ôTªˆ±êïUvu}!k´¬=C§¶L<Ÿ:Ş½•]ß»Àµa¦6-·Ë¶,Ü8¯#&®l±ã²® \—mİU‡NËç’¼Û:º å†Vù¼øÔ*ŸV!\,W.bhA!ÙÑ 2¨@9Ïãè~!Õ²BMl^x‰Ößyïï	Ë†v¸íÒ¸¼ªÃê?Y0•cÒsÎÕhÉ´)¬Q^5-ÒÓV2kû¾€¶'„âB§w'Ü‘Â_Å·/à¶ñÏ„Õ]iŞÓè$ã4!ˆÑš,)T‡«o†Ç½«eâØ¹„››ßâE§ÏæyFÎVÏİ®Ü²à‡ÎÇW¢?'¹û‹ğ		”–+›Qtæ}Qô-ÚE‰5}pñ­’ÄÃ¢ŠX6˜ÊºSC¥>­İWÔöqI\×óç­¡¿(7ÃLiööÇB4­ù&cO·^~S3=ş2MVÂ˜#¥™Rw¯Ç ê Öıè‚‹æ|qpÀä¾¶ŠÂ¯OV1ü®ôj@ĞAùİpÏ ´¥0c	³F
-
-}+!¿S7®“E	×8g^Œ	’Óä¤”Áx˜JÁ¸>¬ãƒJ›™_!>¨OÑ	Lh<O!ªoŒö :õ ‰@…æ”İEUC[.^É¦;#Ö„?Wd2T]¦¥¦©Éä^;–|À\L?ÃõÆyåPcñËÌ‘>9ó!Ë6¦í¹Ê¨Ğ}ÊhÜ@gôá#¿½
-JE°sçšd„IPWˆ‡{g?t"qÊï M±°cuµVT«zÌ#½@Í8ß444€d "ö
-&’5$i˜õúÿ0©UÉÊ¿£xûÈÕ}t˜b¶-‹¹*ŸÉ½óŒÃ¬Û¢¥3ºÉ½S%®+ô+^5bÊÍPóÎ™©?¸ÂC7÷Y«PAòˆ‰ÌæEö«Jú+¥<m	ÿ¢îå ªL¦µ£”%]tí,"·a¹éÔ–TÌŞ!–I¸ÄQ'A4X\ÜĞş¹› Z¿?¢çØR)š8ü'8@Å„~à€x8@ŸãÚMÓxäòÎ	"yqÊ	NïÑCXì™&wDh“Ò°«é"ŸuYV¸¶Õ›Cf«¹R](mP)ÏÀ¤¹…qŒ«}ñICHZÍünéJ‰dMIzæÄmğÉCH½–œ/.½ÑÚâ8K£	.BÍZ^Ú””Şš”â(Å
-:©Ãâ(èFåìcÓ4>ğ””’bf
-)—vŸ¹i$)`Pr4Â_?’”ÒÉêVhƒg¨Rğ$P.´ª³ŸiO¯ror&7¾1]ûB zÑ»*ºfJN\å½éÒ«]%eßdƒÇXÄq2&î\W¼a-Ô=â»ë9—óxc9;Åöò·g‚…ú`E³{û*h¨+¦n“JqãiNÄ$u•Öä1­“òÒŞ‹JeªªdÚÒMö væŠm.]ZgRnµ]xïMpœhgÕ-r$":oÕ"ŞÏä8>GÌºÛÊÜÒzß}d9ñ&«Mı2®^±UFsÔ™LGƒvâÄ·£JˆÊá®”qóŒ6ÁŞ`D"H?µšƒ$fë¤'µÍó–Ü‰Ch?eØ¬¡Š°ÌLœ…RzaÄ--zò€€¨ ©Í§Ã<3V_V²àï^=€Ã8|U‚òùœFy1,-ó;[Ï	 èÀè)Ö4¤ej?ÛyAGSïM¦!˜’MNNINŸv!mï#Ë ƒÁ’qĞw^Ç´ÈêJÔW´j»jJÒv­¦e™ÓÂ È‰{¶KzZUõ"è¾ŸõÇªyE|GÕÕ¹¹:-{×Ô¤=$KNª²b.Ÿ®çÇù¢İk{‡š¿ªÉç<Çlf•ts!-ÑË§•ëÕıYJÖ©Åró\ÊnAƒ/Fåy>zº7©æW—Ï¸ë¶ûEo¾fn…¯xwšİ˜ä½<®zAãbœM¥l¯Ÿ!];oâ4›íà•`;“ª¶¯³{ò”6cF/a´¬ÚÔ¯:)+]9ÎİFw«t­úŒµ«œb÷<ÌŞavŒáîát—ËlzÏTµ_v»ŠÇÍ²»Æ0ŸĞám}ä„ß¿IfÛán¶Ë-šz†ŸåÄiİqË	æWÏ“Wh[ØE³Ç¯?S§¯2çıUÙËÂVïòÍH0qŸ-Œ†[¾ËåG÷ÜéŠ;—C‚}0›¶E]TféB1'¤—f´ÖçÔ¥dÊ–50³D¨ÅÎ'‚tT€¬Ìò°7Ù–
-’…uˆïÇíkæ‡õÓF‚’Ç3ó¤€~}.n=mJŸò¸¨°ó±NM®<xÚBdDLK§ãç­m1aôb§c8çÅuz§>Ç{İéËmëc\zÉX/—-Åô™•ˆüº÷®ö…¿ ö,M,MòŞSóq¨æ’û(?Ä§ãúÃ¶«fWÚÎ<v)PFö@3D.ÒX)Wª¤?¤CĞÄìpÜ>ª7Ôq½i¥ØrÆIP¯™«Ci«Œ+%UˆŞ„êêÔ\…ú
-uæ¬^´Í3Xûš]«]©xà¦Ø½ùõõ´¦^ÕDë¾íQUÓôíÌ¸DÊ”çV8ĞlCbÁV+t±èÀiÑ³ÎJpjÖÊ İA¯= w÷vÃç`>8gÔ¢ŞªykhÆÍYBkNX·îœ'óüÍ/fGÓ.´sÓo—¦c¾Ÿ+óY­W‰è½éìl—Ò« «–}C4]:ÄœˆkJ^®£W‹ÃÌÙêY	ç¢7×êNÄ¢ù29µgu²ëtİDïKfFŠá¡:ÛW.~{ªÖØd"ISÓ¬»§iÖ“ÂØXä÷Í„îÉ a/¯„»MØMq·Oˆˆ-ÇŠÆ©Ë€€g˜<R]Æl±b¤¹´­vYÅĞ¡íäØÙú«ÒÉJ[´6Û½îxŸœ´¹…¯b:ô8o½:èŸ`ù¼­™ù÷íÑ´ÉLÀe¹kM„·pÚKˆœ$³(Á8«œÓ‰ç6åĞÍ"/>Şx%Õ…ğˆ<"w1øN‘É£¼hb ³sWCu°cÚìënh I'˜Ú-sl˜£d] ï7ù"û7’Ç…ÙÊ*n0Ö9[ëŒ	ÚUVWLĞ.a4¥‡9}Xçq9ag2z…Ób¬ˆ,wÇˆ¨øm¥²ûëÛ¿‘bxÍ"š]QtuÌ]xùHÂêÌbQ+Á³3Óäyz^ŞÇ¹/EŞ1O-˜r€]u9ÃU«‘|^–«§9™ÀóªÜ™z¤^,W…S½¢fıäƒ®g‡Ê(áa~İ¿«éWpåàÚo·Ëü=Œå¬xá¹ãÍ\
-É˜ø=Ìjé²…¸§Ï­z2µ­„sL7nù‰­N¶¹›?b!Áö‚>˜}?œÑR²Ê3.ÍŞd[*@ÆJûqûª™n“Àè0è‡1ø¹€è÷Û.íåÙˆl9x~^óÂò_–~Án^ÖM’y‰yDôš>åïĞÆÓìÒiù¹Ğ‰>­®›óñÖ"Nâ¨ÛE®ïÿÓå\¥¼‡8Å¬×´3pTs…âYJ'|Ğ¸-y­©õ-ÁkêÖó×wy È0ák¸?0;>°e/Åó÷Ç:“3e^8¡¨şù/|¬
-endstream
-endobj
-604 0 obj
-<<
-/Length 3772
-/Filter /FlateDecode
->>
-stream
-xœíË·ñ>_±? šï ìÁNb ‡ trzg‚ Ù €ø÷SU|÷°9»ëôhd×ÖšİMYU¬7)ñÀáç€?¼ÌÎ…yXÿI?‚>Šã¿éE~( «†Ùø"?æRz&ñá8ş÷ŸËñ¯?ÿø°|9púàËòïÃ?ÿø~)³øñc3hóê#Œü'€¯>{oŸáı{{rÒÉ­±øO°
-ş3öè´äN;ùˆ~o<7NÃÛş?ô°Ğó”†Ë§~;—^Xmô8=A; ÊÃpG¿ Pc¼“^é…«_Ÿ`cÎ<"^ß;ğcxË(ŸÆÙ¡ñ÷‡>üñ#à+cDË¤°D–_züg¢¬k_‡,ZÄEhø)è\-vq1Œ8E4«€:€LÓ!€HH„?e¤ŒHEÂ*À—ò)Ä=´`OT
-f¸’K¯%jTûK†J_{¤ƒw° šSÎ }q¢8“bp&¬C‰ÁC®HÂaÆÄÿC¬&³ì‘·»¦V™U#f 'Òîr¿Dr"³´ÏÔ¬%$`©/Ğc™õ -v:Ç›ıŒSÀ}6ÒÆ]ˆd:¬Æ8ğsâA7Yµ(\Êv÷/˜}eõ¼6¹ÏˆÀ€ç¹CÔ–éÁc§ãã+	iD×ç´&ÀƒaA©àM\~mÑœ¼'”"I‚]&ã%qğN#5JíO7/gãGå€“Fõóæ ¶˜-%n¦Éø§ÉÛ‘dœÍ&ÊŒàP‘j€Ó™ñ}"µ;Ã*e—ÄùÙû_‰Ÿ{›‚*p<0šIÖÈÉÚ¬¦¥Eµ€V·ÔU›,4}Q ÙÎ#'İé¢”z'"C SeéĞè¬Â”!©._Œ™bjDu‰BŞ«h!±‘‘‹­Ôl†MbèrcÕç\´ûÇŠ›«š‡¡ˆ`$YÄRcqõ¦HhÅ¸ñJÛÈ»M“ğsŒ>ù*môí/p´HÉÔ ã")Ó>'RS¿*™EÕÛÕyùªG3èù GNfºÍ¦“N‰ÑP>¯¾òµi`~BÆù!Ï;´S–™¸ZÜo‘6Ali]×´¥I0 q4“Rk‘äª¯ÍŠØ¾„z•ÑÙ÷išÉì|‚áóÎpIœ€‰3í\<{¯„
-ğcP{NFQmN¾(V°¸[Ì M3ªÂÉˆÖ™Æ&ˆº{>…V:_ í/,„*š,¸+æä¹¸M¡äDò•ŞÀıŠ4­R×äüJıÖ‡WäÕ«È€Nò÷{=[œÆ#š%ğm ØÀ1ëAx&É­Y+€–¤çŒkQ´Z8« >7PŒj}˜ÂÁ@y	; pËlè?ÛWæópò
->¿õ©+7œºcÎëŸºyúf±ş-3Œ¹3Ìa^Ã0BÙáä…a&‡învö¯æ™ÔñF0º™ÇÚNV1Ê„=d=*4XÏÏĞT,(›ÿj—ğÓ‡·cÿÃO9|Hóøµ‡ ƒ`Nø}A¶0¤aVì±‚@€.w†ØÀx>(®¾·»‚ì` H!Àrİ—’iw;C¬   ‚jç5¶0¤fFíq%Œ¸fšÂhú£×t"ŸNÅlxÌŠò;1dG±IJğa²PÇT"EOuŒÍÅô…ôó˜!Å U	{¸è™<§A1´ä“ Zc„9*ƒ‰ÃútÓóÉ)­±CÇ=ófSÊ"§ÊÚ«FN×Ù6BÍÉ:L×‡GaEŞ /²|˜‰rmrIÏ4Æ.DÉäÄàÓç³ÌkKëUz Ií0X$ê KrmC&"BJmsH0*ú’0km$ã|¬/†L½¼fÈİêC²1…†Œ¿™ÜÆD†ŒÚ(t
-–.€]’àº„cÉáVMZ˜"´WL•K›{ï’jø1`Z5Î£š	>Ş6}Á]=ĞWƒ³‰ùš@OZèp{Ğâ›àRÎ> æ6D^ªcXSu…ä6s™¶Œv)Oz4á–B¨ŞLñïÍùC-Ôµƒ¬‰SB$ŠŞ"Ï1êDÑ{í¸²¬$9‚}Í#ò3íò0‚6È*Ó²'åÛ&¦NuQ’EM„ZªÔ;ì—T.|\¹ 9%µô×ÔÚ)È—VRhƒ9ÄĞ	ˆN,˜ÈŸˆ;’^gâeNÔµYè½#Š¸¨ Hw«"f(å?bl°›Àp»q7ò›ößÇ!Ÿß§ÿ~CSÿ†yFŞyæÎ3¯æ™qèÎ3{óÌ†»˜5Ä×àbÒÀ)¡•cÁîë` H£ö$ˆè˜–;¯±… ­`Jì²í` Hgôİd@zÎœÛy•-	¿í¾ÔÆóÁ€/w¿w0$8àrßUv0 ¤PÌîñ_I$­†¡´Û‘² ŞÄ]½İM¢Wº^òÎ3wy%Ï|OfôÃ~éöT%^äÄŒÔ1†­œI)³#”×H1¿èzá)³¾ÆŠSÂ„¹åHtÌSµÉ”q\L{Æå8À¨DÌjD½Í³ÆN,²§Ğ‚ €àbìk“4R1èµoz¾ñ|P…}á5À”•Ì‹íõ:%Ìñ½}’
-âù`%“nß¶   eÂîµÂÕ®4áªÇ3ºƒa1á•òëğ.$Åú3¾íA-LƒüÊopş÷,Üd)Pmòˆ1O©ÕÑ—–š·N÷‰–~	›yyÅÂ8é«¹©GíôUSg	”²È”éñ)ŸÑ~v²°g)™³¿ãÚ1	²ÃÑbS&<rh}%ğh‘`.„àKü'÷’bˆ´¯o[Èl[4‡XN¹!âP##ÉæŒ^“î‹š¶Ëj`É˜µO‘Q+ÉÆº˜[ÆÛô÷·`º1¸•kÜ
-yÕäo,‹éër"~_^™SÏøG£jÿk˜şU7 l$`F·4éØùŠ•9T>#,ÓÓÁ®­ˆ=PJV	:!ú¹}‹ŒÙ´–®…’ÁÕ\7¬ê^Òa!Ç¸—6¨t’¥6éw÷ØµD×Bå°9¡0ÆÍ&@Çßë·¾k™iO5™ÁS‡>Ae˜ ½§¶‘³ZEX«ÇÍ„§õl&ßêÏG¬ù£ÇñV?:»¹¿g:yµM,¹´_ˆ3¤ïÆf[0èÛKI0aÁÙ>›2òólîÏ	[¯È:¥ÔjÔâÛÎ¼k8ªzQW½-ÁÓ1yO–%üÎ&,lB®<éŞˆÚÌG·¿¨F4œ%Éî^ÇDºÿcÀ@c·¾ïéj3ÕwÊ—¾˜”J]À]2Ææàã)ÜÉsn>øYaX r¤—ÁŸŸáıÍšßTg(¢åT7¹\¹ºrÃ.6Õ^ã“*ßjêXHFÅcƒgİµ	é6‘èeÖBo*ZmÊ«[¸AÌÑê-ÀÑT÷:}Õâ^íøª‚ÍZÅ˜K ÏOÖæâk¯
-h·õÈ©“™ñ­Vdgwà{`Íá†ïq›y5ØšÑ«SízÀÚrV:.nÌ4—x‘
-ï²|_Àú® \m¿PtÂƒvYÊ•Vºjë­Ø~çxTä}h±ZÚk!Şî®xŠnÙÓ¤
-%AºnëŒ¡§yj/š­íÜSœ|<ö 'Ó| SÂÎ§E¡‚É<Pã:œk’/Ö@_ÑåT//ê¥"(÷åéOq)é<C’|$ÑèÎ€ÌÒñÎ’S,ó.JêhS¾eU B±U_%Ü•r7!Å'$ÉêšNübÒÅEî¨§’¦ç<³z¨jnÂŒ­ÁUÃ±Ñ hL®x(
-i}ãxCóşšÆxÑÅ’C,¦Ç†¦êŠş•òÉ"ë›ç{”Ÿ2¹c¬à”Gº…É|ßI6ÒETúØŞŸkåùFE¡—¶Ä¾ìšU@ŞªæhŠuñIiNA·$ÔÊ§‰å@|ŒÛ»1N?Ş€1¦u¾†	ÚŒlê]g'RòQ3u”$™ÙúSRÎg^FÅŸáQ$%Ñ·CVÒ°À“ÉrsæØï¢râû¹Ùb§]UUïKMÖ ãAºRÎ0(uØ0«UíPgW'åÈÓÎÉIy˜;ŸínaàÙnÇÌÎ•´ 	DÒ»UÒöèöáªùÒtÈ·X%„…B—éM*Íi®)N¢\gs(E6DÍR×³²Ã°Ãs¿^”œOZİœä¢@YÚññXç&&7×LO?"s€ìdŒ47­§¶…	”¦eº–îú¡å	›´6)¶\›+ˆËdT5‡Ñ¼“ë~øDù%S¨»k•~Óê—ågãDF›LáìkÃ9xQFp_+zõÒÓ¥ôß_ŞsF‡Õ¨ÿPòÅT™á6L&,#&ïÂnŠõ6t¬æ=cüW±ódı’İd]ØÁ¦‰÷no‘=§OÈ:%HÏç›—tL#öà>\w°Ô¯ê»ç‡TÕ™7Ö„Õ{§™ŠKñ^á§•Ş»TŞ‚İÑóÇÆá@í}ò¤3Ñµ›˜à¶ñ›¯*¾;%ß¹Sòš«ÓwíéÆÄáÙ¬v…+P;XDllÌËˆ,z½ßÑ­A®Å8Îˆo«¾µ¯›XIeçXŞ¦°ÒÆu·B#ÂçI)ì¹¨¯’”:;äĞŞìe!¦¹"¼¶A¯­O/'÷7:öÏÇ;ö'_ŸÕ6O¾Åı&+èÿ¦“K_5¡ñÉ×—’îä#Œ´Ì˜â034PŒÿÈLm»ôtZ‰»£Í¥Ô§ñæ3Õ›±Ê(9ŸÑ†U²ÈFÄÖ¢Ş©ï›§vÿúòÄòÌ¸2Œó›µP|9+76¯ÀâçâfCí~j_5ˆÏFG¼ğ¯†{>Ä·ÔØëx…ğ|Ğ’»‚k àm¨ĞØkyõ§ß¡:Ğ‰ˆîÛ÷êÛ7Ü·ï}û¾vûoa˜Áìó¾kç¯?õûö¾oïÿÏöà‹ ËôKö÷z¬üó?7šM
-endstream
-endobj
-535 0 obj
-<<
-/Length 4676
-/Filter /FlateDecode
->>
-stream
-xœíË·ñ¾_±?à6ßÀĞÁNb ‡ urˆzg‚ q€@@üû)ßİ,ÎìD=;rV+HËn’EÉz³š?3øù†Ã?NñÅyÆ¸~^yúwúáX?Kş¦ù!‡¦†/&>ÏOÙ³U‹Ï¾ıİé?ÿXOşñûçõóÃ÷Ÿ×=}ûãgşü÷ÏĞæ§Òn0†ï?6}6¯>BÏ èêùãùé/ße´•ÆkN‚nNFÁÿÒœÍËhù…‡VÍ‡0ïŒ†'ÊêğÔJÁ¬2gx«Œ‡¤`8ªùÔür
--°ĞFYû!L?ô¤ì©€‹•ÍÚŒ%ƒåV›{ )- ]æQJè€
-hşúüñO¿ÿÊ8Ğœ/Ö»g\†Ÿ:„çEèŸ:ŸŞiÒì¹ù„°0ooÃì9Ì0 4¾]Ü ŠE¨½”ôÃÏÚ`êl”tè{4[K•®ËÔ kİ¹°’¡;x(7jˆQ©Íâ•Šİ`iáI/¸†¾„UÚ,Šsk”eÚ9!µğğÈø¾ÚˆÕŸÆƒ‡êâÁ‡.¹´ÃÁs½ Ø½~y%â:Yâtiı¹·6ä_Ÿòç
-hÁ/OÒ°ÅI‹ÿlÇÿÃÏ·£şçşôôsÄ¯= iÍ¢˜:d@:¶Ô,{ds¦ï·4P6àYg ¡Ö¸DéóÓ‰{e2‹ÄŸrË€ÿ­@%r0„öÔòšO¤7>µ‰Dr¹‘¹„—YWì²­hUd¬ ÕNüş5q(ğ;`un•mn/µ
-,&>¾¯>˜æ‹7Š;ˆd]±Ã ¦ekÀ´p‰aÁNû*=E–i§µaUòù´À,wZ§Yë]_ì9.uØ7e—MÛè„‹©’†Œ>HÓê+ní‚øÓ@L94"†GMŒ‚n&cl¶&³‹<–:>¾«tV…] 
-á¨“În>Ü™"ÀÑ­´wG¥7 Öyx%Ò'‰€ŠĞ×JÔ@¼2¨*0ó¸oÒn!¸LÍ³¡ôË…ŒúÆO‰:wŠ³[õDğ¡\üö‚‡H‹¥dÄ‹Ã}¸&18Ô@{Õf+×˜ ÙZ-Ì[U´qÈ…[¤‡?j‹K.î©cŒç}‘W­Qmˆ(õIç`Íö=’‰úGR ^G¾¡Å€HÇC”èqì:é™|¸ÊI´ĞšŠ4&<@Z7íâuûüô%«º!4ºxO5z…o_å“¨ÉÂ"ÕuDzŒ´DU)ùÁæÈT¢bpAT`hğÙ˜,@…İ0Pú#ÙÂåã8àGÁF’«zº
-/À(Â‹’w•]‚.¼ ³’Â„5èJ¼+­]Éw¥SW‚U~f…óÊEnÚqÍˆ~l?7ígW·ŸÇ¤¥œ·¤JaLzÅ}\›iäÙÈËõCß,Iv5mÙOúLÀ²É²#q­UİµkiıtpıpÌ1ë¾Ùë|²óºw\x²WµNzÛsqôX7{[OV‰aä:E:›OòéLÔªİğzBÑos. òPà3ŒÍyò¤æè Û„,y ŠkwOI<1®¨£¸ÑpœÀ³"7ş$«Au*È+2Á$öé$<]‘ùZ´«ÎÛ'&]´qlOÕâWy»°±Z™,…¿¡/ ¸:ÚÔá ÃŞÜ;·v-¡gà„ŸŸÖ;E,ÛbæĞÑöÎÙhèa¨z0Ù®
-€±r Ÿdås C½mE]¨åE˜I|A°o½a¢Ñ<€}U{ÿ)Pz&a/“3	}Ã®Í=ö¤ƒlM9ó§×ı6,ùâİ’ÿ%,ùQù jÂ~@@AU£‹×.[/ë¯OÍ†OoåÅb+O²³oÁüò¤™[¤4GŞ‚À\,B8ã·ô¥êêÁ®ÏÂš­ª¦õ¢ºfûThƒ†*Ğ±Œx@ZwxĞš«ågdU2)·UN8ƒø…CÁÑ… Ã;B: â=Ú¿Ñ%õ†v0œ`2<kñ­ß'¸¢@”0;´İdSC±ßH«Æş»‹B@ÓCxqÁÖ©_$áñ!¼ŠÇ¹£IPbŠM&OÊnŒìÒ|Ê;9hˆ(5>­Ğ5`/oŞ†š*ø_ÁG§0€3.Ù^´¢#Ar¤aÙqt;Z˜±ò{t«…‹xLƒŠ\ÎÇ³ŠW‹Õ{§Ğ€/¯©Ü‹“ÊO[1ğëiåÁBç±Îá$!~fT4‡Ìê/¼wóvfa_ıH“©e
-2_‡„s¹Øë¥™ ıød:5ÎÍß"š'N×™êÜ8Yz‹&¿§~×„]eR}L²Úİ‘$„wm÷9@«8F‡B¬XœxzW¾õáFGC³u_Ö³9Ğ±	£K®(Œ[Ì:y¶‰‰ ËèÆ5ÕòD×*3ùì%¹Öq±üØ¥€´ J¸c#”:¤Z{§%cîªª=S§pD²¢ğæÃ¾dÑ¦;¦ù!m8L>d­ 	©$.l²‰‹RmwF2aĞ#;FæL¾Åàály$a¢şõ?LwF™w†gegzµn•)ôH™q÷´ó­VM˜nk¯1s¸ŒA‹ô­Û8† GtjcB¬wÒ¥CÔ³G¾Õ®›˜hh­jxŞ˜¢·¸ìì\VùË(r8t»X÷ğ’á	(¯‰T:¸¨*
-ä-^"‡Åb™;8r¸#‡ŒõP-Œ R-ò0écƒooïi(ÒI¥ÖŒ4ÅÌ8riK^©zÑßE¾íì;ÑaÇÍ:i0`é“Ú„êIK´¢ª:~á®Äûéèl+m‰—äÛ”ÕgYä ¢÷"jL—ètaçÛø?lıÑLpqW£™«ØÂ•oÃ‚K	£êEtYê$ÁRu7ñ†“N9ZãÏm„Z²ÈÅÉ—*7V;²*šsg!Æ&Réo
-<hË6\ÁFCãlo,”S9©G	m7lDÁØÈ¸%„»«q+ºĞ›[¨€3”<ÕâAëW&"¢)ö‘¨WL*'ŠL×˜ÛÉ,Ö¥tyè+–B!‡¾[Ê^)ˆZr«.èxr
-URÖ›Ï3iœ	»FŸ:YÂ­¬éñD_n ş“~¯ü%;i¹yT6Øaót¶»BŠ]Kƒ0kòƒÃŒi ëÙâµ:l%€ùE7Ûî•¼§/E²nàJ\i.©¶dûw²{×ÕL¡¡¹tîJ§
-h255–6íf5;è)¤4EÒ3Bç'Õç:™Ã§`©ì:½©Û•Ü…TŸı”RÌîxÉ&ËRbm¥ZìôåjD™m¯äb¿LæÄ&K8ÛNz»IÈùÎæ0Ù@Ó·;.WBØá…ZÏ~U6˜¸K»CGÎv¥K9¸ÿºÃJl¶b’C¾xQº¹Mè—|ğPû7¸4µÕÒê}'JëJ÷¯×şÎ7ÖWÉ6ó•Ü|¿;DI•ë¢¨8{w„lcr¥1¶"Öô(9ÊŒ"š€ŞÓPU"¾(­2KLí­±ˆŒ|ï ïÅgCtâÑ25êìB€‚Ô¾D„=®ğÿk]\cËßµ®ÍÿÂğhèK†ñ¸ÉKª¹ é>8UI#8ÜbíÁş†
-"ØşÅ4à>êƒó÷´ªªö‚ó8ÄO§@­téšíøL”‚³DôyÚ$&:Z½wîX¤®Ü¶T8Zäcİ¥çÚÆ‚Úx‘(ùbª˜ç Íìd:P Ù0JTX;²3J¦ïjgT-ššP‹xÇÇñjp­¥J@½­QEè/È«½d³>uıB¶ŠœOf6Âxm‹x+;¢æC¸Õ¦E-ê­…Ÿ{˜BÓ9†Ë3ôğn“‚½åƒí× ¡µlšá‰¢æîÚB±×{(‚5Äfl’ŒÓ»”Ì'×î¶>2.ŠãÛŒ9,$äôv–ò$;”‘%8É¤¼çò b¨¼’RfE­”¢yNŒ
-¶ƒ¤æbTÜrİh—¢2XJëölFı¯¼ŒÎÎG§èØş]ÃÓcM·¬s1İ²&°âv“¦‡.'-ù•;Ä’k_1šu‚½EÏµÛ%Ù[¨ºı,gøØg³™Èª;„Ì‡3y+®^ ÙY“¯X’Ééê·]$¹ÔØíÉn–T¾t Ù}»ÙòHq›“Õ·;÷sº-—€#Ë…Ôü®Ù\¶6†`ªÓİ¿hÉ‰÷©dÏîŠx}MÊ2*QH»¨ÇW¿jËÄûÍ‰/xs"ª:¸XE”´w·BQŒû”²oÁ™Ò,J“n‚yY<@9]Ûè¦'AZ„ô‹²C²"]kÉç+Ìğàô­- òÇŠcc0; 2ä½MDsW›r(ë½·™³çB÷fm
-Ö·ÙVÛ¾‘fá\	›ÔÃ¶èšª¸sAµ=vã~Ö£¡§¢¦íÎí UÛ®c”:r51íQQ8‰"Ç¨ÇnÀ4R»Á^¹^ıª¨ÍJÒÓˆÊĞp°]'İI"s:	2I”MÖêLvº);î¦?i§©5¶Œ\•3ÊüÍJÙ“ERÛ>¯< ŠD¹ìİ¶¤“ÎeT­†öF'îkol²T÷Yãc«&yãú«4¾óÍµ¶²Æ.Tn5æTœ%Ég¸dƒÜ=å§Mş·é§	¦^9eMõk>®ö¿~8ôßä•œúW¼aÜÿÏ†9PUz¡.7U¢‰91•Ëc“R5 @»x~ìeîFH¾¸dÇjeŒ R‡ƒl`„L_rQ‡éed#€´‹´Ç]d:×ÁªÇ»LçŸ5Ş1ª$ƒWQ:BYªÆuYârH„–7ç{Œœàä(¿EÎ}ÓÀç{… 2éX–¾k±ığÓ¤Ş+œõ2º(8©ñªà¤-ú§é÷Í%*†·Åcj¤Ëc©âïšòè“¢!µŠ¦‡)¿¦ƒâp,šÔ èoÅø90­Ô,ëÈHzÃœøÅ[¬j²ß×~#¥ô“ás?ĞF|â1›AÿrıâÁUI~w!¨õ›*$í"Ü8³Ë#¤·í%ÅrH&H‚)|"—TºàJ½OÈk<û:§µ70)ÔR[ê<©›ÂWˆ&‚H·FY›\ÑİÈ¼9%&ŞÆ¯!¦,,d­}¦¹ÛÀ	QV7ç‡â6ÓÈ#¤o(PÙÑ½¦8:¼³úéóTôûrØÓ/¥¼vßl¢´M@3…¹E#'ÔÂS;¯“>Y5›õ,ìçÂ â¦
-i$ñHD†æ/­¦Ùëí]¬­†_°¼i?DÆuâs»oyÊHf:“\ã¦.¡—˜V~Ú˜é¶_Pİ9ûJ"3,6ç™¥¢}Ş,JO³3¿eÊ`üğV½ô‘ÃtJkÛ¥ì£í¦^©ÛÑæ*q¤DÀš¼YmzWÄO²@Uv¦lÄÕ/DĞ¾ÇŸ xû4Ã9ñ)ŠÅÕ$-\Jš«£¯X‹ˆwßH`m2İš	 E(gu†Ğß‚ÕÚ‡7q}Å†Eñ~Aäş¶ÅœîºÆ	X[Ìn!N Æ±¡	- ‰ÆÍc‹ ¬›âN™"ï›G\·†*xÉlªƒ¶L0JÅ[»0¸sràÅÆ·^‚tQç©XÒ·eÈ|ïÑ&³[62¡Ds5V¢"“¸™¨æ.D”Ö>Ãas+çâ’±fİ¾ü´•R¦Îl"³®ùì"ÏRG4–¢ĞÔü°™¯‹˜PnXœ[”Z›İ«ªÜ‘â;oÜûøIÒõßPtiÑ¶W6¶dwË«{A¿‰bm³™…ãßZÉô$B`>İYºá·ÎŠ›2Áÿ"ŒŞYcS*´wğñ…IîRòuh,­HV”­,Ùp.|ÛF3àŞã¬2oŸvº5À¶÷ñ7êìjtúª=%;q‹å]Èv÷*mPäE[€xë¨ù:™|œEó4ÄNÃù¦Ù"¥çÃ«œ¢É{·Ó:oÏŠiëå”Iõ2ß4,^iµhÿ®oßõ±/¡í,e”ãGªEèñØsÏ86UĞnQîàğˆ€´jaúà F i¯î£§İ;Ajş`¦onÃWåÀnˆŸkıº}²“ÈïÆŸäJ†ÚNâ¨WõShgı`LÖMU¾Z¢MˆŒFv^”…”çD³GKBd½«éAÛŸÿå€¬
-endstream
-endobj
-292 0 obj
-<<
-/Length 3857
-/Filter /FlateDecode
->>
-stream
-xœí]Én$¹½×WÔ4‡ûú0ãğÁ@{úfø`•ª–£Ïï;"¸$™E²$Mg)=£Vf’2ÆòÈG>	øáµ`>p.ÌñôtøOú#¨€8*ÿ¥ù¥àø½Ì¯ào~øİù¿ÿ<ÿòÇŸ§oÎ„ç*Ha¬·Òi™ÂYí¸ñ^*#¼²¡-vüvú÷á‡?~Ç|"_
-¡NúZu¢úô:óq”üøõrøë:Ø³ÕÖ8nMüÍ–\+{±ğöoó;¿{ú-şè‚S6Ä_•äÒë •_ıíøõO‡ß…~É”?w¾P×¿Ğßó´»bd¶Ã>úşıx!ôŒŸ†'”Ç%¯Ÿ´¢á#£"*nMj‰X‹X¹èÔ¸xd,UI5‘Å£Òó¶¬sÊi+àÿ@¿«âTÛBM¾«Š/ÎäÆ‰CÓ†ò]ÄŸ¡+Âkğ{G¦ŒL8½PËU->²·ö6¢‚Ã2Aág;ŒÇ‚’ã°'(}ş|ü$É ~€1À /ğS‘ğQA•‘PMÄöğ0äD³d?©ØœÀ_C®€Be]ätìP$ Õ4®V;Xõ]>ko™tvarµ>Ó×oµŠoïÃxè?È”|ÔF“@cáöhæ@g9E¬zl„sY´¸v:Ö2ËT*ò`wÊ<³Â<ô•/—;ïº²İ®;æ¼Şy×Íã¹¾ÑB ò¾y·<0ÓEá`%j”¹X;ûŞìU“fh›Gm5­o£›–™÷àurTŸ³,ÊT„Âá+Úô-5}Şß~MÓ@+eY ÅºÊXqæ³õë¡RZBƒõtVHåÍ¿j¹üù—×/©_~şóá—Ô™_¯È aÏ¤WÛnÉ a/ÁB0Ûn'ÀxvGƒÃF‹JànïÈb"3ÂãÛôZÏ—ßh¼”Vq¢éA?¬—š'ÙT±Êgã¥k:¢q;¶4b»»ø¨{®Á¹~JNŞÑÎƒNf4R#ë'Tj£'ô•ª'T:Õã©ùh–§{`™‡ êbïÛâÃl°;:®¥Ûù Ğ,¬+÷?4P^9š*Á2íµÓiôË£ÑÍjğãe„KLµíTNVz ç	EÑ<™5…qo^Ôs3Q$-M=¥‰Ú~¨­ä´¢+(Ö­ŠáG=Q‰-×İt\“òí˜_À®©Æv“Î6ƒl•ù|¢g,X1ëòQ÷	Ï—éM×J>ÌëZYsc0ÔpPJöL+b1šˆËŞ™,D£±®×zSËtEåé`%3JJ'6%»¢daj¹„Zw1‡}¸gğŒÓ‹3NZŒ¡á:ËV¢/«X$:¹ZËã¡{ˆ–ì´pÀ%6şÂÃsóvÈ?÷ÉqòNÕâQ’·<¦]YøàÄßí1ş5íøH}^*yá³ñ6;Š?Œ‡Á©[4Ä»1Œèˆ<;4\9®Éäæ®›¤i]ü®%Ü¡ ¡…Kd =Ö1İY9+Ö©…nHV6hTş¼ˆæîCš;êú;1aİyï÷ïkÇ—èÎ%/”ÿ*ñÜAãiÎƒÎ-¥S´*•ğ÷@ÕW±ú~	)©«Ø
-vòp°=Ì7”Yü¤9ÅµÃ¼0mÆ2À¼e<I9
-OÃ®ëçRõvİ cV0‡§Ë”ƒµV3¥ty³U”xEÃÓ’	h{kÂ+2HØ2üÚœpK	¸ÜpKÃ ‰Í	¯È áÀ”İpÄ+kRò{¦À‹º
-”¬Z#ùd„ã7°	yÌş£³k:ÃbŒ>8Ìªi°û	5P ²NMÆ$8fİ1ŞdÔQoö?‚}$Î74Üÿ•¹¡Å0ïÇÚWtu¦5IxÒ4Ê;ä¦ú­¡$­b[«Ô†’´ÀíâHt ´É@‡pÜ9Äò1Â‘z+(Q¢ŞE\e²!%z4êeú’³µˆSĞ.kwã|“×¥¬ke®ö„Ùi&ª¤j—ÅR¸‹ïÄ,!£†mÀ±.?üš+„ÃÊ–0Ğoq'K¹hø)—ç„rÖ ô5¸N–„7&¿O…lAâ¥Ôv§“D²J½âV\3®åqxFÚä]…34ÄÈ¡[°p.4~ĞåŠ¼N\^ ’†¼‹ÕZ0œÎkH@„>ŸSäÇR·ôC†Û^â§l,(ğæÆğRî™òı`°Ç‹µÌÃêÅqÉJÃˆây±üjHêCš¿lüİ… À„Š1MÓ-)â³RìÏq(Ã%@Az`½’QJ'(°Ö{œÏ§·Ş`r–3%Prc~oy²Í7dCU²ıvZzêš)i4ß}Ğça:
-æ½ÛäJ‰zbÈ 	Cq&µû¸ùã«'f£eC˜Ã¼“ 
-RªyyÔ—f©Ğ¦3XU”³6„é¨ázl×j3í³zqW)˜Vœt %yn\ó&%Í¤;rİ¹IoÄ„†Õ\)65éùdÄNëµÚ’7Få×)§ÂóqQÏÃZGxFU‘Oø3åzÜ9GUÅ„a¹Á‚Õ ı„™c£4™Î•À\Z";<3”fÏÈXĞä–ı29¨ †¤`½nê¯¨<ŒeÎI!¶õÿWTª˜`ïƒë¸/ŞöÊM e¬AzÁ‰Hy‹ê±5e'åZ\BWªSğÏ«‘“6uíïà&é†eËÑÁ)ÉqFjR‰%ÌÆq“/Ï&Õñæ35Ÿñœ,›´P|qƒuäS½Q’Qfo	€¢“ É‹ıÖá­£÷-–¤—q†m<´½¹ï8l/û\ÿ†‘{ç“!‹xÎJÏ‚ÙÚĞ ’Z3³qª ¡$=4²Õ(ßR·¡/Gòbë•ãN”×T%]k9EÇ›âÁãlXš7ÑÆw.ÅÖb(™ö¬´abXŒ"Âe3¨;£¹ƒz[,Q9ªù@äfÀGÍô~ñ¦‰êYhw3×sÚ1+pVÚåZ#­0wmïU›e
-*S(Ób\dI?”Ãó4ëŸZAHm”nş|4İX²bİY)©ÄÕktÏî7-tà&„Û›’p§Ó…å,`ÄDÕ¼¸ ¯M}¿Câz±œn
-¶ô¶p®ÿ‚O¨ÇEÛÅhEQ¨.a¸İJƒ¬éßg Uï„¡0â®.O+«Í¡ÌœdIÁı493Mğó´*ÖWM\/””;PRëÎÚIY³øS%i¯éé»sœï³ æØ2-úlW¾g?Óæ{¢²“P#0qÏ¥´	WhøÙÄÑ˜YÄÓ­j^õå'É›ƒƒvé¬@IèL»î§ßiÁ (›Ñkêe$¦Î—ÒÃodÇ¨ºô&ª
-£A9ëÁµCÚ{Æ•-^Û~êOæÃ“yÉT`ÚJÌsø3<'SŞlÿ\‘y:0ht°[^“ÂB0å7q1£‚e3åá{%³•½ØgÉĞ§xŒ@7d˜ÕÉ¬Œ¨pd²õÉp´ĞĞö=öŒÉhÅ%‹²¯¨%ğñæıpJ˜}_xÒkÉëpÌµÓ{Çá"¿£mLF¶ñ€-âó4årÉdå˜áp[Õj0¥Uø¼¹¿¤ÜzV¡.q²ğ¢’bª 	ç±	t-³5îÊjŠ ìÑô-6æKoˆ`”,Ó®Z7õ±ŒÒÈÇVku¡båß‘Pw¼SbBïÓêt;MDI\G`¡cHÿ±ö8m¼¯4Íä©‡bŠh¥s¼3oz3Æ];õ K$ˆ
-å”dü\ğü”ğ ÄH¼?¨áSƒ÷ÇŒr-œ¯Ë
-	Îrp{·Zß·Áí?îïap/!»|?a^/ùÚÌe/]Ã…+ES65¼¢BrÎ8Ÿ^iÍÚ¼v’M+aŞn›“hh I'hkß”dMI¦ä}rw¾+ìu8ñÙ;6p²qƒ²y-Ï³*æ;ôõ]¶7ÌN²´ÓyŒeÆÛê[g$ÖDí]“~la[Øk³ßQÀ“}lü¶:¿&ñtğÁp¶¤WQx:A§jî2ê*F!EW×½½XËuĞLg/[ÑèZôâ®Ã°›Ôª’I×zÌó’iÎ¹Ôkî=¨ğğ^ß¼àèŞ„_R7W¡vÙeE±ë„ÅbZ¹‰ÇD(E1@ÖÑAt¥ÌhšD«-±²¹ÖIîAØ+0å;ˆzå£kK~r·x÷/oß&V'e9Ù "—5e]&rê`&ú2êrïÇ»6–º]ÿ8áÿg__j Wåf…œAG?©YWİhSİU±B§b  ŒÅ ubê›qòzÊŞ±ÇKu6Ô4€dpÌlv¸?‘¬i<Lo—¹{Ã¸/)•"wğ7lÌõ½KË#İ«n_5.£¯A‰t?;Frõ´f“Ù˜”ë`îÛtëŸ”¿aÌi•,ÇeÆ<Æ•† œåÊqéö)ûºaOÒóÁÁ]$¼*ŒĞA‡aCğòx;Ÿ3©Enü=¡_§efğÁYÅôï‰Œ¿sº9i Aš5!U³`O<k\æ‡:eB‹P}vu˜áõî8õœz?¦]zm™ÔÏÈ¼T_ Tx¯ø T-„Py¦Ô T-„PI&·½e.&æ÷ÈLgºM½¥/İÓ¦“â}ënX¾à«ıV*¦‚°=¥" UòÈª´Qk`ëtÏÊş¯±Ãã’W÷xÏº{w/Nq™–“TæY¶Ä.Şë	Í
-`.˜Ó\X“Î –§ Ä“}:l©é•½šİaÁ”}œ6uæÖ°c¸
-E}‡Ô¤µå°²2+/<]š>¬=º!êVùxx|Tê:Ã:)ü2<×Îï­¿iÿ÷6`ÍœÛ½5óÍÈğàw°!_’Hm¯²N¯âğÌºM·ŠÂÓÁY¦7>µ\“x:xÎ”ŞîåN~¬&9Ì[1×ßI:Ğ¨ürÕB}Sb¥R„µWÍ—7=õ2Š
-ÁVÇyBÑ¡e^ş¥úó?±úšV
-endstream
-endobj
-681 0 obj
-<<
-/Length 3562
-/Filter /FlateDecode
->>
-stream
-xœí]Én$¹½×WÔ‡û4ú0c{ Œ§o†V-†Ë€Ñ€ç÷\’¬"Y’ ”²º5m·š™L’/6Jì9üùAÀ_^æçÂì»ÿ¦?‚*ˆ½âø¿ô"?ø£ªÜ~ÿ·Lâûÿpúß¿§¿şòÓşğuÇ™ğ\)ŒõV:m *ÓB8«7ŞKed€G6´Õö_ÿÙıøËW±ÿçW ók!ÕéşO_ªnT¯¾@gş÷û/çİß>™‡Ï{ş÷ı—?ïşøÌŸÆ¹CÛl×•P®ÛyÉvã½7Ç[Œÿ5ÉÒï;xáAwñ-ş]íçß^>´ß~şËî·4¤ßk
-;	%¹*¹ŠÂãNÁ¼Éµ†wıçb«À\Àÿâz®Ö°ß¤ II‹Ï¸1}rÆi{¶G+à§±Zrmã(Á3x/­§Æy(ÉÏ8èOVXõ#ÎöÔ_QV3é±ì2ĞYæ9ü§®(™í°Ş¿âÂÒ}~Ä‘¦Ø.S¬IuXƒ\‘œ¾W0'œpÆ§à©¡xöøÊ`»ğT9Nµ´Ñ¼£à3gÏHçz ŸzŠ­â;ø)Çá_'ø©å`Ç‚)eëÉ©™/{Ò»ëKœ«ÆöàÔç}`"h'öŸ$¯
-8?£wã	~Ñ™Ø	må"²şŒó8lØÃlg1Â2¨ì	…„†N]‡É8ë§"Gğ¹m¾×¥d Kšˆ|ÆÅ]°“ş9’†CÎÄ£LĞ¸q_ÇœÁn"÷GÄ-|ØF¨é$ÇÍ/Ëcµ¦¯ŸjŸ¾Œæ™4qâaA@nãŞy%ãh«"Ô°‹d]±wò¡˜½¥•bR-œë0­MeB+é]gÚ(nbÁª(löÁæ°Ví§“6ËJM"<g‘¦myÎ¨[C×e§¨—Ë6àÛST5îë!Šı¤ú¶¢sŠ^´ êøë§Æ³7Ü­oCİapÎo[ë©R£ ºÜx×‡Jì@vã½(5cÆ¯$ÚtÌr\Áˆ9mšÄ›Na’|ÚîÇZ‡+°e*ÌqÈ loğ_Øl:qÀcœˆáiyH©>P…æTDÚÍ)†w¦îa¿+]ki™¬N×dˆúVZ¾B"ÜYÏ¬‹…•ô»ŠÂãÎƒ¡üªôj@Ğ3¡V¢×rÙé®g­{&päx­Hêõ©ş¯‰ºH:yş2ij 5ŸåH­ô¦¨›ˆWV¯tAË—ÃÙaı3–8eOì­ˆ:gûÔ‡·ÔD3¾A„)Aµ„1FXQV\"˜ŠG.ã˜qÄÅkå‘Xi¢
-Ÿ*ÜçfWÄN KTóœ‘N5É4]¸çMìC‚•æFÇıŠ´³eO•Çf´³oõ2’¸Sá5ò"äç\G/âæÏFoâî`4¬Y-CÿDÑLÉÍZ€?pŞÎË8oŞv¡M,$O`A{‚Pk¢“š /Åœ×ëÂ¯Št ÆÖa×$,ĞB›°½7£z1‰É|§*9âğd<Œ¸J#~23æt<#m¶p¦È„­¢9~œLÉ}9V‚‰Æ²Ûá±„J¿­İ]'¦”Ã9ò­(\!2Ê5ŒJè/Ù[ÄG;ªMğ¶U.T,´•[ûbØyˆß¹S…:
-{ª$x;8ğ3Rï·`D…@ØÈFø˜ËŒr–RÏ›1®}‰èFõúFÒ>¢êèwÜy4­®2i^z¬OŠ¼Šš!Lº´‰ó4é¡JK¦‡/\†ÉàSÇ¬IÚ’Œ@pXİ¤}#ş aÇ.“©ô¯{5œÃê$¯â!i{'\~eÕ×Óœ%—Åb9 Q6ú)ò¢5õ€ŸëJVú`TJÃ¤ß<(ºk4*¾#4º¡®ßµÌôWë·)3+íª‹¥:ãD4‰ nBøréª$äÑÁE†ê@q	ªE-àL˜z¦¤ä,L½R)6'íºI{N¨u­·5	 ú™Ó+S¬i IÏìº*YM#¬$3J®K±¦$­gb]‚ çHÛZ#|Wÿi²ŸGH:ĞzÈ³”¬ÀËŠö!/ÑZò¡«ùvìPyã¢J“£ˆtM4ŞG$WÂ¢¶Ô·X’½½"û•ŞÕB>œ!iiÑ—‘õFİ,<TÅÑàb —¸p»AÒ0TÅ+4¥{*•†¢ùšêÈ5\Ğ.04Œê^ÅdàX­XşoÂ™Qä[dq„“Æ|	?Š;0i‰ƒÜ<:¸kX&¿#X¶¡®ß±Ìô×ª#ãñ¶»¾%ÿODtF¼”÷Ä„˜„tL„UZMjÉœYh74¤eÖ¬Lq!gF¯´HÒ3%×õ(54€¤•L®¦¤õÓ&Tñ¨İ‰oÇ”èüŒ¼[wN¬¯ËÛug32@ïÒ‘\ŞÎ™PN¼¯×&Ä—H×H_ÈFš,¨$â·'­QËi¨”'üícˆ¡nS-¢¹£vô"´GSúFÜ1ÏqE-±õ¨­¥˜Dš¤oÔ9‹ú†ŞE¹ÁŸOá)I&ÏTbsU?"ËwõÅ-¸0:NØ%•§ur%-Ğ$O`¥-‹Æõäü¢#&¯ˆªÒwjU•Ê%µY(Kµ¢“C“¤Ë:2RBt'wÙn™R¾Ç÷MDš“+-—0~yt¸ÔÍ’$ƒşN\ÚÈ2r•AË&-=OÄÎèI†4&SÁ’Ø“CÛI[¢ó|µ8jú¸oá4¦D± uoJ6a:)vÑ¾”L'×Ñ‰"zşFùV=ÕÓsµß¸*qÇ
-œTöCéÿ™CÑÖõşlÊMê[Ú³úæ°~]ÿSCHÃÄÊ¨†’1ÏU’ÇêbaåàÎ†é•Ã;è¡•L½m€§6Åa\ô+ÑÕ_ßë9PQe O^öæ©@Cƒ¬›
-½áš)¼EâŞ¬":àÕS,+¢`·Ä©Ş¼#BXËZ­»Ç ¯9Ç¥ù¾Áª8æL3{aDÊ20$åı.EÛÖ=6%Ñ”\S2³Vl·u«’jJç	SSjzŠ7ŒŞ]´Ù´B	ñcnìu\Œ;àšš×ÃŸ4Iç'DH…Mz9{&½ó¨é—/ã3x'1’«EQ•&Ür-_ùdT§ñw=%şR<<ceé	ëÚRÓ*B¹Ğ¶ê—b²=QÒfÜzá²¼ ğœ@â÷3€öCØŠ}ó£‹y+Z%ë‹V’Í(ekß0¢Fóg×(Ñ1­âYïRÔ{ÎŞá¼}š%S3 [ß5òlÁŞétÃ±Ây²íÿÀ,·ï¾c…üÃÿÚxº÷Á'´šÂ¯r®|7ÕÚğ´,]º½½©ä-×DCô|Úb¢ëªÉS	YLœpdmísĞzL÷b‡6X7¯Î¬c+§ÀÊ¾çšºô+S¬H AÃ¼ù&#Kõ½PÑ!…bÏ$ÓJoêYŠ(ŸÓ÷Ir§u®î¹Y{|)ÊøÃt§Óì½¨ÓÍfƒ¾®¼Ñ²wŸMêp:„7XŞøY'õÚóõÆ,•+#&µ:·oòz% ôddX!“-8¥‚Õå¶¼*^lÆ:{šva¯Ú™d–pİÆæÑÜûˆ†¢‡QŠ®sÌ¤¦­ê¦ø¸(á5Q{=j
-R§PYë=}s`¤ëÆ´¼,ÒQ­¼`nİ Ãš©•s‡;Í[Í«ñ®‘ÿU¸CÁÁÏ»$i}±)æài{yŠÓÆûÄËÔ’!å"¤¤¸tÎ`_IzÙM¸[òErğÈ ¨ÎC3	è}Ç{}ˆ»Œ‡  +dm­Jº.!¿«Ò±)‰Éw¡)©ñwG%ºeÔ2g•wºïrñâK3é©^’3`ıÛæ¨]õT D$‚·RÕOIÚ¦òt,z2wrÌ‘d_t`ØÎ&í´ó~sëZê&­ê'Ë]ó.¹'F­Š‰ÄÎ¤¹İû~ŒëÎFâZ™|xúÌ¶_¶\¿ô¹ˆ^õçÉœ=Í¥éi;Ãu•|ÓÅn+ù›Ş‡¡m¼n¤¾Ç&GÕ]^_õ¨r¨n_ÁÉîıÖ!ù=kr`eı6µ‰uıeF|W2³¢úœ@9Á]cßN;c‰!SÌ¹µcÈ*C@İ[ùª†šÆ)&ÕÚ1d$é˜X9i­¡$$Û°ò(kHÒ2ãß4RÎºx¢*‰ŸwfJ¢œ«î>”Ü4vò\gˆl,güÖU†NˆŞ8:¬Ü¬ãJÔ’äS_¶Œ¶‡örá˜×ÃÓe<ÕgMTÁK‘´¦1gDrÑ²ô¢øÊï¢	KZİ(m.X€{¿…¨‘’øWñ=ßi–˜4?)q°$¦,\äir²		g«;x©1xwónö»Qfü×4ãŸãMAÉ[™SA)IVÁõŸã(åâö1Xœ©0nJ§kZ=å-üMp+cˆš^j…¡ï+cˆš’„ıÒ®‡!Ş/l,
-‚dãˆ˜ËŸãÇß–ŞŠŒšç)ã5şJŠpq-lèçn†ôkõT1N§lòˆìñ®nÈd‰]Âkª“{œ ‰Éª+İ›È™× Ÿs°{)½»3)‰Æy>
-äXöËiXâ•p+ˆw†-ğ¥J<^ò?k¤)Ò*2Q²¨n#*Û¨ËÁ<¦DW\bê?ÿ-$¯
-endstream
-endobj
-64 0 obj
-<<
-/Length 2960
-/Filter /FlateDecode
->>
-stream
-xœí]Ûnä¸}ï¯è—÷`øaw“ò`2~ò°VwÖ‚2¿Ÿ*ŞDÉEÙ±zÕ^a.vK/UÅsÈª¢Z9üù“€ÿ¼ÌÎ…9O‡ÿæ?"GÅño¾Q.
-xÔ8™.—‹ühB,ùÃÏçÿı{8ÿı—Ã—gÂs¤0Ö[é´’Lá¬vÜx/•‘.Ù0-vü2üçğÃ/_Äñ__ •Oµ%¢Ó?>4½hn=@gş"’.‡Ü9åŒUÖKn…Sğ¿·Â­¶Ã=<wgCúq¶îåkÂIë¬ÁG°(üTöbO®0÷( ;‡µj(ÿ”5N;u„>ÜÉ¾Ç^Ü9?áT‘Ó“Vá×şzøó¸IûÀŒ=FÙ~š
-<é`zÑ
-¹i-ØK’K•ŒÂÚ,ÛD"C#xcÏ¨A'ï¡u3Ó<æQúX®h*ƒ²"ªÑ*(ab=6İ‡OPëƒ 58l!•;©•›¬i:ú1B2+IıMèGémë¤g†Š†kÕU jT–Åx‰
-‰š<•§²åƒ4m|DÇ;U¶¢ÖE)cQ…Y-{îÍ– ˜£”İ¶2
-$å2ÿOŠâœ€ÏğªSÆI(hHbáohÏ#,9=Ï8‹àğ…(á,Nšá+&5)kå‰‹Îo[Ö'„m¨Ì!ƒ¨PL°ıâx›klRâª r™Vlã[ )ÇÂÊf`K–îôË¨ƒ¬ <)|K\t|ÛÜ¥Ç(öœ`øYĞ#á&]”İÂ(¬*‹WN®Èt4ğÓh¸.aùsyÕŸØaºFxL|0\+-zS„Ã€i-y‚»a¢n[KX
-D˜ˆ÷‘ jT¼“!¼]$]2‡"6¬¤Z¿†DÎsÂãï±‰(“Å©;4)aÇ	öuzãì[p‘åPĞúşèHÍ•Ìvü”0Ğ¼_*Îœ%ÖÅ™Ò-W¦Yâ"2âLœM­+ÁŞw‹œã\‹ZÇÁ/&²0ĞËB…ò%S1Â0é9G]RsX8»ñõn,˜‚{2|R“OÀûÒ2nŒÑ2É®ùhõ¤l˜|:=«§Ó¢Sµ\z:ÅĞ¯ÅMúñ¤;&´©n¿§õ˜¾ÜÜ’d©ß÷ÚQá,^ĞTX#®¦{İKËt	tä,…çj«zA³6–Ìêm½©Ÿdó‰Ú(Àõ–zÇm/ÌãÒ03Â9ç7>5ÑZ E`°'©ƒ™3·/§¯‡FyĞÂ|¶Lr)Mlñ·V?}şv9|şéo‡Ï¹_g<>Y£ÑÙğı¶wO¦Ã¹Õuµİ?ŞjÏ•Pô¶`¾lÌ7Ûùİ`~ƒ»Á\¹ç±·30w|ä2ÙÇ±y•êŸB0!Wl©ÖÿtPŠ©5Uë‡¦<kªÖ‹‡×¥ş§ƒµÌ­9ªZÿÓÁ¬3ª©í{±åÉ
-0Pš@WõG^¬ıÎpÅÌ…˜ÜŠÅÍY_9ÀxnÂ`5lrqé]ì¹ÄB`¤[ŞÂçèÕ¶}cœ°z/©ª"fv¼¹Õ	ã)õçØÕ3ÿ}WÊ–²„ßÑ›mû{AŠ&XÄ³›N§ÛÅïÇ{­d^4£ˆÆqÙxÅ=<Ó1¬3<ÒÄFÆĞá9FÙ]¾Ñ„Y)7?éœ·Ì“u¯_ wÛöêè§ù
-AÎÃZ³,ˆ(A“=@mBÕ«ÁyæTŠ»¸èê'BğÃ¨ëlœÇùûDn˜ aˆ@¢ÛŞ
-ë"B¯Š¶I"ÙâOX:QlM ñæÈÈ×ÂäXï©ºá±²Kœ32uÁ{â"LçM>G”f	±
-1+g1ïšz*œbPÖöm^ZÓ\‰H52O«núWÌ’¯À	ºzãt=™útšf3$iì¾,®DŒª§{ß³àÊÓ ™Ì+iİ|šdö 	fvÛÌ®ÅVE(’í¹Í™óÓ²IZíR ÑRK¨¼:›„«Îp†ªf•vYÈ/	´"4ÁÏÁo›Ÿã†¢Y@ùdâN5´9Û#XD¢º‰­Ÿëcó]†MØ9¥tF 7É˜¨¹'“
-s~Ìêà–dœä`	Òœo›µÇŒ“ªgı,yáqŠeßµ%LÉ]óÙgâÕq0æÂÀ­¼à%VÄ5iF³K .
-®6NñÓ]H%ìÑ®Õd¡”— Ô. pLO‰tåZ† ¼¤N1·y7é-{§åîŞæ-£>®ÁÌ‘YÔ_‰¢ãVºÀÔŠ>âZÿÓAqÁŒ^ÓË^ÀÆ[3œ_ë‡¦0…Õ@Em ƒ"š­“1P‚"¹~hJCëŒëSvì6
-«›
-Âor
-½
-ŠËBHéz'˜ë˜ó[E¿*uıúRŞ¿˜ÏCöÄ3o¯ÚıæDÜCRâùšìON«ä¯ÒÃ3WUÚ²ÔÒÅÏÒäŞÂ6­z#Õè:Áº¾Äf/Ñ{¦A9%şS%³¶šñÖ·[bŞB. BE…ÇkÁáØBŒ}Ã®nÕöÚ& Aäs¿RƒÓ‚Üæşú#à,;ÎŞ$Îêñ˜Àã;õt×Ì_f<F÷6¤Ø<?aT%ìFOé¼cª†}Š#c+š¡3¾°t·¤pI·)H;¿7kÅ¨ÀÀZVı-ä,¸f’€+Î'®ñl'™µH†veì$s“$#M¸â¢¾?¢ËÚ¸‘M2ìŸJ@ Ñİî}—õ€š¸$JğAØÁ…¸ˆ'3ÏØ@‚ÚüìÔ¥xÏu=@¢O¶jËäN-«Ñl›I †õÃ†ÖVtÈKkmÕ¯	&[8Fh,ï	))7¥Wå´ß.ÙSêaÌº‹’áEuùİWÿÖ³@g²X‘¼²;F¯–æH¿÷Zëw^ş'?ş<e¶7L:f'C::Ä—Ê—2QuÉ×Õª,ôÓŠßñô>¦|w¶®WÈEòeeÇ›Lâü’©‡øûã{.ğeF“àäî;Z—<`@:64íolí¶l«û¾ÅDÄÎxúâ›@÷™Ë_—Êi<¡RøŸÃ= æéYnkgæÚv=ÿw';ä…rfá]WÁ‘9·‚;æwP^”•!½ß+YvkmùÍ[ÙœŞ‹â¥Šï˜“TŒ8|"ŒØ=O«ñ’»i^’`LÆ+m)éÉ…§_´´E5]‚5t¯t¸vÏ
-ŸÄ³°ÓNN?vÂÊKLßÊ»Pu%3;ˆ¥¢#­áC‡½h©m±•ÃÈ1‰ÑwË-Ø¾ùpa¼3$\¬v‚‘K%=ï¿°u
-‚™ ¬U$´*ÿGõ½‰`q®]…¬­İóNWc*ÛLÅ¸0ÇIá[Åù•÷RcxÊ«kwlÜ:Ÿ}{Á×-Ğd“ñd
-xş‡—è¿Û¡û¬I{<<b:@31=–Ç‰¦zµtœ7„:È….¤Ó«{N9r™pzw_¢Î÷\ÒçFÌÕW§N˜«ß7EkQM¸iªÙuÓ(åüK_Ò÷½LßøcLqÊi²XJzs.ì:Ò¾"?::ö¿â;¦"d›îyˆNØD0¡iŸŠ{Üde î–“n…×TÖ­rO»]ï]çºÙl·İûcÍI‘Ñ¼÷%ÓØyènÜG,œ¹»RfWÁ˜nHˆ3@
-M$ç›HÄxyUº[x:HÅà©ë¸“Œ†¬dÙob§™£¿
-†Åˆ·'I­v‡ÙŠ$CÕŞIæ6IFÕ´aØ+ã·5ÕíÉ·óJ·D@vé½¶¯aŠ·¥yhúKü¤;{¬È&l{Öß4ÜÒ@ñAàvÎÜv~…5SÛ?ÿÕê
-endstream
-endobj
-373 0 obj
-<<
-/Length 4380
-/Filter /FlateDecode
->>
-stream
-xœíË#·ñ>_1?`šï`ìÁNb ‡ ÷äÕŒ‚ Ù ø÷SU|4I‘”fv[#ÙcyGb7›EÉb½[<rø|#à×‚ùÀ¹0‡ÏÿMAÄ£âøº‘/
-ü¢kù
-ü“Ìâµoÿğü¿ÿúã÷‡_8İÿåğŸ‡oüE<şóxæ§òÜ ş÷«6«[¡å?dıøñøğ·ï´ø ÷¿³ÏVØƒî6Ào'¹SğË¥ëJrø~¶®k¸ş2TÍ8ùz`àB€ÖÕV@=¿ÖÂ/cŸ¡ª„»ÂèÖ3)ß9ï46"°QaÁ ^@KÁå2};ûáQšÜÚø<´ğœÉíBïşşøñÏü8ÊX0B3gmDøOúğ¯ô×C:†0é	…5F	08yÀÁ„|@ñts8O§Ï
-¹Š@ÈN% Ï-¶ø2ğm4\—XíŸ8éxà <Í¶Q±²2à§K ÷hq-(Z84yØìé<èàY¨¦¡Zù†éÓ«ZÅ«×™š	†•×hÃue³ÁÇñ\§ÛôxÔ8q.~[gjÛ"0 ãôd‚/›Ğšy­¯;8‡”â×(lØ ˜öº3™@ïŸqyÂï#ÜÉëˆ€ŠD o.¤N321°t†Y1M&<WA
--K§<Ã´ÎjÇ÷Rà,†¦Ú‹ôÓ°ó
-ªËïºÊ—ša öÆ{o^ˆø½6IEºG$‰…¼i[Zª8ó™ßøõA{É„…Fáø%Ë¸‘±øïz ?üüú9øù‡¿<üœzñkãóƒá@;÷…Xƒ@€°ÊÄ^[\Ï®ÈR˜DãíÈ'Ò}áä˜òa»Èš’JdôPUcGlú„?$~›H¯u¡ÊC^®!·À‘¹«úp ëG¨eåx¯Áô1©‡üƒ¶L^u:^½k‡¢ÆémÒ'Th«#û”¾d NÎÁ°®2—†ç ÉœGÒœ3zÉÁAËÊz‚ëq‰ ãNœB‚ŒP©=hkÄng„ #ÃAŞèôª×”p
-7$j9åèˆœqÏ¥´‘–VE+h%âD¦µ`f`;Ùn~–íjbKTÕGŒŒ“3„;fBVÜúéøÎ–¼³%nºòQÕ@ÇqµHJê½ÜdXÈ§x†œÙºÔºlÙE1c&9­·>ô	OUİj@’è;ÚÈŞ3<9ózêÎ)·qfÕ–Oœ‹‚é Ê•Ø¥ –X¶°;à f5˜GÜ)¸¹"—@ç)lÓltVWUŒòë²I·«¨|[ŞÇ}ìÅ²°!Î´‡Û™ÚšvUbó¾ø„[vñ @¾A=F’İåòä#=áñÎc²g¤¢®mQÿììÅïİ).	Kj¡¨~
-h®ŞS2äHI&$¿¦–WÖ%ê[äú‘’¦z…Cfu®¾%i!­¤±é–'Ö¢D{ã§õ;›ôÎ&­ûÑM®VÛ¤EÉÀwWÛ40>?(nöVÛÔ `ØUmyÆ,'€š‹ ÿ®¬ÌÆH«óö‹Ø×Î€QQgÉõP¤Í€v¯$QSÈk´ 0ÀsWµlFDH´óÚ'|lEçá0ÚJxœ;˜E/ói^JxÔWÍˆş¹öŞ¬DrÛ™ª•¶ÍæÍ½U+j]÷­ˆÙìsßhuÏ68DİHÛê7€p ˆ)•fãhX·Æ[ß×
-æêIİãêuÓ¿èxâ¸heµ4Ô¼ÍÈAoHíÇêIséÂ±«ÑÁŒŸì”gÊ¿®•ôQ„ÕÊ4x‡JÅOÏ—ïŒ	oèĞ ¬9°èÇZ©‰bWdá‰§WÈõgãnöè’¾zÓmzi2é¨v™]œ|"9å	íãÙp¦ŒÍÇ"ÛÅ5ÔÒAë¤§Ç
-—i¾ÓfÌ³İ€/C-‡ã }	Ÿ(–i›Ä´Éa/gJß<O×ÂÔÄëâ7)LİP×ïxÍH5&E¿Í5³a<õ|«œ…†¦oz,ÇãqCu4¹Â/ëBÑw%—¾rn¡åö%j°‰Ñ[À‘4­KG&ÚIpğ-õ®’z ÊÀ<÷ûB¬a HÔİ¾ 7M3ûj? f?+|ö‚X@€nGÒ[ºÉÔî0«R›è‹ú>‹ádr9ÑM¹²l){B–í¹H.<Ù ü²Aİ_Öˆ>¸™:e‹Í¬våÔsfÈZı´Fú_^0‚eú¹††§ÙCbÔ€‡k-=–_l¹§#éÒô!N†Mt¡Á5ÓÜøüˆÍí‹v†nÜùO¬C%­5aÛ–(MÇS/‹[ùx¼@F«ÎP:j©wñ¯Úü&‚™eÖ] oÁ%	##Z’Üôqû¿¹Èˆ|ñ!È}8
-‹ˆ¾İÉ":Z™¯–u·%€`¶5Ÿ¦¾—{5™:à<q@Y0Cw°èâğ–v÷N‚ì˜#Jºš¤ñW§wÊ“UØE-ú6ë‘Ş\ifô­Ëw-»î˜óãà…Ûéú»ı&f¬óúM.˜½˜H1„¤QÌÜ©„­q¬†<UMò8N’²v¦vFŸTŒ"2ÙC&Ù®í-^eiµ¯HÜÀ È"Š}eâ€4ĞîÎ{¨ç;{!Ô0 $prÀkî²† Câ*şˆ×õèšWúøO^‡¤}_G£#Ÿî%ÄÄ*‡ÌÉÎ	bÛUô:@Aå”ï/ÚH/—åÍÜ> G×}›Èü¬³MwY™kê)2F3sIc™J‘QÒ}8¤ ÊêHYI‚Å]™D$òÑLc{T½H{G2«Ä«,ld—¹OPBÆ'²7tªŞ1/óû²#íÈÎ¼È)Oª¨â‰'E^å9˜R9Â¾±” h3f_&£ ƒ:WtÊSÂ3BğÅâq'Ny[èòÀé|ûZNy"°* dŒ8cfˆ»n¶‘ÈÌÆÉÓË-|r¶©Š³ şÕÙ|Q§ò›Öjc]—íòß©U¦xˆ×ÿõÓ›ZnYkĞ8lEµª¿DÊ0íÂ]ø*UA›€Ë”¦OÇn¥>ŠlZo§eşP‹»h:šLï_Ã‹²zÛŠÙŠ'‰_¾)9èfv¿%ˆ¸Ğ¦5û~Q{J`ÈFñ
-ûÎ-8rõîÄğr`Q’2>(çljrëbËQ—×e¢nIWÓjé¢^‘q)Ğsf3i5Ôædÿ†·´£÷¨ nÂZ¢lUzªKLW•LSÒÍsbq/,à=7ÏU=;E«W,ÍË ŸV£ ÜåİB5ŠqRó!¡d¦´s÷ k~åÄì(¦ ÷ÜYn"õ÷[Ñ´ÛÈÏ7ù ´íTÅnËÅvlIƒ™mÎs_Ò»<</IÓb+»aÍ¹[Ìñ£{Œ,z+’÷0§D°ÅóW#‹1¶³g½ñ/ÿK`òÅ\¾º?İj^µs<Y=Lv«÷•ó=òGìŠÒù1‡=p¢’b;ó’šÈCPš«}”Ï‚KŒ–ç;;îu`0ÌµÖ"¨«Ø)®ëé´¹ 4yş(Ò1ˆ‡*5 zÉI·­E¸Ø¦ ”Ë4Ê…èÓmø4¥Ô”>©ÎöAîó \=s½CÌoy’¬3µI8Æo8R¯Yf½À–¤Ql@lr’›uöxêc€É°Òİ._­ŠÓ-½U*l&’øBi9éeÈ}Ùl'“‰‘,Œ¯ßÜ¡‰œÀxÔˆ’NÌ–V.NNU¬ôR!¦ÎXÔíæ|^3é½V-‘Ï^¯³Z7Ú)Í'uÃ¢-¤*µõ	UèÄ¶l3¡5¥$¡å²¨L4 IÇ$›'z°„A«~ÓÛ´yŞ6­è¹ßq"‘Píò:LJìRÜ…Uä¶Ø¬ó/HpÃ8TMe¶ ¿‘ë¨9ÊæÒ@´¤hx)“5§Úgs¢¦×Ö2şYvGù{œ™ä7éÒuC]¿ã#”}·›…Ì$³Éd1Û”-œmû:®Õ   sğÀ¾ş€L´,˜ÙÙq­ Ó»9®eŒ˜Û™ë}GÙÀ@„ğıÜó†uíÃİ¹"8eIH_*r›#Š,R’´Ğí/úå–ê¥rı6ı”}öš¶ë”~N!JŠ ËçŒ´oìÁ04G
-Á\lVÏ±¢Ëg	ÚÓûÄ€ê”pxÑÊŠ+“Ûç)\¶:òÒ\>lÙóMì—(<-:Şê‚–Uæë¾îjqg\Ô)/¶YÖR$nÌ2™&=¿·ˆ$Ç·Ãx8“%àq@[±r.* r1˜Wiü¾|–ä®ùı*€º£ó­ÍÜ‡’ËMŸLÁŠgzÆê¾HR^œÇ:¥8‹“×àz…™Vşü&Ê{¨Hÿ”=èRuR"C³N¡`;*.Ÿm^J•€ÆøÌ¤‹FG˜§ÊZ[½Š[@ÉOLfÂ²à†Y¥oÂ}‚Âé¥cšcˆPRbmÅmŠbKŸI•7¯~ ¹Ú”ğEMvB:­f@2Òrqë¢ßËÜú÷£¤Ùi7áiåÛ•î¶"¥²!¾q¾úl‹}Ó$W;ÓêĞ¿t¹[íş´&òƒ:Å`qI ²şÖØ4'¥™r•­	y£Ù¤ê°÷ULtP ¬ç,p¹7Ø
-‚ÕÌ½Ø·Í”‘CØ¦¼‡ïëàÓùR–ã9{KÆè§KÓê+tL«A–cl,Ù=%½Ø²¶H¯C´&G¿`ãd7a4~I ˜Q İü)pÇgï{œØW:~SØ;ÙGZ‹/°K¢®s^Óy¢¹æàÌşØ]ê—˜–„„_ÙMUtÇØ„’±¹Rã¬.œ’6îÙ¬€u î¬ò­@|~p’9½¯ò¾ -ã:àWMŒ“%á.¤¸{ç_IvzMÎSbó‚Ò©mºÅÕ-Ú[‘wVÌÁÄ¦-L`Íû+>öÌ0:>ßO‰­¢mÎ’´ÆK,qÌ2½o0q@jÇvÎæQƒÀXbB®û†«Õø8|{6±%½Dz¿NT1œ{¶J 7F!ˆ·Vldö¿R[Ş<˜˜JÿMwZ7­øÔşÅ)ºÎ¤ŒóQşK–¦µ Éb&è,kEÃyhî,ƒI”§ŒáTìóèÄpv£_â•3ó—ë_ ü
-‡â¤N/5yçpVşW³“#Mıfyéñ¥ é… ñõ¹“yĞLÚ›} M`’{ÅuEÉ¥lRJ:F‰¯UÎ™ºu×Ğ±yÔ4%Â-ÒV”erüGyò¤îhŒ#©ëŠÙXb Éxd='½•UoŸV=’¾~–ÒñLJ¦é»lp +-†:ì¹9.É-µ’";«{2õ+ü,úú´˜Û¶U?‡au?yÏ@Q?½ç$:Ûfm]ŒÊÃ÷»¼ûJz1”ù«U–Æå›°jŠø"ã”´°äÍ¥›ğèè—>…ª$ö%%ù¢À•!cBúebL.h)ÁHd%-‘IUĞÓåÙ¡Òêµ¥<0?~Î-äÈŞriè*”b+;R!•Ôm‹ê%ÁÅøş¦é¶p’ÎúŒæCJôvDõàãáw­ı§~×~¼TGŞ®{³··­,¶Ï)Á\T9)Ìä¾*ü¾‹á$,O«7Ôpµ}c¦Úì~²&³<¶@ãÊ	g¶áE•IE ÊËÙ5Z”+»½œ½ƒ9m9‚¿;àÖLóGÜ~şø¤~²
-endstream
-endobj
-764 0 obj
-<<
-/Length 3592
-/Filter /FlateDecode
->>
-stream
-xœí]K·¾ï¯˜?`šï è`'1C Eº9dçˆâ¿Ÿª"ÙMöœñF=Ó#e[Ûİì.²X¬ÇWE®Øqøóƒ€ÿy-˜œ³Û~ù’şj vŠã¿éA¾)àU+˜÷ó]¾sšI¼÷ãÿı×şø×_~Úí¿¾pzşuÿŸ—ù*vÿü
-ï|˜Şkôá§OÅ7‹GŸàËêz÷éôò·wN½ß	¦½±ŞîŞYS^9^=Õ3	Wİ‡ºz1TWÇêÊ½ß)Ë´qB†İ;É«Ëºs‹î˜ÁU=(=E_İ çÕˆí¾ê©Q<çÇ wz9’zÌı7¥pä´|&‹Ë×ÁTŠ³öÃ\¥”gFhr¹ éÂõßur0LYs?ŸCyUròï»O~ùã'XzÓÚ†¥å‚ärÇ«–	ÏUß•Nx‹i!œÕï¥20Îl¨›­°ĞÍëpÌ?7>eGCpÌYµõ!˜ÃÃÏÂ÷ H•ú‹•0ÌH«¹Øø˜Ş,Y+9ìZèªms¦¶j2 Ca`¯GFflôÈ>4Nƒšş3§±¼!n`-7–»8Y*ß°ô}™MĞpÿ3Ü0Ì‚L7ş]NõÏß.­şËËÇÔ•_—T€¬QLÃY™lMÉ:&ƒ³R¬L·&„a„…¬LxA;/¹ö/È aÏ™±Àûµ×bîCóÛh*z‚ãµÂî]pÊÂ°ª<*)uş›IXp±4?Ú“Ó0ã$\['á'áŒ5ö÷÷¸8áç½è¸İ£ºP<ú´ià)Oà]üÖ‰nÙØ¾_6é5ï4¹¸øDXíôÁI{1êäTWÅhS(uK¿8w~Ops»¹€ñLÜ:‘YĞx¡‘×®ä‹±xaˆã8ÀàLuq"áÆ6VHøÙ¹È”õğPá'i÷ğÚ‰~
-ÄzúN-N32‰€ ›Äğªò_•a›w}Ğ{kôüƒ°õ®+©\Ûf‚‹fıÆ{şÙƒ2ş±eÆÿdfE_~ÜÚdÉôì¦&½˜\	­ãb]¦¢$fÆ¯K± =C½2Å‚´’)«×%YÒ ’Î± VeIHzQ¹Ö(?$G´Âèe’Ã?b‰Ó¿IİneôjÙCšüÅ}t`¹Ş“ëêÀ£à.‡cĞÇ9OÎ:QÙ!vèë£Ş.C[HÁxáK6yşqg<”7uôÎ#Ü‘¦Fi›@ùrèv“8x7P ÿ\EĞÃÀçÁ±„ÒüŒ>8&¨qÒ“>xi!	£¶)ª_½„Ò£§}zâ§a—fOıâüÌ£ŒÑ”vf­œO#ÛÆÕ€g =ç¸Ng¡.…V¶şZñPœ@Í”ä¥AÍ—9Æ¶9D69œ3=lŞ}^-ƒ#Ì¥‚0K‰¥ÀvH)P„|¶9æ~Ïr^3Æ]âM3VÄN\àQê‹À8’Àeó#ù‰=ÇiÍô_qÁb<ƒ¥¥ÀXuÂz#¨°Á-4­‰.Y}W«x÷FÂœbnWY›æ`t×é­»çé6Û™ó›çú†‚"ı©¬CÕ¦"d…2JÖ0‚PWÀx.İ…/E°„ÉM –¿t¢"Í_Q¸ºHİé¤-£Ö)_ŠİlCX<|×„g~éÒúLn¹ØU’ÄçïŒfMz…Ï/}ÜÛ@ßÕİĞ½@|s6hÇ,B³Ù`È
->™İƒöÆŸeò¹<ß“¬k“KòèàšĞ$­n’X>›`kxŒ$²´ÎKL¤¥ƒù)-jí$uçÎíØHÁ ŠmÉ·¶±ìjˆß´ı¯ë2„QŸ¹Ö‹´ê`Æ+24…IÈ· †epœ#3Áè#‘gJü<AÊuÌ¢SšR.^ÈEèNú×M“³›÷Luü5bæ)Êp)y“8WÄ-“Öå:
-xJR¤TMÌ3Ò	³3në–ùı!¡Úè÷‰o¨ë,3ĞåéC¯–XpnvA“JÌ
-2e_µ.¢¤«m¸Z½Ô&“@‚…Õ‹{
-Xc#™ë¦*X]Ã™	ë¦k*HR3n™UÁ0‹i…³òÿ­§Ñ‡ *³
-“G©E,Áˆ>e˜
-¬GË\±Ü›“JövÛB¬™QÎŒDV.µ¨‹‰ŠØ»I^ ¢[Mè?9Ö9l:Á÷§*¹—zòD­“çŠa×~¢‘ßÉ5ä«–ÀêÙ‘Û…¹d.{F÷ÉÏb›”Ë˜˜î(`L¹áén'ÆX±èjrnhúBƒhí©}¯$o°—ÂØ„àäÀ)Çã$î'™Áfá,îÅî¶xï™¶e!·€óšXGµSİ‚-EßYB·ãªq´Â0‰óoÁR¸%œ®0‚²Ğ+ÆmjùˆÖz<ómü ãc÷„s²˜âzŸ‰!
-ØhJC´ô±ÆtíÖ½ïGàû·¢†léÎ‹=jÒFqiŒÓ5¸}U(Oe¦ÖıíôŒê´ÙãP®©¯3ìıÒ¼ô’_*´cÜ¯ë}W4€¤Ñ áÖõ¾+HÒƒ'qtıÆpî—Î–¦€ÈIGctv1{M/¢İu8L­'S—¬béXT9"L_2ä–Î~O²¨sÑ¸LÀ$g—À]=÷­‹©+î[Â½	@÷BZ¢íÊÇ¬Zpnİ1{å½pÆ[gíÖù›ÏgøSfuà×fµ˜~àÌñ•ıŒ’ÆçPëL®æhD’ )8ná[—dIIjÆWdAJ°çrå1–4€¤RÌ¬WÑ€•2ÔåÈK$`¶HÓO^c'ö—LV ^‹N1ãî…Ü×¡¨ÉwÎ[ş®­´p‰™9¸</|¨öæ],ä\B¶]Ø	Ä_lkí7ÌéT'")Â³ÃŒÅgÖ.ëÜâ}ªXØz:—C£â“EÔkP`œb	}XòT¿Ï¦¯ƒgó^éÛ0Õ²N+ÔRÎ1` ]Cc³ó%±1ÿP·).—Å¸ı–—sC:Ó&Ú=ÚöúU³fØtª±3–¦Ú¼f‘«†­;…èL…èƒ¯¢¿©2|À5ÆVÒŸÎ˜®Dyµb`Iµ–ùX©m¨®êgñ¨1ƒ‰™ É—ñ©í©ºÒƒŞU=Oõh¨ş¸Ò1`7YR©û3xS/ÇuuÿöƒYPƒşÔs`«–aH¿æìaÀ­ğæ98Ç€wõ(ù ?‡!ÍÓR‚m}9,ç²2;ÆDbbëÑìëpÌ['ÃÖñ3%Ë™Qb4$Ä„7›IÌáÍ³’]H‡H•kÅÏ—¦Öm¾¯!.¬ó‘~WÛãj=c–Àz³ïk¤zoa{ÇOi°û"„öñ0u²ªP8SµgÇHáV.«É`—eÚkÏ×*âÊec5<‘	¢#ÅjˆË]óW”:¡¬H¨4²‚ä0•ÅTÒ	Ë†0á
-Í]ŒQÒÎ“6‰ÔaL8Ú7uşÍ9ñ:rT%îƒŠ9s¥¬['=ÓMürù+l29ä–‡¸%l*NjÃ8 • \­!å°`
-·éë%º#EsÄ÷·\2[.™“xÍìj[ÕÁ¨B¸TwˆÛUğÄ§ÍoÕC~_Ì¼*aê©¦wä[‚ĞÃ#ĞNhœú<¢/×ŒêşÓ_œIÅ€*ô2ÖÔµ‰ Ü°âšµ‚lİİ#ªÈ¨|xÆ).ÑŒEY*½*€ƒV&%˜:—íŸÌMz¾&òİ;EÅƒP„ÜäBÏ…ĞÆ/Êzä¹Ó	ùFi±;é4ÄCk¿!İÅêZƒ»ËúÍùn[ĞÓÖj)èéù=İXª4W®!èİùuõ­D]Kë¥}PQ7S¶%ÖäQjçMò¯Nÿ¯‘³£™Sê•M„v¹<·—ïÿ-¨¾ĞÖá¡K·ˆ8š¹¥íHAÇ·ı|Mg‡<6§î¡ƒğ=ĞARoÒØê§±İŠºÂtÏßˆÕÿäÅÚvº–	Ù·ËùùÖ„ğ°&tØäš0Ï5AÛãÎ
-ñëM=z>Ík*rL‘ìæ¬ÎQŠ5Ö°ä ß:l¬Ímá¡—]QNï!ÉJQ(åÔ&%Ù>%™6º¦`'ùl!í äy/aÜQ•Ä½8B…jSòÓÎÑòo›gÒI–aSz~¡6ŠÂ¦°M Ì=…:í^nIquP)ÀËÌ3'ÑÎ»%(Ú©NÉO+ÇTê¾:›”T;aóy'UÛ+yÖ¦/öùù=ÄŞiF¨Ø6a1ÿ{dŸıŠ)³„òÌÓvŸkÅ?ªî÷;ü¥Ùıö•¾7µo’JòÜ•ŸßC€ƒÆPSh»Q¸+|6Ìá1ÇæQE8¥8¦„D¬l)Kòı6'¥ÿûo\q|B,ÂÅÂÊ²<Ú“vßãad$Š]ö­ó´Wõ1}K}ïÁÍY«Æà¡ğ/c³ÒôkNËúõÌûrƒcŠ¾ÙP®˜âÃ#%“ß¸ƒÎrŠc %Ô6á1¡ø:O|oµĞØÂ}¿f÷[«¥Ğ•–AÌÇÓD\ò;;fO‚¬ôü‚ñEVoWÕ#üÿ›!ÃsyÔZøp{ŠÀ ã¯ÿë.ôüKÀ	
-¸|<K¥uà!×8µWÈ—3øç`U^^
-endstream
-endobj
-169 0 obj
-<<
-/Length 4530
-/Filter /FlateDecode
->>
-stream
-xœí]K¹¾Ï¯è?°Z½€áÃn@6ë[Ãº§;dÿ~HJª’ª%uÏxUÛmÇ¯ªR%Š’È%~¾ğ—×‚ùÀ¹0‡ã§§ÿ¦AÄAqüä›‚ãoº™oñƒÌâ½ïÿpúß¿§¿ıù‡ÃñógÂs¤0Ö[é´¢Lá¬vÜx/•‘nÙP;|>şçéû?‡~2?-¤uşáCQâÑ¨ÌŸÄAêÃ‡óÓßßé³³ïÒŞYãäûÃwĞ°wÎÚ`ÜÆÿ»÷şÃ‡¿<ıñPÌßYíÔàŸ¨.?Ñ¿?Œ`šÃ/¹e‹M¶Ğóß®"·ZˆÍ²Æ
-§´ÓÉ±ÔX÷ åK«œ†ÆŸí	J§àoñ>ıÎ« €°GÉ6cQ|®<}Z#!|Ñq$FŸá=oàÛ'ëğ€jØ#İÁ÷rEÏNÂÕ3p>Ö	>›Š4;ÃpË„–eoTBè÷ã54¹ŒÜ"¡:ÅÖb»@dğöğ[Q\BOVK$~^ı
-ôŠÈa§ C¾<½?„î;:¸1]¨{yœÂ:`ÔèíJ¬NP«¢w3{R_åÑú¥uT~!¿€&”9y:¬Êó˜çØæîóÆÀ¼ÆS
-P¶7D` |gÏ<ŠYÇ0}yW«xw§ñ¡P 353Şy%c‹K+qf<O2sv×
-"Wq¶11*|‡Ä8øV%»ƒoÑ|gq
-¥‰t+75	^ÌÓ¡Ã¡ëêWìzihª½Z•eÒ’WÀ=.ƒ‚‡ßƒéßY­ä•æ ^8Muçó¡Ãpğ—wg{Nó2ÍC YÒ3©`Ú±¡Å%ÉBîÛ8!“jA“İ•×`:Àe¦N=*—Á÷ğK°z.°X5aı—uüx¥GøÉtÕ”>xíryï-¬W*æÒrƒu¡CáŒ„Q·y…ôiËäå]¨r?éÃu«Ô–h £ªv®´°e¢T¸`T­/OL$_Q,ĞbÑ
-™ }oô…ÄXšxjq/jç8Ô+¡ã±â¥îè>ÈsWÓSLpİê›Lú®{jÚĞ2üHEÆQ§p€µÚáØ8±wgåÖ˜Íº+(~ïUW¢YuÇœ×w^uóüB®O’eÔ?ÆõØL.[¹¿>%ñ†5ß>=YÉ¤ÖñêßeíüùõŒÿùÇ¿>ıœªğkEâÓ“ãŒƒÑ7“`I*ä$z›²ÿ„cÆ('*rëå¢êuKÀDx&;« †åÉb<?eKiY4ÃòGZN¨@Ta][(Å¨¼ôúDkš>Nÿ‘AksZÎ~¥•rY0‡}‹êŒ³ı2ö6‘¢WhIA¶LM!ù®¶æWV˜´Ì©#]ÊbÓ5Ü1nUŒ`ØÂ+Ğ÷©ğÙ¸Ü÷:tœÅGü¢ğ
-‹EãóätªIQgÒH¹[:9DË6BsÎáÌ©¦š$¸k™OB™]í'hLI‡ëX( G.W8¤‹gºzªgªzf¶ï)Ë¼sÁ&´¸DµxÓÊ¢IST¶~«x¦·ÕƒÑ•/qrÔèævnHÖ¼sÕ•¸µª5=‚ıªoê]s‡Z¯Øíİ«‹ºhŠAm‡ışÂ¾¼U€†¬5/h~§7.Æ=’ŠÍ7÷ü«¥â·ã³½Uô]-@¦_rÓzp!VÈ×ëuâ*U-Fì	hS -E¥^imTQõ¨àÿè#Ã5—*›€ƒ„G ¿g)HËlôãĞJJ±¬¡ñó.­gÉWqŒ¥°'Ú£‹©òË­‡uÄÊvúF‚ÙfÇ(ßB„µ»ÂÈ;àëM¾¯F<]MîH˜u÷n?0!¿âªşÀÓ§oó&0ÑßÀLZ_
-r
-£W”3­ 	”J1cg¡€‰bIHB»”¶sI–4¤aRÍÅV+HTl5™âJË‚˜XW4€¤åÌóÉ=YÒ@’ß˜L² $dÚO"%$iX"û`ó~O£=\Ìçœ‰mqu.¯Ğø/ùêÊT%#6V+˜V‹%/7ß©ŞDºK£®[¨(V­pfK¡_›ú;H£_VW5ĞÇòÊğÛ©PlV]Ö¯—¡w9âíwRƒÄI™=ëƒƒ5³`ùr÷ÃWXØíˆªË\ÕPù\1ì‚ÕE+£M>htÍ¾[»Wë¾@oj^·ñùÖö'4í: _Y(S1«z[×éÑ{µ |êeCÓûÜŞ“P¯Ô}Œ@Véæ!gŒçxz0èèÑÚÊgˆQÈ¡¦²bU[¤f‰¶±äÌP.~dä‹p±-úEñÒôDQ4ú)p¤Ï‰AÄ’cŞµİ=^·Ü=¡±–ró1	]¤ŠÁ*Kuò@®—ØÊáó Ã~‰‹ÓÃØvŠ‘UŸ"Vz$|nñ.ËG?lÿyÛï·Æt»úU»^R`h¸Ò„xKÅèè!ë´ı#ÏÈ§?è*v¶O¯#¯Ï“œ·w‰a»è¥0mÄkizh:ö—‰À‘¬Vap7G×E€8CÂÉAŒóË	x…ˆÅ,8B…cZ
-í["2©V£‰§¬ÑèĞ¯W÷òıboÈÎ²s3²L‰®ŸhFfOf¤=FÙTËµ¢$ƒ†Ì¥X@‚)¾O›Ôj×pq{Z ãæµÖ¦4¸e-mk³1?é_Zåi;‡9Çp®ôTdm³ØƒEqB!½˜JPœPtµ.‘ò-„zŞŠ²U2Û³p .ø¦0+Ñ¸iÂ®Í×í9\#¦¶l‹`ıŸ"Ç¤GGpŞEæüBT×İMÅOurrò´vº»X°Ë.Õ]]\Š¦ÓYjÛ²‹`˜ìi]¸Ø“4FÑ³.ç×Şháp·æ1j¹³è-EûAıâ7Y	¦ÁE
-8ñÖ“úl“WtşºK´Ùò?Næı —{üÇ9Í‰ö¨°¢iù°·-ùŸEHò&rH"$Şd¢‚¶'Úvõ:²JáZÙ¼û­MYğ6){y/Oí	J*øİ+¬Ò™oG¥»£ª?°ÀØ7y˜—L;SÅW)0“ÖæÎ±%¹Ç¯OyM•’Àû0×h¬h Ie˜™ëÓ-I ÁÀ@O›L± $ÁvTv®{¾¢$`BOækIIÆ'7² =jrO–4€¤µ «O % éà>«'·‰
-Ì sÚ„V“õ…9vh—œ’L[.¹HŞÅõrmßk£¤O•Üb"£—®}”ÄsŞ”>*‰íÂxk²®†%[ğÅ°ü`cX+M0¼Gä>º­®BCH­Ğv0÷DÜ2R“÷
-rg%¾Gñ,¯6ì —œ$‹*ò’²dSRL•Ñ€Ú¢ÆŞvr:y>L¹QÁæø¹@„d[g1<0Ã›Ú‚âôA©=74P¬K<(»¬Îezb}#3DôTQª•“Ñ÷•{5:8{F¿Ÿ5+Öq™?¬#¥+4‡)˜fg€~ÖŞ‚ºZŒÃUxÏ …ä­]AÌeï’í£CÇ=9+>œ€ÌEü7>FBë–9©ÊÈFY«6x¨*’wà‹Ø_&EFÔ©]D¡äó¦kºÃA2ßDã”ò-4×ë=Ñ¸bR©çŸZÎ+À>vQrË1x`Éi×ñÁŞš^¥m~pÅd°÷nÃ=°åì¿ËùªşÀÓÑßæM`zùˆT[—†Ù;¯ı£ÂsÊè
-Këh†@9~2¨SÒ ’ğo˜–•4$¨Y³Ñ²’â’N:÷,h É™™ÜÈ‚ÔLÏFËJHÒ3%g7² ˜`[s1Á‚’Œ«è. —»æaˆç”sS1°Ø–¿Åå6«ã’æ²ÿFLÓĞ}³t¾PfŠlåÒæ„Ÿé”Ä!¦- l6ƒæP’şsM6² Ä¾ã/…/fL™ õz—U`á üU°pPçÕTïYÜ RHÏ{Ésmh¢ƒÁíŒWô8`+p´¸ìbÃ—nNf:úJ+Íé*¢ZĞè5{Ü•¯KŒrI&±”8@«¸Îä¸¡ÿüöLüãÌÍŞ\ŞÔBí€vS¨Ô©Û:9S´ÎŞ»­ñØfR;që›™4ÑLÒ<¥eŒ
-Yò¤	0šødÕº¢$Áœ°r®ÖYÑ ’`N˜i[ş›‡Ãh¦aÁ_œs÷‡æ¤Î´äUËœ=úyõe\n›lŸI“ûŠQÇÃ t±ù±sg¸íì–Û_éY</Î FVxŞºa×¤z/Ÿ¸Ç­ ‰e¼ê›:òzÇ•Ÿö7;'…K9‹+S]Ê+W—¬¿b«’aP²úfJ(8WydqiÅàM=|“Äh­ï7$JÙúİš¦º™/hWÜCßáùqû¬lGL1Ğ©ëEoøc«ïnª Ü2[Şõ¾’SDô+ĞıÎ¹ºz¾ÆÊMïÉâ»cñÒ·¶š¶šöë ·µĞT·òoXsmØ>÷y}YŸÁwFâ¿¯"˜ÿCJçaŞÛVhÔìŠäv0¼Î»‹£ ÒZ#ªÀ‘¼&îk6´¢-ûK\…Z[äÖMÊ ³Ë1)Hæc;näP„aÔ»ñÍ[1£ÒcÊbĞÑº®.Qn¹ßcNiûÖš™ ä¶ÚDQTÇšmãS"
-“TL6»$AUA3øsï†å[ôßĞNö;ªúÌÛÉ=»ã?¶ò’§)1ûã‚gÒOvæ–4>=iF£››ù  “SwV4€¤€î˜«U4€$âJ“SwV4¤afVêÎ6Î8¡jF\à<-=é÷Ÿ<@ûYò9ª”ìgÙ9OŞ';Ê‚–× †êöø±/î5l^t.Hç¦ƒ¡—-í˜i›éDaÌEÊ¨¬õ}ì§ÑxeRŠc¥¿¯JlÇ«C`šWó{^ù„¡åœà»SJA·è×´oIp.…×GN, ãåæŠÂn2ñ$×ZCW/ãÖëÓŠàÿòP„AÎ;˜ÁÁk­gwaÜŠ½³tÄ…\Öfd{KÆÖ VòªöV-üË©ÚnI0÷Lİ½·í‘uÜÎá_§›óªşĞ2ÓÑ¾J™™4-	¦òŞÕÎúzS0íK	ˆËz=Í•‹Z/™œà[Ñ@Û±iñ’Y«_I A%˜›úZÑ@’†ÙÉ¡¯ ‰Ûñ'‡¾V4¤a|§Ğ×qcÑÒû—Œ£ä`N›SÊdÒvªÒëÄ–zÔR´Ê}½…VYêÀq‹©iQéh†…v¦å»8¾±——¢oWîäsFóîQEo7àV“‘G$i§k‘¾r{©İ_Ùà¨gæ-ŸìTå¡ÃÊÃUı¡e¦²îë”™‰
-çK°x+ª,Äib\Íôì,Ä% ia²æUÒ ’¸3ÙãPÑ@’97/i`¶e5ıì®Š’tÏîªåØ‡{D—_™•&,çá.
-qI…¥¬ª%¼zÊ \WIåtğÁŒ¶Ö&½½<xdWSİt®|r³g@eÎ˜½jÓ˜!¦HCgÄíZWAä¼Ã¦ ;³ÑPmÛ¡“ôéKxy”¥‹’VúmÒ#§ÑA6Ïº‘|W´¹Ô×WW…¬˜ÚP×7Ñ¿×< ±pí7¨R	5vL]ñ¯Ä¬)Ù¦(÷!v¤`H´3ÊîZ!R Çìjë©tªJ9LOCòøæ$Ü’ŒœÎêÀ0¨¶F&§3ïî\%{h]ø|ıÁ×†÷°3(ÖqñÒ ĞöhÑ˜¡¿}¼«Te(LWË	¯zâY’™dA#}ôä3Kxú)†ÚéÄL#v>–)¹='lİáğçà¸LÚúèÒzÎ ‰¿DÅ¦©æ\óµ+,nÑM‹äÆL["ªˆ–L¸·d`osıİÏõ/:X[ù
-øHR-Wm·“íó’É6Ù>/i I09Ï>/şxAõ+
-endstream
-endobj
-xref
-0 898
-0000000000 65535 f 
-0000108181 00000 n 
-0000108325 00000 n 
-0000108094 00000 n 
-0000108073 00000 n 
-0000108372 00000 n 
-0000108415 00000 n 
-0000000189 00000 n 
-0000000059 00000 n 
-0000000015 00000 n 
-0000107975 00000 n 
-0000111840 00000 n 
-0000006272 00000 n 
-0000005954 00000 n 
-0000000307 00000 n 
-0000000390 00000 n 
-0000000516 00000 n 
-0000000622 00000 n 
-0000000747 00000 n 
-0000000853 00000 n 
-0000000978 00000 n 
-0000001084 00000 n 
-0000001208 00000 n 
-0000001310 00000 n 
-0000001434 00000 n 
-0000001536 00000 n 
-0000001661 00000 n 
-0000001763 00000 n 
-0000001888 00000 n 
-0000002002 00000 n 
-0000002127 00000 n 
-0000002241 00000 n 
-0000002366 00000 n 
-0000002480 00000 n 
-0000002605 00000 n 
-0000002703 00000 n 
-0000002828 00000 n 
-0000002926 00000 n 
-0000003050 00000 n 
-0000003148 00000 n 
-0000003272 00000 n 
-0000003352 00000 n 
-0000003485 00000 n 
-0000003565 00000 n 
-0000003698 00000 n 
-0000003778 00000 n 
-0000003911 00000 n 
-0000004013 00000 n 
-0000004133 00000 n 
-0000004235 00000 n 
-0000004358 00000 n 
-0000004460 00000 n 
-0000004583 00000 n 
-0000004700 00000 n 
-0000004823 00000 n 
-0000004940 00000 n 
-0000005063 00000 n 
-0000005180 00000 n 
-0000005303 00000 n 
-0000005399 00000 n 
-0000005522 00000 n 
-0000005618 00000 n 
-0000005738 00000 n 
-0000005834 00000 n 
-0000134924 00000 n 
-0000018944 00000 n 
-0000018409 00000 n 
-0000006391 00000 n 
-0000006522 00000 n 
-0000006655 00000 n 
-0000006786 00000 n 
-0000006919 00000 n 
-0000007050 00000 n 
-0000007170 00000 n 
-0000007291 00000 n 
-0000007414 00000 n 
-0000007535 00000 n 
-0000007658 00000 n 
-0000007779 00000 n 
-0000007902 00000 n 
-0000008025 00000 n 
-0000008148 00000 n 
-0000008271 00000 n 
-0000008395 00000 n 
-0000008518 00000 n 
-0000008643 00000 n 
-0000008754 00000 n 
-0000008878 00000 n 
-0000008989 00000 n 
-0000009113 00000 n 
-0000009224 00000 n 
-0000009348 00000 n 
-0000009428 00000 n 
-0000009552 00000 n 
-0000009632 00000 n 
-0000009756 00000 n 
-0000009836 00000 n 
-0000009960 00000 n 
-0000010066 00000 n 
-0000010187 00000 n 
-0000010293 00000 n 
-0000010419 00000 n 
-0000010526 00000 n 
-0000010653 00000 n 
-0000010756 00000 n 
-0000010879 00000 n 
-0000010982 00000 n 
-0000011109 00000 n 
-0000011212 00000 n 
-0000011339 00000 n 
-0000011454 00000 n 
-0000011577 00000 n 
-0000011692 00000 n 
-0000011819 00000 n 
-0000011934 00000 n 
-0000012061 00000 n 
-0000012160 00000 n 
-0000012283 00000 n 
-0000012382 00000 n 
-0000012509 00000 n 
-0000012608 00000 n 
-0000012735 00000 n 
-0000012816 00000 n 
-0000012939 00000 n 
-0000013020 00000 n 
-0000013147 00000 n 
-0000013228 00000 n 
-0000013355 00000 n 
-0000013458 00000 n 
-0000013581 00000 n 
-0000013684 00000 n 
-0000013811 00000 n 
-0000013914 00000 n 
-0000014041 00000 n 
-0000014159 00000 n 
-0000014282 00000 n 
-0000014400 00000 n 
-0000014527 00000 n 
-0000014645 00000 n 
-0000014775 00000 n 
-0000014872 00000 n 
-0000014995 00000 n 
-0000015092 00000 n 
-0000015219 00000 n 
-0000015316 00000 n 
-0000015446 00000 n 
-0000015578 00000 n 
-0000015701 00000 n 
-0000015833 00000 n 
-0000015960 00000 n 
-0000016092 00000 n 
-0000016219 00000 n 
-0000016341 00000 n 
-0000016464 00000 n 
-0000016586 00000 n 
-0000016712 00000 n 
-0000016834 00000 n 
-0000016960 00000 n 
-0000017084 00000 n 
-0000017206 00000 n 
-0000017330 00000 n 
-0000017455 00000 n 
-0000017579 00000 n 
-0000017704 00000 n 
-0000017816 00000 n 
-0000017937 00000 n 
-0000018049 00000 n 
-0000018173 00000 n 
-0000018285 00000 n 
-0000146080 00000 n 
-0000033599 00000 n 
-0000032973 00000 n 
-0000019063 00000 n 
-0000019170 00000 n 
-0000019298 00000 n 
-0000019405 00000 n 
-0000019534 00000 n 
-0000019641 00000 n 
-0000019769 00000 n 
-0000019872 00000 n 
-0000020000 00000 n 
-0000020103 00000 n 
-0000020232 00000 n 
-0000020335 00000 n 
-0000020464 00000 n 
-0000020579 00000 n 
-0000020707 00000 n 
-0000020822 00000 n 
-0000020950 00000 n 
-0000021065 00000 n 
-0000021194 00000 n 
-0000021293 00000 n 
-0000021422 00000 n 
-0000021521 00000 n 
-0000021650 00000 n 
-0000021749 00000 n 
-0000021878 00000 n 
-0000021977 00000 n 
-0000022106 00000 n 
-0000022205 00000 n 
-0000022333 00000 n 
-0000022432 00000 n 
-0000022560 00000 n 
-0000022641 00000 n 
-0000022770 00000 n 
-0000022851 00000 n 
-0000022979 00000 n 
-0000023060 00000 n 
-0000023188 00000 n 
-0000023291 00000 n 
-0000023420 00000 n 
-0000023523 00000 n 
-0000023652 00000 n 
-0000023755 00000 n 
-0000023883 00000 n 
-0000024001 00000 n 
-0000024129 00000 n 
-0000024247 00000 n 
-0000024376 00000 n 
-0000024494 00000 n 
-0000024623 00000 n 
-0000024720 00000 n 
-0000024849 00000 n 
-0000024946 00000 n 
-0000025075 00000 n 
-0000025172 00000 n 
-0000025301 00000 n 
-0000025433 00000 n 
-0000025562 00000 n 
-0000025694 00000 n 
-0000025822 00000 n 
-0000025954 00000 n 
-0000026082 00000 n 
-0000026204 00000 n 
-0000026333 00000 n 
-0000026455 00000 n 
-0000026584 00000 n 
-0000026706 00000 n 
-0000026835 00000 n 
-0000026959 00000 n 
-0000027088 00000 n 
-0000027212 00000 n 
-0000027341 00000 n 
-0000027465 00000 n 
-0000027594 00000 n 
-0000027693 00000 n 
-0000027822 00000 n 
-0000027921 00000 n 
-0000028049 00000 n 
-0000028148 00000 n 
-0000028276 00000 n 
-0000028383 00000 n 
-0000028512 00000 n 
-0000028619 00000 n 
-0000028748 00000 n 
-0000028855 00000 n 
-0000028983 00000 n 
-0000029095 00000 n 
-0000029223 00000 n 
-0000029335 00000 n 
-0000029463 00000 n 
-0000029575 00000 n 
-0000029703 00000 n 
-0000029784 00000 n 
-0000029913 00000 n 
-0000029994 00000 n 
-0000030123 00000 n 
-0000030204 00000 n 
-0000030333 00000 n 
-0000030438 00000 n 
-0000030567 00000 n 
-0000030672 00000 n 
-0000030801 00000 n 
-0000030906 00000 n 
-0000031035 00000 n 
-0000031136 00000 n 
-0000031265 00000 n 
-0000031366 00000 n 
-0000031495 00000 n 
-0000031596 00000 n 
-0000031725 00000 n 
-0000031806 00000 n 
-0000031933 00000 n 
-0000032014 00000 n 
-0000032141 00000 n 
-0000032222 00000 n 
-0000032349 00000 n 
-0000032430 00000 n 
-0000032557 00000 n 
-0000032638 00000 n 
-0000032765 00000 n 
-0000032846 00000 n 
-0000127355 00000 n 
-0000043467 00000 n 
-0000043009 00000 n 
-0000033719 00000 n 
-0000033822 00000 n 
-0000033957 00000 n 
-0000034060 00000 n 
-0000034195 00000 n 
-0000034298 00000 n 
-0000034433 00000 n 
-0000034536 00000 n 
-0000034669 00000 n 
-0000034772 00000 n 
-0000034906 00000 n 
-0000035009 00000 n 
-0000035144 00000 n 
-0000035247 00000 n 
-0000035382 00000 n 
-0000035485 00000 n 
-0000035620 00000 n 
-0000035723 00000 n 
-0000035858 00000 n 
-0000035957 00000 n 
-0000036092 00000 n 
-0000036191 00000 n 
-0000036326 00000 n 
-0000036425 00000 n 
-0000036560 00000 n 
-0000036678 00000 n 
-0000036806 00000 n 
-0000036924 00000 n 
-0000037053 00000 n 
-0000037171 00000 n 
-0000037300 00000 n 
-0000037398 00000 n 
-0000037531 00000 n 
-0000037629 00000 n 
-0000037762 00000 n 
-0000037860 00000 n 
-0000037993 00000 n 
-0000038091 00000 n 
-0000038220 00000 n 
-0000038318 00000 n 
-0000038447 00000 n 
-0000038545 00000 n 
-0000038674 00000 n 
-0000038772 00000 n 
-0000038907 00000 n 
-0000039005 00000 n 
-0000039140 00000 n 
-0000039238 00000 n 
-0000039373 00000 n 
-0000039502 00000 n 
-0000039631 00000 n 
-0000039760 00000 n 
-0000039889 00000 n 
-0000040018 00000 n 
-0000040147 00000 n 
-0000040276 00000 n 
-0000040404 00000 n 
-0000040533 00000 n 
-0000040661 00000 n 
-0000040790 00000 n 
-0000040918 00000 n 
-0000041025 00000 n 
-0000041152 00000 n 
-0000041259 00000 n 
-0000041386 00000 n 
-0000041493 00000 n 
-0000041619 00000 n 
-0000041717 00000 n 
-0000041850 00000 n 
-0000041948 00000 n 
-0000042081 00000 n 
-0000042179 00000 n 
-0000042312 00000 n 
-0000042419 00000 n 
-0000042544 00000 n 
-0000042651 00000 n 
-0000042776 00000 n 
-0000042883 00000 n 
-0000137958 00000 n 
-0000055124 00000 n 
-0000054618 00000 n 
-0000043587 00000 n 
-0000043685 00000 n 
-0000043813 00000 n 
-0000043911 00000 n 
-0000044039 00000 n 
-0000044137 00000 n 
-0000044265 00000 n 
-0000044363 00000 n 
-0000044498 00000 n 
-0000044596 00000 n 
-0000044731 00000 n 
-0000044829 00000 n 
-0000044964 00000 n 
-0000045062 00000 n 
-0000045190 00000 n 
-0000045288 00000 n 
-0000045416 00000 n 
-0000045514 00000 n 
-0000045642 00000 n 
-0000045799 00000 n 
-0000045927 00000 n 
-0000046084 00000 n 
-0000046212 00000 n 
-0000046369 00000 n 
-0000046496 00000 n 
-0000046630 00000 n 
-0000046757 00000 n 
-0000046891 00000 n 
-0000047019 00000 n 
-0000047153 00000 n 
-0000047281 00000 n 
-0000047384 00000 n 
-0000047513 00000 n 
-0000047616 00000 n 
-0000047745 00000 n 
-0000047848 00000 n 
-0000047976 00000 n 
-0000048091 00000 n 
-0000048219 00000 n 
-0000048334 00000 n 
-0000048463 00000 n 
-0000048578 00000 n 
-0000048707 00000 n 
-0000048864 00000 n 
-0000048992 00000 n 
-0000049149 00000 n 
-0000049277 00000 n 
-0000049434 00000 n 
-0000049562 00000 n 
-0000049660 00000 n 
-0000049795 00000 n 
-0000049893 00000 n 
-0000050028 00000 n 
-0000050126 00000 n 
-0000050261 00000 n 
-0000050379 00000 n 
-0000050507 00000 n 
-0000050625 00000 n 
-0000050753 00000 n 
-0000050871 00000 n 
-0000051000 00000 n 
-0000051099 00000 n 
-0000051228 00000 n 
-0000051327 00000 n 
-0000051456 00000 n 
-0000051555 00000 n 
-0000051684 00000 n 
-0000051783 00000 n 
-0000051916 00000 n 
-0000052015 00000 n 
-0000052148 00000 n 
-0000052247 00000 n 
-0000052380 00000 n 
-0000052537 00000 n 
-0000052664 00000 n 
-0000052821 00000 n 
-0000052949 00000 n 
-0000053106 00000 n 
-0000053235 00000 n 
-0000053346 00000 n 
-0000053474 00000 n 
-0000053585 00000 n 
-0000053713 00000 n 
-0000053824 00000 n 
-0000053952 00000 n 
-0000054041 00000 n 
-0000054174 00000 n 
-0000054263 00000 n 
-0000054396 00000 n 
-0000054485 00000 n 
-0000114777 00000 n 
-0000063618 00000 n 
-0000063208 00000 n 
-0000055244 00000 n 
-0000055359 00000 n 
-0000055488 00000 n 
-0000055603 00000 n 
-0000055731 00000 n 
-0000055846 00000 n 
-0000055974 00000 n 
-0000056072 00000 n 
-0000056207 00000 n 
-0000056305 00000 n 
-0000056440 00000 n 
-0000056538 00000 n 
-0000056673 00000 n 
-0000056771 00000 n 
-0000056897 00000 n 
-0000056995 00000 n 
-0000057122 00000 n 
-0000057220 00000 n 
-0000057348 00000 n 
-0000057451 00000 n 
-0000057580 00000 n 
-0000057683 00000 n 
-0000057812 00000 n 
-0000057915 00000 n 
-0000058044 00000 n 
-0000058147 00000 n 
-0000058276 00000 n 
-0000058379 00000 n 
-0000058508 00000 n 
-0000058611 00000 n 
-0000058740 00000 n 
-0000058897 00000 n 
-0000059024 00000 n 
-0000059181 00000 n 
-0000059308 00000 n 
-0000059465 00000 n 
-0000059593 00000 n 
-0000059750 00000 n 
-0000059878 00000 n 
-0000060035 00000 n 
-0000060163 00000 n 
-0000060320 00000 n 
-0000060448 00000 n 
-0000060546 00000 n 
-0000060679 00000 n 
-0000060777 00000 n 
-0000060910 00000 n 
-0000061008 00000 n 
-0000061141 00000 n 
-0000061239 00000 n 
-0000061374 00000 n 
-0000061472 00000 n 
-0000061607 00000 n 
-0000061705 00000 n 
-0000061840 00000 n 
-0000061938 00000 n 
-0000062067 00000 n 
-0000062165 00000 n 
-0000062294 00000 n 
-0000062392 00000 n 
-0000062521 00000 n 
-0000062619 00000 n 
-0000062750 00000 n 
-0000062848 00000 n 
-0000062979 00000 n 
-0000063077 00000 n 
-0000122604 00000 n 
-0000072108 00000 n 
-0000071698 00000 n 
-0000063738 00000 n 
-0000063836 00000 n 
-0000063965 00000 n 
-0000064063 00000 n 
-0000064192 00000 n 
-0000064290 00000 n 
-0000064419 00000 n 
-0000064531 00000 n 
-0000064666 00000 n 
-0000064778 00000 n 
-0000064913 00000 n 
-0000065025 00000 n 
-0000065160 00000 n 
-0000065272 00000 n 
-0000065401 00000 n 
-0000065513 00000 n 
-0000065642 00000 n 
-0000065754 00000 n 
-0000065883 00000 n 
-0000065998 00000 n 
-0000066127 00000 n 
-0000066242 00000 n 
-0000066371 00000 n 
-0000066486 00000 n 
-0000066615 00000 n 
-0000066763 00000 n 
-0000066896 00000 n 
-0000067044 00000 n 
-0000067177 00000 n 
-0000067325 00000 n 
-0000067458 00000 n 
-0000067563 00000 n 
-0000067691 00000 n 
-0000067796 00000 n 
-0000067924 00000 n 
-0000068029 00000 n 
-0000068157 00000 n 
-0000068269 00000 n 
-0000068397 00000 n 
-0000068509 00000 n 
-0000068637 00000 n 
-0000068749 00000 n 
-0000068877 00000 n 
-0000069009 00000 n 
-0000069137 00000 n 
-0000069269 00000 n 
-0000069397 00000 n 
-0000069529 00000 n 
-0000069658 00000 n 
-0000069755 00000 n 
-0000069884 00000 n 
-0000069981 00000 n 
-0000070110 00000 n 
-0000070207 00000 n 
-0000070336 00000 n 
-0000070436 00000 n 
-0000070565 00000 n 
-0000070665 00000 n 
-0000070794 00000 n 
-0000070894 00000 n 
-0000071023 00000 n 
-0000071121 00000 n 
-0000071248 00000 n 
-0000071346 00000 n 
-0000071473 00000 n 
-0000071571 00000 n 
-0000118757 00000 n 
-0000081428 00000 n 
-0000080986 00000 n 
-0000072228 00000 n 
-0000072346 00000 n 
-0000072475 00000 n 
-0000072593 00000 n 
-0000072722 00000 n 
-0000072840 00000 n 
-0000072968 00000 n 
-0000073049 00000 n 
-0000073177 00000 n 
-0000073258 00000 n 
-0000073387 00000 n 
-0000073468 00000 n 
-0000073597 00000 n 
-0000073696 00000 n 
-0000073824 00000 n 
-0000073923 00000 n 
-0000074051 00000 n 
-0000074150 00000 n 
-0000074278 00000 n 
-0000074379 00000 n 
-0000074507 00000 n 
-0000074608 00000 n 
-0000074736 00000 n 
-0000074837 00000 n 
-0000074965 00000 n 
-0000075064 00000 n 
-0000075193 00000 n 
-0000075292 00000 n 
-0000075421 00000 n 
-0000075520 00000 n 
-0000075649 00000 n 
-0000075797 00000 n 
-0000075926 00000 n 
-0000076074 00000 n 
-0000076203 00000 n 
-0000076351 00000 n 
-0000076480 00000 n 
-0000076591 00000 n 
-0000076720 00000 n 
-0000076831 00000 n 
-0000076954 00000 n 
-0000077065 00000 n 
-0000077191 00000 n 
-0000077303 00000 n 
-0000077429 00000 n 
-0000077541 00000 n 
-0000077667 00000 n 
-0000077779 00000 n 
-0000077905 00000 n 
-0000077986 00000 n 
-0000078113 00000 n 
-0000078194 00000 n 
-0000078322 00000 n 
-0000078403 00000 n 
-0000078532 00000 n 
-0000078639 00000 n 
-0000078768 00000 n 
-0000078875 00000 n 
-0000079004 00000 n 
-0000079111 00000 n 
-0000079240 00000 n 
-0000079347 00000 n 
-0000079475 00000 n 
-0000079582 00000 n 
-0000079711 00000 n 
-0000079818 00000 n 
-0000079947 00000 n 
-0000080071 00000 n 
-0000080198 00000 n 
-0000080355 00000 n 
-0000080482 00000 n 
-0000080639 00000 n 
-0000080764 00000 n 
-0000080862 00000 n 
-0000131287 00000 n 
-0000091549 00000 n 
-0000091083 00000 n 
-0000081548 00000 n 
-0000081646 00000 n 
-0000081773 00000 n 
-0000081871 00000 n 
-0000081999 00000 n 
-0000082097 00000 n 
-0000082225 00000 n 
-0000082323 00000 n 
-0000082451 00000 n 
-0000082549 00000 n 
-0000082676 00000 n 
-0000082774 00000 n 
-0000082902 00000 n 
-0000083000 00000 n 
-0000083129 00000 n 
-0000083253 00000 n 
-0000083381 00000 n 
-0000083505 00000 n 
-0000083633 00000 n 
-0000083757 00000 n 
-0000083885 00000 n 
-0000084042 00000 n 
-0000084170 00000 n 
-0000084327 00000 n 
-0000084454 00000 n 
-0000084611 00000 n 
-0000084738 00000 n 
-0000084850 00000 n 
-0000084978 00000 n 
-0000085090 00000 n 
-0000085218 00000 n 
-0000085330 00000 n 
-0000085458 00000 n 
-0000085573 00000 n 
-0000085701 00000 n 
-0000085816 00000 n 
-0000085945 00000 n 
-0000086060 00000 n 
-0000086189 00000 n 
-0000086277 00000 n 
-0000086406 00000 n 
-0000086494 00000 n 
-0000086623 00000 n 
-0000086711 00000 n 
-0000086840 00000 n 
-0000086952 00000 n 
-0000087081 00000 n 
-0000087193 00000 n 
-0000087322 00000 n 
-0000087434 00000 n 
-0000087563 00000 n 
-0000087678 00000 n 
-0000087805 00000 n 
-0000087920 00000 n 
-0000088046 00000 n 
-0000088161 00000 n 
-0000088287 00000 n 
-0000088385 00000 n 
-0000088511 00000 n 
-0000088609 00000 n 
-0000088735 00000 n 
-0000088833 00000 n 
-0000088959 00000 n 
-0000089107 00000 n 
-0000089234 00000 n 
-0000089382 00000 n 
-0000089509 00000 n 
-0000089657 00000 n 
-0000089784 00000 n 
-0000089865 00000 n 
-0000089992 00000 n 
-0000090073 00000 n 
-0000090200 00000 n 
-0000090281 00000 n 
-0000090408 00000 n 
-0000090506 00000 n 
-0000090633 00000 n 
-0000090731 00000 n 
-0000090858 00000 n 
-0000090956 00000 n 
-0000142413 00000 n 
-0000103087 00000 n 
-0000102581 00000 n 
-0000091669 00000 n 
-0000091772 00000 n 
-0000091905 00000 n 
-0000092008 00000 n 
-0000092141 00000 n 
-0000092244 00000 n 
-0000092378 00000 n 
-0000092477 00000 n 
-0000092612 00000 n 
-0000092711 00000 n 
-0000092846 00000 n 
-0000092945 00000 n 
-0000093080 00000 n 
-0000093216 00000 n 
-0000093344 00000 n 
-0000093480 00000 n 
-0000093608 00000 n 
-0000093744 00000 n 
-0000093872 00000 n 
-0000094003 00000 n 
-0000094132 00000 n 
-0000094263 00000 n 
-0000094392 00000 n 
-0000094523 00000 n 
-0000094652 00000 n 
-0000094751 00000 n 
-0000094880 00000 n 
-0000094979 00000 n 
-0000095107 00000 n 
-0000095206 00000 n 
-0000095334 00000 n 
-0000095415 00000 n 
-0000095543 00000 n 
-0000095624 00000 n 
-0000095752 00000 n 
-0000095833 00000 n 
-0000095961 00000 n 
-0000096076 00000 n 
-0000096205 00000 n 
-0000096320 00000 n 
-0000096449 00000 n 
-0000096564 00000 n 
-0000096692 00000 n 
-0000096791 00000 n 
-0000096920 00000 n 
-0000097019 00000 n 
-0000097148 00000 n 
-0000097247 00000 n 
-0000097375 00000 n 
-0000097511 00000 n 
-0000097640 00000 n 
-0000097776 00000 n 
-0000097905 00000 n 
-0000098041 00000 n 
-0000098170 00000 n 
-0000098301 00000 n 
-0000098429 00000 n 
-0000098560 00000 n 
-0000098688 00000 n 
-0000098819 00000 n 
-0000098947 00000 n 
-0000099058 00000 n 
-0000099193 00000 n 
-0000099304 00000 n 
-0000099439 00000 n 
-0000099550 00000 n 
-0000099685 00000 n 
-0000099792 00000 n 
-0000099926 00000 n 
-0000100029 00000 n 
-0000100163 00000 n 
-0000100278 00000 n 
-0000100412 00000 n 
-0000100511 00000 n 
-0000100644 00000 n 
-0000100725 00000 n 
-0000100859 00000 n 
-0000100962 00000 n 
-0000101095 00000 n 
-0000101213 00000 n 
-0000101347 00000 n 
-0000101444 00000 n 
-0000101578 00000 n 
-0000101710 00000 n 
-0000101843 00000 n 
-0000101965 00000 n 
-0000102096 00000 n 
-0000102220 00000 n 
-0000102352 00000 n 
-0000102464 00000 n 
-0000109691 00000 n 
-0000107680 00000 n 
-0000107398 00000 n 
-0000103207 00000 n 
-0000103319 00000 n 
-0000103453 00000 n 
-0000103534 00000 n 
-0000103668 00000 n 
-0000103773 00000 n 
-0000103907 00000 n 
-0000104008 00000 n 
-0000104142 00000 n 
-0000104241 00000 n 
-0000104375 00000 n 
-0000104473 00000 n 
-0000104607 00000 n 
-0000104736 00000 n 
-0000104870 00000 n 
-0000105027 00000 n 
-0000105161 00000 n 
-0000105295 00000 n 
-0000105429 00000 n 
-0000105540 00000 n 
-0000105674 00000 n 
-0000105763 00000 n 
-0000105895 00000 n 
-0000106043 00000 n 
-0000106177 00000 n 
-0000106277 00000 n 
-0000106411 00000 n 
-0000106510 00000 n 
-0000106644 00000 n 
-0000106732 00000 n 
-0000106863 00000 n 
-0000106999 00000 n 
-0000107133 00000 n 
-0000107264 00000 n 
-0000107895 00000 n 
-0000107800 00000 n 
-0000107829 00000 n 
-0000107858 00000 n 
-trailer
-<<
-/Size 898
-/Root 3 0 R
-/Info 894 0 R
-/ID [<b79a2164ed8d014f536e58b3f4eb53db> <b79a2164ed8d014f536e58b3f4eb53db>]
->>
-startxref
-150685
-%%EOF

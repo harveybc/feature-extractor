@@ -1,6 +1,12 @@
 import numpy as np
 from keras.models import Model, load_model
+from keras.callbacks import EarlyStopping, ModelCheckpoint
+import tensorflow as tf
 from keras.optimizers import Adam
+from tensorflow.keras.losses import Huber
+from tensorflow.keras.mixed_precision import set_global_policy
+
+set_global_policy('mixed_float16')
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
@@ -38,14 +44,34 @@ class AutoencoderManager:
             # Build autoencoder model
             autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
+
+            # Define optimizer
             adam_optimizer = Adam(
                 learning_rate=config['learning_rate'],  # Set the learning rate
-                beta_1=0.9,           # Default value
-                beta_2=0.999,         # Default value
-                epsilon=1e-7,         # Default value
-                amsgrad=False         # Default value
+                beta_1=0.9,  # Default value
+                beta_2=0.999,  # Default value
+                epsilon=1e-7,  # Default value
+                amsgrad=False,  # Default value
+                clipnorm=1.0,  # Gradient clipping
+                clipvalue=0.5  # Gradient clipping
             )
-            self.autoencoder_model.compile(optimizer=adam_optimizer, loss='mae')
+            
+            # Define custom R² score metric
+            def r2_score(y_true, y_pred):
+                """Calculate R² score."""
+                ss_res = tf.reduce_sum(tf.square(y_true - y_pred))  # Residual sum of squares
+                ss_tot = tf.reduce_sum(tf.square(y_true - tf.reduce_mean(y_true)))  # Total sum of squares
+                return 1 - (ss_res / (ss_tot + tf.keras.backend.epsilon()))  # Avoid division by zero
+
+
+            # Compile autoencoder with the custom loss function
+            self.autoencoder_model.compile(
+                optimizer=adam_optimizer, 
+                loss=Huber(delta=1.0), 
+                #metrics=['mae', r2_score] ,
+                metrics=['mae'],
+                run_eagerly=True
+            )
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
             self.autoencoder_model.summary()
         except Exception as e:
@@ -55,22 +81,121 @@ class AutoencoderManager:
 
 
 
+
     def train_autoencoder(self, data, epochs=100, batch_size=32, config=None):
         try:
             num_channels = data.shape[-1]
             input_shape = data.shape[1]
             interface_size = self.encoder_plugin.params.get('interface_size', 4)
-            
+
             # Build autoencoder with the correct num_channels
             if not self.autoencoder_model:
                 self.build_autoencoder(input_shape, interface_size, config, num_channels)
+
+            # Validate data for NaN values before training
+            if np.isnan(data).any():
+                raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
             
+            # Calculate entropy and useful information using Shannon-Hartley theorem
+            self.calculate_dataset_information(data, config)
+
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
-            self.autoencoder_model.fit(data, data, epochs=epochs, batch_size=batch_size, verbose=1)
+
+            # Implement Early Stopping
+            early_stopping = EarlyStopping(monitor='loss', patience=3, restore_best_weights=True)
+
+            # Start training with early stopping
+            history = self.autoencoder_model.fit(
+                data, 
+                data, 
+                epochs=epochs, 
+                batch_size=batch_size, 
+                verbose=1, 
+                callbacks=[early_stopping]
+            )
+
+            # Log training loss
+            print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
             print("[train_autoencoder] Training completed.")
         except Exception as e:
             print(f"[train_autoencoder] Exception occurred during training: {e}")
             raise
+
+
+
+    def calculate_dataset_information(self, data, config):
+        try:
+            print("[calculate_dataset_information] Calculating dataset entropy and useful information...")
+
+            # Flatten data vertically by concatenating all columns after normalization
+            normalized_columns = []
+            for col in range(data.shape[-1]):
+                column_data = data[:, :, col].flatten()  # Flatten the column data
+                min_val, max_val = column_data.min(), column_data.max()
+                normalized_column = (column_data - min_val) / (max_val - min_val)  # Min-max normalization
+                normalized_columns.append(normalized_column)
+            
+            concatenated_data = np.concatenate(normalized_columns, axis=0)
+            num_samples = concatenated_data.shape[0]  # Correct number of samples is the length of concatenated vector
+            
+            # Convert concatenated data to TensorFlow tensor for acceleration
+            concatenated_data_tf = tf.convert_to_tensor(concatenated_data, dtype=tf.float32)
+            
+            # Calculate signal-to-noise ratio (SNR) using TensorFlow
+            mean_val = tf.reduce_mean(concatenated_data_tf)
+            std_val = tf.math.reduce_std(concatenated_data_tf)
+            snr = tf.cond(
+                tf.greater(std_val, 0),
+                lambda: (mean_val / std_val) ** 2,
+                lambda: tf.constant(0.0, dtype=tf.float32)
+            )
+            
+            # Retrieve dataset periodicity and calculate sampling frequency
+            periodicity = config['dataset_periodicity']
+            periodicity_seconds_map = {
+                "1min": 60,
+                "5min": 5 * 60,
+                "15min": 15 * 60,
+                "1h": 60 * 60,
+                "4h": 4 * 60 * 60,
+                "daily": 24 * 60 * 60
+            }
+            sampling_period_seconds = periodicity_seconds_map.get(periodicity, None)
+            
+            if sampling_period_seconds:
+                sampling_frequency = tf.constant(1 / sampling_period_seconds, dtype=tf.float32)
+            else:
+                sampling_frequency = tf.constant(0.0, dtype=tf.float32)
+
+            # Calculate Shannon-Hartley channel capacity and total useful information
+            channel_capacity = tf.cond(
+                tf.math.logical_and(tf.greater(snr, 0), tf.greater(sampling_frequency, 0)),
+                lambda: sampling_frequency * tf.math.log(1 + snr) / tf.math.log(2.0),
+                lambda: tf.constant(0.0, dtype=tf.float32)
+            )
+            total_information_bits = channel_capacity * num_samples * sampling_period_seconds
+            
+            # Calculate entropy using TensorFlow histogram binning
+            bins = 1000  # Increased bin count for better precision
+            histogram = tf.histogram_fixed_width(concatenated_data_tf, [0.0, 1.0], nbins=bins)
+            histogram = tf.cast(histogram, tf.float32)
+            probabilities = histogram / tf.reduce_sum(histogram)
+            entropy = -tf.reduce_sum(probabilities * tf.math.log(probabilities + 1e-10) / tf.math.log(2.0))  # Avoid log(0)
+
+            # Log calculated information
+            print(f"[calculate_dataset_information] Calculated SNR: {snr.numpy()}")
+            print(f"[calculate_dataset_information] Sampling frequency: {sampling_frequency.numpy()} Hz")
+            print(f"[calculate_dataset_information] Channel capacity: {channel_capacity.numpy()} bits/second")
+            print(f"[calculate_dataset_information] Total useful information: {total_information_bits.numpy()} bits")
+            print(f"[calculate_dataset_information] Entropy: {entropy.numpy()} bits")
+        except Exception as e:
+            print(f"[calculate_dataset_information] Exception occurred: {e}")
+            raise
+
+
+
+
+
 
 
 

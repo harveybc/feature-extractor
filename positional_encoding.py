@@ -5,14 +5,14 @@ import os
 
 def generate_positional_encoding(num_positions, num_features):
     """
-    Genera una matriz de codificación posicional de tamaño (num_positions, num_features).
+    Generates a positional encoding matrix of size (num_positions, num_features).
     
     Args:
-        num_positions (int): Número de posiciones en la serie de tiempo.
-        num_features (int): Número de dimensiones de la codificación posicional, debe ser par.
+        num_positions (int): Number of positions in the time series (total length of the combined dataset).
+        num_features (int): Number of dimensions for the positional encoding, must be even.
 
     Returns:
-        np.ndarray: Matriz de codificación posicional de tamaño (num_positions, num_features).
+        np.ndarray: Positional encoding matrix of size (num_positions, num_features).
     """
     encoding = np.zeros((num_positions, num_features))
     
@@ -25,35 +25,51 @@ def generate_positional_encoding(num_positions, num_features):
     return encoding
 
 def main():
-    # Configuración de argumentos de línea de comandos
-    parser = argparse.ArgumentParser(description="Programa para añadir codificación posicional a un archivo CSV.")
-    parser.add_argument("input_file", type=str, help="Nombre del archivo CSV de entrada.")
-    parser.add_argument("--output", type=str, default="pos_encoded.csv", 
-                        help="Nombre del archivo CSV de salida (por defecto: pos_encoded.csv).")
+    # Set up command line arguments
+    parser = argparse.ArgumentParser(description="Add positional encoding to multiple CSV files.")
+    parser.add_argument("input_file", type=str, help="Filename of the first CSV input file.")
+    parser.add_argument("--file2", type=str, default='..\\Documents\\encoder_eval_d2_indicators_128.csv', help="Filename of the second CSV input file (default: file2.csv).")
+    parser.add_argument("--file3", type=str, default='..\\Documents\\encoder_eval_d3_indicators_128.csv', help="Filename of the third CSV input file (default: file3.csv).")
+    parser.add_argument("--output1", type=str, default="pos_encoded_file1.csv", help="Output filename for the first file (default: pos_encoded_file1.csv).")
+    parser.add_argument("--output2", type=str, default="pos_encoded_file2.csv", help="Output filename for the second file (default: pos_encoded_file2.csv).")
+    parser.add_argument("--output3", type=str, default="pos_encoded_file3.csv", help="Output filename for the third file (default: pos_encoded_file3.csv).")
     
     args = parser.parse_args()
     
-    # Cargar el archivo CSV de entrada sin encabezados
-    if not os.path.exists(args.input_file):
-        print(f"Error: El archivo '{args.input_file}' no existe.")
-        return
-    
-    # Cargar datos sin encabezado
-    df = pd.read_csv(args.input_file, header=None)
-    num_positions = len(df)
-    num_features = df.shape[1]
+    # Load the datasets and check if all files exist
+    file_list = [args.input_file, args.file2, args.file3]
+    dfs = []
+    for file in file_list:
+        if not os.path.exists(file):
+            print(f"Error: The file '{file}' does not exist.")
+            return
+        dfs.append(pd.read_csv(file, header=None))
 
-    # Generar codificación posicional
+    # Calculate total positions and features for positional encoding
+    num_features = dfs[0].shape[1]  # Assume all files have the same number of columns
+    num_positions = sum(len(df) for df in dfs)  # Total number of rows across all files
+    
+    # Generate positional encoding for the entire dataset sequence
     encoding = generate_positional_encoding(num_positions, num_features)
-    
-    # Añadir la codificación posicional como columnas adicionales
-    for i in range(num_features):
-        df[f'pos_enc_{i}'] = encoding[:, i]
-    
-    # Guardar el nuevo DataFrame en el archivo de salida
-    output_file = args.output
-    df.to_csv(output_file, index=False, header=False)
-    print(f"Archivo con codificación posicional guardado como '{output_file}'.")
 
+    # Split the encoding based on the length of each dataset and add to each DataFrame
+    start_idx = 0
+    for i, df in enumerate(dfs):
+        end_idx = start_idx + len(df)
+        df_encoding = encoding[start_idx:end_idx, :]
+        
+        # Create a DataFrame for positional encoding columns
+        encoding_df = pd.DataFrame(df_encoding, columns=[f'pos_enc_{j}' for j in range(num_features)])
+        
+        # Concatenate the original DataFrame with the positional encoding DataFrame
+        df = pd.concat([df.reset_index(drop=True), encoding_df.reset_index(drop=True)], axis=1)
+        
+        # Save each DataFrame with positional encoding to a new CSV file
+        output_filename = getattr(args, f"output{i+1}")
+        df.to_csv(output_filename, index=False, header=False)
+        print(f"Positional encoding added and saved to '{output_filename}'.")
+        
+        # Update the starting index for the next file
+        start_idx = end_idx
 if __name__ == "__main__":
     main()

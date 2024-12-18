@@ -13,7 +13,7 @@ from tensorflow.keras.layers import ZeroPadding1D
 class Plugin:
     plugin_params = {
         'intermediate_layers': 3, 
-        'learning_rate': 0.00008,
+        'learning_rate': 0.001,
         'dropout_rate': 0.001,
     }
 
@@ -49,11 +49,11 @@ class Plugin:
         num_intermediate_layers = self.params['intermediate_layers']
         print(f"[DEBUG] Number of intermediate layers={num_intermediate_layers}")
         
-        layers = [output_shape]  # Start with output_shape
-        current_size = output_shape
+        layers = [output_shape*2]  # Start with output_shape
+        current_size = output_shape*2
 
         # Calculate the layer sizes by halving, similar to the encoder but reversed
-        for i in range(num_intermediate_layers):
+        for i in range(num_intermediate_layers-1):
             next_size = current_size // 2
             if next_size < interface_size:  # Stop if size falls below interface_size
                 next_size = interface_size

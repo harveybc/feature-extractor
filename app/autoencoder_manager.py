@@ -120,10 +120,12 @@ class AutoencoderManager:
 
 
 
-    def calculate_dataset_information(self, data, config):
+    import tensorflow as tf
+
+    def calculate_dataset_information_tf(self, data, config):
         try:
             print("[calculate_dataset_information] Calculating dataset entropy and useful information...")
-            
+
             # Flatten data vertically by concatenating all columns after normalization
             normalized_columns = []
             for col in range(data.shape[-1]):
@@ -135,15 +137,18 @@ class AutoencoderManager:
             concatenated_data = np.concatenate(normalized_columns, axis=0)
             num_samples = concatenated_data.shape[0]  # Correct number of samples is the length of concatenated vector
             
-            # Calculate signal-to-noise ratio (SNR)
-            mean_val = np.mean(concatenated_data)
-            std_val = np.std(concatenated_data)
-            if std_val != 0:
-                snr = (mean_val / std_val) ** 2
-            else:
-                snr = 'E'
-                print("[WARNING] Standard deviation of normalized data is zero, SNR will be 'E'.")
-
+            # Convert concatenated data to TensorFlow tensor for acceleration
+            concatenated_data_tf = tf.convert_to_tensor(concatenated_data, dtype=tf.float32)
+            
+            # Calculate signal-to-noise ratio (SNR) using TensorFlow
+            mean_val = tf.reduce_mean(concatenated_data_tf)
+            std_val = tf.math.reduce_std(concatenated_data_tf)
+            snr = tf.cond(
+                tf.greater(std_val, 0),
+                lambda: (mean_val / std_val) ** 2,
+                lambda: tf.constant(0.0, dtype=tf.float32)
+            )
+            
             # Retrieve dataset periodicity and calculate sampling frequency
             periodicity = config['dataset_periodicity']
             periodicity_seconds_map = {
@@ -155,30 +160,32 @@ class AutoencoderManager:
                 "daily": 24 * 60 * 60
             }
             sampling_period_seconds = periodicity_seconds_map.get(periodicity, None)
-            sampling_frequency = 1 / sampling_period_seconds if sampling_period_seconds else 'E'
-
+            sampling_frequency = 1 / sampling_period_seconds if sampling_period_seconds else tf.constant(0.0, dtype=tf.float32)
+            
             # Calculate Shannon-Hartley channel capacity and total useful information
-            if snr != 'E' and sampling_frequency != 'E':
-                channel_capacity = sampling_frequency * np.log2(1 + snr)  # in bits per second
-                total_information_bits = channel_capacity * num_samples * sampling_period_seconds
-            else:
-                channel_capacity = 'E'
-                total_information_bits = 'E'
-
-            # Calculate entropy in bits
-            unique, counts = np.unique(concatenated_data, return_counts=True)
-            probabilities = counts / num_samples
-            entropy = -np.sum(probabilities * np.log2(probabilities + 1e-10))  # Add 1e-10 to avoid log(0)
+            channel_capacity = tf.cond(
+                tf.math.logical_and(tf.greater(snr, 0), tf.greater(sampling_frequency, 0)),
+                lambda: sampling_frequency * tf.math.log(1 + snr) / tf.math.log(2.0),
+                lambda: tf.constant(0.0, dtype=tf.float32)
+            )
+            total_information_bits = channel_capacity * num_samples * sampling_period_seconds
+            
+            # Calculate entropy using TensorFlow histogram binning
+            bins = 100
+            histogram = tf.histogram_fixed_width(concatenated_data_tf, [0.0, 1.0], nbins=bins)  # Histogram with fixed width
+            probabilities = tf.cast(histogram, tf.float32) / tf.reduce_sum(histogram)
+            entropy = -tf.reduce_sum(probabilities * tf.math.log(probabilities + 1e-10) / tf.math.log(2.0))  # Avoid log(0)
 
             # Log calculated information
-            print(f"[calculate_dataset_information] Calculated SNR: {snr}")
-            print(f"[calculate_dataset_information] Sampling frequency: {sampling_frequency} Hz")
-            print(f"[calculate_dataset_information] Channel capacity: {channel_capacity} bits/second")
-            print(f"[calculate_dataset_information] Total useful information: {total_information_bits} bits")
-            print(f"[calculate_dataset_information] Entropy: {entropy} bits")
+            print(f"[calculate_dataset_information] Calculated SNR: {snr.numpy()}")
+            print(f"[calculate_dataset_information] Sampling frequency: {sampling_frequency.numpy()} Hz")
+            print(f"[calculate_dataset_information] Channel capacity: {channel_capacity.numpy()} bits/second")
+            print(f"[calculate_dataset_information] Total useful information: {total_information_bits.numpy()} bits")
+            print(f"[calculate_dataset_information] Entropy: {entropy.numpy()} bits")
         except Exception as e:
             print(f"[calculate_dataset_information] Exception occurred: {e}")
             raise
+
 
 
 

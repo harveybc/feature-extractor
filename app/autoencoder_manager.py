@@ -71,12 +71,21 @@ class AutoencoderManager:
             if not self.autoencoder_model:
                 self.build_autoencoder(input_shape, interface_size, config, num_channels)
             
+            # Validate data for NaN values before training
+            if np.isnan(data).any():
+                raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
+            
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
-            self.autoencoder_model.fit(data, data, epochs=epochs, batch_size=batch_size, verbose=1)
+            history = self.autoencoder_model.fit(data, data, epochs=epochs, batch_size=batch_size, verbose=1)
+            
+            # Log training loss
+            print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
             print("[train_autoencoder] Training completed.")
         except Exception as e:
             print(f"[train_autoencoder] Exception occurred during training: {e}")
             raise
+
+
 
 
 

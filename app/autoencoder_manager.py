@@ -1,6 +1,8 @@
 import numpy as np
 from keras.models import Model, load_model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
+import tensorflow as tf
+from keras.optimizers import Adam
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
@@ -38,24 +40,53 @@ class AutoencoderManager:
             # Build autoencoder model
             autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
-            
-            # Add gradient clipping to Adam optimizer
+
+            # Define custom loss function
+            def custom_loss(y_true, y_pred):
+                # MAE term
+                mae_loss = tf.reduce_mean(tf.abs(y_true - y_pred))
+                
+                # SNR term (min-max normalize, concatenate columns, compute SNR)
+                latent_space_output = self.encoder_model(self.encoder_model.input)
+                flattened_output = tf.reshape(latent_space_output, [-1])  # Flatten all columns
+                min_val = tf.reduce_min(flattened_output)
+                max_val = tf.reduce_max(flattened_output)
+                normalized_output = (flattened_output - min_val) / (max_val - min_val)
+                
+                mean_val = tf.reduce_mean(normalized_output)
+                std_val = tf.math.reduce_std(normalized_output)
+                snr = tf.cond(
+                    std_val > 0,
+                    #lambda: (mean_val / std_val) ** 2,
+                    lambda: (mean_val / std_val),
+                    lambda: tf.constant(0.0)
+                )
+                
+                # Combine MAE and SNR into a hybrid loss
+                alpha = 1.0  # Weight for MAE
+                beta = 0.01  # Weight for SNR
+                hybrid_loss = alpha * mae_loss - beta * snr
+                return hybrid_loss
+
+            # Define optimizer
             adam_optimizer = Adam(
                 learning_rate=config['learning_rate'],  # Set the learning rate
                 beta_1=0.9,  # Default value
                 beta_2=0.999,  # Default value
                 epsilon=1e-7,  # Default value
                 amsgrad=False,  # Default value
-                clipnorm=1.0,  # Clip gradients by norm
-                clipvalue=0.5  # Clip gradients by value
+                clipnorm=1.0,  # Gradient clipping
+                clipvalue=0.5  # Gradient clipping
             )
             
-            self.autoencoder_model.compile(optimizer=adam_optimizer, loss='mae', run_eagerly=True)
+            # Compile autoencoder with the custom loss function
+            self.autoencoder_model.compile(optimizer=adam_optimizer, loss=custom_loss, run_eagerly=True)
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
             self.autoencoder_model.summary()
         except Exception as e:
             print(f"[build_autoencoder] Exception occurred: {e}")
             raise
+
 
 
 

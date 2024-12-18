@@ -120,9 +120,7 @@ class AutoencoderManager:
 
 
 
-    import tensorflow as tf
-
-    def calculate_dataset_information(self, data, config):
+    def calculate_dataset_information_tf(self, data, config):
         try:
             print("[calculate_dataset_information] Calculating dataset entropy and useful information...")
 
@@ -160,8 +158,13 @@ class AutoencoderManager:
                 "daily": 24 * 60 * 60
             }
             sampling_period_seconds = periodicity_seconds_map.get(periodicity, None)
-            sampling_frequency = 1 / sampling_period_seconds if sampling_period_seconds else tf.constant(0.0, dtype=tf.float32)
             
+            # Use a TensorFlow tensor for sampling frequency
+            if sampling_period_seconds:
+                sampling_frequency = tf.constant(1 / sampling_period_seconds, dtype=tf.float32)
+            else:
+                sampling_frequency = tf.constant(0.0, dtype=tf.float32)
+
             # Calculate Shannon-Hartley channel capacity and total useful information
             channel_capacity = tf.cond(
                 tf.math.logical_and(tf.greater(snr, 0), tf.greater(sampling_frequency, 0)),
@@ -171,13 +174,11 @@ class AutoencoderManager:
             total_information_bits = channel_capacity * num_samples * sampling_period_seconds
             
             # Calculate entropy using TensorFlow histogram binning
-            # Calculate entropy using TensorFlow histogram binning
             bins = 100
             histogram = tf.histogram_fixed_width(concatenated_data_tf, [0.0, 1.0], nbins=bins)  # Histogram with fixed width
             histogram = tf.cast(histogram, tf.float32)  # Cast histogram to float32
             probabilities = histogram / tf.reduce_sum(histogram)  # Normalize to get probabilities
             entropy = -tf.reduce_sum(probabilities * tf.math.log(probabilities + 1e-10) / tf.math.log(2.0))  # Avoid log(0)
-
 
             # Log calculated information
             print(f"[calculate_dataset_information] Calculated SNR: {snr.numpy()}")
@@ -188,6 +189,7 @@ class AutoencoderManager:
         except Exception as e:
             print(f"[calculate_dataset_information] Exception occurred: {e}")
             raise
+
 
 
 

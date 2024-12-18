@@ -15,7 +15,7 @@ class Plugin:
 
     plugin_params = {
 
-        'intermediate_layers': 3, 
+        'intermediate_layers': 2, 
         'learning_rate': 0.0001,
         'dropout_rate': 0.001,
     }
@@ -48,7 +48,7 @@ class Plugin:
         
         # Calculate sizes of intermediate layers based on downscaling by 2
         current_size = input_shape*2
-        for i in range(num_intermediate_layers):
+        for i in range(num_intermediate_layers-1):
             next_size = current_size // 2  # Scale down by half
             if next_size < interface_size:
                 next_size = interface_size  # Ensure we don't go below the interface_size

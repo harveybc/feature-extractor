@@ -12,7 +12,7 @@ from tensorflow.keras.layers import ZeroPadding1D
 
 class Plugin:
     plugin_params = {
-        'intermediate_layers': 3, 
+        'intermediate_layers': 2, 
         'learning_rate': 0.00008,
         'dropout_rate': 0.001,
     }
@@ -53,7 +53,7 @@ class Plugin:
         current_size = output_shape*2
 
         # Calculate the layer sizes by halving, similar to the encoder but reversed
-        for i in range(num_intermediate_layers):
+        for i in range(num_intermediate_layers-1):
             next_size = current_size // 2
             if next_size < interface_size:  # Stop if size falls below interface_size
                 next_size = interface_size

@@ -60,10 +60,10 @@ class AutoencoderManager:
                 # Calculate mean and std deviation for SNR
                 mean_val = tf.reduce_mean(flattened_output)
                 std_val = tf.math.reduce_std(flattened_output)
-                snr = tf.cond(
-                    std_val > 0,
-                    lambda: (mean_val / std_val) ** 2,
-                    lambda: tf.constant(0.0)
+                snr = tf.where(
+                    tf.greater(std_val, 0),
+                    (mean_val / std_val) ** 2,
+                    tf.constant(0.0, dtype=tf.float32)
                 )
                 
                 # Combine MAE and SNR into a hybrid loss
@@ -71,6 +71,7 @@ class AutoencoderManager:
                 beta = 0.01  # Weight for SNR
                 hybrid_loss = alpha * mae_loss - beta * snr
                 return hybrid_loss
+
 
 
             # Define optimizer

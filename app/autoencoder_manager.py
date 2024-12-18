@@ -86,7 +86,7 @@ class AutoencoderManager:
             )
             
             # Compile autoencoder with the custom loss function
-            self.autoencoder_model.compile(optimizer=adam_optimizer, loss=custom_loss, run_eagerly=True)
+            self.autoencoder_model.compile(optimizer=adam_optimizer, loss=mae, run_eagerly=True)
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
             self.autoencoder_model.summary()
         except Exception as e:

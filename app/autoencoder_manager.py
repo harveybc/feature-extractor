@@ -4,6 +4,9 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 import tensorflow as tf
 from keras.optimizers import Adam
 from tensorflow.keras.losses import Huber
+from tensorflow.keras.mixed_precision import set_global_policy
+
+set_global_policy('mixed_float16')
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):

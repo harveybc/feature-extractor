@@ -120,7 +120,7 @@ class AutoencoderManager:
 
 
 
-    def calculate_dataset_information(self, data, config):
+    def calculate_dataset_information_tf(self, data, config):
         try:
             print("[calculate_dataset_information] Calculating dataset entropy and useful information...")
 
@@ -159,7 +159,6 @@ class AutoencoderManager:
             }
             sampling_period_seconds = periodicity_seconds_map.get(periodicity, None)
             
-            # Use a TensorFlow tensor for sampling frequency
             if sampling_period_seconds:
                 sampling_frequency = tf.constant(1 / sampling_period_seconds, dtype=tf.float32)
             else:
@@ -174,10 +173,10 @@ class AutoencoderManager:
             total_information_bits = channel_capacity * num_samples * sampling_period_seconds
             
             # Calculate entropy using TensorFlow histogram binning
-            bins = 100
-            histogram = tf.histogram_fixed_width(concatenated_data_tf, [0.0, 1.0], nbins=bins)  # Histogram with fixed width
-            histogram = tf.cast(histogram, tf.float32)  # Cast histogram to float32
-            probabilities = histogram / tf.reduce_sum(histogram)  # Normalize to get probabilities
+            bins = 1000  # Increased bin count for better precision
+            histogram = tf.histogram_fixed_width(concatenated_data_tf, [0.0, 1.0], nbins=bins)
+            histogram = tf.cast(histogram, tf.float32)
+            probabilities = histogram / tf.reduce_sum(histogram)
             entropy = -tf.reduce_sum(probabilities * tf.math.log(probabilities + 1e-10) / tf.math.log(2.0))  # Avoid log(0)
 
             # Log calculated information
@@ -189,6 +188,7 @@ class AutoencoderManager:
         except Exception as e:
             print(f"[calculate_dataset_information] Exception occurred: {e}")
             raise
+
 
 
 

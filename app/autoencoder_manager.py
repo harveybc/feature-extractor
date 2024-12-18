@@ -65,7 +65,8 @@ class AutoencoderManager:
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer, 
                 loss=Huber(delta=1.0), 
-                metrics=['mae', r2_score] ,
+                #metrics=['mae', r2_score] ,
+                metrics=['mae'],
                 run_eagerly=True
             )
             print("[build_autoencoder] Autoencoder model built and compiled successfully")

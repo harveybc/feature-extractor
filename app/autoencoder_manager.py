@@ -122,7 +122,7 @@ class AutoencoderManager:
 
     import tensorflow as tf
 
-    def calculate_dataset_information_tf(self, data, config):
+    def calculate_dataset_information(self, data, config):
         try:
             print("[calculate_dataset_information] Calculating dataset entropy and useful information...")
 

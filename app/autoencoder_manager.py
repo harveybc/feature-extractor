@@ -171,10 +171,13 @@ class AutoencoderManager:
             total_information_bits = channel_capacity * num_samples * sampling_period_seconds
             
             # Calculate entropy using TensorFlow histogram binning
+            # Calculate entropy using TensorFlow histogram binning
             bins = 100
             histogram = tf.histogram_fixed_width(concatenated_data_tf, [0.0, 1.0], nbins=bins)  # Histogram with fixed width
-            probabilities = tf.cast(histogram, tf.float32) / tf.reduce_sum(histogram)
+            histogram = tf.cast(histogram, tf.float32)  # Cast histogram to float32
+            probabilities = histogram / tf.reduce_sum(histogram)  # Normalize to get probabilities
             entropy = -tf.reduce_sum(probabilities * tf.math.log(probabilities + 1e-10) / tf.math.log(2.0))  # Avoid log(0)
+
 
             # Log calculated information
             print(f"[calculate_dataset_information] Calculated SNR: {snr.numpy()}")

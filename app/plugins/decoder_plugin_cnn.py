@@ -12,8 +12,8 @@ from tensorflow.keras.layers import ZeroPadding1D
 
 class Plugin:
     plugin_params = {
-        'intermediate_layers': 2, 
-        'learning_rate': 0.00008,
+        'intermediate_layers': 3, 
+        'learning_rate': 0.001,
         'dropout_rate': 0.001,
     }
 

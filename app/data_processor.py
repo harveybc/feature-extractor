@@ -41,22 +41,22 @@ def process_data(config):
 
     window_size = config['window_size']
     print(f"Applying sliding window of size: {window_size}")
-    
+
     # Apply sliding windows to the entire dataset (multi-column)
-    windowed_data = create_sliding_windows(data, window_size)
+    windowed_data, windowed_dates = create_sliding_windows(data, window_size)
     print(f"Windowed data shape: {windowed_data.shape}")  # Should be (num_samples, window_size, num_features)
 
     # Now do the same for the validation dataset
     print(f"Loading validation data from CSV file: {config['validation_file']}")
     validation_data = load_csv(config['validation_file'], headers=config['headers'])
     print(f"Validation data loaded with shape: {validation_data.shape}")
-    
+
     # Apply sliding windows to the validation dataset
-    windowed_validation_data = create_sliding_windows(validation_data, window_size)
+    windowed_validation_data, windowed_validation_dates = create_sliding_windows(validation_data, window_size)
     print(f"Windowed validation data shape: {windowed_validation_data.shape}")
 
-    # Return the processed datasets (windowed)
-    return windowed_data, windowed_validation_data
+    # Return the processed datasets (windowed) along with their corresponding dates
+    return (windowed_data, windowed_dates), (windowed_validation_data, windowed_validation_dates)
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     start_time = time.time()

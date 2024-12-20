@@ -5,6 +5,12 @@ def load_csv(file_path, headers=False):
     try:
         if headers:
             data = pd.read_csv(file_path, sep=',', parse_dates=[0], dayfirst=True)
+            # Assume the first column is 'date'
+            data.set_index(data.columns[0], inplace=True)
+            data.index.name = 'date'
+            # Convert all other columns to numeric, coercing errors to NaN
+            for col in data.columns:
+                data[col] = pd.to_numeric(data[col], errors='coerce')
         else:
             data = pd.read_csv(file_path, header=None, sep=',', parse_dates=[0], dayfirst=True)
             if pd.api.types.is_datetime64_any_dtype(data.iloc[:, 0]):

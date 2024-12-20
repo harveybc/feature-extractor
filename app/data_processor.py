@@ -185,6 +185,14 @@ def load_and_evaluate_encoder(config):
     encoded_data = model.predict(windowed_data)
     print(f"Encoded data shape: {encoded_data.shape}")
 
+    # Reshape encoded_data from (samples, 32, 8) to (samples, 256)
+    if len(encoded_data.shape) == 3:
+        samples, dim1, dim2 = encoded_data.shape
+        encoded_data = encoded_data.reshape(samples, dim1 * dim2)
+        print(f"Reshaped encoded data to: {encoded_data.shape}")
+    elif len(encoded_data.shape) != 2:
+        raise ValueError(f"Unexpected encoded_data shape: {encoded_data.shape}")
+
     if config.get('force_date', False):
         # Extract corresponding dates for each window
         dates = data.index[window_size - 1:]
@@ -205,10 +213,11 @@ def load_and_evaluate_encoder(config):
         file_path=evaluate_filename,
         data=encoded_df,
         include_date=config.get('force_date', False),
-        headers=config.get('headers', False),
+        headers=True,  # Always include headers for encoded features
         force_date=config.get('force_date', False)
     )
     print(f"Encoded data saved to {evaluate_filename}")
+
 
 
 
@@ -233,6 +242,14 @@ def load_and_evaluate_decoder(config):
     decoded_data = model.predict(windowed_data)
     print(f"Decoded data shape: {decoded_data.shape}")
 
+    # Reshape decoded_data from (samples, 32, 8) to (samples, 256)
+    if len(decoded_data.shape) == 3:
+        samples, dim1, dim2 = decoded_data.shape
+        decoded_data = decoded_data.reshape(samples, dim1 * dim2)
+        print(f"Reshaped decoded data to: {decoded_data.shape}")
+    elif len(decoded_data.shape) != 2:
+        raise ValueError(f"Unexpected decoded_data shape: {decoded_data.shape}")
+
     if config.get('force_date', False):
         # Extract corresponding dates for each window
         dates = data.index[window_size - 1:]
@@ -253,9 +270,10 @@ def load_and_evaluate_decoder(config):
         file_path=evaluate_filename,
         data=decoded_df,
         include_date=config.get('force_date', False),
-        headers=config.get('headers', False),
+        headers=True,  # Always include headers for decoded features
         force_date=config.get('force_date', False)
     )
     print(f"Decoded data saved to {evaluate_filename}")
+
 
 

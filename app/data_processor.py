@@ -157,28 +157,32 @@ def load_and_evaluate_encoder(config):
     model = load_model(config['load_encoder'])
     print(f"Encoder model loaded from {config['load_encoder']}")
     
-    # Load the input data
-    processed_data, validation_data = process_data(config)
+    # Load the input data with headers and date
+    original_data = load_csv(config['input_file'], headers=True)
     
-    # Use processed data directly
-    windowed_data = processed_data  # This already holds the entire windowed data
+    # Apply sliding window
+    window_size = config['window_size']
+    windowed_data = create_sliding_windows(original_data, window_size)
     
-    # Encode the data
     print(f"Encoding data with shape: {windowed_data.shape}")
     encoded_data = model.predict(windowed_data)
     print(f"Encoded data shape: {encoded_data.shape}")
     
-    # Adjust the reshaping logic
-    # Instead of reshaping based on model.output_shape[2], reshape it to maintain the original encoded shape
-    # Ensure we flatten it only if necessary or handle it based on the next step in the process
-    # Example: Flatten the second and third dimensions if needed
-    if len(encoded_data.shape) == 3:
-        # Flatten the last two dimensions
-        encoded_data = encoded_data.reshape(encoded_data.shape[0], -1)  # (27798, 128)
+    # Get the corresponding dates, assuming the date for each window is the last date in the window
+    # Adjust the index to align with the windowed data
+    dates = original_data.index[window_size - 1:]
     
-    # Save the encoded data to CSV
+    # Create a DataFrame with dates and encoded features
+    encoded_df = pd.DataFrame(encoded_data, index=dates)
+    encoded_df.index.name = 'date'
+    
+    # Assign headers for encoded features, e.g., 'encoded_feature_1', 'encoded_feature_2', etc.
+    feature_names = [f'encoded_feature_{i+1}' for i in range(encoded_data.shape[1])]
+    encoded_df.columns = feature_names
+    
+    # Save the encoded data to CSV using the write_csv function
     evaluate_filename = config['evaluate_encoder']
-    np.savetxt(evaluate_filename, encoded_data, delimiter=",")
+    write_csv(evaluate_filename, encoded_df, include_date=True, headers=True)
     print(f"Encoded data saved to {evaluate_filename}")
 
 
@@ -187,18 +191,31 @@ def load_and_evaluate_encoder(config):
 def load_and_evaluate_decoder(config):
     model = load_model(config['load_decoder'])
     print(f"Decoder model loaded from {config['load_decoder']}")
-    # Load the input data
-    processed_data = process_data(config)
-    column = list(processed_data.keys())[0]
-    windowed_data = processed_data[column]
-    # Decode the data
+    
+    # Load the input data with headers and date
+    original_data = load_csv(config['input_file'], headers=True)
+    
+    # Apply sliding window
+    window_size = config['window_size']
+    windowed_data = create_sliding_windows(original_data, window_size)
+    
     print(f"Decoding data with shape: {windowed_data.shape}")
     decoded_data = model.predict(windowed_data)
     print(f"Decoded data shape: {decoded_data.shape}")
-    # Check if the decoded data needs reshaping
-    if len(decoded_data.shape) == 3:
-        decoded_data = decoded_data.reshape(decoded_data.shape[0], decoded_data.shape[2])
-    # Save the encoded data to CSV
+    
+    # Get the corresponding dates, assuming the date for each window is the last date in the window
+    # Adjust the index to align with the windowed data
+    dates = original_data.index[window_size - 1:]
+    
+    # Create a DataFrame with dates and decoded features
+    decoded_df = pd.DataFrame(decoded_data, index=dates)
+    decoded_df.index.name = 'date'
+    
+    # Assign headers for decoded features, e.g., 'decoded_feature_1', 'decoded_feature_2', etc.
+    feature_names = [f'decoded_feature_{i+1}' for i in range(decoded_data.shape[1])]
+    decoded_df.columns = feature_names
+    
+    # Save the decoded data to CSV using the write_csv function
     evaluate_filename = config['evaluate_decoder']
-    np.savetxt(evaluate_filename, decoded_data, delimiter=",")
+    write_csv(evaluate_filename, decoded_df, include_date=True, headers=True)
     print(f"Decoded data saved to {evaluate_filename}")

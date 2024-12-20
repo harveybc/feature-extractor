@@ -1,6 +1,8 @@
 import pandas as pd
 from app.reconstruction import unwindow_data
 
+# app/data_handler.py
+
 def load_csv(file_path, headers=False, force_date=False):
     try:
         if headers:
@@ -33,21 +35,22 @@ def load_csv(file_path, headers=False, force_date=False):
                 data.columns = [f'col_{i}' for i in range(len(data.columns))]
                 # Convert all columns to numeric, coercing errors to NaN
                 for col in data.columns:
-                    data[col] = pd.to_numeric(data[col], errors='coerce'
-                                             )
+                    data[col] = pd.to_numeric(data[col], errors='coerce')
     except Exception as e:
         print(f"An error occurred while loading the CSV: {e}")
         raise
     return data
 
 
-def write_csv(file_path, data, include_date=True, headers=True, window_size=None, force_date=False):
+
+# app/data_handler.py
+
+def write_csv(file_path, data, include_date=True, headers=True, force_date=False):
     try:
-        if include_date and force_date and 'date' in data.columns.names:
+        if include_date and force_date and 'date' in data.index.names:
             data.to_csv(file_path, index=True, header=headers)
         else:
             data.to_csv(file_path, index=False, header=headers)
     except Exception as e:
         print(f"An error occurred while writing the CSV: {e}")
         raise
-

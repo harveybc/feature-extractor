@@ -23,9 +23,9 @@ DEFAULT_VALUES = {
     'load_config': None,
     'save_config': './config_out.json',
     'quiet_mode': False,
-    'force_date': False,
+    'force_date': True,
     'incremental_search': True,
-    'headers': False,
+    'headers': True,
     'epochs': 200,  # Add epochs here
     'batch_size': 64,  # Add batch_size here
     'learning_rate': 0.001,  # Add learning_rate here

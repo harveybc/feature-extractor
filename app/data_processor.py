@@ -36,27 +36,28 @@ def create_sliding_windows(data, window_size):
 
 def process_data(config):
     print(f"Loading data from CSV file: {config['input_file']}")
-    data = load_csv(config['input_file'], headers=config['headers'])
+    data = load_csv(file_path=config['input_file'], headers=config['headers'], force_date=config['force_date'])
     print(f"Data loaded with shape: {data.shape}")
 
     window_size = config['window_size']
     print(f"Applying sliding window of size: {window_size}")
 
     # Apply sliding windows to the entire dataset (multi-column)
-    windowed_data, windowed_dates = create_sliding_windows(data, window_size)
+    windowed_data = create_sliding_windows(data, window_size)
     print(f"Windowed data shape: {windowed_data.shape}")  # Should be (num_samples, window_size, num_features)
 
     # Now do the same for the validation dataset
     print(f"Loading validation data from CSV file: {config['validation_file']}")
-    validation_data = load_csv(config['validation_file'], headers=config['headers'])
+    validation_data = load_csv(file_path=config['validation_file'], headers=config['headers'], force_date=config['force_date'])
     print(f"Validation data loaded with shape: {validation_data.shape}")
 
     # Apply sliding windows to the validation dataset
-    windowed_validation_data, windowed_validation_dates = create_sliding_windows(validation_data, window_size)
+    windowed_validation_data = create_sliding_windows(validation_data, window_size)
     print(f"Windowed validation data shape: {windowed_validation_data.shape}")
 
-    # Return the processed datasets (windowed) along with their corresponding dates
-    return (windowed_data, windowed_dates), (windowed_validation_data, windowed_validation_dates)
+    # Return the processed datasets (windowed)
+    return windowed_data, windowed_validation_data
+
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     start_time = time.time()
@@ -156,25 +157,27 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 def load_and_evaluate_encoder(config):
     model = load_model(config['load_encoder'])
     print(f"Encoder model loaded from {config['load_encoder']}")
-    
-    # Load the input data with headers and date
-    original_data = load_csv(config['input_file'], headers=True)
+
+    # Load the input data with headers and date based on config
+    data = load_csv(file_path=config['input_file'], headers=config['headers'], force_date=config['force_date'])
     
     # Apply sliding window
     window_size = config['window_size']
-    windowed_data = create_sliding_windows(original_data, window_size)
+    windowed_data = create_sliding_windows(data, window_size)
     
     print(f"Encoding data with shape: {windowed_data.shape}")
     encoded_data = model.predict(windowed_data)
     print(f"Encoded data shape: {encoded_data.shape}")
     
-    # Get the corresponding dates, assuming the date for each window is the last date in the window
-    # Adjust the index to align with the windowed data
-    dates = original_data.index[window_size - 1:]
-    
-    # Create a DataFrame with dates and encoded features
-    encoded_df = pd.DataFrame(encoded_data, index=dates)
-    encoded_df.index.name = 'date'
+    if config['force_date']:
+        # Extract corresponding dates for each window
+        dates = data.index[window_size - 1:]
+        # Create a DataFrame with dates and encoded features
+        encoded_df = pd.DataFrame(encoded_data, index=dates)
+        encoded_df.index.name = 'date'
+    else:
+        # Create a DataFrame without dates
+        encoded_df = pd.DataFrame(encoded_data)
     
     # Assign headers for encoded features, e.g., 'encoded_feature_1', 'encoded_feature_2', etc.
     feature_names = [f'encoded_feature_{i+1}' for i in range(encoded_data.shape[1])]
@@ -182,34 +185,34 @@ def load_and_evaluate_encoder(config):
     
     # Save the encoded data to CSV using the write_csv function
     evaluate_filename = config['evaluate_encoder']
-    write_csv(evaluate_filename, encoded_df, include_date=True, headers=True)
+    write_csv(file_path=evaluate_filename, data=encoded_df, include_date=config['force_date'], headers=config['headers'], force_date=config['force_date'])
     print(f"Encoded data saved to {evaluate_filename}")
-
-
 
 
 def load_and_evaluate_decoder(config):
     model = load_model(config['load_decoder'])
     print(f"Decoder model loaded from {config['load_decoder']}")
-    
-    # Load the input data with headers and date
-    original_data = load_csv(config['input_file'], headers=True)
+
+    # Load the input data with headers and date based on config
+    data = load_csv(file_path=config['input_file'], headers=config['headers'], force_date=config['force_date'])
     
     # Apply sliding window
     window_size = config['window_size']
-    windowed_data = create_sliding_windows(original_data, window_size)
+    windowed_data = create_sliding_windows(data, window_size)
     
     print(f"Decoding data with shape: {windowed_data.shape}")
     decoded_data = model.predict(windowed_data)
     print(f"Decoded data shape: {decoded_data.shape}")
     
-    # Get the corresponding dates, assuming the date for each window is the last date in the window
-    # Adjust the index to align with the windowed data
-    dates = original_data.index[window_size - 1:]
-    
-    # Create a DataFrame with dates and decoded features
-    decoded_df = pd.DataFrame(decoded_data, index=dates)
-    decoded_df.index.name = 'date'
+    if config['force_date']:
+        # Extract corresponding dates for each window
+        dates = data.index[window_size - 1:]
+        # Create a DataFrame with dates and decoded features
+        decoded_df = pd.DataFrame(decoded_data, index=dates)
+        decoded_df.index.name = 'date'
+    else:
+        # Create a DataFrame without dates
+        decoded_df = pd.DataFrame(decoded_data)
     
     # Assign headers for decoded features, e.g., 'decoded_feature_1', 'decoded_feature_2', etc.
     feature_names = [f'decoded_feature_{i+1}' for i in range(decoded_data.shape[1])]
@@ -217,5 +220,6 @@ def load_and_evaluate_decoder(config):
     
     # Save the decoded data to CSV using the write_csv function
     evaluate_filename = config['evaluate_decoder']
-    write_csv(evaluate_filename, decoded_df, include_date=True, headers=True)
+    write_csv(file_path=evaluate_filename, data=decoded_df, include_date=config['force_date'], headers=config['headers'], force_date=config['force_date'])
     print(f"Decoded data saved to {evaluate_filename}")
+

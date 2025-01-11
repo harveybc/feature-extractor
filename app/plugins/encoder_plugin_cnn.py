@@ -7,6 +7,7 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
 from keras.layers import BatchNormalization, LeakyReLU, Reshape
+from tensorflow.keras.losses import Huber
 
 class Plugin:
     """
@@ -100,7 +101,12 @@ class Plugin:
             amsgrad=False  # Default value
         )
 
-        self.encoder_model.compile(optimizer=adam_optimizer, loss='mae')
+        self.encoder_model.compile(
+            optimizer=adam_optimizer, 
+            loss=Huber(), 
+            metrics=['mse','mae'], 
+            run_eagerly=False  # Set to False for better performance unless debugging
+        )
         print(f"[DEBUG] Encoder model compiled successfully.")
 
 
@@ -114,7 +120,7 @@ class Plugin:
         
         # Now proceed with training
         print(f"Training encoder with data shape: {data.shape}")
-        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
         self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping])
         print("Training completed.")
 

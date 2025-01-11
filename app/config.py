@@ -10,7 +10,7 @@ DEFAULT_VALUES = {
     'evaluate_decoder': './decoder_eval.csv',
     'encoder_plugin': 'cnn',
     'decoder_plugin': 'cnn',
-    'window_size': 16, 
+    'window_size': 1, 
     'threshold_error': 0.3,
     'initial_size': 8,
     'step_size': 2,

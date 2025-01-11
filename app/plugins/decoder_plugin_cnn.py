@@ -3,6 +3,8 @@ from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten, Conv1DTranspose,Dropout
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from tensorflow.keras.losses import Huber
+from tensorflow.keras.regularizers import l2
 
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
@@ -138,7 +140,12 @@ class Plugin:
         )
         print(f"[DEBUG] Adam optimizer initialized.")
 
-        self.model.compile(optimizer=adam_optimizer, loss='mae')
+        self.model.compile(
+            optimizer=adam_optimizer, 
+            loss=Huber(), 
+            metrics=['mse','mae'], 
+            run_eagerly=False  # Set to False for better performance unless debugging
+        )
         print(f"[DEBUG] Model compiled successfully.")
 
 
@@ -147,7 +154,7 @@ class Plugin:
     def train(self, encoded_data, original_data):
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
         original_data = original_data.reshape((original_data.shape[0], -1))
-        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
         self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping])
 
     def decode(self, encoded_data):

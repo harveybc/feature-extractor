@@ -84,8 +84,10 @@ class AutoencoderManager:
 
     def train_autoencoder(self, data, epochs=100, batch_size=32, config=None):
         try:
-            num_channels = data.shape[-1]
-            input_shape = data.shape[1]
+            print(f"[train_autoencoder] Received data with shape: {data.shape}")
+
+            num_channels = data.shape[-1] if len(data.shape) == 3 else 1
+            input_shape = data.shape[1] if len(data.shape) == 3 else data.shape[1]
             interface_size = self.encoder_plugin.params.get('interface_size', 4)
 
             # Build autoencoder with the correct num_channels
@@ -95,7 +97,7 @@ class AutoencoderManager:
             # Validate data for NaN values before training
             if np.isnan(data).any():
                 raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
-            
+
             # Calculate entropy and useful information using Shannon-Hartley theorem
             self.calculate_dataset_information(data, config)
 
@@ -106,11 +108,11 @@ class AutoencoderManager:
 
             # Start training with early stopping
             history = self.autoencoder_model.fit(
-                data, 
-                data, 
-                epochs=epochs, 
-                batch_size=batch_size, 
-                verbose=1, 
+                data,
+                data,
+                epochs=epochs,
+                batch_size=batch_size,
+                verbose=1,
                 callbacks=[early_stopping]
             )
 
@@ -127,20 +129,29 @@ class AutoencoderManager:
         try:
             print("[calculate_dataset_information] Calculating dataset entropy and useful information...")
 
-            # Flatten data vertically by concatenating all columns after normalization
+            # Handle 2D and 3D data shapes
             normalized_columns = []
-            for col in range(data.shape[-1]):
-                column_data = data[:, :, col].flatten()  # Flatten the column data
-                min_val, max_val = column_data.min(), column_data.max()
-                normalized_column = (column_data - min_val) / (max_val - min_val)  # Min-max normalization
-                normalized_columns.append(normalized_column)
-            
+            if len(data.shape) == 3:  # Sliding window data
+                for col in range(data.shape[-1]):
+                    column_data = data[:, :, col].flatten()  # Flatten the column data
+                    min_val, max_val = column_data.min(), column_data.max()
+                    normalized_column = (column_data - min_val) / (max_val - min_val)  # Min-max normalization
+                    normalized_columns.append(normalized_column)
+            elif len(data.shape) == 2:  # Row-by-row data
+                for col in range(data.shape[1]):
+                    column_data = data[:, col]  # No need to flatten, already 1D
+                    min_val, max_val = column_data.min(), column_data.max()
+                    normalized_column = (column_data - min_val) / (max_val - min_val)  # Min-max normalization
+                    normalized_columns.append(normalized_column)
+            else:
+                raise ValueError("[calculate_dataset_information] Unsupported data shape for processing.")
+
             concatenated_data = np.concatenate(normalized_columns, axis=0)
             num_samples = concatenated_data.shape[0]  # Correct number of samples is the length of concatenated vector
-            
+
             # Convert concatenated data to TensorFlow tensor for acceleration
             concatenated_data_tf = tf.convert_to_tensor(concatenated_data, dtype=tf.float32)
-            
+
             # Calculate signal-to-noise ratio (SNR) using TensorFlow
             mean_val = tf.reduce_mean(concatenated_data_tf)
             std_val = tf.math.reduce_std(concatenated_data_tf)
@@ -149,7 +160,7 @@ class AutoencoderManager:
                 lambda: (mean_val / std_val) ** 2,
                 lambda: tf.constant(0.0, dtype=tf.float32)
             )
-            
+
             # Retrieve dataset periodicity and calculate sampling frequency
             periodicity = config['dataset_periodicity']
             periodicity_seconds_map = {
@@ -161,7 +172,7 @@ class AutoencoderManager:
                 "daily": 24 * 60 * 60
             }
             sampling_period_seconds = periodicity_seconds_map.get(periodicity, None)
-            
+
             if sampling_period_seconds:
                 sampling_frequency = tf.constant(1 / sampling_period_seconds, dtype=tf.float32)
             else:
@@ -174,7 +185,7 @@ class AutoencoderManager:
                 lambda: tf.constant(0.0, dtype=tf.float32)
             )
             total_information_bits = channel_capacity * num_samples * sampling_period_seconds
-            
+
             # Calculate entropy using TensorFlow histogram binning
             bins = 1000  # Increased bin count for better precision
             histogram = tf.histogram_fixed_width(concatenated_data_tf, [0.0, 1.0], nbins=bins)
@@ -191,6 +202,7 @@ class AutoencoderManager:
         except Exception as e:
             print(f"[calculate_dataset_information] Exception occurred: {e}")
             raise
+
 
 
 

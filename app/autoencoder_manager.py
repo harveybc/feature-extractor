@@ -86,8 +86,14 @@ class AutoencoderManager:
         try:
             print(f"[train_autoencoder] Received data with shape: {data.shape}")
 
-            num_channels = data.shape[-1] if len(data.shape) == 3 else 1
-            input_shape = data.shape[1] if len(data.shape) == 3 else data.shape[1]
+            # Check and reshape data for compatibility with Conv1D layers
+            if len(data.shape) == 2:  # Row-by-row data (2D)
+                print("[train_autoencoder] Reshaping data to add channel dimension for Conv1D compatibility...")
+                data = np.expand_dims(data, axis=-1)  # Add channel dimension (num_samples, num_features, 1)
+                print(f"[train_autoencoder] Reshaped data shape: {data.shape}")
+
+            num_channels = data.shape[-1]
+            input_shape = data.shape[1]
             interface_size = self.encoder_plugin.params.get('interface_size', 4)
 
             # Build autoencoder with the correct num_channels
@@ -122,7 +128,6 @@ class AutoencoderManager:
         except Exception as e:
             print(f"[train_autoencoder] Exception occurred during training: {e}")
             raise
-
 
 
     def calculate_dataset_information(self, data, config):

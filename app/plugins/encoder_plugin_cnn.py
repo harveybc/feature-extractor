@@ -41,11 +41,11 @@ class Plugin:
     def configure_size(self, input_shape, interface_size, num_channels):
         print(f"[DEBUG] Starting encoder configuration with input_shape={input_shape}, interface_size={interface_size}, num_channels={num_channels}")
 
-        self.params['input_shape'] = input_shape
-
         # Ensure input_shape is a single integer for 2D data
         if isinstance(input_shape, tuple):
             input_shape = input_shape[0]
+
+        self.params['input_shape'] = input_shape
 
         # Initialize layers array with input_shape
         layers = [input_shape * 2]
@@ -65,7 +65,7 @@ class Plugin:
         print(f"[DEBUG] Encoder Layer sizes: {layers}")
 
         # Input layer
-        inputs = Input(shape=(input_shape, num_channels) if num_channels > 1 else (input_shape, 1))
+        inputs = Input(shape=(input_shape, num_channels))  # Adjusted to accept dynamic channel size
         x = inputs
         print(f"[DEBUG] Input shape: {x.shape}")
 
@@ -112,6 +112,7 @@ class Plugin:
             run_eagerly=False  # Set to False for better performance unless debugging
         )
         print(f"[DEBUG] Encoder model compiled successfully.")
+
 
 
 

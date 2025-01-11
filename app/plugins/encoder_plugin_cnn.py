@@ -38,21 +38,29 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, input_shape, interface_size, num_channels):
-        print(f"[DEBUG] Starting encoder configuration with input_shape={input_shape}, interface_size={interface_size}, num_channels={num_channels}")
-
-        # Ensure input_shape is a single integer for 2D data
-        if isinstance(input_shape, tuple):
-            input_shape = input_shape[0]
+    def configure_size(self, input_shape, interface_size, num_channels, use_sliding_windows):
+        """
+        Configure the encoder based on input shape, interface size, and channel dimensions.
+        
+        Args:
+            input_shape (int): Length of the sequence or row.
+            interface_size (int): Dimension of the bottleneck layer.
+            num_channels (int): Number of input channels.
+            use_sliding_windows (bool): Whether sliding windows are being used.
+        """
+        print(f"[DEBUG] Starting encoder configuration with input_shape={input_shape}, interface_size={interface_size}, num_channels={num_channels}, use_sliding_windows={use_sliding_windows}")
 
         self.params['input_shape'] = input_shape
 
+        # Determine the input shape for the first Conv1D layer
+        adjusted_channels = num_channels if use_sliding_windows else 1
+
         # Initialize layers array with input_shape
-        layers = [input_shape * 2]
+        layers = [adjusted_channels]  # First layer matches the number of input channels
         num_intermediate_layers = self.params['intermediate_layers']
 
         # Calculate sizes of intermediate layers based on downscaling by 2
-        current_size = input_shape * 2
+        current_size = adjusted_channels
         for i in range(num_intermediate_layers - 1):
             next_size = current_size // 2  # Scale down by half
             if next_size < interface_size:
@@ -65,7 +73,7 @@ class Plugin:
         print(f"[DEBUG] Encoder Layer sizes: {layers}")
 
         # Input layer
-        inputs = Input(shape=(input_shape, num_channels))  # Adjusted to accept dynamic channel size
+        inputs = Input(shape=(input_shape, adjusted_channels))
         x = inputs
         print(f"[DEBUG] Input shape: {x.shape}")
 
@@ -112,6 +120,7 @@ class Plugin:
             run_eagerly=False  # Set to False for better performance unless debugging
         )
         print(f"[DEBUG] Encoder model compiled successfully.")
+
 
 
 

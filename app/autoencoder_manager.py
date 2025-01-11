@@ -222,29 +222,38 @@ class AutoencoderManager:
 
 
 
-    def encode_data(self, data,config):
+    def encode_data(self, data, config):
         print(f"[encode_data] Encoding data with shape: {data.shape}")
-        # Ensure the data is reshaped correctly before encoding
-        if len(data.shape) == 2:
+
+        # Determine if sliding windows are used
+        use_sliding_windows = config.get('use_sliding_windows', True)
+
+        # Reshape data for sliding windows or row-by-row processing
+        if use_sliding_windows:
+            if config['window_size'] > data.shape[1]:
+                raise ValueError("[encode_data] window_size cannot be greater than the number of features in the data.")
             num_channels = data.shape[1] // config['window_size']
+            if num_channels <= 0:
+                raise ValueError("[encode_data] Invalid num_channels calculated for sliding window data.")
+            if data.shape[1] % config['window_size'] != 0:
+                raise ValueError("[encode_data] data.shape[1] must be divisible by window_size for sliding windows.")
             data = data.reshape((data.shape[0], config['window_size'], num_channels))
+        else:
+            # For row-by-row data, add a channel dimension
+            num_channels = 1
+            data = np.expand_dims(data, axis=-1)
 
-        encoded_data = self.encoder_model.predict(data)
-        print(f"[encode_data] Encoded data shape: {encoded_data.shape}")
-        return encoded_data
+        print(f"[encode_data] Reshaped data shape for encoding: {data.shape}")
 
-    def decode_data(self, encoded_data, config):
-        print(f"[decode_data] Decoding data with shape: {encoded_data.shape}")
-        decoded_data = self.decoder_model.predict(encoded_data)
+        # Perform encoding
+        try:
+            encoded_data = self.encoder_model.predict(data)
+            print(f"[encode_data] Encoded data shape: {encoded_data.shape}")
+            return encoded_data
+        except Exception as e:
+            print(f"[encode_data] Exception occurred during encoding: {e}")
+            raise ValueError("[encode_data] Failed to encode data. Please check model compatibility and data shape.")
 
-        # Reshape decoded data back to the original (27798, 128, 8) format
-        # Ensure that the decoded data has the correct number of timesteps and channels
-        if len(decoded_data.shape) == 2:
-            # Reshape the flattened data back to (27798, 128, 8)
-            decoded_data = decoded_data.reshape((decoded_data.shape[0], 128, 8))
-        
-        print(f"[decode_data] Decoded data shape: {decoded_data.shape}")
-        return decoded_data
 
 
 
@@ -265,30 +274,58 @@ class AutoencoderManager:
         self.decoder_model = load_model(file_path)
         print(f"[load_decoder] Decoder model loaded from {file_path}")
 
-    def calculate_mse(self, original_data, reconstructed_data):
-        # Print the shapes of the original data and the reconstructed_data
+    def calculate_mse(self, original_data, reconstructed_data, config):
         print(f"[calculate_mse] Original data shape: {original_data.shape}")
         print(f"[calculate_mse] Reconstructed data shape: {reconstructed_data.shape}")
 
-        # Ensure the data shapes match
+        use_sliding_windows = config.get('use_sliding_windows', True)
+
+        # Handle sliding windows: Aggregate reconstructed data if necessary
+        if use_sliding_windows:
+            window_size = config['window_size']
+            num_channels = original_data.shape[1] // window_size
+
+            # Reshape reconstructed data to match original sliding window format
+            if reconstructed_data.shape != original_data.shape:
+                print("[calculate_mse] Adjusting reconstructed data shape for sliding window comparison...")
+                reconstructed_data = reconstructed_data.reshape(
+                    (original_data.shape[0], original_data.shape[1])
+                )
+
+        # Ensure the data shapes match after adjustments
         if original_data.shape != reconstructed_data.shape:
             raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}")
 
-        # Calculate the MSE directly without reshaping
+        # Calculate MSE
         mse = np.mean(np.square(original_data - reconstructed_data))
         print(f"[calculate_mse] Calculated MSE: {mse}")
         return mse
 
-    def calculate_mae(self, original_data, reconstructed_data):
-        # Print the shapes of the original data and the reconstructed_data
+
+    def calculate_mae(self, original_data, reconstructed_data, config):
         print(f"[calculate_mae] Original data shape: {original_data.shape}")
         print(f"[calculate_mae] Reconstructed data shape: {reconstructed_data.shape}")
 
-        # Ensure the data shapes match
+        use_sliding_windows = config.get('use_sliding_windows', True)
+
+        # Handle sliding windows: Aggregate reconstructed data if necessary
+        if use_sliding_windows:
+            window_size = config['window_size']
+            num_channels = original_data.shape[1] // window_size
+
+            # Reshape reconstructed data to match original sliding window format
+            if reconstructed_data.shape != original_data.shape:
+                print("[calculate_mae] Adjusting reconstructed data shape for sliding window comparison...")
+                reconstructed_data = reconstructed_data.reshape(
+                    (original_data.shape[0], original_data.shape[1])
+                )
+
+        # Ensure the data shapes match after adjustments
         if original_data.shape != reconstructed_data.shape:
             raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}")
 
-        # Calculate the MAE directly without reshaping
+        # Calculate MAE
         mae = np.mean(np.abs(original_data - reconstructed_data))
         print(f"[calculate_mae] Calculated MAE: {mae}")
         return mae
+

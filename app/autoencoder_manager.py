@@ -222,7 +222,7 @@ class AutoencoderManager:
 
 
 
-    def encode_data(self, data):
+    def encode_data(self, data,config):
         print(f"[encode_data] Encoding data with shape: {data.shape}")
         # Ensure the data is reshaped correctly before encoding
         if len(data.shape) == 2:
@@ -233,7 +233,7 @@ class AutoencoderManager:
         print(f"[encode_data] Encoded data shape: {encoded_data.shape}")
         return encoded_data
 
-    def decode_data(self, encoded_data):
+    def decode_data(self, encoded_data, config):
         print(f"[decode_data] Decoding data with shape: {encoded_data.shape}")
         decoded_data = self.decoder_model.predict(encoded_data)
 

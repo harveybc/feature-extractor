@@ -121,8 +121,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
 
         # Encode and decode the validation data
-        encoded_data = autoencoder_manager.encode_data(validation_data)  
-        decoded_data = autoencoder_manager.decode_data(encoded_data)
+        encoded_data = autoencoder_manager.encode_data(validation_data, config)  
+        decoded_data = autoencoder_manager.decode_data(encoded_data, config)
 
         # Ensure trimmed arrays are NumPy arrays
         validation_trimmed = np.asarray(validation_data[:decoded_data.shape[0]])

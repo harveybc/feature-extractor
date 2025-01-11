@@ -20,22 +20,25 @@ class AutoencoderManager:
     def build_autoencoder(self, input_shape, interface_size, config, num_channels):
         try:
             print("[build_autoencoder] Starting to build autoencoder...")
-            
+
+            # Determine if sliding windows are used
+            use_sliding_windows = config.get('use_sliding_windows', True)
+
             # Configure encoder size
-            self.encoder_plugin.configure_size(input_shape, interface_size, num_channels)
-            
+            self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows)
+
             # Get the encoder model
             self.encoder_model = self.encoder_plugin.encoder_model
             print("[build_autoencoder] Encoder model built and compiled successfully")
             self.encoder_model.summary()
-            
+
             # Get the encoder's output shape
             encoder_output_shape = self.encoder_model.output_shape[1:]  # Exclude batch size
             print(f"Encoder output shape: {encoder_output_shape}")
-            
+
             # Configure the decoder size, passing the encoder's output shape
             self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_output_shape)
-            
+
             # Get the decoder model
             self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built and compiled successfully")
@@ -55,7 +58,7 @@ class AutoencoderManager:
                 clipnorm=1.0,  # Gradient clipping
                 clipvalue=0.5  # Gradient clipping
             )
-            
+
             # Define custom R² score metric
             def r2_score(y_true, y_pred):
                 """Calculate R² score."""
@@ -63,12 +66,10 @@ class AutoencoderManager:
                 ss_tot = tf.reduce_sum(tf.square(y_true - tf.reduce_mean(y_true)))  # Total sum of squares
                 return 1 - (ss_res / (ss_tot + tf.keras.backend.epsilon()))  # Avoid division by zero
 
-
             # Compile autoencoder with the custom loss function
             self.autoencoder_model.compile(
-                optimizer=adam_optimizer, 
-                loss=Huber(delta=1.0), 
-                #metrics=['mae', r2_score] ,
+                optimizer=adam_optimizer,
+                loss=Huber(delta=1.0),
                 metrics=['mae'],
                 run_eagerly=True
             )
@@ -77,6 +78,7 @@ class AutoencoderManager:
         except Exception as e:
             print(f"[build_autoencoder] Exception occurred: {e}")
             raise
+
 
 
 

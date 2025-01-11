@@ -12,7 +12,7 @@ DEFAULT_VALUES = {
     'decoder_plugin': 'cnn',
     'window_size': 16,
     'threshold_error': 0.3,
-    'initial_size': 1,
+    'initial_size': 8,
     'step_size': 2,
     'save_log': './debug_out.json',
     'remote_log': None,

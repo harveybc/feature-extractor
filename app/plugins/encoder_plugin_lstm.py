@@ -13,7 +13,7 @@ class Plugin:
     """
 
     plugin_params = {
-        'intermediate_layers': 1,  # Number of LSTM layers
+        'intermediate_layers': 3,  # Number of LSTM layers
         'layer_size_divisor': 2,  # Factor by which layer sizes decrease
         'learning_rate': 0.0001,  # Learning rate for Adam optimizer
         'dropout_rate': 0.1,  # Dropout rate for regularization

@@ -178,56 +178,50 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 # app/data_processor.py
 
 def load_and_evaluate_encoder(config):
+    """
+    Load and evaluate a pre-trained encoder with input data.
+
+    Args:
+        config (dict): Configuration dictionary with encoder and data details.
+    """
     model = load_model(config['load_encoder'])
     print(f"Encoder model loaded from {config['load_encoder']}")
 
-    # Load the input data with headers and date based on config
+    # Load the input data
     data = load_csv(
         file_path=config['input_file'],
         headers=config.get('headers', False),
         force_date=config.get('force_date', False)
     )
 
-    # Apply sliding window
-    window_size = config['window_size']
-    windowed_data = create_sliding_windows(data, window_size)
-
-    print(f"Encoding data with shape: {windowed_data.shape}")
-    encoded_data = model.predict(windowed_data)
-    print(f"Encoded data shape: {encoded_data.shape}")
-
-    # Reshape encoded_data from (samples, 32, 8) to (samples, 256)
-    if len(encoded_data.shape) == 3:
-        samples, dim1, dim2 = encoded_data.shape
-        encoded_data = encoded_data.reshape(samples, dim1 * dim2)
-        print(f"Reshaped encoded data to: {encoded_data.shape}")
-    elif len(encoded_data.shape) != 2:
-        raise ValueError(f"Unexpected encoded_data shape: {encoded_data.shape}")
-
-    if config.get('force_date', False):
-        # Extract corresponding dates for each window
-        dates = data.index[window_size - 1:]
-        # Create a DataFrame with dates and encoded features
-        encoded_df = pd.DataFrame(encoded_data, index=dates)
-        encoded_df.index.name = 'date'
+    # Process data based on whether sliding windows are used
+    if config.get('use_sliding_windows', True):
+        window_size = config['window_size']
+        print(f"Creating sliding windows of size: {window_size}")
+        processed_data = create_sliding_windows(data, window_size)
+        print(f"Processed data shape for sliding windows: {processed_data.shape}")
     else:
-        # Create a DataFrame without dates
+        # Reshape data to match expected input shape of the encoder
+        print(f"Reshaping data to match encoder input shape.")
+        processed_data = np.expand_dims(data.to_numpy(), axis=-1)  # Add channel dimension
+        print(f"Processed data shape without sliding windows: {processed_data.shape}")
+
+    # Predict using the encoder
+    print(f"Encoding data with shape: {processed_data.shape}")
+    try:
+        encoded_data = model.predict(processed_data, verbose=1)
+        print(f"Encoded data shape: {encoded_data.shape}")
+    except ValueError as e:
+        print(f"[ERROR] Shape mismatch during prediction: {e}")
+        raise
+
+    # Optionally save the encoded data
+    if config.get('evaluate_encoder'):
+        print(f"Saving encoded data to {config['evaluate_encoder']}")
         encoded_df = pd.DataFrame(encoded_data)
+        encoded_df.to_csv(config['evaluate_encoder'], index=False)
+        print(f"Encoded data saved to {config['evaluate_encoder']}")
 
-    # Assign headers for encoded features, e.g., 'encoded_feature_1', 'encoded_feature_2', etc.
-    feature_names = [f'encoded_feature_{i+1}' for i in range(encoded_data.shape[1])]
-    encoded_df.columns = feature_names
-
-    # Save the encoded data to CSV using the write_csv function
-    evaluate_filename = config['evaluate_encoder']
-    write_csv(
-        file_path=evaluate_filename,
-        data=encoded_df,
-        include_date=config.get('force_date', False),
-        headers=True,  # Always include headers for encoded features
-        force_date=config.get('force_date', False)
-    )
-    print(f"Encoded data saved to {evaluate_filename}")
 
 
 

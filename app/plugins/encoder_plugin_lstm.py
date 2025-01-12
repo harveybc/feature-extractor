@@ -1,7 +1,7 @@
 from keras.models import Model, load_model, save_model
 from keras.layers import LSTM, Bidirectional, Dense, Input, Dropout
 from keras.optimizers import Adam
-from tensorflow.keras.initializers import GlorotUniform
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
 
@@ -56,21 +56,20 @@ class Plugin:
         x = inputs
         current_size = input_shape[0]  # Time steps
         layer_sizes = []
-
+        
+        
         for i in range(self.params['intermediate_layers']):
             next_size = max(current_size // self.params['layer_size_divisor'], interface_size)
             layer_sizes.append(next_size)
-            x = Bidirectional(LSTM(
-                units=next_size,
-                activation='tanh',
-                return_sequences=(i < self.params['intermediate_layers'] - 1),
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(0.01)  # Added L2 regularization
-            ))(x)
+            x = LSTM(next_size, activation='tanh', recurrent_activation='sigmoid', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), return_sequences=True)(x)
+                
             current_size = next_size
+        
         # print the layer sizes
         print(f"Layer sizes: {layer_sizes}")
-
+        
+        x = LSTM(interface_size, activation='tanh', recurrent_activation='sigmoid', kernel_initializer=HeNormal())(x)
+        
         # Final Dense layer to project into latent space
         outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
 

@@ -38,14 +38,14 @@ class Plugin:
         Configures the encoder model with the specified input shape and latent space size.
         
         Args:
-            input_shape (tuple): Shape of the input data, e.g., (time_steps, num_features).
+            input_shape (tuple or int): Shape of the input data (time_steps, num_channels) or time_steps.
             interface_size (int): Size of the latent space (output dimensions).
-            num_channels (int, optional): Number of input channels (default: None).
+            num_channels (int, optional): Number of input channels/features.
             use_sliding_windows (bool, optional): Whether sliding windows are being used (default: False).
         """
-        # Ensure input_shape is a tuple for compatibility
+        # Handle input shape for both sliding windows and single-row inputs
         if isinstance(input_shape, int):
-            input_shape = (input_shape, 1) if not use_sliding_windows else (input_shape, num_channels)
+            input_shape = (input_shape, num_channels if use_sliding_windows else 1)
 
         self.params['input_shape'] = input_shape
 
@@ -56,20 +56,31 @@ class Plugin:
         x = inputs
         current_size = input_shape[0]  # Time steps
         layer_sizes = []
-        
-        
+
         for i in range(self.params['intermediate_layers']):
             next_size = max(current_size // self.params['layer_size_divisor'], interface_size)
             layer_sizes.append(next_size)
-            x = LSTM(next_size, activation='tanh', recurrent_activation='sigmoid', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), return_sequences=True)(x)
-                
+            x = LSTM(
+                next_size,
+                activation='tanh',
+                recurrent_activation='sigmoid',
+                kernel_initializer=HeNormal(),
+                kernel_regularizer=l2(0.01),
+                return_sequences=True,  # Always return sequences for multichannel LSTM
+            )(x)
             current_size = next_size
-        
-        # print the layer sizes
+
+        # Debugging: Print the calculated layer sizes
         print(f"Layer sizes: {layer_sizes}")
-        
-        x = LSTM(interface_size, activation='tanh', recurrent_activation='sigmoid', kernel_initializer=HeNormal())(x)
-        
+
+        # Final LSTM layer
+        x = LSTM(
+            interface_size,
+            activation='tanh',
+            recurrent_activation='sigmoid',
+            kernel_initializer=HeNormal(),
+        )(x)
+
         # Final Dense layer to project into latent space
         outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
 
@@ -86,46 +97,32 @@ class Plugin:
         print(f"[configure_size] Encoder model configured with input shape {input_shape} and output size {interface_size}")
         self.encoder_model.summary()
 
-        def train(self, data, validation_data):
-            """
-            Trains the encoder model with early stopping.
-            
-            Args:
-                data (np.ndarray): Training data.
-                validation_data (np.ndarray): Validation data.
-            """
-            print(f"Training encoder with data shape: {data.shape}")
 
-            # Add early stopping callback
-            early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+    def train(self, data, validation_data):
+        print(f"Training encoder with data shape: {data.shape}")
 
-            self.encoder_model.fit(
-                data, data,
-                epochs=self.params['epochs'],
-                batch_size=self.params['batch_size'],
-                validation_data=(validation_data, validation_data),
-                callbacks=[early_stopping],
-                verbose=1
-            )
-            print("Training completed.")
+        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+
+        self.encoder_model.fit(
+            data, data,
+            epochs=self.params['epochs'],
+            batch_size=self.params['batch_size'],
+            validation_data=(validation_data, validation_data),
+            callbacks=[early_stopping],
+            verbose=1
+        )
+        print("Training completed.")
+
 
 
     def encode(self, data):
-        """
-        Encodes the given data using the pre-configured encoder model.
-
-        Args:
-            data (np.ndarray): Input data to encode.
-
-        Returns:
-            np.ndarray: Encoded data.
-        """
         if self.encoder_model is None:
             raise ValueError("[encode] Encoder model is not configured.")
         print(f"Encoding data with shape: {data.shape}")
         encoded_data = self.encoder_model.predict(data, verbose=1)
         print(f"Encoded data shape: {encoded_data.shape}")
         return encoded_data
+
 
     def save(self, file_path):
         """

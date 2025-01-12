@@ -52,7 +52,7 @@ class Plugin:
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
-        # Determine input shape
+        # Determine input shape for the decoder
         input_shape = (interface_size,) if not use_sliding_windows else (interface_size, num_channels or 1)
 
         layer_sizes = []
@@ -63,10 +63,8 @@ class Plugin:
         layer_sizes.append(interface_size)
         layer_sizes.reverse()
 
-        # Debugging message
         print(f"Decoder Layer sizes: {layer_sizes}")
 
-        # Build the model
         self.model = Sequential(name="decoder")
 
         # Input Dense layer
@@ -98,56 +96,39 @@ class Plugin:
 
 
 
-    def train(self, encoded_data, original_data, validation_data):
-        """
-        Trains the decoder model with early stopping.
 
-        Args:
-            encoded_data (np.ndarray): Encoded input data (latent space representation).
-            original_data (np.ndarray): Original target data (ground truth).
-            validation_data (tuple): Validation data as (encoded_validation, original_validation).
-        """
+    def train(self, encoded_data, original_data):
         print(f"Training decoder with encoded data shape: {encoded_data.shape} and original data shape: {original_data.shape}")
+
+        # Reshape encoded data: (batch_size, latent_dim)
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
-        original_data = original_data.reshape((original_data.shape[0], original_data.shape[1], 1))
 
-        # Validation data
-        encoded_validation, original_validation = validation_data
-        encoded_validation = encoded_validation.reshape((encoded_validation.shape[0], -1))
-        original_validation = original_validation.reshape((original_validation.shape[0], original_validation.shape[1], 1))
+        # Reshape original data for LSTM: (batch_size, time_steps, num_channels)
+        if len(original_data.shape) == 2:  # No sliding windows
+            original_data = original_data.reshape((original_data.shape[0], 1, original_data.shape[1]))
+        elif len(original_data.shape) == 3:  # Sliding windows
+            original_data = original_data  # Already in the correct shape
 
-        # Early stopping callback
-        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-
-        # Train the model
-        self.model.fit(
-            encoded_data, original_data,
-            epochs=self.params['epochs'],
-            batch_size=self.params['batch_size'],
-            validation_data=(encoded_validation, original_validation),
-            callbacks=[early_stopping],
-            verbose=1
-        )
+        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
         print("Training completed.")
 
 
-    def decode(self, encoded_data, num_time_steps):
-        """
-        Decodes the latent representation back into the original time series.
 
-        Args:
-            encoded_data (np.ndarray): Encoded input data (latent space representation).
-            num_time_steps (int): Number of time steps in the output sequence.
-
-        Returns:
-            np.ndarray: Decoded output data.
-        """
+    def decode(self, encoded_data):
         print(f"Decoding data with shape: {encoded_data.shape}")
-        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))  # Flatten the data
+
+        # Reshape encoded data: (batch_size, latent_dim)
+        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
+
+        # Predict and reshape output: (batch_size, time_steps, num_channels)
         decoded_data = self.model.predict(encoded_data)
-        decoded_data = decoded_data.reshape((decoded_data.shape[0], num_time_steps, -1))  # Reshape to (batch_size, time_steps, num_channels)
         print(f"Decoded data shape: {decoded_data.shape}")
+
+        # If needed, reshape to 2D for output
+        if decoded_data.shape[-1] == 1:  # Univariate case
+            decoded_data = decoded_data.squeeze(axis=-1)  # Remove the last dimension
         return decoded_data
+
 
 
     def save(self, file_path):

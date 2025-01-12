@@ -43,19 +43,24 @@ class Plugin:
         Configures the decoder model with the specified latent space size and output shape.
 
         Args:
-            interface_size (int): Size of the latent space (input dimensions).
+            interface_size (int): Size of the latent space (input dimension).
             output_shape (int): Number of time steps in the output sequence.
-            num_channels (int, optional): Number of output channels (default: 1 for univariate).
+            num_channels (int, optional): Number of output channels/features.
             encoder_output_shape (tuple, optional): Shape of the encoder's output.
             use_sliding_windows (bool, optional): Whether sliding windows are being used (default: False).
         """
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
-        # Determine input shape for the decoder
-        input_shape = (interface_size,) if not use_sliding_windows else (interface_size, num_channels or 1)
+        # If we are NOT using sliding windows, we assume the latent vector is simply (interface_size,)
+        # If we are using sliding windows, we assume (interface_size, num_channels)
+        if not use_sliding_windows:
+            input_shape = (interface_size,)
+        else:
+            input_shape = (interface_size, num_channels if num_channels else 1)
 
-        # Define the layer sizes for upscaling
+        # Example approach to define layer sizes:
+        # We "grow" from interface_size up to output_shape
         layer_sizes = []
         current_size = interface_size
         while current_size < output_shape:
@@ -63,36 +68,49 @@ class Plugin:
             current_size = min(current_size * self.params['layer_size_divisor'], output_shape)
         layer_sizes.append(output_shape)
 
-        print(f"Decoder Layer sizes: {layer_sizes}")
+        print(f"[configure_size] Decoder layer sizes will be: {layer_sizes}")
 
         self.model = Sequential(name="decoder")
 
-        # Input Dense layer
-        self.model.add(Dense(layer_sizes[0], input_shape=input_shape, activation='relu',
-                            kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="decoder_input"))
-        print(f"Added Dense layer with size: {layer_sizes[0]} as decoder_input")
+        # --- Dense layer to map from latent dim to some hidden dimension ---
+        self.model.add(
+            Dense(layer_sizes[0], input_shape=input_shape, activation='relu',
+                kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01),
+                name="decoder_input")
+        )
+        print(f"Added Dense layer with size {layer_sizes[0]} as decoder_input")
 
-        # RepeatVector layer to match output sequence length
+        # --- RepeatVector to match desired output timesteps ---
         self.model.add(RepeatVector(output_shape))
         print(f"Added RepeatVector layer with size: {output_shape}")
 
-        # Add LSTM layers
-        for size in layer_sizes[:-1]:  # All but the last layer
-            self.model.add(LSTM(units=size, activation='tanh', kernel_initializer=GlorotUniform(),
-                                kernel_regularizer=l2(0.01), return_sequences=True))
-            print(f"Added LSTM layer with size: {size}")
+        # --- Add LSTM layers (all but last) ---
+        for size in layer_sizes[:-1]:
+            self.model.add(LSTM(units=size,
+                                activation='tanh',
+                                kernel_initializer=GlorotUniform(),
+                                kernel_regularizer=l2(0.01),
+                                return_sequences=True))
+            print(f"Added LSTM layer with size {size}")
 
-        # Final LSTM layer
-        self.model.add(LSTM(units=layer_sizes[-1], activation='tanh', kernel_initializer=GlorotUniform(),
-                            kernel_regularizer=l2(0.01), return_sequences=True))
-        print(f"Added final LSTM layer with size: {layer_sizes[-1]}")
+        # --- Final LSTM layer (return_sequences=True to output a full sequence) ---
+        final_lstm_units = layer_sizes[-1]
+        self.model.add(LSTM(units=final_lstm_units,
+                            activation='tanh',
+                            kernel_initializer=GlorotUniform(),
+                            kernel_regularizer=l2(0.01),
+                            return_sequences=True))
+        print(f"Added final LSTM layer with size {final_lstm_units}")
 
-        # Final TimeDistributed Dense layer to match the output channels
-        self.model.add(TimeDistributed(Dense(num_channels or 1, activation='tanh', kernel_initializer=GlorotUniform(),
-                                            kernel_regularizer=l2(0.01))))
-        print(f"Added TimeDistributed Dense layer with size: {num_channels or 1}")
+        # --- Final TimeDistributed Dense to get the desired number of channels ---
+        final_output_channels = num_channels if num_channels else 1
+        self.model.add(TimeDistributed(
+            Dense(final_output_channels, activation='tanh', kernel_initializer=GlorotUniform(),
+                kernel_regularizer=l2(0.01))
+        ))
+        print(f"Added TimeDistributed Dense layer with size {final_output_channels}")
 
-        # Compile the model
+        # --- Compile the model ---
         adam_optimizer = Adam(
             learning_rate=self.params['learning_rate'],
             beta_1=0.9,
@@ -100,43 +118,54 @@ class Plugin:
             epsilon=1e-7,
         )
         self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
-        print("Decoder model compiled successfully.")
-
-
-
-
+        print("[configure_size] Decoder model compiled successfully.")
 
     def train(self, encoded_data, original_data):
-        print(f"Training decoder with encoded data shape: {encoded_data.shape} and original data shape: {original_data.shape}")
+        """
+        Trains the decoder on latent vectors (encoded_data) to reconstruct original_data.
+        """
+        if self.model is None:
+            raise ValueError("[train] Decoder model is not configured.")
 
-        # Reshape encoded data: (batch_size, latent_dim)
+        print(f"[train] Training decoder with encoded data shape: {encoded_data.shape} "
+            f"and original data shape: {original_data.shape}")
+
+        # Flatten encoded vectors if needed: (batch_size, latent_dim)
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
 
         # Reshape original data for LSTM: (batch_size, time_steps, num_channels)
-        if len(original_data.shape) == 2:  # No sliding windows
-            original_data = original_data.reshape((original_data.shape[0], 1, original_data.shape[1]))
-        elif len(original_data.shape) == 3:  # Sliding windows
-            original_data = original_data  # Already in the correct shape
+        if len(original_data.shape) == 2:  # univariate, no sliding windows => shape (batch_size, time_steps)
+            original_data = original_data.reshape((original_data.shape[0], original_data.shape[1], 1))
+        elif len(original_data.shape) == 3:
+            # Already in the form (batch_size, time_steps, features)
+            pass
 
-        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
-        print("Training completed.")
-
-
+        self.model.fit(encoded_data, original_data,
+                    epochs=self.params['epochs'],
+                    batch_size=self.params['batch_size'],
+                    verbose=1)
+        print("[train] Training completed.")
 
     def decode(self, encoded_data):
-        print(f"Decoding data with shape: {encoded_data.shape}")
+        """
+        Decodes latent vectors back into sequences.
+        """
+        if self.model is None:
+            raise ValueError("[decode] Decoder model is not configured.")
 
-        # Reshape encoded data: (batch_size, latent_dim)
+        print(f"[decode] Decoding data with shape: {encoded_data.shape}")
+        # Flatten to (batch_size, latent_dim)
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
 
-        # Predict and reshape output: (batch_size, time_steps, num_channels)
+        # Predict
         decoded_data = self.model.predict(encoded_data)
-        print(f"Decoded data shape: {decoded_data.shape}")
+        print(f"[decode] Decoded data shape: {decoded_data.shape}")
 
-        # If needed, reshape to 2D for output
-        if decoded_data.shape[-1] == 1:  # Univariate case
-            decoded_data = decoded_data.squeeze(axis=-1)  # Remove the last dimension
+        # If univariate and shaped (batch_size, time_steps, 1), we can squeeze the last dimension
+        if decoded_data.shape[-1] == 1:
+            decoded_data = decoded_data.squeeze(axis=-1)
         return decoded_data
+
 
 
 

@@ -257,6 +257,7 @@ class AutoencoderManager:
 
 
 
+   
     def decode_data(self, encoded_data, config):
         print(f"[decode_data] Decoding data with shape: {encoded_data.shape}")
 
@@ -275,16 +276,19 @@ class AutoencoderManager:
             if len(decoded_data.shape) == 3:  # For multi-channel sliding window outputs
                 decoded_data = decoded_data.reshape((decoded_data.shape[0], window_size, num_channels))
             else:
-                print("[decode_data] Warning: Unexpected decoded data shape for sliding windows. Check model output.")
+                raise ValueError("[decode_data] Unexpected decoded data shape for sliding windows.")
         else:
-            # For row-by-row data, reshape to match original row-by-row format
-            if len(decoded_data.shape) == 2:
-                decoded_data = decoded_data.reshape((decoded_data.shape[0], -1))
+            # For row-by-row data, flatten the additional dimensions if present
+            if len(decoded_data.shape) == 3:
+                decoded_data = decoded_data.reshape(decoded_data.shape[0], -1)
+            elif len(decoded_data.shape) == 2:
+                pass  # Already in expected shape
             else:
-                print("[decode_data] Warning: Unexpected decoded data shape for row-by-row data. Check model output.")
+                raise ValueError("[decode_data] Unexpected decoded data shape for row-by-row data.")
 
         print(f"[decode_data] Decoded data shape: {decoded_data.shape}")
         return decoded_data
+
 
 
 

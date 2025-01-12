@@ -175,8 +175,6 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 
 
 
-# app/data_processor.py
-
 def load_and_evaluate_encoder(config):
     """
     Load and evaluate a pre-trained encoder with input data.
@@ -208,17 +206,23 @@ def load_and_evaluate_encoder(config):
 
     # Predict using the encoder
     print(f"Encoding data with shape: {processed_data.shape}")
-    try:
-        encoded_data = model.predict(processed_data, verbose=1)
-        print(f"Encoded data shape: {encoded_data.shape}")
-    except ValueError as e:
-        print(f"[ERROR] Shape mismatch during prediction: {e}")
-        raise
+    encoded_data = model.predict(processed_data, verbose=1)
+    print(f"Encoded data shape: {encoded_data.shape}")
 
-    # Optionally save the encoded data
+    # Flatten 3D encoded data to 2D for saving
+    if len(encoded_data.shape) == 3:
+        num_samples, dim1, dim2 = encoded_data.shape
+        encoded_data_reshaped = encoded_data.reshape(num_samples, dim1 * dim2)
+        print(f"Reshaped encoded data to 2D: {encoded_data_reshaped.shape}")
+    elif len(encoded_data.shape) == 2:
+        encoded_data_reshaped = encoded_data
+    else:
+        raise ValueError(f"Unexpected encoded_data shape: {encoded_data.shape}")
+
+    # Save the encoded data to CSV
     if config.get('evaluate_encoder'):
         print(f"Saving encoded data to {config['evaluate_encoder']}")
-        encoded_df = pd.DataFrame(encoded_data)
+        encoded_df = pd.DataFrame(encoded_data_reshaped)
         encoded_df.to_csv(config['evaluate_encoder'], index=False)
         print(f"Encoded data saved to {config['evaluate_encoder']}")
 

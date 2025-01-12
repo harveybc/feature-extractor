@@ -260,30 +260,15 @@ class AutoencoderManager:
    
     def decode_data(self, encoded_data, config):
         print(f"[decode_data] Decoding data with shape: {encoded_data.shape}")
-
-        # Determine if sliding windows are used
-        use_sliding_windows = config.get('use_sliding_windows', True)
-
-        # Perform decoding
         decoded_data = self.decoder_model.predict(encoded_data)
 
-        # Reshape decoded data based on sliding window usage
-        if use_sliding_windows:
-            # For sliding windows, reshape to match sliding window dimensions
-            window_size = config['window_size']
-            num_channels = config.get('num_channels', decoded_data.shape[-1])
-
-            if decoded_data.shape[1] != window_size * num_channels:
-                raise ValueError("[decode_data] Decoded data shape does not match sliding window expectations.")
-
-            decoded_data = decoded_data.reshape((decoded_data.shape[0], window_size, num_channels))
+        if not config['use_sliding_windows']:
+            # Reshape decoded data for row-by-row processing
+            decoded_data = decoded_data.reshape((decoded_data.shape[0], config['original_feature_size']))
+            print(f"[decode_data] Reshaped decoded data to match original feature size: {decoded_data.shape}")
         else:
-            # For row-by-row data, reshape back to the original feature dimensions
-            original_feature_size = config['original_feature_size']
-            if decoded_data.shape[1] != original_feature_size:
-                decoded_data = decoded_data.reshape((decoded_data.shape[0], original_feature_size))
+            print(f"[decode_data] Decoded data shape: {decoded_data.shape}")
 
-        print(f"[decode_data] Decoded data shape: {decoded_data.shape}")
         return decoded_data
 
 

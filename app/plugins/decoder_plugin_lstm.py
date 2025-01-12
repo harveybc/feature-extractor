@@ -3,6 +3,8 @@ from keras.models import Sequential, load_model
 from keras.layers import Dense, LSTM, Bidirectional, RepeatVector, TimeDistributed
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from keras.regularizers import l2
+from keras.callbacks import EarlyStopping
 
 class Plugin:
     """
@@ -34,72 +36,117 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, interface_size, output_shape):
+
+
+    def configure_size(self, interface_size, output_shape, num_channels=None, use_sliding_windows=False):
+        """
+        Configures the decoder model with the specified latent space size and output shape.
+
+        Args:
+            interface_size (int): Size of the latent space (input dimensions).
+            output_shape (int): Number of time steps in the output sequence.
+            num_channels (int, optional): Number of output channels (default: None).
+            use_sliding_windows (bool, optional): Whether sliding windows are being used (default: False).
+        """
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
+        # Determine input shape
+        input_shape = (interface_size,) if not use_sliding_windows else (interface_size, num_channels or 1)
+
         layer_sizes = []
         current_size = output_shape
-        layer_size_divisor = self.params['layer_size_divisor'] 
-        current_location = output_shape
-        int_layers = 0
-        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
-            layer_sizes.append(current_location)
-            current_size = max(current_size // layer_size_divisor, interface_size)
-            current_location = interface_size + current_size
-            int_layers += 1
+        while current_size > interface_size:
+            layer_sizes.append(current_size)
+            current_size = max(current_size // self.params['layer_size_divisor'], interface_size)
         layer_sizes.append(interface_size)
         layer_sizes.reverse()
 
         # Debugging message
         print(f"Decoder Layer sizes: {layer_sizes}")
 
+        # Build the model
         self.model = Sequential(name="decoder")
 
-        # Adding a single Dense layer
-        self.model.add(Dense(layer_sizes[0], input_shape=(interface_size,), activation='relu', kernel_initializer=HeNormal(), name="decoder_input"))
+        # Input Dense layer
+        self.model.add(Dense(layer_sizes[0], input_shape=input_shape, activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="decoder_input"))
         print(f"Added Dense layer with size: {layer_sizes[0]} as decoder_input")
-            
+
+        # RepeatVector layer to match output sequence length
         self.model.add(RepeatVector(output_shape))
         print(f"Added RepeatVector layer with size: {output_shape}")
 
-        # Adding Bi-LSTM layers
-        for i in range(0, len(layer_sizes)):
-            reshape_size = layer_sizes[i]
-            self.model.add(Bidirectional(LSTM(units=reshape_size, activation='tanh', kernel_initializer=GlorotUniform(), return_sequences=True)))
-            print(f"Added Bi-LSTM layer with size: {reshape_size}")
+        # Add Bi-LSTM layers
+        for size in layer_sizes:
+            self.model.add(Bidirectional(LSTM(units=size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), return_sequences=True)))
+            print(f"Added Bi-LSTM layer with size: {size}")
 
-        # Adding the final TimeDistributed Dense layer to match the output shape
-        self.model.add(TimeDistributed(Dense(1, activation='tanh', kernel_initializer=GlorotUniform())))
-        print(f"Added TimeDistributed Dense layer with size: 1")
+        # Final TimeDistributed Dense layer to match the output channels
+        self.model.add(TimeDistributed(Dense(num_channels or 1, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))))
+        print(f"Added TimeDistributed Dense layer with size: {num_channels or 1}")
 
-                # Define the Adam optimizer with custom parameters
+        # Compile the model
         adam_optimizer = Adam(
-            learning_rate= self.params['learning_rate'],   # Set the learning rate
-            beta_1=0.9,            # Default value
-            beta_2=0.999,          # Default value
-            epsilon=1e-7,          # Default value
-            amsgrad=False          # Default value
+            learning_rate=self.params['learning_rate'],
+            beta_1=0.9,
+            beta_2=0.999,
+            epsilon=1e-7,
         )
-
         self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        print("Decoder model compiled successfully.")
 
-    def train(self, encoded_data, original_data):
-        # Debugging message
+
+    def train(self, encoded_data, original_data, validation_data):
+        """
+        Trains the decoder model with early stopping.
+
+        Args:
+            encoded_data (np.ndarray): Encoded input data (latent space representation).
+            original_data (np.ndarray): Original target data (ground truth).
+            validation_data (tuple): Validation data as (encoded_validation, original_validation).
+        """
         print(f"Training decoder with encoded data shape: {encoded_data.shape} and original data shape: {original_data.shape}")
-        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))  # Flatten the data
-        original_data = original_data.reshape((original_data.shape[0], original_data.shape[1], 1))  # Reshape to (batch_size, time_steps, 1)
-        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
+        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
+        original_data = original_data.reshape((original_data.shape[0], original_data.shape[1], 1))
+
+        # Validation data
+        encoded_validation, original_validation = validation_data
+        encoded_validation = encoded_validation.reshape((encoded_validation.shape[0], -1))
+        original_validation = original_validation.reshape((original_validation.shape[0], original_validation.shape[1], 1))
+
+        # Early stopping callback
+        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+
+        # Train the model
+        self.model.fit(
+            encoded_data, original_data,
+            epochs=self.params['epochs'],
+            batch_size=self.params['batch_size'],
+            validation_data=(encoded_validation, original_validation),
+            callbacks=[early_stopping],
+            verbose=1
+        )
         print("Training completed.")
 
-    def decode(self, encoded_data):
-        # Debugging message
+
+    def decode(self, encoded_data, num_time_steps):
+        """
+        Decodes the latent representation back into the original time series.
+
+        Args:
+            encoded_data (np.ndarray): Encoded input data (latent space representation).
+            num_time_steps (int): Number of time steps in the output sequence.
+
+        Returns:
+            np.ndarray: Decoded output data.
+        """
         print(f"Decoding data with shape: {encoded_data.shape}")
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))  # Flatten the data
         decoded_data = self.model.predict(encoded_data)
-        decoded_data = decoded_data.reshape((decoded_data.shape[0], decoded_data.shape[1]))  # Reshape to (batch_size, time_steps)
+        decoded_data = decoded_data.reshape((decoded_data.shape[0], num_time_steps, -1))  # Reshape to (batch_size, time_steps, num_channels)
         print(f"Decoded data shape: {decoded_data.shape}")
         return decoded_data
+
 
     def save(self, file_path):
         self.model.save(file_path)

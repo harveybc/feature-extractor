@@ -25,7 +25,7 @@ DEFAULT_VALUES = {
     'save_config': './config_out.json',
     'quiet_mode': False,
     'force_date': True,
-    'incremental_search': False,
+    'incremental_search': True, # if false performs decresing search instead
     'headers': True,
     'epochs': 200,  # Add epochs here
     'batch_size': 64,  # Add batch_size here

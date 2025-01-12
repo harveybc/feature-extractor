@@ -23,11 +23,11 @@ class Plugin:
         'initial_layer_size': 128,    # Base # of hidden units in the first LSTM layer
         'layer_size_divisor': 2,     # Divisor for subsequent LSTM layers
         'learning_rate': 0.001,      # Learning rate for Adam optimizer
-        'dropout_rate': 0.0,         # Dropout rate for regularization
+        'dropout_rate': 0.1,         # Dropout rate for regularization
         'l2_reg': 1e-4,              # L2 regularization factor
     }
 
-    plugin_debug_vars = ['input_shape', 'intermediate_layers', 'epochs', 'batch_size']
+    plugin_debug_vars = []
 
     def __init__(self):
         self.params = self.plugin_params.copy()

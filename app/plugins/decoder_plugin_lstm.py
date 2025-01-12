@@ -22,7 +22,7 @@ class Plugin:
         'batch_size': 128,
 
         # You can still keep some dropout / L2 if desired:
-        'dropout_rate': 0.0,
+        'dropout_rate': 0.1,
         'l2_reg': 1e-4,
 
         # Learning rate
@@ -30,7 +30,7 @@ class Plugin:
     }
 
     # For debugging/tracking
-    plugin_debug_vars = ['latent_dim', 'output_steps', 'output_channels']
+    plugin_debug_vars = []
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -250,23 +250,3 @@ class Plugin:
         print(f"[load] Decoder model loaded from {file_path}")
 
 
-# Example usage
-if __name__ == "__main__":
-    # Suppose your encoder reduced shape (36,1) -> 16D latent
-    # Then this decoder expands 16D latent -> shape (36,1).
-    plugin = Plugin()
-    plugin.configure_size(latent_dim=16, output_steps=36, output_channels=1)
-
-    # Generate synthetic data
-    batch_size = 8
-    # Latent data: (batch_size, 16)
-    encoded_data = np.random.randn(batch_size, 16)
-    # Original data to reconstruct: (batch_size, 36, 1) => univariate
-    original_data = np.random.randn(batch_size, 36)
-
-    # Train
-    plugin.train(encoded_data, original_data)
-
-    # Decode
-    decoded = plugin.decode(encoded_data)
-    print(f"Decoded shape: {decoded.shape}")  

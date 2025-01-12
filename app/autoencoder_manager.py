@@ -216,7 +216,23 @@ class AutoencoderManager:
 
 
 
+    def evaluate(self, data):
+            """
+            Evaluate the autoencoder on the given dataset.
 
+            Args:
+                data (np.ndarray): The dataset to evaluate on.
+
+            Returns:
+                tuple: Mean Squared Error (MSE) and Mean Absolute Error (MAE).
+            """
+            print(f"[evaluate] Evaluating data with shape: {data.shape}")
+
+            # Use the autoencoder model's evaluate method to calculate loss and metrics
+            mse, mae = self.autoencoder_model.evaluate(data, data, verbose=1)
+
+            print(f"[evaluate] Evaluation results - MSE: {mse}, MAE: {mae}")
+            return mse, mae
 
 
 
@@ -321,6 +337,9 @@ class AutoencoderManager:
 
 
     def calculate_mae(self, original_data, reconstructed_data, config):
+        """
+        Calculate the Mean Absolute Error (MAE) between original and reconstructed data.
+        """
         print(f"[calculate_mae] Original data shape: {original_data.shape}")
         print(f"[calculate_mae] Reconstructed data shape: {reconstructed_data.shape}")
 
@@ -328,19 +347,16 @@ class AutoencoderManager:
         if original_data.shape != reconstructed_data.shape:
             raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}")
 
-        # Calculate MAE
-        if config.get('use_sliding_windows', True):
-            # For sliding windows, calculate MAE per sample across all features
-            mae = np.mean(np.abs(original_data - reconstructed_data))
-        else:
-            # For non-sliding windows, calculate MAE directly
-            mae = np.mean(np.abs(original_data - reconstructed_data))
-
+        # Calculate MAE consistently
+        mae = tf.reduce_mean(tf.abs(original_data - reconstructed_data)).numpy()
         print(f"[calculate_mae] Calculated MAE: {mae}")
         return mae
 
 
     def calculate_mse(self, original_data, reconstructed_data, config):
+        """
+        Calculate the Mean Squared Error (MSE) between original and reconstructed data.
+        """
         print(f"[calculate_mse] Original data shape: {original_data.shape}")
         print(f"[calculate_mse] Reconstructed data shape: {reconstructed_data.shape}")
 
@@ -348,16 +364,11 @@ class AutoencoderManager:
         if original_data.shape != reconstructed_data.shape:
             raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}")
 
-        # Calculate MSE
-        if config.get('use_sliding_windows', True):
-            # For sliding windows, calculate MSE per sample across all features
-            mse = np.mean(np.square(original_data - reconstructed_data))
-        else:
-            # For non-sliding windows, calculate MSE directly
-            mse = np.mean(np.square(original_data - reconstructed_data))
-
+        # Calculate MSE consistently
+        mse = tf.reduce_mean(tf.square(original_data - reconstructed_data)).numpy()
         print(f"[calculate_mse] Calculated MSE: {mse}")
         return mse
+
 
 
 

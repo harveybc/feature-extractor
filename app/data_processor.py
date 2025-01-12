@@ -97,15 +97,12 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
 
-    # Dynamically set original feature size after data is processed
     if not config.get('use_sliding_windows', True):
         config['original_feature_size'] = validation_data.shape[1]
         print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
 
-    mse_train = 0
-    mae_train = 0
-    mse_val = 0
-    mae_val = 0
+    mse = 0
+    mae = 0
     initial_size = config['initial_size']
     step_size = config['step_size']
     threshold_error = config['threshold_error']
@@ -122,47 +119,21 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         num_channels = processed_data.shape[-1]
 
-        # Build new autoencoder model with the current input size
         autoencoder_manager.build_autoencoder(input_size, current_size, config, num_channels)
-
-        # Train the autoencoder model
         autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
 
-        # Evaluate the autoencoder on training data
-        encoded_train = autoencoder_manager.encode_data(processed_data, config)
-        decoded_train = autoencoder_manager.decode_data(encoded_train, config)
+        # Evaluate on training data
+        training_mse, training_mae = autoencoder_manager.evaluate(processed_data)
+        print(f"Training Mean Squared Error with interface size {current_size}: {training_mse}")
+        print(f"Training Mean Absolute Error with interface size {current_size}: {training_mae}")
 
-        # Evaluate the autoencoder on validation data
-        encoded_val = autoencoder_manager.encode_data(validation_data, config)
-        decoded_val = autoencoder_manager.decode_data(encoded_val, config)
+        # Evaluate on validation data
+        validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data)
+        print(f"Validation Mean Squared Error with interface size {current_size}: {validation_mse}")
+        print(f"Validation Mean Absolute Error with interface size {current_size}: {validation_mae}")
 
-        # Ensure trimmed arrays are NumPy arrays
-        train_trimmed = np.asarray(processed_data[:decoded_train.shape[0]])
-        decoded_train_trimmed = np.asarray(decoded_train)
-        val_trimmed = np.asarray(validation_data[:decoded_val.shape[0]])
-        decoded_val_trimmed = np.asarray(decoded_val)
-
-        # Handle potential shape mismatch for non-sliding window cases
-        if not config.get('use_sliding_windows', True):
-            decoded_train_trimmed = decoded_train_trimmed.reshape(train_trimmed.shape)
-            decoded_val_trimmed = decoded_val_trimmed.reshape(val_trimmed.shape)
-
-        # Calculate the training MSE and MAE
-        mse_train = autoencoder_manager.calculate_mse(train_trimmed, decoded_train_trimmed, config)
-        mae_train = autoencoder_manager.calculate_mae(train_trimmed, decoded_train_trimmed, config)
-
-        # Calculate the validation MSE and MAE
-        mse_val = autoencoder_manager.calculate_mse(val_trimmed, decoded_val_trimmed, config)
-        mae_val = autoencoder_manager.calculate_mae(val_trimmed, decoded_val_trimmed, config)
-
-        # Print results
-        print(f"Training Mean Squared Error with interface size {current_size}: {mse_train}")
-        print(f"Training Mean Absolute Error with interface size {current_size}: {mae_train}")
-        print(f"Validation Mean Squared Error with interface size {current_size}: {mse_val}")
-        print(f"Validation Mean Absolute Error with interface size {current_size}: {mae_val}")
-
-        if (incremental_search and mae_val <= threshold_error) or (not incremental_search and mae_val >= threshold_error):
-            print(f"Optimal interface size found: {current_size} with Validation MSE: {mse_val} and Validation MAE: {mae_val}")
+        if (incremental_search and validation_mae <= threshold_error) or (not incremental_search and validation_mae >= threshold_error):
+            print(f"Optimal interface size found: {current_size} with Validation MSE: {validation_mse} and Validation MAE: {validation_mae}")
             break
         else:
             if incremental_search:
@@ -180,30 +151,26 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     print(f"Saved encoder model to {encoder_model_filename}")
     print(f"Saved decoder model to {decoder_model_filename}")
 
-    # Save final configuration and debug information
     end_time = time.time()
     execution_time = end_time - start_time
     debug_info = {
         'execution_time': execution_time,
         'encoder': encoder_plugin.get_debug_info(),
         'decoder': decoder_plugin.get_debug_info(),
-        'mse_train': mse_train,
-        'mae_train': mae_train,
-        'mse_val': mse_val,
-        'mae_val': mae_val
+        'mse': validation_mse,
+        'mae': validation_mae
     }
 
-    # Save debug info
     if 'save_log' in config and config['save_log']:
         save_debug_info(debug_info, config['save_log'])
         print(f"Debug info saved to {config['save_log']}.")
 
-    # Remote log debug info and config
     if 'remote_log' in config and config['remote_log']:
         remote_log(config, debug_info, config['remote_log'], config['username'], config['password'])
         print(f"Debug info saved to {config['remote_log']}.")
 
     print(f"Execution time: {execution_time} seconds")
+
 
 
 

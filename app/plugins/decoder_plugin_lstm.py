@@ -55,33 +55,41 @@ class Plugin:
         # Determine input shape for the decoder
         input_shape = (interface_size,) if not use_sliding_windows else (interface_size, num_channels or 1)
 
+        # Define the layer sizes for upscaling
         layer_sizes = []
-        current_size = output_shape
-        while current_size > interface_size:
+        current_size = interface_size
+        while current_size < output_shape:
             layer_sizes.append(current_size)
-            current_size = max(current_size // self.params['layer_size_divisor'], interface_size)
-        layer_sizes.append(interface_size)
-        layer_sizes.reverse()
+            current_size = min(current_size * self.params['layer_size_divisor'], output_shape)
+        layer_sizes.append(output_shape)
 
         print(f"Decoder Layer sizes: {layer_sizes}")
 
         self.model = Sequential(name="decoder")
 
         # Input Dense layer
-        self.model.add(Dense(layer_sizes[0], input_shape=input_shape, activation='relu', kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="decoder_input"))
+        self.model.add(Dense(layer_sizes[0], input_shape=input_shape, activation='relu',
+                            kernel_initializer=HeNormal(), kernel_regularizer=l2(0.01), name="decoder_input"))
         print(f"Added Dense layer with size: {layer_sizes[0]} as decoder_input")
 
         # RepeatVector layer to match output sequence length
         self.model.add(RepeatVector(output_shape))
         print(f"Added RepeatVector layer with size: {output_shape}")
 
-        # Add Bi-LSTM layers
-        for size in layer_sizes:
-            self.model.add(Bidirectional(LSTM(units=size, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01), return_sequences=True)))
-            print(f"Added Bi-LSTM layer with size: {size}")
+        # Add LSTM layers
+        for size in layer_sizes[:-1]:  # All but the last layer
+            self.model.add(LSTM(units=size, activation='tanh', kernel_initializer=GlorotUniform(),
+                                kernel_regularizer=l2(0.01), return_sequences=True))
+            print(f"Added LSTM layer with size: {size}")
+
+        # Final LSTM layer
+        self.model.add(LSTM(units=layer_sizes[-1], activation='tanh', kernel_initializer=GlorotUniform(),
+                            kernel_regularizer=l2(0.01), return_sequences=True))
+        print(f"Added final LSTM layer with size: {layer_sizes[-1]}")
 
         # Final TimeDistributed Dense layer to match the output channels
-        self.model.add(TimeDistributed(Dense(num_channels or 1, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.01))))
+        self.model.add(TimeDistributed(Dense(num_channels or 1, activation='tanh', kernel_initializer=GlorotUniform(),
+                                            kernel_regularizer=l2(0.01))))
         print(f"Added TimeDistributed Dense layer with size: {num_channels or 1}")
 
         # Compile the model
@@ -93,6 +101,7 @@ class Plugin:
         )
         self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
         print("Decoder model compiled successfully.")
+
 
 
 

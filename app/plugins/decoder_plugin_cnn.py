@@ -92,18 +92,29 @@ class Plugin:
             ))
             self.model.add(BatchNormalization())
 
-        final_output_channels = num_channels if use_sliding_windows else output_shape
-        self.model.add(Conv1DTranspose(
-            filters=final_output_channels,
-            kernel_size=3,
-            padding='same',
-            activation=LeakyReLU(alpha=0.1),
-            kernel_initializer=HeNormal(),
-            kernel_regularizer=l2(0.001),
-            name="decoder_output"
-        ))
+        if use_sliding_windows:
+            # For sliding windows, retain the temporal dimension
+            self.model.add(Conv1DTranspose(
+                filters=num_channels,
+                kernel_size=3,
+                padding='same',
+                activation=LeakyReLU(alpha=0.1),
+                kernel_initializer=HeNormal(),
+                kernel_regularizer=l2(0.001),
+                name="decoder_output"
+            ))
+        else:
+            # For row-by-row data, flatten the output
+            self.model.add(Flatten(name="decoder_flatten"))
+            self.model.add(Dense(
+                units=output_shape,
+                activation=LeakyReLU(alpha=0.1),
+                kernel_initializer=HeNormal(),
+                kernel_regularizer=l2(0.001),
+                name="decoder_dense_output"
+            ))
 
-        final_output_shape = self.model.layers[-1].output_shape
+        final_output_shape = self.model.output_shape
         print(f"[DEBUG] Final Output Shape: {final_output_shape}")
 
         adam_optimizer = Adam(
@@ -120,7 +131,6 @@ class Plugin:
             run_eagerly=False
         )
         print(f"[DEBUG] Model compiled successfully.")
-
 
 
 

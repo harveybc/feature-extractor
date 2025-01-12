@@ -109,7 +109,7 @@ class Plugin:
                 x = Dropout(dropout_rate)(x)
 
             # Optional batch normalization (comment out if you don’t want it):
-            # x = BatchNormalization()(x)
+            x = BatchNormalization()(x)
 
             # Decrease hidden size for next layer
             current_size = max(current_size // layer_size_divisor, interface_size)

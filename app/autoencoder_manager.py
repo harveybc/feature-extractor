@@ -257,18 +257,35 @@ class AutoencoderManager:
 
 
 
-    def decode_data(self, encoded_data):
+    def decode_data(self, encoded_data, config):
         print(f"[decode_data] Decoding data with shape: {encoded_data.shape}")
+
+        # Determine if sliding windows are used
+        use_sliding_windows = config.get('use_sliding_windows', True)
+
+        # Perform decoding
         decoded_data = self.decoder_model.predict(encoded_data)
 
-        # Reshape decoded data back to the original (27798, 128, 8) format
-        # Ensure that the decoded data has the correct number of timesteps and channels
-        if len(decoded_data.shape) == 2:
-            # Reshape the flattened data back to (27798, 128, 8)
-            decoded_data = decoded_data.reshape((decoded_data.shape[0], 128, 8))
-        
+        # Reshape decoded data based on sliding window usage
+        if use_sliding_windows:
+            # For sliding windows, reshape to match sliding window dimensions
+            window_size = config['window_size']
+            num_channels = config.get('num_channels', decoded_data.shape[-1])
+
+            if len(decoded_data.shape) == 3:  # For multi-channel sliding window outputs
+                decoded_data = decoded_data.reshape((decoded_data.shape[0], window_size, num_channels))
+            else:
+                print("[decode_data] Warning: Unexpected decoded data shape for sliding windows. Check model output.")
+        else:
+            # For row-by-row data, reshape to match original row-by-row format
+            if len(decoded_data.shape) == 2:
+                decoded_data = decoded_data.reshape((decoded_data.shape[0], -1))
+            else:
+                print("[decode_data] Warning: Unexpected decoded data shape for row-by-row data. Check model output.")
+
         print(f"[decode_data] Decoded data shape: {decoded_data.shape}")
         return decoded_data
+
 
 
 

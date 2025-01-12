@@ -129,8 +129,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         decoded_trimmed = np.asarray(decoded_data)
 
         # Calculate the MSE and MAE directly
-        mse = autoencoder_manager.calculate_mse(validation_trimmed, decoded_trimmed)
-        mae = autoencoder_manager.calculate_mae(validation_trimmed, decoded_trimmed)
+        mse = autoencoder_manager.calculate_mse(validation_trimmed, decoded_trimmed, config)
+        mae = autoencoder_manager.calculate_mae(validation_trimmed, decoded_trimmed, config)
 
         print(f"Mean Squared Error with interface size {current_size}: {mse}")
         print(f"Mean Absolute Error with interface size {current_size}: {mae}")

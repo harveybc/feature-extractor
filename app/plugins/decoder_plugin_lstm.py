@@ -43,109 +43,132 @@ class Plugin:
     def get_debug_info(self):
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
-    def configure_size(self, latent_dim, output_steps, output_channels=1):
+    def configure_size(
+        self, 
+        interface_size, 
+        input_shape,           # <-- second arg matches the manager's call
+        num_channels=None, 
+        encoder_output_shape=None, 
+        use_sliding_windows=False
+    ):
         """
-        Configures a strictly inverse decoder with a known set of layer sizes:
-        
-        1) Dense(32) -> Dense(64)
-        2) RepeatVector(output_steps=36)
-        3) LSTM(64, return_sequences=True)
-        4) LSTM(32, return_sequences=True)
-        5) TimeDistributed(Dense(output_channels=1))
+        Configures the decoder model with the specified latent dimension (interface_size) 
+        and a second parameter (input_shape) which your AutoencoderManager is passing as 
+        'input_shape' but in practice represents the 'number of time steps' to reconstruct.
 
-        This is the 'mirror' of an encoder that had LSTM(64)->LSTM(32)->Dense(16) going from 36 timesteps to 16 latent.
-        
         Args:
-            latent_dim (int): Dimension of the latent vector output by the encoder (e.g., 16).
-            output_steps (int): Number of time steps to reconstruct (e.g., 36).
-            output_channels (int): Dimensionality (features) per time step (e.g., 1).
+            interface_size (int): Size of the latent space (input dimension).
+            input_shape (int): Number of time steps (or 'output_shape') the decoder should output.
+            num_channels (int, optional): Number of features (channels) per time step.
+            encoder_output_shape (tuple, optional): Shape of the encoder output (e.g., (latent_dim,)).
+            use_sliding_windows (bool, optional): If True, input to the decoder is (interface_size, num_channels);
+                                                otherwise it's just (interface_size,).
         """
+        # Store the parameters internally
+        self.params['interface_size'] = interface_size
 
-        self.params['latent_dim'] = latent_dim
-        self.params['output_steps'] = output_steps
-        self.params['output_channels'] = output_channels
+        # Because the manager is passing 'input_shape' in the 2nd position, 
+        # we interpret that as the time dimension to reconstruct
+        self.params['output_shape'] = input_shape
 
-        dropout_rate = self.params['dropout_rate']
-        l2_reg = self.params['l2_reg']
+        if num_channels is None:
+            num_channels = 1  # default univariate
 
-        print(f"[configure_size] Building inverse decoder for latent_dim={latent_dim}, output={output_steps}x{output_channels}")
+        # Decide the actual input shape to the decoder (the latent vector shape)
+        if not use_sliding_windows:
+            # shape is just (latent_dim,)
+            decoder_input_shape = (interface_size,)
+            print(f"[configure_size] Not using sliding windows: decoder_input_shape={decoder_input_shape}")
+        else:
+            # shape is (latent_dim, num_channels)
+            decoder_input_shape = (interface_size, num_channels)
+            print(f"[configure_size] Using sliding windows: decoder_input_shape={decoder_input_shape}")
 
-        model = Sequential(name="inverse_decoder")
+        print(f"[configure_size] Decoder will reconstruct time steps={self.params['output_shape']}, "
+            f"features={num_channels}")
 
-        # -- 1) Dense(32) -> Dense(64) from latent_dim(16) to bigger hidden dims
-        # Input shape = (latent_dim,)
-        model.add(Dense(
-            32,
-            input_shape=(latent_dim,),
-            activation='relu',
-            kernel_initializer=HeNormal(),
-            kernel_regularizer=l2(l2_reg),
-            name="decoder_dense_32",
-        ))
-        if dropout_rate > 0.0:
-            model.add(Dropout(dropout_rate))
+        # Build the decoder model
+        self.model = Sequential(name="decoder")
 
-        model.add(Dense(
-            64,
-            activation='relu',
-            kernel_initializer=HeNormal(),
-            kernel_regularizer=l2(l2_reg),
-            name="decoder_dense_64",
-        ))
-        if dropout_rate > 0.0:
-            model.add(Dropout(dropout_rate))
+        # Example hyperparameters
+        l2_reg = self.params.get('l2_reg', 1e-4)
+        dropout_rate = self.params.get('dropout_rate', 0.0)
+        learning_rate = self.params.get('learning_rate', 0.001)
 
-        # -- 2) RepeatVector(36) to create 36 time steps
-        model.add(RepeatVector(output_steps, name="repeat_vector"))
-
-        # -- 3) LSTM(64, return_sequences=True)
-        model.add(LSTM(
-            64,
-            activation='tanh',
-            recurrent_activation='sigmoid',
-            kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg),
-            return_sequences=True,
-            name="decoder_lstm_64",
-        ))
-        if dropout_rate > 0.0:
-            model.add(Dropout(dropout_rate))
-
-        # -- 4) LSTM(32, return_sequences=True)
-        model.add(LSTM(
-            32,
-            activation='tanh',
-            recurrent_activation='sigmoid',
-            kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg),
-            return_sequences=True,
-            name="decoder_lstm_32",
-        ))
-        if dropout_rate > 0.0:
-            model.add(Dropout(dropout_rate))
-
-        # -- 5) TimeDistributed(Dense(output_channels=1)) => final reconstruction
-        model.add(TimeDistributed(
+        # 1) Dense layer to expand from latent_dim -> some initial hidden size
+        initial_layer_size = self.params.get('initial_layer_size', 64)
+        self.model.add(
             Dense(
-                output_channels,
-                activation='tanh',
-                kernel_initializer=GlorotUniform(),
+                initial_layer_size,
+                input_shape=decoder_input_shape,
+                activation='relu',
+                kernel_initializer=HeNormal(),
                 kernel_regularizer=l2(l2_reg),
-            ),
-            name="decoder_output"
-        ))
+                name="decoder_input"
+            )
+        )
 
-        # -- Compile
+        # Optional dropout
+        if dropout_rate > 0:
+            self.model.add(Dropout(dropout_rate))
+
+        # 2) RepeatVector to expand from (batch_size, hidden_dim) -> (batch_size, output_shape, hidden_dim)
+        self.model.add(RepeatVector(self.params['output_shape']))
+        print(f"[configure_size] Added RepeatVector layer with size: {self.params['output_shape']}")
+
+        # 3) Build multiple LSTM layers that go from the initial_layer_size down 
+        #    or however you'd like to define them.
+        current_size = initial_layer_size
+        intermediate_layers = self.params.get('intermediate_layers', 2)
+        layer_size_divisor = self.params.get('layer_size_divisor', 2)
+
+        for i in range(intermediate_layers):
+            # For "inverse" logic, you might keep or shrink the LSTM sizes as you like
+            lstm_units = max(current_size, 8)  # ensure not too small
+            print(f"[configure_size] Adding LSTM layer {i+1} with size={lstm_units}")
+
+            self.model.add(
+                LSTM(
+                    units=lstm_units,
+                    activation='tanh',
+                    recurrent_activation='sigmoid',
+                    kernel_initializer=GlorotUniform(),
+                    kernel_regularizer=l2(l2_reg),
+                    return_sequences=True  # we want a full sequence for each time step
+                )
+            )
+
+            if dropout_rate > 0:
+                self.model.add(Dropout(dropout_rate))
+
+            current_size = max(current_size // layer_size_divisor, 8)
+
+        # 4) Final TimeDistributed Dense to produce (num_channels) features at each timestep
+        self.model.add(
+            TimeDistributed(
+                Dense(
+                    num_channels,
+                    activation='tanh',
+                    kernel_initializer=GlorotUniform(),
+                    kernel_regularizer=l2(l2_reg)
+                ),
+                name="decoder_output"
+            )
+        )
+        print(f"[configure_size] Added TimeDistributed Dense layer with size={num_channels}")
+
+        # Compile model
         adam_optimizer = Adam(
-            learning_rate=self.params['learning_rate'],
+            learning_rate=learning_rate,
             beta_1=0.9,
             beta_2=0.999,
             epsilon=1e-7,
         )
-        model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
-        model.summary()
+        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
 
-        self.model = model
+        print("[configure_size] Decoder model compiled successfully.")
+        self.model.summary()
+
 
     def train(self, encoded_data, original_data):
         """

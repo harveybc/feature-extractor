@@ -101,8 +101,6 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         config['original_feature_size'] = validation_data.shape[1]
         print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
 
-    mse = 0
-    mae = 0
     initial_size = config['initial_size']
     step_size = config['step_size']
     threshold_error = config['threshold_error']
@@ -119,19 +117,21 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         num_channels = processed_data.shape[-1]
 
+        # Build and train the autoencoder
         autoencoder_manager.build_autoencoder(input_size, current_size, config, num_channels)
         autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
 
         # Evaluate on training data
-        training_mse, training_mae = autoencoder_manager.evaluate(processed_data)
+        training_mse, training_mae = autoencoder_manager.evaluate(processed_data, "Training", config)
         print(f"Training Mean Squared Error with interface size {current_size}: {training_mse}")
         print(f"Training Mean Absolute Error with interface size {current_size}: {training_mae}")
 
         # Evaluate on validation data
-        validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data)
+        validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data, "Validation", config)
         print(f"Validation Mean Squared Error with interface size {current_size}: {validation_mse}")
         print(f"Validation Mean Absolute Error with interface size {current_size}: {validation_mae}")
 
+        # Check stopping condition
         if (incremental_search and validation_mae <= threshold_error) or (not incremental_search and validation_mae >= threshold_error):
             print(f"Optimal interface size found: {current_size} with Validation MSE: {validation_mse} and Validation MAE: {validation_mae}")
             break
@@ -170,6 +170,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         print(f"Debug info saved to {config['remote_log']}.")
 
     print(f"Execution time: {execution_time} seconds")
+
 
 
 

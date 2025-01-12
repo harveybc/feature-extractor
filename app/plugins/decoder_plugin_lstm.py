@@ -26,7 +26,7 @@ class Plugin:
         'l2_reg': 1e-4,
 
         # Learning rate
-        'learning_rate': 0.001,
+        'learning_rate': 0.0001,
     }
 
     # For debugging/tracking
@@ -109,7 +109,7 @@ class Plugin:
         )
 
         # Optional dropout
-        if dropout_rate > 0:
+        if dropout_rate > 0.0:
             self.model.add(Dropout(dropout_rate))
 
         # 2) RepeatVector to expand from (batch_size, hidden_dim) -> (batch_size, output_shape, hidden_dim)

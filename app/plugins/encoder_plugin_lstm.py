@@ -20,9 +20,9 @@ class Plugin:
         'batch_size': 128,
         # Architecture params
         'intermediate_layers': 2,    # Number of LSTM layers
-        'initial_layer_size': 64,    # Base # of hidden units in the first LSTM layer
+        'initial_layer_size': 32,    # Base # of hidden units in the first LSTM layer
         'layer_size_divisor': 2,     # Divisor for subsequent LSTM layers
-        'learning_rate': 0.001,      # Learning rate for Adam optimizer
+        'learning_rate': 0.0001,      # Learning rate for Adam optimizer
         'dropout_rate': 0.0,         # Dropout rate for regularization
         'l2_reg': 1e-4,              # L2 regularization factor
     }

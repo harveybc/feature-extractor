@@ -26,7 +26,7 @@ class Plugin:
         'l2_reg': 1e-4,
 
         # Learning rate
-        'learning_rate': 0.001,
+        'learning_rate': 0.01,
     }
 
     # For debugging/tracking

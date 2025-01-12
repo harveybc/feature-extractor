@@ -1,20 +1,19 @@
-import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import LSTM, Bidirectional, Dense, Input, Flatten, Dropout
+from keras.layers import LSTM, Bidirectional, Dense, Input, Dropout
 from keras.optimizers import Adam
-from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from tensorflow.keras.initializers import GlorotUniform
 
 class Plugin:
     """
-    An encoder plugin using a Bidirectional Long Short-Term Memory (Bi-LSTM) network based on Keras, with dynamically configurable size.
+    An encoder plugin using a Bidirectional Long Short-Term Memory (Bi-LSTM) network based on Keras, 
+    dynamically configurable for both sliding windows and single-row inputs.
     """
 
     plugin_params = {
-
-        'intermediate_layers': 1,
-        'layer_size_divisor': 2,
-        'learning_rate': 0.0001,
-        'dropout_rate': 0.1,
+        'intermediate_layers': 1,  # Number of LSTM layers
+        'layer_size_divisor': 2,  # Factor by which layer sizes decrease
+        'learning_rate': 0.0001,  # Learning rate for Adam optimizer
+        'dropout_rate': 0.1,  # Dropout rate for regularization
     }
 
     plugin_debug_vars = ['input_shape', 'intermediate_layers']
@@ -30,80 +29,85 @@ class Plugin:
     def get_debug_info(self):
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
-    def add_debug_info(self, debug_info):
-        plugin_debug_info = self.get_debug_info()
-        debug_info.update(plugin_debug_info)
-
     def configure_size(self, input_shape, interface_size):
+        """
+        Configures the encoder model with the specified input shape and latent space size.
+        
+        Args:
+            input_shape (tuple): Shape of the input data, e.g., (time_steps, num_features).
+            interface_size (int): Size of the latent space (output dimensions).
+        """
+        # Ensure input_shape is a tuple for compatibility
+        if isinstance(input_shape, int):
+            input_shape = (input_shape, 1)  # Default to single feature if not sliding windows
+
         self.params['input_shape'] = input_shape
 
-        layers = []
-        current_size = input_shape
-        layer_size_divisor = self.params['layer_size_divisor'] 
-        current_location = input_shape
-        int_layers = 0
-        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
-            layers.append(current_location)
-            current_size = max(current_size // layer_size_divisor, interface_size)
-            current_location = interface_size + current_size
-            int_layers += 1
-        layers.append(interface_size)
-        # Debugging message
-        print(f"Encoder Layer sizes: {layers}")
+        # Define input layer
+        inputs = Input(shape=input_shape)
 
-        # set input layer
-        inputs = Input(shape=(input_shape, 1))
+        # LSTM layers
         x = inputs
+        current_size = input_shape[0]  # Time steps
+        layer_sizes = []
 
-        # add Bi-LSTM layers
-        layers_index = 0
-        for size in layers:
-            layers_index += 1
-
-            # add the Bi-LSTM layers
-            if layers_index == 1:
-                x = Bidirectional(LSTM(units=size, activation='tanh', kernel_initializer=GlorotUniform(), return_sequences=True))(x)
-            else:
-                x = Bidirectional(LSTM(units=size, activation='tanh', kernel_initializer=GlorotUniform(), return_sequences=(layers_index < len(layers))))(x)
+        for i in range(self.params['intermediate_layers']):
+            next_size = max(current_size // self.params['layer_size_divisor'], interface_size)
+            layer_sizes.append(next_size)
+            x = Bidirectional(LSTM(units=next_size, activation='tanh', return_sequences=(i < self.params['intermediate_layers'] - 1),
+                                   kernel_initializer=GlorotUniform()))(x)
             x = Dropout(self.params['dropout_rate'])(x)
+            current_size = next_size
 
-        x = Flatten()(x)
+        # Final Dense layer to project into latent space
         outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
-        
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
-                # Define the Adam optimizer with custom parameters
-        adam_optimizer = Adam(
-            learning_rate= self.params['learning_rate'],   # Set the learning rate
-            beta_1=0.9,            # Default value
-            beta_2=0.999,          # Default value
-            epsilon=1e-7,          # Default value
-            amsgrad=False          # Default value
-        )
 
+        # Define and compile the model
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
+        adam_optimizer = Adam(
+            learning_rate=self.params['learning_rate'],
+            beta_1=0.9,
+            beta_2=0.999,
+            epsilon=1e-7,
+        )
         self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
 
-    def train(self, data):
-        print(f"Training encoder with data shape: {data.shape}")
-        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
-        print("Training completed.")
+        print(f"[configure_size] Encoder model configured with input shape {input_shape} and output size {interface_size}")
+        self.encoder_model.summary()
 
     def encode(self, data):
+        """
+        Encodes the given data using the pre-configured encoder model.
+
+        Args:
+            data (np.ndarray): Input data to encode.
+
+        Returns:
+            np.ndarray: Encoded data.
+        """
+        if self.encoder_model is None:
+            raise ValueError("[encode] Encoder model is not configured.")
         print(f"Encoding data with shape: {data.shape}")
-        encoded_data = self.encoder_model.predict(data)
+        encoded_data = self.encoder_model.predict(data, verbose=1)
         print(f"Encoded data shape: {encoded_data.shape}")
         return encoded_data
 
     def save(self, file_path):
+        """
+        Saves the encoder model to the specified file path.
+        
+        Args:
+            file_path (str): Path to save the encoder model.
+        """
         save_model(self.encoder_model, file_path)
         print(f"Encoder model saved to {file_path}")
 
     def load(self, file_path):
+        """
+        Loads a pre-trained encoder model from the specified file path.
+        
+        Args:
+            file_path (str): Path to load the encoder model from.
+        """
         self.encoder_model = load_model(file_path)
         print(f"Encoder model loaded from {file_path}")
-
-# Debugging usage example
-if __name__ == "__main__":
-    plugin = Plugin()
-    plugin.configure_size(input_shape=128, interface_size=4)
-    debug_info = plugin.get_debug_info()
-    print(f"Debug Info: {debug_info}")

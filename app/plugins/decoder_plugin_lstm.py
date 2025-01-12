@@ -38,14 +38,15 @@ class Plugin:
 
 
 
-    def configure_size(self, interface_size, output_shape, num_channels=None, use_sliding_windows=False):
+    def configure_size(self, interface_size, output_shape, num_channels=None, encoder_output_shape=None, use_sliding_windows=False):
         """
         Configures the decoder model with the specified latent space size and output shape.
 
         Args:
             interface_size (int): Size of the latent space (input dimensions).
             output_shape (int): Number of time steps in the output sequence.
-            num_channels (int, optional): Number of output channels (default: None).
+            num_channels (int, optional): Number of output channels (default: 1 for univariate).
+            encoder_output_shape (tuple, optional): Shape of the encoder's output.
             use_sliding_windows (bool, optional): Whether sliding windows are being used (default: False).
         """
         self.params['interface_size'] = interface_size
@@ -94,6 +95,7 @@ class Plugin:
         )
         self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
         print("Decoder model compiled successfully.")
+
 
 
     def train(self, encoded_data, original_data, validation_data):

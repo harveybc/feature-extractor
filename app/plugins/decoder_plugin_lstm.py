@@ -22,7 +22,7 @@ class Plugin:
         'batch_size': 128,
 
         # You can still keep some dropout / L2 if desired:
-        'dropout_rate': 0.1,
+        'dropout_rate': 0.0,
         'l2_reg': 1e-4,
 
         # Learning rate
@@ -138,7 +138,7 @@ class Plugin:
                 )
             )
 
-            if dropout_rate > 0:
+            if dropout_rate > 0.0:
                 self.model.add(Dropout(dropout_rate))
 
             current_size = max(current_size // layer_size_divisor, 8)

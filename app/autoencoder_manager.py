@@ -330,11 +330,10 @@ class AutoencoderManager:
 
         # Calculate MAE
         if config.get('use_sliding_windows', True):
-            # For sliding windows, calculate MAE per window and average across windows
-            mae_per_window = np.mean(np.abs(original_data - reconstructed_data), axis=(1, 2))
-            mae = np.mean(mae_per_window)
+            # For sliding windows, calculate MAE per sample across all features
+            mae = np.mean(np.abs(original_data - reconstructed_data))
         else:
-            # For non-sliding windows, calculate MAE directly across all features
+            # For non-sliding windows, calculate MAE directly
             mae = np.mean(np.abs(original_data - reconstructed_data))
 
         print(f"[calculate_mae] Calculated MAE: {mae}")
@@ -351,19 +350,15 @@ class AutoencoderManager:
 
         # Calculate MSE
         if config.get('use_sliding_windows', True):
-            # For sliding windows, calculate MSE per window and average across windows
-            mse_per_window = np.mean(np.square(original_data - reconstructed_data), axis=(1, 2))
-            mse = np.mean(mse_per_window)
+            # For sliding windows, calculate MSE per sample across all features
+            mse = np.mean(np.square(original_data - reconstructed_data))
         else:
-            # For non-sliding windows, calculate MSE directly across all features
+            # For non-sliding windows, calculate MSE directly
             mse = np.mean(np.square(original_data - reconstructed_data))
 
         print(f"[calculate_mse] Calculated MSE: {mse}")
         return mse
 
 
-        # Calculate MAE
-        mae = np.mean(np.abs(original_data - reconstructed_data))
-        print(f"[calculate_mae] Calculated MAE: {mae}")
-        return mae
+
 

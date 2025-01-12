@@ -273,21 +273,19 @@ class AutoencoderManager:
             window_size = config['window_size']
             num_channels = config.get('num_channels', decoded_data.shape[-1])
 
-            if len(decoded_data.shape) == 3:  # For multi-channel sliding window outputs
-                decoded_data = decoded_data.reshape((decoded_data.shape[0], window_size, num_channels))
-            else:
-                raise ValueError("[decode_data] Unexpected decoded data shape for sliding windows.")
+            if decoded_data.shape[1] != window_size * num_channels:
+                raise ValueError("[decode_data] Decoded data shape does not match sliding window expectations.")
+
+            decoded_data = decoded_data.reshape((decoded_data.shape[0], window_size, num_channels))
         else:
-            # For row-by-row data, flatten the additional dimensions if present
-            if len(decoded_data.shape) == 3:
-                decoded_data = decoded_data.reshape(decoded_data.shape[0], -1)
-            elif len(decoded_data.shape) == 2:
-                pass  # Already in expected shape
-            else:
-                raise ValueError("[decode_data] Unexpected decoded data shape for row-by-row data.")
+            # For row-by-row data, reshape back to the original feature dimensions
+            original_feature_size = config['original_feature_size']
+            if decoded_data.shape[1] != original_feature_size:
+                decoded_data = decoded_data.reshape((decoded_data.shape[0], original_feature_size))
 
         print(f"[decode_data] Decoded data shape: {decoded_data.shape}")
         return decoded_data
+
 
 
 

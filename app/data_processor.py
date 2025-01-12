@@ -90,11 +90,17 @@ def process_data(config):
 
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
+    import time
     start_time = time.time()
     
     print("Running process_data...")
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
+
+    # Dynamically set original feature size after data is processed
+    if not config.get('use_sliding_windows', True):
+        config['original_feature_size'] = validation_data.shape[1]
+        print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
 
     mse = 0
     mae = 0
@@ -127,6 +133,10 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         # Ensure trimmed arrays are NumPy arrays
         validation_trimmed = np.asarray(validation_data[:decoded_data.shape[0]])
         decoded_trimmed = np.asarray(decoded_data)
+
+        # Handle potential shape mismatch for non-sliding window cases
+        if not config.get('use_sliding_windows', True):
+            decoded_trimmed = decoded_trimmed.reshape(validation_trimmed.shape)
 
         # Calculate the MSE and MAE directly
         mse = autoencoder_manager.calculate_mse(validation_trimmed, decoded_trimmed, config)
@@ -176,6 +186,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         print(f"Debug info saved to {config['remote_log']}.")
 
     print(f"Execution time: {execution_time} seconds")
+
 
 
 

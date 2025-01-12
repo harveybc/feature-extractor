@@ -77,7 +77,7 @@ class Plugin:
             padding='same',
             input_shape=(sequence_length, num_filters)
         ))
-        self.model.add(BatchNormalization())
+        #self.model.add(BatchNormalization())
 
         for idx, size in enumerate(layer_sizes[1:], start=1):
             strides = 2 if idx < len(layer_sizes) - 1 else 1
@@ -90,7 +90,7 @@ class Plugin:
                 kernel_initializer=HeNormal(),
                 kernel_regularizer=l2(0.001)
             ))
-            self.model.add(BatchNormalization())
+            #self.model.add(BatchNormalization())
 
         if use_sliding_windows:
             # For sliding windows, retain the temporal dimension

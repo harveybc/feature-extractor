@@ -324,23 +324,43 @@ class AutoencoderManager:
         print(f"[calculate_mae] Original data shape: {original_data.shape}")
         print(f"[calculate_mae] Reconstructed data shape: {reconstructed_data.shape}")
 
-        use_sliding_windows = config.get('use_sliding_windows', True)
-
-        # Handle sliding windows: Aggregate reconstructed data if necessary
-        if use_sliding_windows:
-            window_size = config['window_size']
-            num_channels = original_data.shape[1] // window_size
-
-            # Reshape reconstructed data to match original sliding window format
-            if reconstructed_data.shape != original_data.shape:
-                print("[calculate_mae] Adjusting reconstructed data shape for sliding window comparison...")
-                reconstructed_data = reconstructed_data.reshape(
-                    (original_data.shape[0], original_data.shape[1])
-                )
-
-        # Ensure the data shapes match after adjustments
+        # Ensure the data shapes match
         if original_data.shape != reconstructed_data.shape:
             raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}")
+
+        # Calculate MAE
+        if config.get('use_sliding_windows', True):
+            # For sliding windows, calculate MAE per window and average across windows
+            mae_per_window = np.mean(np.abs(original_data - reconstructed_data), axis=(1, 2))
+            mae = np.mean(mae_per_window)
+        else:
+            # For non-sliding windows, calculate MAE directly across all features
+            mae = np.mean(np.abs(original_data - reconstructed_data))
+
+        print(f"[calculate_mae] Calculated MAE: {mae}")
+        return mae
+
+
+    def calculate_mse(self, original_data, reconstructed_data, config):
+        print(f"[calculate_mse] Original data shape: {original_data.shape}")
+        print(f"[calculate_mse] Reconstructed data shape: {reconstructed_data.shape}")
+
+        # Ensure the data shapes match
+        if original_data.shape != reconstructed_data.shape:
+            raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}")
+
+        # Calculate MSE
+        if config.get('use_sliding_windows', True):
+            # For sliding windows, calculate MSE per window and average across windows
+            mse_per_window = np.mean(np.square(original_data - reconstructed_data), axis=(1, 2))
+            mse = np.mean(mse_per_window)
+        else:
+            # For non-sliding windows, calculate MSE directly across all features
+            mse = np.mean(np.square(original_data - reconstructed_data))
+
+        print(f"[calculate_mse] Calculated MSE: {mse}")
+        return mse
+
 
         # Calculate MAE
         mae = np.mean(np.abs(original_data - reconstructed_data))

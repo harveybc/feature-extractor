@@ -2,6 +2,7 @@ from keras.models import Model, load_model, save_model
 from keras.layers import LSTM, Bidirectional, Dense, Input, Dropout
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform
+from keras.regularizers import l2
 
 class Plugin:
     """
@@ -29,51 +30,86 @@ class Plugin:
     def get_debug_info(self):
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
-    def configure_size(self, input_shape, interface_size):
+    from keras.regularizers import l2
+from keras.callbacks import EarlyStopping
+
+def configure_size(self, input_shape, interface_size, num_channels=None, use_sliding_windows=False):
+    """
+    Configures the encoder model with the specified input shape and latent space size.
+    
+    Args:
+        input_shape (tuple): Shape of the input data, e.g., (time_steps, num_features).
+        interface_size (int): Size of the latent space (output dimensions).
+        num_channels (int, optional): Number of input channels (default: None).
+        use_sliding_windows (bool, optional): Whether sliding windows are being used (default: False).
+    """
+    # Ensure input_shape is a tuple for compatibility
+    if isinstance(input_shape, int):
+        input_shape = (input_shape, 1) if not use_sliding_windows else (input_shape, num_channels)
+
+    self.params['input_shape'] = input_shape
+
+    # Define input layer
+    inputs = Input(shape=input_shape)
+
+    # LSTM layers
+    x = inputs
+    current_size = input_shape[0]  # Time steps
+    layer_sizes = []
+
+    for i in range(self.params['intermediate_layers']):
+        next_size = max(current_size // self.params['layer_size_divisor'], interface_size)
+        layer_sizes.append(next_size)
+        x = Bidirectional(LSTM(
+            units=next_size,
+            activation='tanh',
+            return_sequences=(i < self.params['intermediate_layers'] - 1),
+            kernel_initializer=GlorotUniform(),
+            kernel_regularizer=l2(0.01)  # Added L2 regularization
+        ))(x)
+        current_size = next_size
+    # print the layer sizes
+    print(f"Layer sizes: {layer_sizes}")
+
+    # Final Dense layer to project into latent space
+    outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
+
+    # Define and compile the model
+    self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
+    adam_optimizer = Adam(
+        learning_rate=self.params['learning_rate'],
+        beta_1=0.9,
+        beta_2=0.999,
+        epsilon=1e-7,
+    )
+    self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+
+    print(f"[configure_size] Encoder model configured with input shape {input_shape} and output size {interface_size}")
+    self.encoder_model.summary()
+
+    def train(self, data, validation_data):
         """
-        Configures the encoder model with the specified input shape and latent space size.
+        Trains the encoder model with early stopping.
         
         Args:
-            input_shape (tuple): Shape of the input data, e.g., (time_steps, num_features).
-            interface_size (int): Size of the latent space (output dimensions).
+            data (np.ndarray): Training data.
+            validation_data (np.ndarray): Validation data.
         """
-        # Ensure input_shape is a tuple for compatibility
-        if isinstance(input_shape, int):
-            input_shape = (input_shape, 1)  # Default to single feature if not sliding windows
+        print(f"Training encoder with data shape: {data.shape}")
 
-        self.params['input_shape'] = input_shape
+        # Add early stopping callback
+        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 
-        # Define input layer
-        inputs = Input(shape=input_shape)
-
-        # LSTM layers
-        x = inputs
-        current_size = input_shape[0]  # Time steps
-        layer_sizes = []
-
-        for i in range(self.params['intermediate_layers']):
-            next_size = max(current_size // self.params['layer_size_divisor'], interface_size)
-            layer_sizes.append(next_size)
-            x = Bidirectional(LSTM(units=next_size, activation='tanh', return_sequences=(i < self.params['intermediate_layers'] - 1),
-                                   kernel_initializer=GlorotUniform()))(x)
-            x = Dropout(self.params['dropout_rate'])(x)
-            current_size = next_size
-
-        # Final Dense layer to project into latent space
-        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
-
-        # Define and compile the model
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
-        adam_optimizer = Adam(
-            learning_rate=self.params['learning_rate'],
-            beta_1=0.9,
-            beta_2=0.999,
-            epsilon=1e-7,
+        self.encoder_model.fit(
+            data, data,
+            epochs=self.params['epochs'],
+            batch_size=self.params['batch_size'],
+            validation_data=(validation_data, validation_data),
+            callbacks=[early_stopping],
+            verbose=1
         )
-        self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        print("Training completed.")
 
-        print(f"[configure_size] Encoder model configured with input shape {input_shape} and output size {interface_size}")
-        self.encoder_model.summary()
 
     def encode(self, data):
         """

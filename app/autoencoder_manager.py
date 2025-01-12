@@ -218,29 +218,30 @@ class AutoencoderManager:
 
     def evaluate(self, data, dataset_name, config):
         """
-        Evaluate the autoencoder model on the provided dataset and return the MSE and MAE.
-        
+        Evaluate the autoencoder model on the provided dataset and calculate the MSE and MAE.
+
         Args:
-            data (np.ndarray): Data to evaluate (original input data).
+            data (np.ndarray): Input data to evaluate (original input data).
             dataset_name (str): Name of the dataset (e.g., "Training" or "Validation").
             config (dict): Configuration dictionary.
-        
+
         Returns:
             tuple: Calculated MSE and MAE for the dataset.
         """
         print(f"[evaluate] Evaluating {dataset_name} data with shape: {data.shape}")
 
-        # Reshape data for Conv1D if sliding windows are not used
+        # Reshape data for Conv1D compatibility if sliding windows are not used
         if not config.get('use_sliding_windows', True) and len(data.shape) == 2:
-            data = np.expand_dims(data, axis=-1)  # Add channel dimension for Conv1D compatibility
-            print(f"[evaluate] Reshaped {dataset_name} data for Conv1D: {data.shape}")
+            data = np.expand_dims(data, axis=-1)
+            print(f"[evaluate] Reshaped {dataset_name} data for Conv1D compatibility: {data.shape}")
 
-        # Evaluate the autoencoder on the dataset
+        # Evaluate the autoencoder
         results = self.autoencoder_model.evaluate(data, data, verbose=1)
-        mse, mae = results[0], results[1]  # Retrieve MSE (loss) and MAE (metric)
+        mse, mae = results[0], results[1]  # Retrieve MSE (loss) and MAE
 
         print(f"[evaluate] {dataset_name} Evaluation results - MSE: {mse}, MAE: {mae}")
         return mse, mae
+
 
 
 

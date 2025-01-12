@@ -37,7 +37,7 @@ class AutoencoderManager:
             print(f"Encoder output shape: {encoder_output_shape}")
 
             # Configure the decoder size, passing the encoder's output shape
-            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_output_shape)
+            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_output_shape, use_sliding_windows)
 
             # Get the decoder model
             self.decoder_model = self.decoder_plugin.model

@@ -37,6 +37,15 @@ def create_sliding_windows(data, window_size):
 # app/data_processor.py
 
 def process_data(config):
+    """
+    Process the data based on the configuration.
+    
+    Args:
+        config (dict): Configuration dictionary with parameters for processing.
+    
+    Returns:
+        tuple: Processed training and validation datasets.
+    """
     print(f"Loading data from CSV file: {config['input_file']}")
     data = load_csv(
         file_path=config['input_file'],
@@ -45,14 +54,19 @@ def process_data(config):
     )
     print(f"Data loaded with shape: {data.shape}")
 
-    window_size = config['window_size']
-    print(f"Applying sliding window of size: {window_size}")
+    if config['use_sliding_windows']:
+        window_size = config['window_size']
+        print(f"Applying sliding window of size: {window_size}")
 
-    # Apply sliding windows to the entire dataset (multi-column)
-    windowed_data = create_sliding_windows(data, window_size)
-    print(f"Windowed data shape: {windowed_data.shape}")  # Should be (num_samples, window_size, num_features)
+        # Apply sliding windows to the entire dataset (multi-column)
+        processed_data = create_sliding_windows(data, window_size)
+        print(f"Windowed data shape: {processed_data.shape}")  # Should be (num_samples, window_size, num_features)
+    else:
+        print("Skipping sliding windows. Data will be fed row-by-row.")
+        # Use data row-by-row as a NumPy array
+        processed_data = data.to_numpy()
+        print(f"Processed data shape: {processed_data.shape}")  # Should be (num_samples, num_features)
 
-    # Now do the same for the validation dataset
     print(f"Loading validation data from CSV file: {config['validation_file']}")
     validation_data = load_csv(
         file_path=config['validation_file'],
@@ -61,23 +75,32 @@ def process_data(config):
     )
     print(f"Validation data loaded with shape: {validation_data.shape}")
 
-    # Apply sliding windows to the validation dataset
-    windowed_validation_data = create_sliding_windows(validation_data, window_size)
-    print(f"Windowed validation data shape: {windowed_validation_data.shape}")
+    if config['use_sliding_windows']:
+        # Apply sliding windows to the validation dataset
+        windowed_validation_data = create_sliding_windows(validation_data, config['window_size'])
+        print(f"Windowed validation data shape: {windowed_validation_data.shape}")
+    else:
+        print("Skipping sliding windows for validation data. Data will be fed row-by-row.")
+        # Use validation data row-by-row as a NumPy array
+        windowed_validation_data = validation_data.to_numpy()
+        print(f"Validation processed shape: {windowed_validation_data.shape}")
 
-    # Return the processed datasets (windowed)
-    return windowed_data, windowed_validation_data
+    return processed_data, windowed_validation_data
+
 
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
+    import time
     start_time = time.time()
     
     print("Running process_data...")
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
 
-    mse = 0
-    mae = 0
+    if not config.get('use_sliding_windows', True):
+        config['original_feature_size'] = validation_data.shape[1]
+        print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
+
     initial_size = config['initial_size']
     step_size = config['step_size']
     threshold_error = config['threshold_error']
@@ -86,42 +109,31 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     incremental_search = config['incremental_search']
     
     current_size = initial_size
+    input_size = config['window_size'] if config['use_sliding_windows'] else processed_data.shape[1]
+
     while True:
         print(f"Training with interface size: {current_size}")
         
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         num_channels = processed_data.shape[-1]
 
-        # Build new autoencoder model with the current size
-        autoencoder_manager.build_autoencoder(config['window_size'], current_size, config, num_channels)
-
-        # Train the autoencoder model
+        # Build and train the autoencoder
+        autoencoder_manager.build_autoencoder(input_size, current_size, config, num_channels)
         autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
 
-        # Encode and decode the validation data
-        encoded_data = autoencoder_manager.encode_data(validation_data)  
-        decoded_data = autoencoder_manager.decode_data(encoded_data)
+        # Evaluate on training data
+        training_mse, training_mae = autoencoder_manager.evaluate(processed_data, "Training", config)
+        print(f"Training Mean Squared Error with interface size {current_size}: {training_mse}")
+        print(f"Training Mean Absolute Error with interface size {current_size}: {training_mae}")
 
-        # Since both the original validation data and decoded data now have the same shape,
-        # directly calculate the MSE and MAE without unwindowing.
-        # Trim the data to ensure sizes match
-        min_size = min(validation_data.shape[0], decoded_data.shape[0])
-        validation_trimmed = validation_data[:min_size]
-        decoded_trimmed = decoded_data[:min_size]
+        # Evaluate on validation data
+        validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data, "Validation", config)
+        print(f"Validation Mean Squared Error with interface size {current_size}: {validation_mse}")
+        print(f"Validation Mean Absolute Error with interface size {current_size}: {validation_mae}")
 
-        # Ensure both trimmed arrays are NumPy arrays
-        validation_trimmed = np.asarray(validation_trimmed)
-        decoded_trimmed = np.asarray(decoded_trimmed)
-
-        # Calculate the MSE and MAE directly
-        mse = autoencoder_manager.calculate_mse(validation_trimmed, decoded_trimmed)
-        mae = autoencoder_manager.calculate_mae(validation_trimmed, decoded_trimmed)
-
-        print(f"Mean Squared Error with interface size {current_size}: {mse}")
-        print(f"Mean Absolute Error with interface size {current_size}: {mae}")
-
-        if (incremental_search and mae <= threshold_error) or (not incremental_search and mae >= threshold_error):
-            print(f"Optimal interface size found: {current_size} with MSE: {mse} and MAE: {mae}")
+        # Check stopping condition
+        if (incremental_search and validation_mae <= threshold_error) or (not incremental_search and validation_mae >= threshold_error):
+            print(f"Optimal interface size found: {current_size} with Validation MSE: {validation_mse} and Validation MAE: {validation_mae}")
             break
         else:
             if incremental_search:
@@ -139,23 +151,20 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     print(f"Saved encoder model to {encoder_model_filename}")
     print(f"Saved decoder model to {decoder_model_filename}")
 
-    # Save final configuration and debug information
     end_time = time.time()
     execution_time = end_time - start_time
     debug_info = {
         'execution_time': execution_time,
         'encoder': encoder_plugin.get_debug_info(),
         'decoder': decoder_plugin.get_debug_info(),
-        'mse': mse,
-        'mae': mae
+        'mse': validation_mse,
+        'mae': validation_mae
     }
 
-    # Save debug info
     if 'save_log' in config and config['save_log']:
         save_debug_info(debug_info, config['save_log'])
         print(f"Debug info saved to {config['save_log']}.")
 
-    # Remote log debug info and config
     if 'remote_log' in config and config['remote_log']:
         remote_log(config, debug_info, config['remote_log'], config['username'], config['password'])
         print(f"Debug info saved to {config['remote_log']}.")
@@ -164,59 +173,59 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 
 
 
-# app/data_processor.py
+
 
 def load_and_evaluate_encoder(config):
+    """
+    Load and evaluate a pre-trained encoder with input data.
+
+    Args:
+        config (dict): Configuration dictionary with encoder and data details.
+    """
     model = load_model(config['load_encoder'])
     print(f"Encoder model loaded from {config['load_encoder']}")
 
-    # Load the input data with headers and date based on config
+    # Load the input data
     data = load_csv(
         file_path=config['input_file'],
         headers=config.get('headers', False),
         force_date=config.get('force_date', False)
     )
 
-    # Apply sliding window
-    window_size = config['window_size']
-    windowed_data = create_sliding_windows(data, window_size)
+    # Process data based on whether sliding windows are used
+    if config.get('use_sliding_windows', True):
+        window_size = config['window_size']
+        print(f"Creating sliding windows of size: {window_size}")
+        processed_data = create_sliding_windows(data, window_size)
+        print(f"Processed data shape for sliding windows: {processed_data.shape}")
+    else:
+        # Reshape data to match expected input shape of the encoder
+        print(f"Reshaping data to match encoder input shape.")
+        processed_data = np.expand_dims(data.to_numpy(), axis=-1)  # Add channel dimension
+        print(f"Processed data shape without sliding windows: {processed_data.shape}")
 
-    print(f"Encoding data with shape: {windowed_data.shape}")
-    encoded_data = model.predict(windowed_data)
+    # Predict using the encoder
+    print(f"Encoding data with shape: {processed_data.shape}")
+    encoded_data = model.predict(processed_data, verbose=1)
     print(f"Encoded data shape: {encoded_data.shape}")
 
-    # Reshape encoded_data from (samples, 32, 8) to (samples, 256)
+    # Flatten 3D encoded data to 2D for saving
     if len(encoded_data.shape) == 3:
-        samples, dim1, dim2 = encoded_data.shape
-        encoded_data = encoded_data.reshape(samples, dim1 * dim2)
-        print(f"Reshaped encoded data to: {encoded_data.shape}")
-    elif len(encoded_data.shape) != 2:
+        num_samples, dim1, dim2 = encoded_data.shape
+        encoded_data_reshaped = encoded_data.reshape(num_samples, dim1 * dim2)
+        print(f"Reshaped encoded data to 2D: {encoded_data_reshaped.shape}")
+    elif len(encoded_data.shape) == 2:
+        encoded_data_reshaped = encoded_data
+    else:
         raise ValueError(f"Unexpected encoded_data shape: {encoded_data.shape}")
 
-    if config.get('force_date', False):
-        # Extract corresponding dates for each window
-        dates = data.index[window_size - 1:]
-        # Create a DataFrame with dates and encoded features
-        encoded_df = pd.DataFrame(encoded_data, index=dates)
-        encoded_df.index.name = 'date'
-    else:
-        # Create a DataFrame without dates
-        encoded_df = pd.DataFrame(encoded_data)
+    # Save the encoded data to CSV
+    if config.get('evaluate_encoder'):
+        print(f"Saving encoded data to {config['evaluate_encoder']}")
+        encoded_df = pd.DataFrame(encoded_data_reshaped)
+        encoded_df.to_csv(config['evaluate_encoder'], index=False)
+        print(f"Encoded data saved to {config['evaluate_encoder']}")
 
-    # Assign headers for encoded features, e.g., 'encoded_feature_1', 'encoded_feature_2', etc.
-    feature_names = [f'encoded_feature_{i+1}' for i in range(encoded_data.shape[1])]
-    encoded_df.columns = feature_names
-
-    # Save the encoded data to CSV using the write_csv function
-    evaluate_filename = config['evaluate_encoder']
-    write_csv(
-        file_path=evaluate_filename,
-        data=encoded_df,
-        include_date=config.get('force_date', False),
-        headers=True,  # Always include headers for encoded features
-        force_date=config.get('force_date', False)
-    )
-    print(f"Encoded data saved to {evaluate_filename}")
 
 
 

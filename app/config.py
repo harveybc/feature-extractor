@@ -10,9 +10,10 @@ DEFAULT_VALUES = {
     'evaluate_decoder': './decoder_eval.csv',
     'encoder_plugin': 'cnn',
     'decoder_plugin': 'cnn',
-    'window_size': 128,
-    'threshold_error': 0.3,
-    'initial_size': 8,
+    'use_sliding_windows': False,
+    'window_size': 128, 
+    'threshold_error': 0.5,
+    'initial_size': 16,
     'step_size': 2,
     'save_log': './debug_out.json',
     'remote_log': None,
@@ -24,7 +25,7 @@ DEFAULT_VALUES = {
     'save_config': './config_out.json',
     'quiet_mode': False,
     'force_date': True,
-    'incremental_search': True,
+    'incremental_search': True, # if false performs decresing search instead
     'headers': True,
     'epochs': 200,  # Add epochs here
     'batch_size': 64,  # Add batch_size here

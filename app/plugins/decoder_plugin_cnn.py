@@ -15,7 +15,7 @@ from tensorflow.keras.layers import ZeroPadding1D
 class Plugin:
     plugin_params = {
         'intermediate_layers': 3, 
-        'learning_rate': 0.001,
+        'learning_rate': 0.0001,
         'dropout_rate': 0.001,
     }
 
@@ -51,7 +51,7 @@ class Plugin:
         
         layers = [output_shape*2]
         current_size = output_shape*2
-
+        l2_reg = 1e-2
         for i in range(num_intermediate_layers-1):
             next_size = current_size // 2
             if next_size < interface_size:
@@ -71,9 +71,9 @@ class Plugin:
             filters=layer_sizes[0],
             kernel_size=3,
             strides=1,
-            activation=LeakyReLU(alpha=0.1),
-            kernel_initializer=HeNormal(),
-            kernel_regularizer=l2(0.001),
+            activation='tanh',
+            kernel_initializer=GlorotUniform(),
+            kernel_regularizer=l2(l2_reg),
             padding='same',
             input_shape=(sequence_length, num_filters)
         ))
@@ -86,9 +86,9 @@ class Plugin:
                 kernel_size=3,
                 strides=strides,
                 padding='same',
-                activation=LeakyReLU(alpha=0.1),
-                kernel_initializer=HeNormal(),
-                kernel_regularizer=l2(0.001)
+                activation='tanh',
+                kernel_initializer=GlorotUniform(),
+                kernel_regularizer=l2(l2_reg)
             ))
             #self.model.add(BatchNormalization())
 
@@ -98,9 +98,9 @@ class Plugin:
                 filters=num_channels,
                 kernel_size=3,
                 padding='same',
-                activation=LeakyReLU(alpha=0.1),
-                kernel_initializer=HeNormal(),
-                kernel_regularizer=l2(0.001),
+                activation='tanh',
+                kernel_initializer=GlorotUniform(),
+                kernel_regularizer=l2(l2_reg),
                 name="decoder_output"
             ))
         else:
@@ -108,9 +108,9 @@ class Plugin:
             self.model.add(Flatten(name="decoder_flatten"))
             self.model.add(Dense(
                 units=output_shape,
-                activation=LeakyReLU(alpha=0.1),
-                kernel_initializer=HeNormal(),
-                kernel_regularizer=l2(0.001),
+                activation='linear',
+                kernel_initializer=GlorotUniform(),
+                kernel_regularizer=l2(l2_reg),
                 name="decoder_dense_output"
             ))
 
@@ -121,7 +121,7 @@ class Plugin:
             learning_rate=self.params['learning_rate'],
             beta_1=0.9,
             beta_2=0.999,
-            epsilon=1e-7,
+            epsilon=1e-2,
             amsgrad=False
         )
         self.model.compile(
@@ -138,7 +138,7 @@ class Plugin:
     def train(self, encoded_data, original_data):
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
         original_data = original_data.reshape((original_data.shape[0], -1))
-        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+        early_stopping = EarlyStopping(monitor='loss', patience=25, restore_best_weights=True, verbose=1)
         self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping])
 
     def decode(self, encoded_data, use_sliding_windows, original_feature_size):

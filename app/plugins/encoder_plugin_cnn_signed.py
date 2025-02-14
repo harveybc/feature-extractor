@@ -97,8 +97,8 @@ class Plugin:
             # Add Conv1D and BatchNormalization layers
             x = Conv1D(filters=size, kernel_size=kernel_size, strides=strides, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='valid' )(x)
             print(f"After Conv1D (filters={size}): {x.shape}")
-            x = BatchNormalization()(x)
-            print(f"After BatchNormalization: {x.shape}")
+            #x = BatchNormalization()(x)
+            #print(f"After BatchNormalization: {x.shape}")
             #x = Dropout(self.params['dropout_rate'])(x)
             
             # Add MaxPooling1D layer if necessary
@@ -107,10 +107,11 @@ class Plugin:
             #x = MaxPooling1D(pool_size=pool_size)(x)
 
         # Flatten the output to prepare for the Dense layer
+        x = BatchNormalization()(x)
         x = Flatten()(x)
 
         # Add the last dense layer
-        outputs = Dense(interface_size, input_shape=(interface_size,), activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001))(x)
+        outputs = Dense(interface_size, input_shape=(interface_size,), activation='linear', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001))(x)
         # Add the output reshape layer
         #outputs = Reshape((1, interface_size))(x)
         # Build the encoder model

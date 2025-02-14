@@ -12,7 +12,7 @@ class Plugin:
     
     The decoder uses the inverse of the encoder's layers:
       - It first expands the latent vector (interface_size) via a Dense layer 
-        to the size of the encoder's last LSTM units.
+        to the size of the encoder's final LSTM units.
       - It then repeats this vector for the required number of time steps.
       - Finally, it applies a series of LSTM layers (with sizes reversed from the encoder)
         followed by a TimeDistributed Dense layer to reconstruct the original features.
@@ -75,9 +75,8 @@ class Plugin:
             input_shape (int): Number of time steps to reconstruct (output sequence length).
             num_channels (int, optional): Number of features per time step. Defaults to 1 if None.
             encoder_output_shape (tuple, optional): Not used here.
-            use_sliding_windows (bool, optional): 
-                If True, the decoder's input shape is (interface_size, num_channels);
-                otherwise, it is (interface_size,).
+            use_sliding_windows (bool, optional): Ignored for input shape; the decoder always 
+                expects a 2D latent vector.
         """
         # Store key parameters
         self.params['interface_size'] = interface_size
@@ -87,18 +86,17 @@ class Plugin:
         if num_channels is None:
             num_channels = 1
 
-        # Determine the shape of the decoder's input (latent vector)
-        if not use_sliding_windows:
-            decoder_input_shape = (interface_size,)
-            print(f"[configure_size] Not using sliding windows: decoder_input_shape={decoder_input_shape}")
-        else:
-            decoder_input_shape = (interface_size, num_channels)
-            print(f"[configure_size] Using sliding windows: decoder_input_shape={decoder_input_shape}")
+        # ------------------------------------------------------------
+        # 1. Set decoder input shape to always be 2D: (interface_size,)
+        #    (This matches the encoder's output shape.)
+        # ------------------------------------------------------------
+        decoder_input_shape = (interface_size,)
+        print(f"[configure_size] Decoder input shape set to: {decoder_input_shape}")
 
-        print(f"[configure_size] Decoder will reconstruct {self.params['output_shape']} time steps with {num_channels} feature(s).")
+        print(f"[configure_size] Decoder will reconstruct {self.params['output_shape']} time step(s) with {num_channels} feature(s).")
 
         # ------------------------------------------------------------
-        # 1. Compute the encoder's layer sizes to mirror them.
+        # 2. Compute the encoder's layer sizes to mirror them.
         # ------------------------------------------------------------
         initial_layer_size = self.params.get('initial_layer_size', 32)
         intermediate_layers = self.params.get('intermediate_layers', 3)
@@ -118,18 +116,18 @@ class Plugin:
         latent_dense_units = encoder_layers[-2]
         
         # ------------------------------------------------------------
-        # 2. Define decoder LSTM sizes as the mirror (reverse) of the encoder LSTM sizes.
-        #    (We mirror only the LSTM part, i.e., the encoder_layers excluding the final Dense output.)
+        # 3. Define decoder LSTM sizes as the mirror (reverse) of the encoder LSTM sizes.
+        #    (We mirror only the LSTM part, i.e. the encoder_layers excluding the final Dense output.)
         # ------------------------------------------------------------
         decoder_lstm_sizes = list(reversed(encoder_layers[:-1]))
         print(f"[configure_size] Decoder LSTM sizes (mirrored): {decoder_lstm_sizes}")
 
         # ------------------------------------------------------------
-        # 3. Build the decoder model.
+        # 4. Build the decoder model.
         # ------------------------------------------------------------
         self.model = Sequential(name="decoder")
         
-        # 3.1 Dense layer to map latent vector -> latent_dense_units
+        # 4.1 Dense layer to map latent vector -> latent_dense_units
         self.model.add(
             Dense(
                 latent_dense_units,
@@ -146,11 +144,11 @@ class Plugin:
         if dropout_rate > 0:
             self.model.add(Dropout(dropout_rate, name="decoder_dropout_after_dense"))
         
-        # 3.2 RepeatVector to expand the Dense output to a sequence
+        # 4.2 RepeatVector to expand the Dense output to a sequence
         self.model.add(RepeatVector(self.params['output_shape']))
         print(f"[configure_size] Added RepeatVector layer with output length: {self.params['output_shape']}")
         
-        # 3.3 Add LSTM layers (mirrored from the encoder)
+        # 4.3 Add LSTM layers (mirrored from the encoder)
         for idx, units in enumerate(decoder_lstm_sizes):
             self.model.add(
                 LSTM(
@@ -166,7 +164,7 @@ class Plugin:
             if dropout_rate > 0:
                 self.model.add(Dropout(dropout_rate, name=f"decoder_dropout_after_lstm_{idx+1}"))
         
-        # 3.4 Final TimeDistributed Dense layer to output the reconstructed features per time step.
+        # 4.4 Final TimeDistributed Dense layer to output the reconstructed features per time step.
         self.model.add(
             TimeDistributed(
                 Dense(
@@ -181,7 +179,7 @@ class Plugin:
         print(f"[configure_size] Added TimeDistributed Dense layer to produce {num_channels} feature(s) per time step.")
         
         # ------------------------------------------------------------
-        # 4. Compile the model.
+        # 5. Compile the model.
         # ------------------------------------------------------------
         adam_optimizer = Adam(
             learning_rate=self.params.get('learning_rate', 0.0001),

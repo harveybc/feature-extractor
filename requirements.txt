@@ -5,6 +5,6 @@ pandas
 h5py
 scipy
 build
-pytest=
+pytest
 pdoc3
 keras-multi-head

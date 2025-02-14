@@ -6,189 +6,215 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
 
-
 class Plugin:
     """
-    A strictly 'inverse' decoder plugin that mirrors the encoder layer sizes in reverse.
-    For example, if encoder = [LSTM(64), LSTM(32), Dense(16)],
-    then decoder = [Dense(32), Dense(64), RepeatVector(36), LSTM(64), LSTM(32), TimeDistributed(1)].
+    A decoder plugin that mirrors the encoder's architecture.
     
-    Adjust 'inverted_sizes' below to mirror your encoder exactly.
+    The decoder uses the inverse of the encoder's layers:
+      - It first expands the latent vector (interface_size) via a Dense layer 
+        to the size of the encoder's last LSTM units.
+      - It then repeats this vector for the required number of time steps.
+      - Finally, it applies a series of LSTM layers (with sizes reversed from the encoder)
+        followed by a TimeDistributed Dense layer to reconstruct the original features.
+    
+    The encoder's layer sizes are computed using:
+        initial_layer_size, intermediate_layers, and layer_size_divisor.
     """
-
+    
+    # Default hyperparameters (updated to match the new encoder)
     plugin_params = {
-        # Training hyperparameters
         'epochs': 200,
         'batch_size': 128,
-
-        # You can still keep some dropout / L2 if desired:
         'dropout_rate': 0.1,
-        'l2_reg': 1e-4,
-
-        # Learning rate
-        'learning_rate': 0.001,
+        'l2_reg': 1e-2,           # Matching encoder's default L2 regularization
+        'learning_rate': 0.0001,   # Matching encoder's learning rate
+        
+        # These parameters must mirror the encoder's configuration:
+        'initial_layer_size': 32,
+        'intermediate_layers': 3,
+        'layer_size_divisor': 2,
     }
-
-    # For debugging/tracking
+    
+    # List of variables to include in debugging info (if needed)
     plugin_debug_vars = []
 
     def __init__(self):
+        """
+        Initializes the plugin with default parameters.
+        """
         self.params = self.plugin_params.copy()
         self.model = None
 
     def set_params(self, **kwargs):
+        """
+        Update plugin parameters with provided keyword arguments.
+        """
         for key, value in kwargs.items():
             self.params[key] = value
 
     def get_debug_info(self):
+        """
+        Returns a dictionary with debug information.
+        """
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
-    def configure_size(
-        self, 
-        interface_size, 
-        input_shape,           # <-- second arg matches the manager's call
-        num_channels=None, 
-        encoder_output_shape=None, 
-        use_sliding_windows=False
-    ):
+    def add_debug_info(self, debug_info):
         """
-        Configures the decoder model with the specified latent dimension (interface_size) 
-        and a second parameter (input_shape) which your AutoencoderManager is passing as 
-        'input_shape' but in practice represents the 'number of time steps' to reconstruct.
+        Extends an existing debug dictionary with the plugin's debug info.
+        """
+        plugin_debug_info = self.get_debug_info()
+        debug_info.update(plugin_debug_info)
 
+    def configure_size(self, interface_size, input_shape, num_channels=None,
+                       encoder_output_shape=None, use_sliding_windows=False):
+        """
+        Configures the decoder model by building an architecture that mirrors the encoder.
+        
         Args:
-            interface_size (int): Size of the latent space (input dimension).
-            input_shape (int): Number of time steps (or 'output_shape') the decoder should output.
-            num_channels (int, optional): Number of features (channels) per time step.
-            encoder_output_shape (tuple, optional): Shape of the encoder output (e.g., (latent_dim,)).
-            use_sliding_windows (bool, optional): If True, input to the decoder is (interface_size, num_channels);
-                                                otherwise it's just (interface_size,).
+            interface_size (int): Size of the latent space (matches encoder's interface_size).
+            input_shape (int): Number of time steps to reconstruct (output sequence length).
+            num_channels (int, optional): Number of features per time step. Defaults to 1 if None.
+            encoder_output_shape (tuple, optional): Not used here.
+            use_sliding_windows (bool, optional): 
+                If True, the decoder's input shape is (interface_size, num_channels);
+                otherwise, it is (interface_size,).
         """
-        # Store the parameters internally
+        # Store key parameters
         self.params['interface_size'] = interface_size
-
-        # Because the manager is passing 'input_shape' in the 2nd position, 
-        # we interpret that as the time dimension to reconstruct
-        self.params['output_shape'] = input_shape
-
+        self.params['output_shape'] = input_shape  # Number of time steps to reconstruct
+        
+        # Default to univariate if num_channels is not provided
         if num_channels is None:
-            num_channels = 1  # default univariate
+            num_channels = 1
 
-        # Decide the actual input shape to the decoder (the latent vector shape)
+        # Determine the shape of the decoder's input (latent vector)
         if not use_sliding_windows:
-            # shape is just (latent_dim,)
             decoder_input_shape = (interface_size,)
             print(f"[configure_size] Not using sliding windows: decoder_input_shape={decoder_input_shape}")
         else:
-            # shape is (latent_dim, num_channels)
             decoder_input_shape = (interface_size, num_channels)
             print(f"[configure_size] Using sliding windows: decoder_input_shape={decoder_input_shape}")
 
-        print(f"[configure_size] Decoder will reconstruct time steps={self.params['output_shape']}, "
-            f"features={num_channels}")
+        print(f"[configure_size] Decoder will reconstruct {self.params['output_shape']} time steps with {num_channels} feature(s).")
 
-        # Build the decoder model
+        # ------------------------------------------------------------
+        # 1. Compute the encoder's layer sizes to mirror them.
+        # ------------------------------------------------------------
+        initial_layer_size = self.params.get('initial_layer_size', 32)
+        intermediate_layers = self.params.get('intermediate_layers', 3)
+        layer_size_divisor = self.params.get('layer_size_divisor', 2)
+        
+        # Compute encoder layers as done in the encoder plugin:
+        #   encoder_layers = [initial_layer_size, initial_layer_size//divisor, ..., interface_size]
+        encoder_layers = []
+        current_size = initial_layer_size
+        for i in range(intermediate_layers):
+            encoder_layers.append(current_size)
+            current_size = max(current_size // layer_size_divisor, 1)
+        encoder_layers.append(interface_size)
+        print(f"[configure_size] Encoder layer sizes computed: {encoder_layers}")
+        
+        # The last LSTM layer in the encoder (before the final Dense) used units = encoder_layers[-2]
+        latent_dense_units = encoder_layers[-2]
+        
+        # ------------------------------------------------------------
+        # 2. Define decoder LSTM sizes as the mirror (reverse) of the encoder LSTM sizes.
+        #    (We mirror only the LSTM part, i.e., the encoder_layers excluding the final Dense output.)
+        # ------------------------------------------------------------
+        decoder_lstm_sizes = list(reversed(encoder_layers[:-1]))
+        print(f"[configure_size] Decoder LSTM sizes (mirrored): {decoder_lstm_sizes}")
+
+        # ------------------------------------------------------------
+        # 3. Build the decoder model.
+        # ------------------------------------------------------------
         self.model = Sequential(name="decoder")
-
-        # Example hyperparameters
-        l2_reg = self.params.get('l2_reg', 1e-4)
-        dropout_rate = self.params.get('dropout_rate', 0.0)
-        learning_rate = self.params.get('learning_rate', 0.001)
-
-        # 1) Dense layer to expand from latent_dim -> some initial hidden size
-        initial_layer_size = self.params.get('initial_layer_size', 64)
+        
+        # 3.1 Dense layer to map latent vector -> latent_dense_units
         self.model.add(
             Dense(
-                initial_layer_size,
+                latent_dense_units,
                 input_shape=decoder_input_shape,
-                activation='relu',
+                activation='relu',  # Using ReLU for expansion; adjust if necessary.
                 kernel_initializer=HeNormal(),
-                kernel_regularizer=l2(l2_reg),
-                name="decoder_input"
+                kernel_regularizer=l2(self.params.get('l2_reg', 1e-2)),
+                name="decoder_dense_expand"
             )
         )
-
-        # Optional dropout
+        
+        # Optional dropout after Dense expansion
+        dropout_rate = self.params.get('dropout_rate', 0.0)
         if dropout_rate > 0:
-            self.model.add(Dropout(dropout_rate))
-
-        # 2) RepeatVector to expand from (batch_size, hidden_dim) -> (batch_size, output_shape, hidden_dim)
+            self.model.add(Dropout(dropout_rate, name="decoder_dropout_after_dense"))
+        
+        # 3.2 RepeatVector to expand the Dense output to a sequence
         self.model.add(RepeatVector(self.params['output_shape']))
-        print(f"[configure_size] Added RepeatVector layer with size: {self.params['output_shape']}")
-
-        # 3) Build multiple LSTM layers that go from the initial_layer_size down 
-        #    or however you'd like to define them.
-        current_size = initial_layer_size
-        intermediate_layers = self.params.get('intermediate_layers', 2)
-        layer_size_divisor = self.params.get('layer_size_divisor', 2)
-
-        for i in range(intermediate_layers):
-            # For "inverse" logic, you might keep or shrink the LSTM sizes as you like
-            lstm_units = max(current_size, 8)  # ensure not too small
-            print(f"[configure_size] Adding LSTM layer {i+1} with size={lstm_units}")
-
+        print(f"[configure_size] Added RepeatVector layer with output length: {self.params['output_shape']}")
+        
+        # 3.3 Add LSTM layers (mirrored from the encoder)
+        for idx, units in enumerate(decoder_lstm_sizes):
             self.model.add(
                 LSTM(
-                    units=lstm_units,
+                    units=units,
                     activation='tanh',
                     recurrent_activation='sigmoid',
+                    return_sequences=True,
                     kernel_initializer=GlorotUniform(),
-                    kernel_regularizer=l2(l2_reg),
-                    return_sequences=True  # we want a full sequence for each time step
+                    kernel_regularizer=l2(self.params.get('l2_reg', 1e-2)),
+                    name=f"decoder_lstm_{idx+1}"
                 )
             )
-
-            if dropout_rate > 0.0:
-                self.model.add(Dropout(dropout_rate))
-
-            current_size = max(current_size // layer_size_divisor, 8)
-
-        # 4) Final TimeDistributed Dense to produce (num_channels) features at each timestep
+            if dropout_rate > 0:
+                self.model.add(Dropout(dropout_rate, name=f"decoder_dropout_after_lstm_{idx+1}"))
+        
+        # 3.4 Final TimeDistributed Dense layer to output the reconstructed features per time step.
         self.model.add(
             TimeDistributed(
                 Dense(
                     num_channels,
-                    activation='tanh',
+                    activation='linear',  # Linear activation mirrors the encoder's Dense projection.
                     kernel_initializer=GlorotUniform(),
-                    kernel_regularizer=l2(l2_reg)
+                    kernel_regularizer=l2(self.params.get('l2_reg', 1e-2))
                 ),
                 name="decoder_output"
             )
         )
-        print(f"[configure_size] Added TimeDistributed Dense layer with size={num_channels}")
-
-        # Compile model
+        print(f"[configure_size] Added TimeDistributed Dense layer to produce {num_channels} feature(s) per time step.")
+        
+        # ------------------------------------------------------------
+        # 4. Compile the model.
+        # ------------------------------------------------------------
         adam_optimizer = Adam(
-            learning_rate=learning_rate,
+            learning_rate=self.params.get('learning_rate', 0.0001),
             beta_1=0.9,
             beta_2=0.999,
             epsilon=1e-7,
         )
         self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
-
         print("[configure_size] Decoder model compiled successfully.")
         self.model.summary()
 
-
     def train(self, encoded_data, original_data):
         """
-        Train the inverse decoder with (encoded_data -> original_data).
-
-        - encoded_data shape: (batch_size, latent_dim)
-        - original_data shape: (batch_size, output_steps, output_channels)
+        Train the decoder model using (encoded_data -> original_data).
+        
+        Args:
+            encoded_data (np.ndarray): Latent vectors with shape (batch_size, interface_size)
+              (if not using sliding windows).
+            original_data (np.ndarray): The target sequences with shape 
+              (batch_size, output_steps, output_channels).
         """
         if self.model is None:
             raise ValueError("[train] Decoder model is not configured. Call configure_size first.")
-
+        
         print(f"[train] Training with encoded_data shape={encoded_data.shape}, original_data shape={original_data.shape}")
-        epochs = self.params['epochs']
-        batch_size = self.params['batch_size']
-
-        # If original_data is (batch_size, output_steps) for univariate, reshape => (batch_size, output_steps, 1)
+        epochs = self.params.get('epochs', 200)
+        batch_size = self.params.get('batch_size', 128)
+        
+        # If original_data is univariate with shape (batch_size, output_steps),
+        # reshape it to (batch_size, output_steps, 1)
         if len(original_data.shape) == 2:
             original_data = np.expand_dims(original_data, axis=-1)
-
-        # Potentially add early stopping
+        
         early_stopping = EarlyStopping(monitor='loss', patience=5, restore_best_weights=True)
         history = self.model.fit(
             encoded_data, original_data,
@@ -202,40 +228,55 @@ class Plugin:
 
     def decode(self, encoded_data):
         """
-        Decode latent vectors back into time-series sequences.
+        Decodes latent vectors back into time-series sequences.
         
-        Returns shape: (batch_size, output_steps, output_channels).
-                       If output_channels=1, final shape => (batch_size, output_steps).
+        Args:
+            encoded_data (np.ndarray): Input latent vectors.
+        
+        Returns:
+            np.ndarray: Reconstructed sequences with shape 
+              (batch_size, output_steps, output_channels). If output_channels == 1,
+              the last dimension is squeezed.
         """
         if self.model is None:
             raise ValueError("[decode] Decoder model is not configured.")
-
+        
         print(f"[decode] Decoding data with shape={encoded_data.shape}")
         decoded_data = self.model.predict(encoded_data)
         print(f"[decode] Decoded data shape={decoded_data.shape}")
-
-        # If univariate => (batch_size, time_steps, 1), we can squeeze last dimension
+        
+        # If univariate, squeeze the last dimension
         if decoded_data.shape[-1] == 1:
             decoded_data = decoded_data.squeeze(axis=-1)
         return decoded_data
 
     def calculate_mse(self, original_data, reconstructed_data):
         """
-        Calculate MSE between original_data and reconstructed_data.
-        Expects shapes => (batch_size, time_steps, 1) for univariate or (batch_size, time_steps, channels).
+        Calculates the Mean Squared Error (MSE) between the original and reconstructed data.
+        
+        Args:
+            original_data (np.ndarray): Original data (shape: (batch_size, time_steps, channels) 
+                or (batch_size, time_steps) for univariate).
+            reconstructed_data (np.ndarray): Reconstructed data.
+        
+        Returns:
+            float: The computed MSE.
         """
-        if len(original_data.shape) == 2:  # (batch_size, time_steps)
+        if len(original_data.shape) == 2:
             original_data = np.expand_dims(original_data, axis=-1)
-        if len(reconstructed_data.shape) == 2:  # (batch_size, time_steps)
+        if len(reconstructed_data.shape) == 2:
             reconstructed_data = np.expand_dims(reconstructed_data, axis=-1)
-
+        
         mse = np.mean(np.square(original_data - reconstructed_data))
         print(f"[calculate_mse] MSE={mse}")
         return mse
 
     def save(self, file_path):
         """
-        Save the decoder model.
+        Saves the decoder model to the specified file path.
+        
+        Args:
+            file_path (str): The path where the model will be saved.
         """
         if self.model is None:
             raise ValueError("[save] Decoder model is not configured.")
@@ -244,9 +285,10 @@ class Plugin:
 
     def load(self, file_path):
         """
-        Load a pre-trained decoder model from file.
+        Loads a pre-trained decoder model from the specified file path.
+        
+        Args:
+            file_path (str): The path from which to load the model.
         """
         self.model = load_model(file_path)
         print(f"[load] Decoder model loaded from {file_path}")
-
-

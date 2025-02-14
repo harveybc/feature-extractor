@@ -1,33 +1,32 @@
+# Revised Encoder Plugin Code
+import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import LSTM, Dense, Input, Dropout, BatchNormalization
+from keras.layers import LSTM, Dense, Input, BatchNormalization
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
-import numpy as np
-
 
 class Plugin:
     """
-    An encoder plugin using an LSTM network based on Keras,
-    dynamically configurable for both sliding windows and single-row inputs.
-    Incorporates ideas from your predictor snippet: flexible layer sizing, dropout, etc.
+    An encoder plugin using an LSTM network based on Keras.
+    This version replicates the layer sizing and model architecture from the predictor plugin.
     """
 
+    # Updated default parameters to mirror predictor's design
     plugin_params = {
         # Training params
         'epochs': 200,
         'batch_size': 128,
         # Architecture params
-        'intermediate_layers': 2,    # Number of LSTM layers
-        'initial_layer_size': 128,    # Base # of hidden units in the first LSTM layer
-        'layer_size_divisor': 2,     # Divisor for subsequent LSTM layers
-        'learning_rate': 0.001,      # Learning rate for Adam optimizer
-        'dropout_rate': 0.1,         # Dropout rate for regularization
-        'l2_reg': 1e-4,              # L2 regularization factor
+        'intermediate_layers': 3,        # Number of LSTM layers before the final projection
+        'initial_layer_size': 32,        # Base number of hidden units in the first LSTM layer
+        'layer_size_divisor': 2,         # Divisor to compute subsequent layer sizes
+        'learning_rate': 0.0001,         # Learning rate for the Adam optimizer
+        'l2_reg': 1e-2,                  # L2 regularization factor (matching predictor)
     }
 
-    plugin_debug_vars = []
+    plugin_debug_vars = []  # You can add any variables you need to debug
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -56,6 +55,7 @@ class Plugin:
     def configure_size(self, input_shape, interface_size, num_channels=None, use_sliding_windows=False):
         """
         Configures the encoder model with the specified input shape and latent space size.
+        This method builds an LSTM-based encoder model following the architecture of the predictor plugin.
 
         Args:
             input_shape (tuple or int): Shape of the input data (time_steps, num_channels) or just time_steps (int).
@@ -69,62 +69,78 @@ class Plugin:
                 input_shape = (input_shape, num_channels if num_channels else 1)
             else:
                 print("[configure_size] WARNING: Received an int for input_shape without sliding windows.")
-                print("                Will assume 1 feature => shape = (time_steps, 1).")
+                print("                Assuming 1 feature => shape = (time_steps, 1).")
                 input_shape = (input_shape, 1)
 
-        time_steps, features = input_shape
         self.params['input_shape'] = input_shape  # store for debugging
 
-        # --- Build the LSTM-based encoder ---
-        print(f"[configure_size] Building encoder with input_shape={input_shape}, interface_size={interface_size}")
-        l2_reg = self.params.get('l2_reg', 1e-4)
-        dropout_rate = self.params.get('dropout_rate', 0.0)
-        initial_layer_size = self.params.get('initial_layer_size', 64)
+        # --- Build the LSTM-based encoder using predictor-style logic ---
+        # Extract parameters
+        intermediate_layers = self.params.get('intermediate_layers', 3)
+        initial_layer_size = self.params.get('initial_layer_size', 32)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
-        intermediate_layers = self.params.get('intermediate_layers', 2)
+        l2_reg = self.params.get('l2_reg', 1e-2)
+        learning_rate = self.params.get('learning_rate', 0.0001)
 
-        # Input
-        encoder_input = Input(shape=input_shape, name="encoder_input")
-
-        # Dynamically create LSTM layers
-        x = encoder_input
+        # Build the list of layer sizes
+        # For each intermediate LSTM, compute the number of units and then finally append interface_size.
+        layers = []
         current_size = initial_layer_size
-
         for i in range(intermediate_layers):
-            # Example logic: from initial_layer_size down to at least interface_size
-            lstm_units = max(current_size, interface_size)
-            print(f"[configure_size] Adding LSTM layer {i+1} with size={lstm_units}")
+            layers.append(current_size)
+            current_size = max(current_size // layer_size_divisor, 1)  # Lower bound is 1
+        layers.append(interface_size)  # Final output layer matches the latent dimension
 
+        print(f"[configure_size] LSTM Layer sizes: {layers}")
+        print(f"[configure_size] LSTM input shape: {input_shape}")
+
+        # Input layer
+        encoder_input = Input(shape=input_shape, name="encoder_input")
+        x = encoder_input
+
+        # Add LSTM layers with return_sequences=True for all layers except final Dense projection
+        idx = 0
+        for size in layers[:-1]:
+            idx += 1
+            if size > 1:
+                x = LSTM(
+                    units=size,
+                    activation='tanh',
+                    recurrent_activation='sigmoid',
+                    return_sequences=True,
+                    name=f"lstm_layer_{idx}"
+                )(x)
+
+        # Add a final LSTM layer without return_sequences.
+        # It uses the penultimate layer size (i.e. layers[-2]) as units.
+        if len(layers) >= 2:
             x = LSTM(
-                units=lstm_units,
+                units=layers[-2],
                 activation='tanh',
                 recurrent_activation='sigmoid',
-                kernel_initializer=HeNormal(),
-                kernel_regularizer=l2(l2_reg),
-                return_sequences=True if i < (intermediate_layers - 1) else False
+                return_sequences=False,
+                name="lstm_layer_final"
             )(x)
+        else:
+            # In case no intermediate layers are specified, this block would be reached.
+            pass
 
-            # Optional dropout
-            if dropout_rate > 0.0:
-                x = Dropout(dropout_rate)(x)
+        # Batch normalization after the final LSTM layer
+        x = BatchNormalization(name="batch_norm_final")(x)
 
-            # Optional batch normalization (comment out if you don’t want it):
-            x = BatchNormalization()(x)
+        # Final Dense layer to project into the latent space with activation 'linear'
+        encoder_output = Dense(
+            units=layers[-1],
+            activation='linear',
+            kernel_initializer=GlorotUniform(),
+            kernel_regularizer=l2(l2_reg),
+            name="encoder_output"
+        )(x)
 
-            # Decrease hidden size for next layer
-            current_size = max(current_size // layer_size_divisor, interface_size)
-
-        # After the final LSTM (which returns last output), project to interface_size
-        encoder_output = Dense(interface_size, activation='tanh',
-                               kernel_initializer=GlorotUniform(),
-                               kernel_regularizer=l2(l2_reg),
-                               name="encoder_output")(x)
-
+        # Create and compile the model
         self.encoder_model = Model(inputs=encoder_input, outputs=encoder_output, name="encoder")
-
-        # Compile
         adam_optimizer = Adam(
-            learning_rate=self.params['learning_rate'],
+            learning_rate=learning_rate,
             beta_1=0.9,
             beta_2=0.999,
             epsilon=1e-7,
@@ -135,9 +151,7 @@ class Plugin:
 
     def train(self, data, validation_data):
         """
-        Trains the encoder model on the provided data in an autoencoder-like fashion: input->output = data.
-        For a pure encoder, you'd typically combine with a decoder. But if you're
-        just training the encoder alone, you can use data->data as a self-reconstruction loss.
+        Trains the encoder model on the provided data in a self-reconstruction fashion.
 
         Args:
             data (np.ndarray): Training data of shape (batch_size, time_steps, features).
@@ -150,7 +164,7 @@ class Plugin:
         epochs = self.params['epochs']
         batch_size = self.params['batch_size']
 
-        # Early stopping
+        # Early stopping callback
         early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 
         history = self.encoder_model.fit(
@@ -167,13 +181,13 @@ class Plugin:
 
     def encode(self, data):
         """
-        Runs forward pass through the encoder to map data -> latent vectors.
+        Runs a forward pass through the encoder to map data to latent vectors.
 
         Args:
-            data (np.ndarray): Shape (batch_size, time_steps, features).
+            data (np.ndarray): Input data of shape (batch_size, time_steps, features).
 
         Returns:
-            encoded_data (np.ndarray): Encoded latent vectors of shape (batch_size, interface_size).
+            np.ndarray: Encoded latent vectors of shape (batch_size, interface_size).
         """
         if self.encoder_model is None:
             raise ValueError("[encode] Encoder model is not configured.")

@@ -34,7 +34,7 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, interface_size, num_channels,  output_shape, use_sliding_windows ):
+    def configure_size(self, interface_size, input_shape, num_channels,  output_shape, use_sliding_windows ):
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 

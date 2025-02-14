@@ -84,7 +84,7 @@ class AutoencoderManager:
 
 
 
-    def train_autoencoder(self, data, epochs=100, batch_size=32, config=None):
+    def train_autoencoder(self, data, epochs=100, batch_size=128, config=None):
         try:
             print(f"[train_autoencoder] Received data with shape: {data.shape}")
 

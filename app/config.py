@@ -1,6 +1,6 @@
 DEFAULT_VALUES = {
-    'input_file': './tests/data/normalized_d1.csv',
-    'validation_file': './tests/data/normalized_d2.csv',
+    'input_file': './tests/data/phase_1_normalized_d1.csv',
+    'validation_file': './tests/data/phase_1_normalized_d2.csv',
     'output_file': './csv_output.csv',
     'save_encoder': './encoder_model.h5',
     'save_decoder': './decoder_model.h5',
@@ -11,7 +11,7 @@ DEFAULT_VALUES = {
     'encoder_plugin': 'cnn',
     'decoder_plugin': 'cnn',
     'use_sliding_windows': False,
-    'window_size': 128, 
+    'window_size': 256, 
     'threshold_error': 0.5,
     'initial_size': 16,
     'step_size': 2,

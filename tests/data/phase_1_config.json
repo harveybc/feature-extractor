@@ -1,7 +1,0 @@
-{
-    "input_file": "tests\\data\\eurusd_hourly_dataset_aligned_2011_2020.csv",
-    "output_file": "phase_1_preprocessor_output.csv",
-    "save_config": "phase_1_config.json",
-    "dataset_prefix": "phase_1_base_",
-    "target_prefix": "phase_1_normalized_"
-}

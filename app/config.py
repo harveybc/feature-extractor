@@ -29,7 +29,7 @@ DEFAULT_VALUES = {
     'headers': True,
     'epochs': 200,  # Add epochs here
     'batch_size': 64,  # Add batch_size here
-    'learning_rate': 0.001,  # Add learning_rate here
+    'learning_rate': 0.0001,  # Add learning_rate here
     'dataset_periodicity': '1h'  # Add dataset_periodicity here, can be 1m, 5m, 15m, 30m, 1h, 4h, daily
 }
 

@@ -139,7 +139,7 @@ class Plugin:
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
         original_data = original_data.reshape((original_data.shape[0], -1))
         early_stopping = EarlyStopping(monitor='loss', patience=25, restore_best_weights=True, verbose=1)
-        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping])
+        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping],validation_split = 0.2)
 
     def decode(self, encoded_data, use_sliding_windows, original_feature_size):
         print(f"[decode] Decoding data with shape: {encoded_data.shape}")

@@ -115,7 +115,7 @@ class AutoencoderManager:
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
 
             # Implement Early Stopping
-            early_stopping = EarlyStopping(monitor='loss', patience=25, restore_best_weights=True)
+            early_stopping = EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True)
 
             # Start training with early stopping
             history = self.autoencoder_model.fit(
@@ -124,7 +124,8 @@ class AutoencoderManager:
                 epochs=epochs,
                 batch_size=batch_size,
                 verbose=1,
-                callbacks=[early_stopping]
+                callbacks=[early_stopping],
+                validation_split = 0.2
             )
 
             # Log training loss

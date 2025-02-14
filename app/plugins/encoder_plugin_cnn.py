@@ -137,7 +137,7 @@ class Plugin:
 
         # Now proceed with training
         print(f"Training encoder with data shape: {data.shape}")
-        early_stopping = EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True)
+        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True)
         self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping], validation_split = 0.2)
         print("Training completed.")
 

@@ -1,25 +1,27 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Conv1D, GlobalAveragePooling1D, Dense, Input, BatchNormalization, LeakyReLU
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
+from keras.layers import BatchNormalization, LeakyReLU, Reshape
 from tensorflow.keras.losses import Huber
 
 class Plugin:
     """
-    A CNN-based encoder plugin. The architecture is dynamically configured
-    using the same layer size calculation as the ANN plugin.
+    An encoder plugin using a convolutional neural network (CNN) based on Keras, with dynamically configurable size.
     """
+
     plugin_params = {
-        'intermediate_layers': 3,
-        'initial_layer_size': 128,
-        'layer_size_divisor': 2,
-        'l2_reg': 1e-5,
-        # (Optional dropout_rate could be added if needed)
+
+        'intermediate_layers': 3, 
+        'learning_rate': 0.00002,
+        'dropout_rate': 0.001,
     }
-    plugin_debug_vars = ['input_dim', 'encoding_dim']
+
+    plugin_debug_vars = ['input_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -30,114 +32,120 @@ class Plugin:
             self.params[key] = value
 
     def get_debug_info(self):
-        return {var: self.params.get(var, None) for var in self.plugin_debug_vars}
+        return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
-        debug_info.update(self.get_debug_info())
+        plugin_debug_info = self.get_debug_info()
+        debug_info.update(plugin_debug_info)
 
-    def configure_size(self, input_dim, encoding_dim, num_channels=None, use_sliding_windows=False):
+    def configure_size(self, input_shape, interface_size, num_channels, use_sliding_windows):
         """
-        Configures the CNN-based encoder.
+        Configure the encoder based on input shape, interface size, and channel dimensions.
         
         Args:
-            input_dim (int or tuple): Length of the input sequence. If sliding windows are used,
-                this should be a tuple (window_size, num_channels).
-            encoding_dim (int): Dimension of the latent space.
-            num_channels (int, optional): Number of input channels (if not provided, defaults to 1).
-                Ignored if sliding windows mode is enabled.
-            use_sliding_windows (bool): If True, the input shape is assumed to be (window_size, num_channels)
-                (i.e. input_dim is a tuple) and the encoder will preserve the time dimension.
+            input_shape (int): Length of the sequence or row.
+            interface_size (int): Dimension of the bottleneck layer.
+            num_channels (int): Number of input channels.
+            use_sliding_windows (bool): Whether sliding windows are being used.
         """
-        self.params['encoding_dim'] = encoding_dim
-        if use_sliding_windows:
-            if not isinstance(input_dim, tuple):
-                raise ValueError("In sliding-window mode, input_dim must be a tuple (window_size, num_channels).")
-            # Use the provided tuple directly.
-            cnn_input_shape = input_dim  
-            # Also store window_size and channels separately for debugging purposes.
-            self.params['input_dim'] = input_dim[0]
-            self.params['num_channels'] = input_dim[1]
-        else:
-            self.params['input_dim'] = input_dim
-            if num_channels is None:
-                num_channels = 1
-            self.params['num_channels'] = num_channels
-            cnn_input_shape = (input_dim, num_channels)
+        print(f"[DEBUG] Starting encoder configuration with input_shape={input_shape}, interface_size={interface_size}, num_channels={num_channels}, use_sliding_windows={use_sliding_windows}")
 
-        # Compute layer sizes using the same method as the ANN plugin:
-        intermediate_layers = self.params.get('intermediate_layers', 3)
-        initial_layer_size = self.params.get('initial_layer_size', 128)
-        layer_size_divisor = self.params.get('layer_size_divisor', 2)
-        l2_reg = self.params.get('l2_reg', 1e-5)
-        learning_rate = self.params.get('learning_rate', 0.00002)
+        self.params['input_shape'] = input_shape
 
-        layers = []
-        current_size = initial_layer_size
-        for i in range(intermediate_layers):
-            layers.append(current_size)
-            current_size = max(current_size // layer_size_divisor, 1)
-        layers.append(encoding_dim)
-        print(f"[configure_size] CNN Layer sizes (filters): {layers}")
-        if use_sliding_windows:
-            print(f"[configure_size] Input shape (sliding windows): {cnn_input_shape}")
-        else:
-            print(f"[configure_size] Input sequence length: {input_dim}, Channels: {num_channels}")
+        # Determine the input shape for the first Conv1D layer
+        adjusted_channels = num_channels if use_sliding_windows else 1
 
-        # Define input layer
-        inputs = Input(shape=cnn_input_shape, name="encoder_input")
+        # Initialize layers array with input_shape
+        layers = [adjusted_channels]  # First layer matches the number of input channels
+        num_intermediate_layers = self.params['intermediate_layers']
+
+        # Calculate sizes of intermediate layers based on downscaling by 2
+        current_size = adjusted_channels
+        for i in range(num_intermediate_layers - 1):
+            next_size = current_size // 2  # Scale down by half
+            if next_size < interface_size:
+                next_size = interface_size  # Ensure we don't go below the interface_size
+            layers.append(next_size)
+            current_size = next_size
+
+        # Append the final layer which is the interface size
+        layers.append(interface_size)
+        print(f"[DEBUG] Encoder Layer sizes: {layers}")
+
+        # Input layer
+        inputs = Input(shape=(input_shape, adjusted_channels))
         x = inputs
+        print(f"[DEBUG] Input shape: {x.shape}")
 
-        # First Conv1D layer (stride=1)
-        x = Conv1D(filters=layers[0], kernel_size=3, strides=1, padding='same',
-                activation=LeakyReLU(alpha=0.1),
-                kernel_initializer=HeNormal(),
-                kernel_regularizer=l2(l2_reg),
-                name="conv1d_layer_1")(x)
-        x = BatchNormalization(name="batch_norm_1")(x)
-
-        # Add intermediate layers with stride=2 for downsampling
-        for i, filters in enumerate(layers[1:-1], start=2):
-            x = Conv1D(filters=filters, kernel_size=3, strides=2, padding='same',
-                    activation=LeakyReLU(alpha=0.1),
-                    kernel_initializer=HeNormal(),
-                    kernel_regularizer=l2(l2_reg),
-                    name=f"conv1d_layer_{i}")(x)
-            x = BatchNormalization(name=f"batch_norm_{i}")(x)
-
-        # Final Conv1D layer to produce latent representation
-        x = Conv1D(filters=layers[-1], kernel_size=1, strides=1, padding='same',
-                activation='linear',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg),
-                name="conv1d_final")(x)
-        x = BatchNormalization(name="batch_norm_final")(x)
+        # Initial Conv1D layer
+        x = Conv1D(filters=layers[0], kernel_size=3, strides=1, activation='tanh',
+                kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
+        print(f"[DEBUG] After Conv1D (filters={layers[0]}) shape: {x.shape}")
         
-        # Collapse time dimension only in non-sliding mode
-        if not use_sliding_windows:
-            x = GlobalAveragePooling1D()(x)
-        outputs = x
+        # Add intermediate layers with stride=2
+        for i, size in enumerate(layers[1:-1]):
+            x = Conv1D(filters=size, kernel_size=3, strides=2, activation='tanh',
+                    kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
+            print(f"[DEBUG] After Conv1D (filters={size}, strides=2) shape: {x.shape}")
+            x = BatchNormalization()(x)
+            print(f"[DEBUG] After BatchNormalization shape: {x.shape}")
 
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_cnn")
-        adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
-        self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
-        print("[configure_size] Encoder Model Summary:")
-        self.encoder_model.summary()
+        # Final Conv1D layer to match the interface size
+        x = Conv1D(filters=interface_size, kernel_size=1, strides=1, activation='tanh',
+                kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
+        print(f"[DEBUG] After Final Conv1D (interface_size) shape: {x.shape}")
+
+        # Output batch normalization layer
+        outputs = BatchNormalization()(x)
+        print(f"[DEBUG] Final Output shape: {outputs.shape}")
+
+        # Build the encoder model
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
+
+        # Define the Adam optimizer with custom parameters
+        adam_optimizer = Adam(
+            learning_rate=self.params['learning_rate'],  # Set the learning rate
+            beta_1=0.9,  # Default value
+            beta_2=0.999,  # Default value
+            epsilon=1e-7,  # Default value
+            amsgrad=False  # Default value
+        )
+
+        self.encoder_model.compile(
+            optimizer=adam_optimizer,
+            loss=Huber(),
+            metrics=['mse', 'mae'],
+            run_eagerly=False  # Set to False for better performance unless debugging
+        )
+        print(f"[DEBUG] Encoder model compiled successfully.")
 
 
-    def train(self, data, validation_data):
-        if self.encoder_model is None:
-            raise ValueError("[train] Encoder model is not yet configured. Call configure_size first.")
-        print(f"Training encoder with data shape: {data.shape}, validation shape: {validation_data.shape}")
-        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-        self.encoder_model.fit(data, data, epochs=self.params.get('epochs',600),
-                                batch_size=self.params.get('batch_size',128),
-                                validation_data=(validation_data, validation_data),
-                                callbacks=[early_stopping], verbose=1)
+
+
+
+    def train(self, data):
+        num_channels = data.shape[-1] if len(data.shape) > 2 else 1  # Get number of channels
+        input_shape = data.shape[1]  # Get the input sequence length
+        interface_size = self.params.get('interface_size', 4)  # Assuming interface size is in params
+
+        # Reshape 2D data to 3D if necessary
+        if len(data.shape) == 2:
+            data = np.expand_dims(data, axis=-1)  # Add a channel dimension
+
+        # Rebuild the model with dynamic channel size
+        self.configure_size(input_shape, interface_size, num_channels)
+
+        # Now proceed with training
+        print(f"Training encoder with data shape: {data.shape}")
+        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True)
+        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping], validation_split = 0.2)
         print("Training completed.")
+
+
 
     def encode(self, data):
         print(f"Encoding data with shape: {data.shape}")
-        encoded_data = self.encoder_model.predict(data, verbose=1)
+        encoded_data = self.encoder_model.predict(data)
         print(f"Encoded data shape: {encoded_data.shape}")
         return encoded_data
 
@@ -149,8 +157,9 @@ class Plugin:
         self.encoder_model = load_model(file_path)
         print(f"Encoder model loaded from {file_path}")
 
+# Debugging usage example
 if __name__ == "__main__":
     plugin = Plugin()
-    plugin.configure_size(input_dim=128, encoding_dim=4, num_channels=1, use_sliding_windows=False)
+    plugin.configure_size(input_shape=128, interface_size=4)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

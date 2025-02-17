@@ -8,6 +8,7 @@ from keras.callbacks import EarlyStopping
 from tensorflow.keras.losses import Huber
 # add reshape
 from keras.layers import Reshape
+import tensorflow as tf
 
 class Plugin:
     """

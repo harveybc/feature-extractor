@@ -177,6 +177,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     print(f"Execution time: {execution_time} seconds")
 
 
+
+
 def load_and_evaluate_encoder(config):
     """
     Load and evaluate a pre-trained encoder with input data.

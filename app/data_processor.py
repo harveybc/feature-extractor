@@ -69,8 +69,8 @@ def process_data(config):
         print(f"Windowed data shape: {processed_data.shape}")  # Should be (num_samples, window_size, num_features)
     else:
         print("Skipping sliding windows. Data will be fed row-by-row.")
-        # Use data row-by-row as a NumPy array
-        processed_data = data.to_numpy()
+        # Use data row-by-row as a NumPy array with explicit float32 conversion
+        processed_data = data.to_numpy(dtype=np.float32)
         print(f"Processed data shape: {processed_data.shape}")  # Should be (num_samples, num_features)
 
     print(f"Loading validation data from CSV file: {config['validation_file']}")
@@ -87,8 +87,8 @@ def process_data(config):
         print(f"Windowed validation data shape: {windowed_validation_data.shape}")
     else:
         print("Skipping sliding windows for validation data. Data will be fed row-by-row.")
-        # Use validation data row-by-row as a NumPy array
-        windowed_validation_data = validation_data.to_numpy()
+        # Use validation data row-by-row as a NumPy array with explicit float32 conversion
+        windowed_validation_data = validation_data.to_numpy(dtype=np.float32)
         print(f"Validation processed shape: {windowed_validation_data.shape}")
 
     return processed_data, windowed_validation_data

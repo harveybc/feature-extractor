@@ -16,8 +16,7 @@ class Plugin:
         'intermediate_layers': 3,        # Number of LSTM layers before the final projection
         'initial_layer_size': 32,        # Base hidden units in first LSTM layer
         'layer_size_divisor': 2,
-        'l2_reg': 1e-2,
-        'learning_rate': 0.0001,
+        'l2_reg': 1e-2
     }
 
     plugin_debug_vars = ['input_shape', 'encoding_dim']

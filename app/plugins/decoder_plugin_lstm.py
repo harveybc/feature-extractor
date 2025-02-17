@@ -18,8 +18,7 @@ class Plugin:
         'l2_reg': 1e-2,
         'initial_layer_size': 32,
         'intermediate_layers': 3,
-        'layer_size_divisor': 2,
-        'learning_rate': 0.0001,
+        'layer_size_divisor': 2
     }
     plugin_debug_vars = []  # Extend as needed
 

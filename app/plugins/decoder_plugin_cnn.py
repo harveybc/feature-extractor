@@ -39,13 +39,12 @@ class Plugin:
 
     def configure_size(self, interface_size, input_shape, num_channels, encoder_output_shape, use_sliding_windows):
         """
-        Configures the CNN decoder using Conv1DTranspose layers.
+        Configures the CNN decoder.
         
         Args:
             interface_size (int): Latent space dimension (decoder input size).
-            input_shape (int or tuple): Original input shape fed to the encoder.
-                If sliding windows are used and input_shape is a tuple, the final number of units equals the product of dimensions.
-                Otherwise (non-sliding), input_shape is the original feature count.
+            input_shape (int or tuple): Original input shape fed to the encoder. 
+                For sliding windows, this should be a tuple (window_size, num_channels).
             num_channels (int): Number of input features/channels.
             encoder_output_shape: Output shape of the encoder (excluding batch size); ideally a tuple (sequence_length, num_filters).
             use_sliding_windows (bool): Whether sliding windows are used.
@@ -67,23 +66,20 @@ class Plugin:
             encoder_layers.append(current_size)
             current_size = max(current_size // layer_size_divisor, 1)
         encoder_layers.append(interface_size)
-        
+
         # Mirror the encoder: reverse the intermediate layers (exclude the latent interface itself)
         decoder_intermediate_layers = encoder_layers[:-1][::-1]
         print(f"[configure_size] Encoder layer sizes: {encoder_layers}")
         print(f"[configure_size] Decoder intermediate layer sizes: {decoder_intermediate_layers}")
         print(f"[configure_size] Original input shape: {input_shape}")
 
-        # Determine final output units.
-        # For sliding windows, if input_shape is a tuple, final units = product(input_shape)
-        # For non-sliding, we assume the encoder tiled a 1D vector to shape (input_shape, num_channels)
+        # Determine final output units:
         if use_sliding_windows and isinstance(input_shape, tuple):
             final_output_units = int(np.prod(input_shape))
         else:
-            final_output_units = input_shape * num_channels
+            final_output_units = input_shape
 
         # Unpack encoder_output_shape.
-        # If not a 2-tuple, assume sequence_length = 1.
         if isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 2:
             sequence_length, num_filters = encoder_output_shape
         else:
@@ -94,76 +90,64 @@ class Plugin:
             sequence_length = 1
         print(f"[configure_size] Using sequence_length={sequence_length}, num_filters={num_filters}")
 
-        # Build the decoder model using Conv1DTranspose layers.
-        from keras.models import Model
-        from keras.layers import Dense, Reshape, Conv1DTranspose, BatchNormalization, Input
-
-        # Step 1: Map the latent vector to a small feature map.
-        # Here, we use a Dense layer to produce a feature map of shape (time_steps_latent, num_filters).
-        # For non-sliding windows, time_steps_latent is set to 1.
-        time_steps_latent = sequence_length  # typically 1 for CNN encoders that output a flat vector.
-        x = Dense(time_steps_latent * num_filters,
-                activation='linear',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg),
-                name="decoder_dense_to_map")(Input(shape=(interface_size,)))
-        # We now create an input layer and then map it:
+        # Build the decoder model.
+        # Decoder input: latent vector of size (interface_size,)
         decoder_input = Input(shape=(interface_size,), name="decoder_input")
-        x = Dense(time_steps_latent * num_filters,
-                activation='linear',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg),
-                name="decoder_dense_to_map")(decoder_input)
-        #x = BatchNormalization(name="decoder_dense_bn")(x)
-        x = Reshape((time_steps_latent, num_filters), name="decoder_reshape")(x)
+        x = decoder_input
+
+        # For CNN decoder, we first map the latent vector to a dense vector 
+        # whose total size equals (target_time_steps * target_channels).
+        # Here, target_time_steps is set to input_shape[0] if sliding windows else input_shape.
+        if use_sliding_windows and isinstance(input_shape, tuple):
+            target_time_steps = input_shape[0]
+            target_channels = input_shape[1]
+        else:
+            target_time_steps = input_shape
+            target_channels = num_channels
+
+        total_units = target_time_steps * target_channels
+
+        x = Dense(total_units, activation='relu', kernel_initializer=HeNormal(),
+                kernel_regularizer=l2(l2_reg), name="decoder_dense_to_map")(x)
+        # Reshape to (target_time_steps, target_channels)
+        x = Reshape((target_time_steps, target_channels), name="decoder_reshape")(x)
         print(f"[configure_size] After Dense mapping and reshape, feature map shape: {x.shape}")
 
-        # Step 2: Upsample with Conv1DTranspose layers.
-        # For each intermediate layer (in decoder_intermediate_layers), use a Conv1DTranspose with stride=2.
-        for i, filters in enumerate(decoder_intermediate_layers, start=1):
-            x = Conv1DTranspose(filters=filters,
-                                kernel_size=3,
-                                strides=2,
-                                padding='same',
-                                activation=LeakyReLU(alpha=0.1),
-                                kernel_initializer=HeNormal(),
-                                kernel_regularizer=l2(l2_reg),
-                                name=f"decoder_conv1dtrans_{i}")(x)
-            #x = BatchNormalization(name=f"decoder_conv1dtrans_bn_{i}")(x)
-            print(f"[configure_size] After Conv1DTranspose layer {i}, shape: {x.shape}")
-
-        # Step 3: Final layer – use Conv1DTranspose to set the number of channels.
-        # This layer is applied in both sliding and non-sliding cases.
-        x = Conv1DTranspose(filters=num_channels,
-                            kernel_size=3,
-                            strides=1,
-                            padding='same',
-                            activation='linear',
-                            kernel_initializer=GlorotUniform(),
-                            kernel_regularizer=l2(l2_reg),
-                            name="decoder_conv1dtrans_final")(x)
+        # Now add a series of Conv1DTranspose layers to mirror the encoder.
+        # We reverse the order: starting with num_filters = encoder_layers[-1] (the latent filter count)
+        # and upsample until we reach the original number of channels.
+        # For simplicity, we add a fixed number of Conv1DTranspose layers here.
+        # You can adjust kernel sizes, strides, etc., to match the encoder's downsampling.
+        x = Conv1DTranspose(filters=decoder_intermediate_layers[0], kernel_size=3, strides=2, padding='same',
+                            activation='tanh', kernel_initializer=GlorotUniform(),
+                            kernel_regularizer=l2(l2_reg), name="decoder_conv1dtrans_1")(x)
+        print(f"[configure_size] After Conv1DTranspose layer 1, shape: {x.shape}")
+        x = Conv1DTranspose(filters=decoder_intermediate_layers[1], kernel_size=3, strides=2, padding='same',
+                            activation='tanh', kernel_initializer=GlorotUniform(),
+                            kernel_regularizer=l2(l2_reg), name="decoder_conv1dtrans_2")(x)
+        print(f"[configure_size] After Conv1DTranspose layer 2, shape: {x.shape}")
+        x = Conv1DTranspose(filters=decoder_intermediate_layers[2], kernel_size=3, strides=2, padding='same',
+                            activation='tanh', kernel_initializer=GlorotUniform(),
+                            kernel_regularizer=l2(l2_reg), name="decoder_conv1dtrans_3")(x)
+        print(f"[configure_size] After Conv1DTranspose layer 3, shape: {x.shape}")
+        # Final Conv1DTranspose to output the desired number of channels
+        x = Conv1DTranspose(filters=target_channels, kernel_size=3, strides=1, padding='same',
+                            activation='tanh', kernel_initializer=GlorotUniform(),
+                            kernel_regularizer=l2(l2_reg), name="decoder_conv1dtrans_final")(x)
         print(f"[configure_size] After final Conv1DTranspose layer, shape: {x.shape}")
-        
-        # For non-sliding windows, ensure the output has shape (input_shape, num_channels).
-        if not use_sliding_windows:
-            # Expect x.shape[1] to equal input_shape.
-            x = Reshape((input_shape, num_channels), name="decoder_final_reshape")(x)
-            print(f"[configure_size] Reshaped decoder output to: ({input_shape}, {num_channels})")
-        
+
+        # Ensure the output shape is exactly (target_time_steps, target_channels).
+        # If needed, reshape or crop.
+        x = Reshape((target_time_steps, target_channels), name="decoder_final_reshape")(x)
+        print(f"[configure_size] Reshaped decoder output to: {x.shape}")
+
         outputs = x
 
         self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder_cnn")
-        from keras.optimizers import Adam
-        adam_optimizer = Adam(
-            learning_rate=learning_rate,
-            beta_1=0.9,
-            beta_2=0.999,
-            epsilon=1e-7,
-        )
+        adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
         self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
         print("[configure_size] Decoder Model Summary:")
         self.model.summary()
-
 
 
 

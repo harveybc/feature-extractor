@@ -23,8 +23,7 @@ def merge_config(defaults, plugin_params1, plugin_params2, file_config, cli_args
     5. 'cli_args': CLI arguments parsed by argparse (converted to a dict).
     6. 'unknown_args': Additional unknown arguments provided in the CLI.
 
-    The merging order ensures that if a key exists in multiple dictionaries,
-    the final priority is:
+    The final priority is:
          Highest: CLI arguments,
          Then: loaded parameters (file_config),
          Then: defaults (config.py),
@@ -32,7 +31,6 @@ def merge_config(defaults, plugin_params1, plugin_params2, file_config, cli_args
          
     This version expects six arguments.
     """
-
     # Step 1: Start with plugin-specific parameters (lowest priority)
     merged_config = {}
     for k, v in plugin_params1.items():
@@ -55,24 +53,20 @@ def merge_config(defaults, plugin_params1, plugin_params2, file_config, cli_args
         merged_config[k] = v
     print(f"After merging file config: {merged_config}")
 
-    # Step 4: Merge with CLI arguments (ensure CLI args always override)
-    cli_keys = [arg.lstrip('--') for arg in sys.argv if arg.startswith('--')]
-    for key in cli_keys:
-        if key in cli_args and cli_args[key] is not None:
-            print(f"Step 4 merging from CLI args: {key} = {cli_args[key]}")
-            merged_config[key] = cli_args[key]
-        elif key in unknown_args:
-            value = convert_type(unknown_args[key])
-            print(f"Step 4 merging from unknown args: {key} = {value}")
-            merged_config[key] = value
+    # Step 4: Merge with unknown CLI arguments
+    unknown = process_unknown_args(unknown_args)
+    for k, v in unknown.items():
+        converted_value = convert_type(v)
+        print(f"Step 4 merging from unknown args: {k} = {converted_value}")
+        merged_config[k] = converted_value
 
-    # Additional check: if the CLI flag "--use_sliding_window" (singular) is present,
-    # override the parameter "use_sliding_windows" (plural) to True.
-    if "use_sliding_window" in cli_keys:
-        print("Step 4: Detected CLI flag '--use_sliding_window'; setting 'use_sliding_windows' = True")
-        merged_config["use_sliding_windows"] = True
+    # Finally, merge CLI arguments so that they override any defined values
+    for k, v in cli_args.items():
+        if v is not None:
+            print(f"Step 4 merging from CLI args: {k} = {v}")
+            merged_config[k] = v
 
-    # Special handling for csv_file
+    # Special handling for positional csv_file (if provided)
     if len(sys.argv) > 1 and not sys.argv[1].startswith('--'):
         merged_config['x_train_file'] = sys.argv[1]
 

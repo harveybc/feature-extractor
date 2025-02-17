@@ -96,7 +96,7 @@ class Plugin:
                 kernel_regularizer=l2(l2_reg),
                 name=f"dense_layer_{layer_idx}"
             )(x)
-            x = BatchNormalization(name=f"batch_norm_{layer_idx}")(x)
+            #x = BatchNormalization(name=f"batch_norm_{layer_idx}")(x)
 
         # Final Dense layer to project into the latent space with linear activation
         x = Dense(
@@ -106,7 +106,8 @@ class Plugin:
             kernel_regularizer=l2(l2_reg),
             name="encoder_output"
         )(x)
-        outputs = BatchNormalization(name="encoder_last_batch_norm")(x)
+        outputs = x
+        #outputs = BatchNormalization(name="encoder_last_batch_norm")(x)
 
         # Create and compile the model
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_dense")

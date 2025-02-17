@@ -105,7 +105,7 @@ class Plugin:
                 kernel_regularizer=l2(l2_reg),
                 name=f"decoder_dense_layer_{layer_idx}"
             )(x)
-            x = BatchNormalization(name=f"decoder_batch_norm_{layer_idx}")(x)
+            #x = BatchNormalization(name=f"decoder_batch_norm_{layer_idx}")(x)
 
         # Final projection to reconstruct the original input.
         x = Dense(

@@ -1,5 +1,3 @@
-# config_merger.py
-
 import sys
 from app.config import DEFAULT_VALUES
 
@@ -63,10 +61,9 @@ def merge_config(defaults, plugin_params1, plugin_params2, file_config, cli_args
             print(f"Step 4 merging from unknown args: {key} = {value}")
             merged_config[key] = value
 
-    # Special handling for csv_file
+    # Special handling for positional csv_file
     if len(sys.argv) > 1 and not sys.argv[1].startswith('--'):
         merged_config['x_train_file'] = sys.argv[1]
 
     print(f"Actual Step 4 Output: {merged_config}")
     return merged_config
-

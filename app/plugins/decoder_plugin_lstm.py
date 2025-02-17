@@ -23,12 +23,8 @@ class Plugin:
     
     # Default hyperparameters (updated to match the new encoder)
     plugin_params = {
-        'epochs': 200,
-        'batch_size': 128,
         'dropout_rate': 0.1,
         'l2_reg': 1e-2,           # Matching encoder's default L2 regularization
-        'learning_rate': 0.0001,   # Matching encoder's learning rate
-        
         # These parameters must mirror the encoder's configuration:
         'initial_layer_size': 32,
         'intermediate_layers': 3,

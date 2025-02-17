@@ -13,13 +13,10 @@ class Plugin:
 
     plugin_params = {
         # Training parameters (if training decoder standalone)
-        'epochs': 200,
-        'batch_size': 128,
         # Architecture parameters (must mirror the encoder's design)
         'intermediate_layers': 3,       # Number of dense layers before the final projection
         'initial_layer_size': 32,       # Base number of hidden units (from encoder)
         'layer_size_divisor': 2,        # Divisor to compute subsequent layer sizes
-        'learning_rate': 0.0001,        # Learning rate for Adam
         'l2_reg': 1e-2,                 # L2 regularization factor
     }
 

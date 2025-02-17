@@ -16,13 +16,10 @@ class Plugin:
     # Updated default parameters to mirror predictor's design
     plugin_params = {
         # Training params
-        'epochs': 200,
-        'batch_size': 128,
         # Architecture params
         'intermediate_layers': 3,        # Number of LSTM layers before the final projection
         'initial_layer_size': 32,        # Base number of hidden units in the first LSTM layer
         'layer_size_divisor': 2,         # Divisor to compute subsequent layer sizes
-        'learning_rate': 0.0001,         # Learning rate for the Adam optimizer
         'l2_reg': 1e-2,                  # L2 regularization factor (matching predictor)
     }
 

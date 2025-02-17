@@ -84,55 +84,55 @@ class AutoencoderManager:
 
 
 
-def train_autoencoder(self, data, epochs=100, batch_size=128, config=None):
-    try:
-        print(f"[train_autoencoder] Received data with shape: {data.shape}")
+    def train_autoencoder(self, data, epochs=100, batch_size=128, config=None):
+        try:
+            print(f"[train_autoencoder] Received data with shape: {data.shape}")
 
-        # Determine if sliding windows are used
-        use_sliding_windows = config.get('use_sliding_windows', True)
+            # Determine if sliding windows are used
+            use_sliding_windows = config.get('use_sliding_windows', True)
 
-        # Only add channel dimension if sliding windows are not used AND the encoder plugin is not ANN
-        if not use_sliding_windows and len(data.shape) == 2 and config.get('encoder_plugin', '').lower() != 'ann':
-            print("[train_autoencoder] Reshaping data to add channel dimension for Conv1D compatibility...")
-            data = np.expand_dims(data, axis=-1)  # Add channel dimension (num_samples, num_features, 1)
-            print(f"[train_autoencoder] Reshaped data shape: {data.shape}")
+            # Only add channel dimension if sliding windows are not used AND the encoder plugin is not ANN
+            if not use_sliding_windows and len(data.shape) == 2 and config.get('encoder_plugin', '').lower() != 'ann':
+                print("[train_autoencoder] Reshaping data to add channel dimension for Conv1D compatibility...")
+                data = np.expand_dims(data, axis=-1)  # Add channel dimension (num_samples, num_features, 1)
+                print(f"[train_autoencoder] Reshaped data shape: {data.shape}")
 
-        num_channels = data.shape[-1]
-        input_shape = data.shape[1]
-        interface_size = self.encoder_plugin.params.get('interface_size', 4)
+            num_channels = data.shape[-1]
+            input_shape = data.shape[1]
+            interface_size = self.encoder_plugin.params.get('interface_size', 4)
 
-        # Build autoencoder with the correct num_channels
-        if not self.autoencoder_model:
-            self.build_autoencoder(input_shape, interface_size, config, num_channels)
+            # Build autoencoder with the correct num_channels
+            if not self.autoencoder_model:
+                self.build_autoencoder(input_shape, interface_size, config, num_channels)
 
-        # Validate data for NaN values before training
-        if np.isnan(data).any():
-            raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
+            # Validate data for NaN values before training
+            if np.isnan(data).any():
+                raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
 
-        # Calculate entropy and useful information using Shannon-Hartley theorem
-        self.calculate_dataset_information(data, config)
+            # Calculate entropy and useful information using Shannon-Hartley theorem
+            self.calculate_dataset_information(data, config)
 
-        print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
+            print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
 
-        # Implement Early Stopping callback
-        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True)
+            # Implement Early Stopping callback
+            early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True)
 
-        # Start training with early stopping
-        history = self.autoencoder_model.fit(
-            data, data,
-            epochs=epochs,
-            batch_size=batch_size,
-            verbose=1,
-            callbacks=[early_stopping],
-            validation_split=0.2
-        )
+            # Start training with early stopping
+            history = self.autoencoder_model.fit(
+                data, data,
+                epochs=epochs,
+                batch_size=batch_size,
+                verbose=1,
+                callbacks=[early_stopping],
+                validation_split=0.2
+            )
 
-        # Log training loss
-        print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
-        print("[train_autoencoder] Training completed.")
-    except Exception as e:
-        print(f"[train_autoencoder] Exception occurred during training: {e}")
-        raise
+            # Log training loss
+            print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
+            print("[train_autoencoder] Training completed.")
+        except Exception as e:
+            print(f"[train_autoencoder] Exception occurred during training: {e}")
+            raise
 
 
     def calculate_dataset_information(self, data, config):

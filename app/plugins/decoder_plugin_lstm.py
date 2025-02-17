@@ -1,6 +1,6 @@
 import numpy as np
-from keras.models import Sequential, load_model
-from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed, Dropout
+from keras.models import Model, load_model, save_model
+from keras.layers import LSTM, Dense, Input, BatchNormalization
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
@@ -8,23 +8,22 @@ from keras.callbacks import EarlyStopping
 
 class Plugin:
     """
-    A decoder plugin that mirrors an LSTM encoder's architecture.
-    It expands the latent vector, repeats it to form a sequence,
-    and then applies LSTM layers in reversed order followed by a TimeDistributed Dense layer.
-    Batch normalization is omitted in the decoder per common recommendations.
+    An LSTM-based encoder plugin.
+    Configurable similarly to the ANN plugin.
     """
+
     plugin_params = {
-        'dropout_rate': 0.1,
-        'l2_reg': 1e-2,
-        'initial_layer_size': 32,
-        'intermediate_layers': 3,
-        'layer_size_divisor': 2
+        'intermediate_layers': 3,        # Number of LSTM layers before the final projection
+        'initial_layer_size': 32,        # Base hidden units in first LSTM layer
+        'layer_size_divisor': 2,
+        'l2_reg': 1e-2
     }
-    plugin_debug_vars = []  # Extend as needed
+
+    plugin_debug_vars = ['input_shape', 'encoding_dim']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
-        self.model = None
+        self.encoder_model = None
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
@@ -36,109 +35,68 @@ class Plugin:
     def add_debug_info(self, debug_info):
         debug_info.update(self.get_debug_info())
 
-    def configure_size(self, interface_size, input_shape, num_channels=None, encoder_output_shape=None, use_sliding_windows=False):
-        # Force use_sliding_windows to Boolean even if not used.
-        use_sliding_windows = str(use_sliding_windows).lower() == 'true'
-        self.params['interface_size'] = interface_size
-        self.params['output_shape'] = input_shape  # number of time steps to reconstruct
-        if num_channels is None:
-            num_channels = 1
+    def configure_size(self, input_shape, encoding_dim, num_channels=None, use_sliding_windows=False):
+        """
+        Configures the LSTM-based encoder.
+        Args:
+            input_shape (int or tuple): If int, represents time_steps; if tuple, (time_steps, num_channels).
+            encoding_dim (int): Dimension of the latent space.
+            num_channels (int, optional): Number of features. If input_shape is an int and sliding windows
+                are not used, this will be used to set the number of features.
+            use_sliding_windows (bool, optional): If True, input_shape is treated as (time_steps, num_channels).
+        """
+        # Modified: if input_shape is an int and we're NOT using sliding windows,
+        # use the provided num_channels (or default to 1 if not provided)
+        if isinstance(input_shape, int):
+            if use_sliding_windows:
+                input_shape = (input_shape, num_channels if num_channels else 1)
+            else:
+                input_shape = (input_shape, num_channels if num_channels else 1)
+        self.params['input_shape'] = input_shape
+        self.params['encoding_dim'] = encoding_dim
 
-        # Compute encoder layer sizes as in the encoder.
-        initial_layer_size = self.params.get('initial_layer_size', 32)
         intermediate_layers = self.params.get('intermediate_layers', 3)
+        initial_layer_size = self.params.get('initial_layer_size', 32)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
-        encoder_layers = []
+        l2_reg = self.params.get('l2_reg', 1e-2)
+        learning_rate = self.params.get('learning_rate', 0.0001)
+
+        layers = []
         current_size = initial_layer_size
         for i in range(intermediate_layers):
-            encoder_layers.append(current_size)
+            layers.append(current_size)
             current_size = max(current_size // layer_size_divisor, 1)
-        encoder_layers.append(interface_size)
-        print(f"[configure_size] Encoder layer sizes (from encoder): {encoder_layers}")
+        layers.append(encoding_dim)
+        print(f"[configure_size] LSTM Layer sizes: {layers}")
+        print(f"[configure_size] LSTM input shape: {input_shape}")
 
-        # Mirror the encoder LSTM sizes (excluding the latent interface itself).
-        decoder_lstm_sizes = list(reversed(encoder_layers[:-1]))
-        print(f"[configure_size] Decoder LSTM sizes (mirrored): {decoder_lstm_sizes}")
+        encoder_input = Input(shape=input_shape, name="encoder_input")
+        x = encoder_input
 
-        # Build the decoder model using Sequential API.
-        self.model = Sequential(name="decoder_lstm")
-        # First, expand the latent vector via Dense to match the last LSTM unit of the encoder.
-        latent_dense_units = encoder_layers[-2]
-        self.model.add(Dense(
-            latent_dense_units,
-            input_shape=(interface_size,),
-            activation='relu',
-            kernel_initializer=HeNormal(),
-            kernel_regularizer=l2(self.params.get('l2_reg', 1e-2)),
-            name="decoder_dense_expand"
-        ))
-        # Optional dropout
-        dropout_rate = self.params.get('dropout_rate', 0.1)
-        if dropout_rate > 0:
-            from keras.layers import Dropout
-            self.model.add(Dropout(dropout_rate, name="decoder_dropout_after_dense"))
-        # Repeat the vector to form a sequence of length equal to output sequence length.
-        from keras.layers import RepeatVector
-        self.model.add(RepeatVector(input_shape))
-        print(f"[configure_size] Added RepeatVector layer with output length: {input_shape}")
-        # Add mirrored LSTM layers.
-        for idx, units in enumerate(decoder_lstm_sizes, start=1):
-            from keras.layers import LSTM
-            self.model.add(LSTM(
-                units=units,
-                activation='tanh',
-                recurrent_activation='sigmoid',
-                return_sequences=True,
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(self.params.get('l2_reg', 1e-2)),
-                name=f"decoder_lstm_{idx}"
-            ))
-            if dropout_rate > 0:
-                from keras.layers import Dropout
-                self.model.add(Dropout(dropout_rate, name=f"decoder_dropout_after_lstm_{idx}"))
-        # Final TimeDistributed Dense layer to reconstruct the original features.
-        self.model.add(TimeDistributed(
-            Dense(num_channels,
-                activation='linear',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(self.params.get('l2_reg', 1e-2))),
-            name="decoder_output"
-        ))
-        self.model.compile(
-            optimizer=Adam(learning_rate=self.params.get('learning_rate', 0.0001),
-                        beta_1=0.9, beta_2=0.999, epsilon=1e-7),
-            loss='mean_squared_error'
-        )
-        print("[configure_size] Decoder Model Summary:")
-        self.model.summary()
+        # Add LSTM layers with return_sequences=True for all but final
+        for idx, size in enumerate(layers[:-1], start=1):
+            x = LSTM(units=size, activation='tanh', recurrent_activation='sigmoid',
+                     return_sequences=True, name=f"lstm_layer_{idx}")(x)
+        # Final LSTM layer (without return_sequences)
+        if len(layers) >= 2:
+            x = LSTM(units=layers[-2], activation='tanh', recurrent_activation='sigmoid',
+                     return_sequences=False, name="lstm_layer_final")(x)
+        x = BatchNormalization(name="batch_norm_final")(x)
+        encoder_output = Dense(units=layers[-1], activation='linear',
+                               kernel_initializer=GlorotUniform(),
+                               kernel_regularizer=l2(l2_reg),
+                               name="encoder_output")(x)
 
-
-
-    def train(self, encoded_data, original_data):
-        # Reshape original_data if necessary
-        if len(original_data.shape) == 2:
-            original_data = np.expand_dims(original_data, axis=-1)
-        early_stopping = EarlyStopping(monitor='loss', patience=5, restore_best_weights=True, verbose=1)
-        self.model.fit(encoded_data, original_data, epochs=self.params.get('epochs',200),
-                       batch_size=self.params.get('batch_size',128), verbose=1, callbacks=[early_stopping])
-        print("[train] Training completed.")
-
-    def decode(self, encoded_data):
-        print(f"[decode] Decoding data with shape: {encoded_data.shape}")
-        decoded_data = self.model.predict(encoded_data)
-        print(f"[decode] Decoded data shape: {decoded_data.shape}")
-        return decoded_data
-
-    def save(self, file_path):
-        self.model.save(file_path)
-        print(f"[save] Decoder model saved to {file_path}")
-
-    def load(self, file_path):
-        self.model = load_model(file_path)
-        print(f"[load] Decoder model loaded from {file_path}")
+        self.encoder_model = Model(inputs=encoder_input, outputs=encoder_output, name="encoder_lstm")
+        adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
+        self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        print("[configure_size] Encoder Model Summary:")
+        self.encoder_model.summary()
 
 if __name__ == "__main__":
+    # Example: For an 8-feature time series with 128 time steps, using non-sliding windows.
+    # We pass input_shape=128 and num_channels=8.
     plugin = Plugin()
-    plugin.configure_size(interface_size=4, input_shape=128, num_channels=1, encoder_output_shape=(4,), use_sliding_windows=False)
+    plugin.configure_size(input_shape=128, encoding_dim=4, num_channels=8, use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

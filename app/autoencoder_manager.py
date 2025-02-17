@@ -94,15 +94,12 @@ class AutoencoderManager:
             # For non-sliding window data:
             if not use_sliding_windows and len(data.shape) == 2:
                 if encoder_plugin == 'cnn':
-                    # For CNN, we want to create a 2D spatial structure.
-                    # Raw data shape is (num_samples, features); we replicate the feature vector along a new axis so that
-                    # each sample becomes (features, features)
                     print("[train_autoencoder] Reshaping data for CNN non-sliding window: expanding dimension and tiling")
-                    data = np.expand_dims(data, axis=-1)  # Now shape: (num_samples, features, 1)
-                    data = np.tile(data, (1, 1, data.shape[1]))  # Now shape: (num_samples, features, features)
+                    data = np.expand_dims(data, axis=-1)            # (num_samples, features, 1)
+                    data = np.tile(data, (1, 1, data.shape[1]))       # (num_samples, features, features)
                 elif encoder_plugin in ['lstm', 'transformer']:
                     print("[train_autoencoder] Reshaping data for sequential models (LSTM/Transformer): expanding dimension at axis 1")
-                    data = np.expand_dims(data, axis=1)   # Now shape: (num_samples, 1, features)
+                    data = np.expand_dims(data, axis=1)              # (num_samples, 1, features)
                 elif encoder_plugin == 'ann':
                     print("[train_autoencoder] ANN plugin detected; no reshaping applied.")
                 else:
@@ -110,18 +107,16 @@ class AutoencoderManager:
                     data = np.expand_dims(data, axis=-1)
                 print(f"[train_autoencoder] Reshaped data shape: {data.shape}")
 
-            # Determine num_channels based on data shape:
+            # For CNN non-sliding window, our tiling ensures data shape is (num_samples, features, features)
             if not use_sliding_windows and encoder_plugin == 'cnn':
-                # For CNN non-sliding, our tiling created shape (num_samples, features, features)
-                num_channels = data.shape[-1]  # This will equal input_dim (features)
+                num_channels = data.shape[-1]  # This equals the original number of features.
             else:
                 num_channels = data.shape[-1]
 
-            # For all plugins, the input shape is taken from the second dimension (time_steps).
+            # For all plugins, the input_shape is taken from the second dimension.
             input_shape = data.shape[1]
             interface_size = self.encoder_plugin.params.get('interface_size', 4)
 
-            # Build autoencoder if not already built.
             if not self.autoencoder_model:
                 self.build_autoencoder(input_shape, interface_size, config, num_channels)
 

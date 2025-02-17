@@ -30,4 +30,5 @@ def parse_args():
     parser.add_argument('--force_date', action='store_true', help='Include date in the output CSV files.')
     parser.add_argument('--incremental_search', action='store_true', help='Enable incremental search for interface size.')
     parser.add_argument('--headers', action='store_true', help='Indicate if the CSV file has headers.')
+    parser.add_argument('--use_sliding_windows', action='store_true', help='Indicate if the CSV file has headers.')
     return parser.parse_known_args()

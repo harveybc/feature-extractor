@@ -1,25 +1,28 @@
 import numpy as np
-from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten, Conv1DTranspose,Dropout
+from keras.models import Model, load_model, save_model
+from keras.layers import Conv1DTranspose, GlobalAveragePooling1D, Dense, Input, BatchNormalization, LeakyReLU
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
-from tensorflow.keras.losses import Huber
-from tensorflow.keras.regularizers import l2
-
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
-from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU,Input
-import math
-from tensorflow.keras.layers import ZeroPadding1D
+from tensorflow.keras.losses import Huber
 
 class Plugin:
+    """
+    A decoder plugin using a convolutional neural network (CNN) based on Keras.
+    This decoder mirrors the encoder's architecture: the intermediate filter sizes are 
+    computed using the same parameters as in the encoder (initial_layer_size, intermediate_layers,
+    and layer_size_divisor) but in reverse order. Batch normalization is omitted in the decoder
+    for improved reconstruction flexibility.
+    """
     plugin_params = {
-        'intermediate_layers': 3, 
+        'intermediate_layers': 3,
+        'initial_layer_size': 128,
+        'layer_size_divisor': 2,
+        'l2_reg': 1e-5,
         'learning_rate': 0.00002,
-        'dropout_rate': 0.001,
     }
-
-    plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
+    plugin_debug_vars = ['input_shape', 'interface_size']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -27,148 +30,126 @@ class Plugin:
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
-            if key in self.params:
-                self.params[key] = value 
+            self.params[key] = value 
 
     def get_debug_info(self):
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
-        plugin_debug_info = self.get_debug_info()
-        debug_info.update(plugin_debug_info)
+        debug_info.update(self.get_debug_info())
 
-    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows):
-        print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
+    def configure_size(self, interface_size, input_shape, num_channels, encoder_output_shape, use_sliding_windows):
+        """
+        Configures the CNN decoder.
         
+        Args:
+            interface_size (int): Latent space dimension (decoder input size).
+            input_shape (int or tuple): Original input shape fed to the encoder. If sliding windows
+                are used and input_shape is a tuple, the final number of units equals the product of dimensions.
+            num_channels (int): Number of input features/channels.
+            encoder_output_shape (tuple): Output shape of the encoder (excluding batch size).
+            use_sliding_windows (bool): Whether sliding windows are used.
+        """
         self.params['interface_size'] = interface_size
-        self.params['output_shape'] = output_shape
+        self.params['input_shape'] = input_shape
 
-        sequence_length, num_filters = encoder_output_shape
-        print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
+        # Compute the encoder's layer sizes as in the encoder.
+        intermediate_layers = self.params.get('intermediate_layers', 3)
+        initial_layer_size = self.params.get('initial_layer_size', 128)
+        layer_size_divisor = self.params.get('layer_size_divisor', 2)
+        l2_reg = self.params.get('l2_reg', 1e-5)
+        learning_rate = self.params.get('learning_rate', 0.00002)
 
-        num_intermediate_layers = self.params['intermediate_layers']
-        print(f"[DEBUG] Number of intermediate layers={num_intermediate_layers}")
-        
-        layers = [output_shape*2]
-        current_size = output_shape*2
-        l2_reg = 1e-2
-        for i in range(num_intermediate_layers-1):
-            next_size = current_size // 2
-            if next_size < interface_size:
-                next_size = interface_size
-            layers.append(next_size)
-            current_size = next_size
+        encoder_layers = []
+        current_size = initial_layer_size
+        for i in range(intermediate_layers):
+            encoder_layers.append(current_size)
+            current_size = max(current_size // layer_size_divisor, 1)
+        encoder_layers.append(interface_size)
 
-        layers.append(interface_size)
+        # Mirror the encoder: reverse the intermediate layers (exclude the latent interface itself)
+        decoder_intermediate_layers = encoder_layers[:-1][::-1]
+        print(f"[configure_size] Encoder layer sizes: {encoder_layers}")
+        print(f"[configure_size] Decoder intermediate layer sizes: {decoder_intermediate_layers}")
+        print(f"[configure_size] Original input shape: {input_shape}")
 
-        layer_sizes = layers[::-1]
-        print(f"[DEBUG] Calculated decoder layer sizes: {layer_sizes}")
+        # Determine final output units:
+        if use_sliding_windows and isinstance(input_shape, tuple):
+            final_output_units = int(np.prod(input_shape))
+        else:
+            final_output_units = input_shape
 
-        self.model = Sequential(name="decoder")
+        # Build the decoder model.
+        # Decoder input: latent vector of size (interface_size,)
+        decoder_input = Input(shape=(interface_size,), name="decoder_input")
+        x = decoder_input
 
-        print(f"[DEBUG] Adding first Conv1DTranspose layer with input_shape=(sequence_length={sequence_length}, num_filters={num_filters})")
-        self.model.add(Conv1DTranspose(
-            filters=layer_sizes[0],
-            kernel_size=3,
-            strides=1,
-            activation='tanh',
+        # Add intermediate dense layers using reversed sizes.
+        layer_idx = 0
+        for size in decoder_intermediate_layers:
+            layer_idx += 1
+            x = Dense(
+                units=size,
+                activation=LeakyReLU(alpha=0.1),
+                kernel_initializer=HeNormal(),
+                kernel_regularizer=l2(l2_reg),
+                name=f"decoder_dense_layer_{layer_idx}"
+            )(x)
+            # Optionally, you may add dropout here if needed (omitted by default)
+        # Final projection to reconstruct the original input dimension.
+        x = Dense(
+            units=final_output_units,
+            activation='linear',
             kernel_initializer=GlorotUniform(),
             kernel_regularizer=l2(l2_reg),
-            padding='same',
-            input_shape=(sequence_length, num_filters)
-        ))
-        #self.model.add(BatchNormalization())
+            name="decoder_output"
+        )(x)
+        outputs = x
 
-        for idx, size in enumerate(layer_sizes[1:], start=1):
-            strides = 2 if idx < len(layer_sizes) - 1 else 1
-            self.model.add(Conv1DTranspose(
-                filters=size,
-                kernel_size=3,
-                strides=strides,
-                padding='same',
-                activation='tanh',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg)
-            ))
-            #self.model.add(BatchNormalization())
-
-        if use_sliding_windows:
-            # For sliding windows, retain the temporal dimension
-            self.model.add(Conv1DTranspose(
-                filters=num_channels,
-                kernel_size=3,
-                padding='same',
-                activation='tanh',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg),
-                name="decoder_output"
-            ))
-        else:
-            # For row-by-row data, flatten the output
-            self.model.add(Flatten(name="decoder_flatten"))
-            self.model.add(Dense(
-                units=output_shape,
-                activation='linear',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg),
-                name="decoder_dense_output"
-            ))
-
-        final_output_shape = self.model.output_shape
-        print(f"[DEBUG] Final Output Shape: {final_output_shape}")
-
+        self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder_cnn")
         adam_optimizer = Adam(
-            learning_rate=self.params['learning_rate'],
+            learning_rate=learning_rate,
             beta_1=0.9,
             beta_2=0.999,
-            epsilon=1e-2,
-            amsgrad=False
+            epsilon=1e-7,
         )
-        self.model.compile(
-            optimizer=adam_optimizer,
-            loss=Huber(),
-            metrics=['mse', 'mae'],
-            run_eagerly=False
-        )
-        print(f"[DEBUG] Model compiled successfully.")
+        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        print("[configure_size] Decoder Model Summary:")
+        self.model.summary()
 
+    def train(self, data, validation_data):
+        if self.model is None:
+            raise ValueError("[train] Decoder model is not configured. Call configure_size first.")
+        print(f"[train] Starting training with data shape={data.shape}, validation shape={validation_data.shape}")
+        history = self.model.fit(data, data, epochs=self.params.get('epochs',200),
+                                  batch_size=self.params.get('batch_size',128),
+                                  validation_data=(validation_data, validation_data),
+                                  verbose=1)
+        print("[train] Training completed.")
+        return history
 
-
-
-    def train(self, encoded_data, original_data):
-        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
-        original_data = original_data.reshape((original_data.shape[0], -1))
-        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True, verbose=1)
-        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping],validation_split = 0.2)
-
-    def decode(self, encoded_data, use_sliding_windows, original_feature_size):
+    def decode(self, encoded_data):
+        if self.model is None:
+            raise ValueError("[decode] Decoder model is not configured.")
         print(f"[decode] Decoding data with shape: {encoded_data.shape}")
-        decoded_data = self.model.predict(encoded_data)
-
-        if not use_sliding_windows:
-            # Reshape to match the original feature size if not using sliding windows
-            decoded_data = decoded_data.reshape((decoded_data.shape[0], original_feature_size))
-            print(f"[decode] Reshaped decoded data to match original feature size: {decoded_data.shape}")
-        else:
-            print(f"[decode] Decoded data shape: {decoded_data.shape}")
-
+        decoded_data = self.model.predict(encoded_data, verbose=1)
+        print(f"[decode] Decoded output shape: {decoded_data.shape}")
         return decoded_data
 
     def save(self, file_path):
-        self.model.save(file_path)
+        if self.model is None:
+            raise ValueError("[save] Decoder model is not configured.")
+        save_model(self.model, file_path)
+        print(f"[save] Decoder model saved to {file_path}")
 
     def load(self, file_path):
         self.model = load_model(file_path)
-
-    def calculate_mse(self, original_data, reconstructed_data):
-        original_data = original_data.reshape((original_data.shape[0], -1))
-        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))
-        mse = np.mean(np.square(original_data - reconstructed_data))
-        return mse
+        print(f"[load] Decoder model loaded from {file_path}")
 
 # Debugging usage example
 if __name__ == "__main__":
     plugin = Plugin()
-    plugin.configure_size(interface_size=4, output_shape=128)
+    # For example, assume input_shape=128 (if sliding windows, it could be (window_size, num_channels))
+    plugin.configure_size(interface_size=4, input_shape=128, num_channels=1, encoder_output_shape=(4,), use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

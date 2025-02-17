@@ -100,6 +100,14 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
 
+    # If using sliding windows and the encoder plugin is ANN,
+    # flatten the 3D windowed data into 2D.
+    if config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'ann':
+        print("[run_autoencoder_pipeline] Detected ANN plugin with sliding windows; flattening training and validation data.")
+        # Flatten from (num_samples, window_size, num_features) to (num_samples, window_size*num_features)
+        processed_data = processed_data.reshape(processed_data.shape[0], -1)
+        validation_data = validation_data.reshape(validation_data.shape[0], -1)
+
     # Truncate validation data to have at most as many rows as training data
     if validation_data.shape[0] > processed_data.shape[0]:
         print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_data.shape[0]} rows to match training data rows: {processed_data.shape[0]}")
@@ -117,13 +125,17 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     incremental_search = config['incremental_search']
     
     current_size = initial_size
-    input_size = config['window_size'] if config['use_sliding_windows'] else processed_data.shape[1]
+    if config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'ann':
+        # For ANN with sliding windows, the input size is the flattened dimension.
+        input_size = processed_data.shape[1]
+    else:
+        input_size = config['window_size'] if config['use_sliding_windows'] else processed_data.shape[1]
 
     while True:
         print(f"Training with interface size: {current_size}")
         
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
-        num_channels = processed_data.shape[-1]
+        num_channels = processed_data.shape[-1]  # For ANN, this is the flattened dimension
 
         # Build and train the autoencoder
         autoencoder_manager.build_autoencoder(input_size, current_size, config, num_channels)

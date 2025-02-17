@@ -38,19 +38,31 @@ class Plugin:
     def configure_size(self, input_dim, encoding_dim, num_channels=None, use_sliding_windows=False):
         """
         Configures the CNN-based encoder.
-
+        
         Args:
-            input_dim (int): Length of the input sequence.
+            input_dim (int or tuple): Length of the input sequence. If sliding windows are used,
+                this should be a tuple (window_size, num_channels).
             encoding_dim (int): Dimension of the latent space.
             num_channels (int, optional): Number of input channels (if not provided, defaults to 1).
-            use_sliding_windows (bool): If True, the input shape is assumed to be (input_dim, num_channels)
-                and the encoder will preserve the time dimension. If False, global average pooling is applied.
+                Ignored if sliding windows mode is enabled.
+            use_sliding_windows (bool): If True, the input shape is assumed to be (window_size, num_channels)
+                (i.e. input_dim is a tuple) and the encoder will preserve the time dimension.
         """
-        self.params['input_dim'] = input_dim
         self.params['encoding_dim'] = encoding_dim
-        if num_channels is None:
-            num_channels = 1
-        self.params['num_channels'] = num_channels
+        if use_sliding_windows:
+            if not isinstance(input_dim, tuple):
+                raise ValueError("In sliding-window mode, input_dim must be a tuple (window_size, num_channels).")
+            # Use the provided tuple directly.
+            cnn_input_shape = input_dim  
+            # Also store window_size and channels separately for debugging purposes.
+            self.params['input_dim'] = input_dim[0]
+            self.params['num_channels'] = input_dim[1]
+        else:
+            self.params['input_dim'] = input_dim
+            if num_channels is None:
+                num_channels = 1
+            self.params['num_channels'] = num_channels
+            cnn_input_shape = (input_dim, num_channels)
 
         # Compute layer sizes using the same method as the ANN plugin:
         intermediate_layers = self.params.get('intermediate_layers', 3)
@@ -66,10 +78,12 @@ class Plugin:
             current_size = max(current_size // layer_size_divisor, 1)
         layers.append(encoding_dim)
         print(f"[configure_size] CNN Layer sizes (filters): {layers}")
-        print(f"[configure_size] Input sequence length: {input_dim}, Channels: {num_channels}")
+        if use_sliding_windows:
+            print(f"[configure_size] Input shape (sliding windows): {cnn_input_shape}")
+        else:
+            print(f"[configure_size] Input sequence length: {input_dim}, Channels: {num_channels}")
 
-        # Define input shape
-        cnn_input_shape = (input_dim, num_channels)
+        # Define input layer
         inputs = Input(shape=cnn_input_shape, name="encoder_input")
         x = inputs
 
@@ -97,9 +111,8 @@ class Plugin:
                 kernel_regularizer=l2(l2_reg),
                 name="conv1d_final")(x)
         x = BatchNormalization(name="batch_norm_final")(x)
-
-        # For non-sliding mode, collapse the time dimension with global average pooling.
-        # In sliding-window mode, keep the time dimension so that the decoder receives a 3D tensor.
+        
+        # Collapse time dimension only in non-sliding mode
         if not use_sliding_windows:
             x = GlobalAveragePooling1D()(x)
         outputs = x

@@ -97,64 +97,74 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
 
-    encoder_type = config.get('encoder_plugin', '').lower()
-    use_sliding_windows = config.get('use_sliding_windows', True)
-
-    # Ensure proper reshaping based on encoder type
-    if encoder_type == 'ann' and use_sliding_windows:
+    # For ANN with sliding windows, flatten the data as before.
+    if config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'ann':
         print("[run_autoencoder_pipeline] Detected ANN plugin with sliding windows; flattening training and validation data.")
         processed_data = processed_data.reshape(processed_data.shape[0], -1)
         validation_data = validation_data.reshape(validation_data.shape[0], -1)
-    elif encoder_type == 'cnn' and not use_sliding_windows:
+    # For CNN in non-sliding window mode, we want to treat the entire feature vector as channels
+    # and use a single time step. (i.e. reshape from (samples, features) to (samples, 1, features))
+    elif not config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'cnn':
         print("[run_autoencoder_pipeline] Detected CNN plugin without sliding windows; expanding dimension at axis 1.")
         processed_data = np.expand_dims(processed_data, axis=1)  # shape becomes (samples, 1, features)
         validation_data = np.expand_dims(validation_data, axis=1)
+        # Set input_size to 1 and original_feature_size to number of features
         config['original_feature_size'] = processed_data.shape[-1]
-    elif encoder_type == 'lstm' and not use_sliding_windows:
-        print("[run_autoencoder_pipeline] Detected LSTM plugin without sliding windows; expanding dimension at axis -1.")
-        processed_data = np.expand_dims(processed_data, axis=-1)  # shape becomes (samples, time_steps, features)
-        validation_data = np.expand_dims(validation_data, axis=-1)
     else:
+        # For other plugins in non-sliding window mode:
         config['original_feature_size'] = validation_data.shape[1]
     
-    # Truncate validation data if needed
+    # Truncate validation data to have at most as many rows as training data
     if validation_data.shape[0] > processed_data.shape[0]:
         print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_data.shape[0]} rows to match training data rows: {processed_data.shape[0]}")
         validation_data = validation_data[:processed_data.shape[0]]
     
-    input_size = config['window_size'] if use_sliding_windows else processed_data.shape[1]
+    # Determine input size:
+    # - For sliding window with ANN: flattened dimension
+    # - For CNN non-sliding: use 1 (time steps) and let channels be the original feature size.
+    if config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'ann':
+        input_size = processed_data.shape[1]
+    elif not config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'cnn':
+        input_size = 1
+    else:
+        input_size = config['window_size'] if config.get('use_sliding_windows', True) else processed_data.shape[1]
+    
     initial_size = config['initial_size']
     step_size = config['step_size']
     threshold_error = config['threshold_error']
     training_batch_size = config['batch_size']
     epochs = config['epochs']
     incremental_search = config['incremental_search']
-
+    
     while True:
         print(f"Training with interface size: {initial_size}")
         
+        # Note: num_channels for the encoder is determined from processed_data shape.
         num_channels = processed_data.shape[-1]
     
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         autoencoder_manager.build_autoencoder(input_size, initial_size, config, num_channels)
         autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
     
-        # Evaluate training performance
+        # Evaluate on training data
         training_mse, training_mae = autoencoder_manager.evaluate(processed_data, "Training", config)
         print(f"Training Mean Squared Error with interface size {initial_size}: {training_mse}")
         print(f"Training Mean Absolute Error with interface size {initial_size}: {training_mae}")
     
-        # Evaluate validation performance
+        # Evaluate on validation data
         validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data, "Validation", config)
         print(f"Validation Mean Squared Error with interface size {initial_size}: {validation_mse}")
         print(f"Validation Mean Absolute Error with interface size {initial_size}: {validation_mae}")
     
-        # Stop when error is below threshold or no further improvement
+        # Check stopping condition
         if (incremental_search and validation_mae <= threshold_error) or (not incremental_search and validation_mae >= threshold_error):
             print(f"Optimal interface size found: {initial_size} with Validation MSE: {validation_mse} and Validation MAE: {validation_mae}")
             break
         else:
-            initial_size = initial_size + step_size if incremental_search else initial_size - step_size
+            if incremental_search:
+                initial_size += step_size
+            else:
+                initial_size -= step_size
             if initial_size > processed_data.shape[1] or initial_size <= 0:
                 print(f"Cannot adjust interface size beyond data dimensions. Stopping.")
                 break
@@ -185,7 +195,6 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         print(f"Debug info saved to {config['remote_log']}.")
     
     print(f"Execution time: {execution_time} seconds")
-
 
 
 def load_and_evaluate_encoder(config):

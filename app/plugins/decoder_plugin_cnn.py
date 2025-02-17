@@ -38,74 +38,93 @@ class Plugin:
     def add_debug_info(self, debug_info):
         debug_info.update(self.get_debug_info())
 
-    def configure_size(self, input_dim, encoding_dim, num_channels=None, use_sliding_windows=False):
+    def configure_size(self, interface_size, input_shape, num_channels, encoder_output_shape, use_sliding_windows):
         """
-        Configures the CNN-based encoder.
+        Configures the CNN decoder.
+        
         Args:
-            input_dim (int): Length of the input sequence.
-            encoding_dim (int): Dimension of the latent space.
-            num_channels (int, optional): Number of input channels (defaults to 1 if not provided).
-            use_sliding_windows (bool): If True, the input shape is assumed to be (input_dim, num_channels).
+            interface_size (int): Latent space dimension (decoder input size).
+            input_shape (int or tuple): Original input shape fed to the encoder. If sliding windows
+                are used and input_shape is a tuple, the final number of units equals the product of dimensions.
+            num_channels (int): Number of input features/channels.
+            encoder_output_shape (tuple): Output shape of the encoder (excluding batch size); expected to be (sequence_length, num_filters).
+            use_sliding_windows (bool): Whether sliding windows are used.
         """
-        self.params['input_dim'] = input_dim
-        self.params['encoding_dim'] = encoding_dim
-        if num_channels is None:
-            num_channels = 1
-        self.params['num_channels'] = num_channels
+        self.params['interface_size'] = interface_size
+        self.params['input_shape'] = input_shape
 
-        # Compute layer sizes using the same method as the ANN plugin.
+        # Retrieve architecture parameters
         intermediate_layers = self.params.get('intermediate_layers', 3)
         initial_layer_size = self.params.get('initial_layer_size', 128)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
         l2_reg = self.params.get('l2_reg', 1e-5)
         learning_rate = self.params.get('learning_rate', 0.00002)
 
-        layers = []
+        # Compute the encoder's layer sizes as in the encoder.
+        encoder_layers = []
         current_size = initial_layer_size
         for i in range(intermediate_layers):
-            layers.append(current_size)
+            encoder_layers.append(current_size)
             current_size = max(current_size // layer_size_divisor, 1)
-        layers.append(encoding_dim)
-        print(f"[configure_size] CNN Layer sizes (filters): {layers}")
-        print(f"[configure_size] Input sequence length: {input_dim}, Channels: {num_channels}")
+        encoder_layers.append(interface_size)
 
-        # Define input shape for the CNN.
-        cnn_input_shape = (input_dim, num_channels)
-        inputs = Input(shape=cnn_input_shape, name="encoder_input")
-        x = inputs
+        # Mirror the encoder: reverse the intermediate layers (exclude the latent interface itself)
+        decoder_intermediate_layers = encoder_layers[:-1][::-1]
+        print(f"[configure_size] Encoder layer sizes: {encoder_layers}")
+        print(f"[configure_size] Decoder intermediate layer sizes: {decoder_intermediate_layers}")
+        print(f"[configure_size] Original input shape: {input_shape}")
 
-        # First Conv1D layer (stride=1)
-        x = Conv1D(filters=layers[0], kernel_size=3, strides=1, padding='same',
+        # Determine final output units.
+        if use_sliding_windows and isinstance(input_shape, tuple):
+            final_output_units = int(np.prod(input_shape))
+        else:
+            final_output_units = input_shape
+
+        # Unpack encoder_output_shape to extract sequence_length and num_filters.
+        try:
+            sequence_length, num_filters = encoder_output_shape
+        except Exception as e:
+            raise ValueError(f"[configure_size] encoder_output_shape must be a tuple of (sequence_length, num_filters). Got {encoder_output_shape}") from e
+        print(f"[configure_size] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
+
+        # Build the decoder model.
+        # The decoder input is the latent vector of size (interface_size,)
+        from keras.models import Model
+        decoder_input = Input(shape=(interface_size,), name="decoder_input")
+        x = decoder_input
+
+        # Add intermediate dense layers using reversed sizes.
+        layer_idx = 0
+        for size in decoder_intermediate_layers:
+            layer_idx += 1
+            x = Dense(
+                units=size,
                 activation=LeakyReLU(alpha=0.1),
                 kernel_initializer=HeNormal(),
                 kernel_regularizer=l2(l2_reg),
-                name="conv1d_layer_1")(x)
-        x = BatchNormalization(name="batch_norm_1")(x)
-
-        # Add intermediate layers with stride=2 for downsampling.
-        for i, filters in enumerate(layers[1:-1], start=2):
-            x = Conv1D(filters=filters, kernel_size=3, strides=2, padding='same',
-                    activation=LeakyReLU(alpha=0.1),
-                    kernel_initializer=HeNormal(),
-                    kernel_regularizer=l2(l2_reg),
-                    name=f"conv1d_layer_{i}")(x)
-            x = BatchNormalization(name=f"batch_norm_{i}")(x)
-
-        # Final Conv1D layer to produce latent representation.
-        x = Conv1D(filters=layers[-1], kernel_size=1, strides=1, padding='same',
-                activation='linear',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg),
-                name="conv1d_final")(x)
-        x = BatchNormalization(name="batch_norm_final")(x)
-        # IMPORTANT: Remove GlobalAveragePooling1D so that output remains 3D (time_steps, filters)
+                name=f"decoder_dense_layer_{layer_idx}"
+            )(x)
+        # Final projection to reconstruct the original input dimension.
+        x = Dense(
+            units=final_output_units,
+            activation='linear',
+            kernel_initializer=GlorotUniform(),
+            kernel_regularizer=l2(l2_reg),
+            name="decoder_output"
+        )(x)
         outputs = x
 
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_cnn")
-        adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
-        self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
-        print("[configure_size] Encoder Model Summary:")
-        self.encoder_model.summary()
+        self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder_cnn")
+        from keras.optimizers import Adam
+        adam_optimizer = Adam(
+            learning_rate=learning_rate,
+            beta_1=0.9,
+            beta_2=0.999,
+            epsilon=1e-7,
+        )
+        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        print("[configure_size] Decoder Model Summary:")
+        self.model.summary()
 
 
 

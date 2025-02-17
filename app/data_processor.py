@@ -96,7 +96,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     print("Running process_data...")
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
-    
+
     # If using sliding windows AND the encoder plugin is ANN, flatten the data.
     if config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'ann':
         print("[run_autoencoder_pipeline] Detected ANN plugin with sliding windows; flattening training and validation data.")
@@ -108,7 +108,26 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_data.shape[0]} rows to match training data rows: {processed_data.shape[0]}")
         validation_data = validation_data[:processed_data.shape[0]]
     
+    # For non-sliding windows:
     if not config.get('use_sliding_windows', True):
+        # For the CNN plugin, the encoder expects a 2D “tiled” input.
+        if config.get('encoder_plugin', '').lower() == 'cnn':
+            # processed_data is (n, input_dim); we need (n, input_dim, input_dim).
+            print("[run_autoencoder_pipeline] Reshaping data for CNN non-sliding window: expanding dimension and tiling")
+            # Expand last axis to get shape (n, input_dim, 1)
+            processed_data = np.expand_dims(processed_data, axis=-1)
+            # Tile along the last axis so that the last dimension equals the input length.
+            processed_data = np.tile(processed_data, (1, 1, processed_data.shape[1]))
+            
+            # Do the same for validation data.
+            validation_data = np.expand_dims(validation_data, axis=-1)
+            validation_data = np.tile(validation_data, (1, 1, validation_data.shape[1]))
+        else:
+            # For other plugins, simply add a channel dimension.
+            print("[run_autoencoder_pipeline] Reshaping data for non-sliding window: expanding dimension")
+            processed_data = np.expand_dims(processed_data, axis=-1)
+            validation_data = np.expand_dims(validation_data, axis=-1)
+        
         config['original_feature_size'] = validation_data.shape[1]
         print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
     
@@ -133,29 +152,17 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         num_channels = processed_data.shape[-1]
     
-        # Build and train the autoencoder.
+        # Build and train the autoencoder
         autoencoder_manager.build_autoencoder(input_size, initial_size, config, num_channels)
-        
-        # --- For the CNN plugin in non-sliding window mode, the training target must be flattened.
-        encoder_name = config.get('encoder_plugin', '').lower()
-        if not config.get('use_sliding_windows', True) and encoder_name == 'cnn':
-            # The processed_data has shape (num_samples, input_dim, input_dim) but the autoencoder output is (num_samples, input_dim)
-            train_targets = processed_data.reshape(processed_data.shape[0], input_size)
-            val_targets = validation_data.reshape(validation_data.shape[0], input_size)
-        else:
-            train_targets = processed_data
-            val_targets = validation_data
-        # ---------------------------------------------------------------
-    
         autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
     
         # Evaluate on training data
-        training_mse, training_mae = autoencoder_manager.evaluate(train_targets, "Training", config)
+        training_mse, training_mae = autoencoder_manager.evaluate(processed_data, "Training", config)
         print(f"Training Mean Squared Error with interface size {initial_size}: {training_mse}")
         print(f"Training Mean Absolute Error with interface size {initial_size}: {training_mae}")
     
         # Evaluate on validation data
-        validation_mse, validation_mae = autoencoder_manager.evaluate(val_targets, "Validation", config)
+        validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data, "Validation", config)
         print(f"Validation Mean Squared Error with interface size {initial_size}: {validation_mse}")
         print(f"Validation Mean Absolute Error with interface size {initial_size}: {validation_mae}")
     
@@ -198,8 +205,6 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         print(f"Debug info saved to {config['remote_log']}.")
     
     print(f"Execution time: {execution_time} seconds")
-
-
 
 
 

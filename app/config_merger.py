@@ -66,6 +66,12 @@ def merge_config(defaults, plugin_params1, plugin_params2, file_config, cli_args
             print(f"Step 4 merging from unknown args: {key} = {value}")
             merged_config[key] = value
 
+    # Additional check: if the CLI flag "--use_sliding_window" (singular) is present,
+    # override the parameter "use_sliding_windows" (plural) to True.
+    if "use_sliding_window" in cli_keys:
+        print("Step 4: Detected CLI flag '--use_sliding_window'; setting 'use_sliding_windows' = True")
+        merged_config["use_sliding_windows"] = True
+
     # Special handling for csv_file
     if len(sys.argv) > 1 and not sys.argv[1].startswith('--'):
         merged_config['x_train_file'] = sys.argv[1]

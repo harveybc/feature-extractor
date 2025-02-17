@@ -19,8 +19,7 @@ class Plugin:
         'intermediate_layers': 3,
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
-        'l2_reg': 1e-5,
-        'learning_rate': 0.00002,
+        'l2_reg': 1e-5
     }
     plugin_debug_vars = ['input_shape', 'interface_size']
 
@@ -115,7 +114,7 @@ class Plugin:
                 kernel_initializer=GlorotUniform(),
                 kernel_regularizer=l2(l2_reg),
                 name="decoder_dense_to_map")(decoder_input)
-        x = BatchNormalization(name="decoder_dense_bn")(x)
+        #x = BatchNormalization(name="decoder_dense_bn")(x)
         x = Reshape((time_steps_latent, num_filters), name="decoder_reshape")(x)
         print(f"[configure_size] After Dense mapping and reshape, feature map shape: {x.shape}")
 
@@ -130,7 +129,7 @@ class Plugin:
                                 kernel_initializer=HeNormal(),
                                 kernel_regularizer=l2(l2_reg),
                                 name=f"decoder_conv1dtrans_{i}")(x)
-            x = BatchNormalization(name=f"decoder_conv1dtrans_bn_{i}")(x)
+            #x = BatchNormalization(name=f"decoder_conv1dtrans_bn_{i}")(x)
             print(f"[configure_size] After Conv1DTranspose layer {i}, shape: {x.shape}")
 
         # Step 3: Final layer – use Conv1DTranspose to set the number of channels.

@@ -17,7 +17,6 @@ class Plugin:
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
         'l2_reg': 1e-5,
-        'learning_rate': 0.00002,
         # (Optional dropout_rate could be added if needed)
     }
     plugin_debug_vars = ['input_dim', 'encoding_dim']
@@ -97,7 +96,7 @@ class Plugin:
                    name="conv1d_final")(x)
         x = BatchNormalization(name="batch_norm_final")(x)
         # Global average pooling converts the 3D output to a 1D vector.
-        x = GlobalAveragePooling1D()(x)
+        #x = GlobalAveragePooling1D()(x)
         outputs = x
 
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_cnn")

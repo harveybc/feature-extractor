@@ -62,7 +62,6 @@ class Plugin:
         print(f"[configure_size] Decoder LSTM sizes (mirrored): {decoder_lstm_sizes}")
 
         # Build the decoder model using Sequential API.
-        from keras.models import Sequential
         self.model = Sequential(name="decoder_lstm")
         # First, expand the latent vector via Dense to match the last LSTM unit of the encoder.
         latent_dense_units = encoder_layers[-2]
@@ -99,7 +98,6 @@ class Plugin:
                 from keras.layers import Dropout
                 self.model.add(Dropout(dropout_rate, name=f"decoder_dropout_after_lstm_{idx}"))
         # Final TimeDistributed Dense layer to reconstruct the original features.
-        from keras.layers import TimeDistributed, Dense
         self.model.add(TimeDistributed(
             Dense(num_channels,
                 activation='linear',

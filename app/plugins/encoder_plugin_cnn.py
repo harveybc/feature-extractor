@@ -38,17 +38,27 @@ class Plugin:
     def configure_size(self, input_dim, encoding_dim, num_channels=None, use_sliding_windows=False):
         """
         Configures the CNN-based encoder.
+        
         Args:
-            input_dim (int): Length of the input sequence.
+            input_dim (int or tuple): If not using sliding windows, the sequence length (int). 
+                If using sliding windows, a tuple (window_size, num_channels).
             encoding_dim (int): Dimension of the latent space.
-            num_channels (int, optional): Number of input channels (if not provided, defaults to 1).
-            use_sliding_windows (bool): If True, the input shape is assumed to be (input_dim, num_channels).
+            num_channels (int, optional): Number of input channels (ignored if input_dim is a tuple).
+            use_sliding_windows (bool): If True, input_dim is assumed to be (window_size, num_channels).
         """
-        self.params['input_dim'] = input_dim
         self.params['encoding_dim'] = encoding_dim
-        if num_channels is None:
-            num_channels = 1
-        self.params['num_channels'] = num_channels
+        if use_sliding_windows and isinstance(input_dim, tuple):
+            # Use the provided tuple as the input shape.
+            cnn_input_shape = input_dim  # (window_size, num_channels)
+            self.params['input_dim'] = cnn_input_shape[0]  # window_size
+            self.params['num_channels'] = cnn_input_shape[1]
+        else:
+            # Non-sliding window: input_dim is an integer.
+            self.params['input_dim'] = input_dim
+            if num_channels is None:
+                num_channels = 1
+            self.params['num_channels'] = num_channels
+            cnn_input_shape = (input_dim, num_channels)
 
         # Compute layer sizes using the same method as the ANN plugin:
         intermediate_layers = self.params.get('intermediate_layers', 3)
@@ -64,29 +74,28 @@ class Plugin:
             current_size = max(current_size // layer_size_divisor, 1)
         layers.append(encoding_dim)
         print(f"[configure_size] CNN Layer sizes (filters): {layers}")
-        print(f"[configure_size] Input sequence length: {input_dim}, Channels: {num_channels}")
+        print(f"[configure_size] Input sequence length: {cnn_input_shape[0]}, Channels: {cnn_input_shape[1]}")
 
-        # Define input shape
-        cnn_input_shape = (input_dim, num_channels)
+        # Define input layer
         inputs = Input(shape=cnn_input_shape, name="encoder_input")
         x = inputs
 
         # First Conv1D layer (stride=1)
         x = Conv1D(filters=layers[0], kernel_size=3, strides=1, padding='same',
-                   activation=LeakyReLU(alpha=0.1),
-                   kernel_initializer=HeNormal(),
-                   kernel_regularizer=l2(l2_reg),
-                   name="conv1d_layer_1")(x)
+                activation=LeakyReLU(alpha=0.1),
+                kernel_initializer=HeNormal(),
+                kernel_regularizer=l2(l2_reg),
+                name="conv1d_layer_1")(x)
         x = BatchNormalization(name="batch_norm_1")(x)
 
         # Add intermediate layers with stride=2 for downsampling
         for i, filters in enumerate(layers[1:-1], start=2):
             x = Conv1D(filters=filters, kernel_size=3, strides=2, padding='same',
-                       activation=LeakyReLU(alpha=0.1),
-                       kernel_initializer=HeNormal(),
-                       kernel_regularizer=l2(l2_reg),
-                       name=f"conv1d_layer_{i}")(x)
-        x = BatchNormalization(name=f"batch_norm_{i}")(x)
+                    activation=LeakyReLU(alpha=0.1),
+                    kernel_initializer=HeNormal(),
+                    kernel_regularizer=l2(l2_reg),
+                    name=f"conv1d_layer_{i}")(x)
+            x = BatchNormalization(name=f"batch_norm_{i}")(x)
 
         # Final Conv1D layer to produce latent representation
         x = Conv1D(filters=layers[-1], kernel_size=1, strides=1, padding='same',
@@ -105,6 +114,7 @@ class Plugin:
         self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
         print("[configure_size] Encoder Model Summary:")
         self.encoder_model.summary()
+
 
     def train(self, data, validation_data):
         if self.encoder_model is None:

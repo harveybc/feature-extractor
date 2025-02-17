@@ -20,18 +20,20 @@ def create_sliding_windows(data, window_size):
     Returns:
         np.ndarray: Array with shape (num_samples, window_size, num_features).
     """
-    data_array = data.to_numpy()  # Convert dataframe to numpy array
+    # Force numeric conversion (float32) to avoid unexpected NaN values.
+    data_array = data.to_numpy(dtype=np.float32)
     num_features = data_array.shape[1]  # Number of columns/features
     num_samples = data_array.shape[0] - window_size + 1  # Calculate the number of sliding windows
     
-    # Create a 3D array to store the windows
-    windows = np.zeros((num_samples, window_size, num_features))
+    # Create a 3D array to store the windows, ensuring same dtype.
+    windows = np.zeros((num_samples, window_size, num_features), dtype=np.float32)
     
     # Slide the window over the data and create the 3D array
     for i in range(num_samples):
         windows[i] = data_array[i:i+window_size]  # Slice window_size rows across all columns
     
     return windows
+
 
 
 # app/data_processor.py

@@ -41,15 +41,17 @@ class Plugin:
         Args:
             input_shape (int or tuple): If int, represents time_steps; if tuple, (time_steps, num_channels).
             encoding_dim (int): Dimension of the latent space.
-            num_channels (int, optional): If input_shape is an int and sliding windows are used.
+            num_channels (int, optional): Number of features. If input_shape is an int and sliding windows
+                are not used, this will be used to set the number of features.
             use_sliding_windows (bool, optional): If True, input_shape is treated as (time_steps, num_channels).
         """
+        # Modified: if input_shape is an int and we're NOT using sliding windows,
+        # use the provided num_channels (or default to 1 if not provided)
         if isinstance(input_shape, int):
             if use_sliding_windows:
                 input_shape = (input_shape, num_channels if num_channels else 1)
             else:
-                print("[configure_size] WARNING: Received int for input_shape without sliding windows. Assuming shape=(time_steps,1).")
-                input_shape = (input_shape, 1)
+                input_shape = (input_shape, num_channels if num_channels else 1)
         self.params['input_shape'] = input_shape
         self.params['encoding_dim'] = encoding_dim
 
@@ -91,38 +93,10 @@ class Plugin:
         print("[configure_size] Encoder Model Summary:")
         self.encoder_model.summary()
 
-    def train(self, data, validation_data):
-        if self.encoder_model is None:
-            raise ValueError("[train] Encoder model is not yet configured. Call configure_size first.")
-        print(f"[train] Starting training with data shape={data.shape}, validation shape={validation_data.shape}")
-        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-        history = self.encoder_model.fit(data, data, epochs=self.params.get('epochs',600),
-                                          batch_size=self.params.get('batch_size',128),
-                                          validation_data=(validation_data, validation_data),
-                                          callbacks=[early_stopping], verbose=1)
-        print("[train] Training completed.")
-        return history
-
-    def encode(self, data):
-        if self.encoder_model is None:
-            raise ValueError("[encode] Encoder model is not configured.")
-        print(f"[encode] Encoding data with shape: {data.shape}")
-        encoded_data = self.encoder_model.predict(data, verbose=1)
-        print(f"[encode] Encoded output shape: {encoded_data.shape}")
-        return encoded_data
-
-    def save(self, file_path):
-        if self.encoder_model is None:
-            raise ValueError("[save] Encoder model is not configured.")
-        save_model(self.encoder_model, file_path)
-        print(f"[save] Encoder model saved to {file_path}")
-
-    def load(self, file_path):
-        self.encoder_model = load_model(file_path)
-        print(f"[load] Encoder model loaded from {file_path}")
-
 if __name__ == "__main__":
+    # Example: For an 8-feature time series with 128 time steps, using non-sliding windows.
+    # We pass input_shape=128 and num_channels=8.
     plugin = Plugin()
-    plugin.configure_size(input_shape=128, encoding_dim=4, num_channels=1, use_sliding_windows=False)
+    plugin.configure_size(input_shape=128, encoding_dim=4, num_channels=8, use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

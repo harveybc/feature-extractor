@@ -23,16 +23,9 @@ class AutoencoderManager:
 
             # Determine if sliding windows are used
             use_sliding_windows = config.get('use_sliding_windows', True)
-            
-            # For CNN with sliding windows, set input_shape as a tuple (window_size, num_channels)
-            if use_sliding_windows and config.get('encoder_plugin', '').lower() == 'cnn':
-                # Here, input_shape should be a tuple: (window_size, num_channels)
-                cnn_input_shape = (config['window_size'], num_channels)
-            else:
-                cnn_input_shape = input_shape
 
-            # Configure encoder size (pass cnn_input_shape)
-            self.encoder_plugin.configure_size(cnn_input_shape, interface_size, num_channels, use_sliding_windows)
+            # Configure encoder size
+            self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows)
 
             # Get the encoder model
             self.encoder_model = self.encoder_plugin.encoder_model
@@ -43,29 +36,37 @@ class AutoencoderManager:
             encoder_output_shape = self.encoder_model.output_shape[1:]  # Exclude batch size
             print(f"Encoder output shape: {encoder_output_shape}")
 
-            # Configure the decoder size, passing the encoder's output shape and original cnn_input_shape
-            self.decoder_plugin.configure_size(interface_size, cnn_input_shape, num_channels, encoder_output_shape, use_sliding_windows)
+            # Configure the decoder size, passing the encoder's output shape
+            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_output_shape, use_sliding_windows)
 
             # Get the decoder model
             self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built and compiled successfully")
             self.decoder_model.summary()
 
-            # Build autoencoder model: connect encoder and decoder
+            # Build autoencoder model
             autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
 
             # Define optimizer
             adam_optimizer = Adam(
                 learning_rate=config['learning_rate'],  # Set the learning rate
-                beta_1=0.9,
-                beta_2=0.999,
-                epsilon=1e-7,
-                amsgrad=False,
-                clipnorm=1.0,
-                clipvalue=0.5
+                beta_1=0.9,  # Default value
+                beta_2=0.999,  # Default value
+                epsilon=1e-7,  # Default value
+                amsgrad=False,  # Default value
+                clipnorm=1.0,  # Gradient clipping
+                clipvalue=0.5  # Gradient clipping
             )
 
+            # Define custom R² score metric
+            def r2_score(y_true, y_pred):
+                """Calculate R² score."""
+                ss_res = tf.reduce_sum(tf.square(y_true - y_pred))  # Residual sum of squares
+                ss_tot = tf.reduce_sum(tf.square(y_true - tf.reduce_mean(y_true)))  # Total sum of squares
+                return 1 - (ss_res / (ss_tot + tf.keras.backend.epsilon()))  # Avoid division by zero
+
+            # Compile autoencoder with the custom loss function
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss=Huber(delta=1.0),
@@ -87,46 +88,36 @@ class AutoencoderManager:
         try:
             print(f"[train_autoencoder] Received data with shape: {data.shape}")
 
-            # Determine if sliding windows are used.
+            # Determine if sliding windows are used
             use_sliding_windows = config.get('use_sliding_windows', True)
-            # Determine the plugin type (lowercase string from config)
-            plugin_type = config.get('encoder_plugin', '').lower()
 
-            # For non-sliding data, we need to add a time dimension.
-            # For sequential models (LSTM, Transformer), the expected shape is (batch, time_steps, features)
-            # If our raw data shape is (batch, features) and features represents the time steps,
-            # we want to expand on the last axis.
-            if not use_sliding_windows and len(data.shape) == 2:
-                if plugin_type in ['lstm', 'transformer']:
-                    print("[train_autoencoder] Reshaping data for sequential models (LSTM/Transformer): expanding dimension at axis -1")
-                    data = np.expand_dims(data, axis=-1)
-                else:
-                    print("[train_autoencoder] Reshaping data to add channel dimension for non-sequential models: expanding dimension at axis=-1")
-                    data = np.expand_dims(data, axis=-1)
+            # Check and reshape data for compatibility with Conv1D layers
+            if not use_sliding_windows and len(data.shape) == 2:  # Row-by-row data (2D)
+                print("[train_autoencoder] Reshaping data to add channel dimension for Conv1D compatibility...")
+                data = np.expand_dims(data, axis=-1)  # Add channel dimension (num_samples, num_features, 1)
                 print(f"[train_autoencoder] Reshaped data shape: {data.shape}")
 
-            # Extract the number of channels and input shape from the data.
             num_channels = data.shape[-1]
             input_shape = data.shape[1]
             interface_size = self.encoder_plugin.params.get('interface_size', 4)
 
-            # Build autoencoder with the correct number of channels if not already built.
+            # Build autoencoder with the correct num_channels
             if not self.autoencoder_model:
                 self.build_autoencoder(input_shape, interface_size, config, num_channels)
 
-            # Validate data for NaN values.
+            # Validate data for NaN values before training
             if np.isnan(data).any():
                 raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
 
-            # Calculate dataset information (entropy, etc.)
+            # Calculate entropy and useful information using Shannon-Hartley theorem
             self.calculate_dataset_information(data, config)
 
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
 
-            # Implement Early Stopping.
+            # Implement Early Stopping
             early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True)
 
-            # Start training.
+            # Start training with early stopping
             history = self.autoencoder_model.fit(
                 data,
                 data,
@@ -134,9 +125,10 @@ class AutoencoderManager:
                 batch_size=batch_size,
                 verbose=1,
                 callbacks=[early_stopping],
-                validation_split=0.2
+                validation_split = 0.2
             )
 
+            # Log training loss
             print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
             print("[train_autoencoder] Training completed.")
         except Exception as e:

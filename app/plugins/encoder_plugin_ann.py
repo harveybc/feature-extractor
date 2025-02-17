@@ -50,7 +50,7 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, input_dim, encoding_dim):
+    def configure_size(self, input_dim, encoding_dim, num_channels=None, use_sliding_windows=False):
         """
         Configures the encoder model with the specified input dimension and latent space size.
         The intermediate layer sizes are calculated using the same system as in the LSTM plugin.

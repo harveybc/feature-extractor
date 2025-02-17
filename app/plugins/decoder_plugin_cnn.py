@@ -44,7 +44,7 @@ class Plugin:
         Args:
             input_dim (int): Length of the input sequence.
             encoding_dim (int): Dimension of the latent space.
-            num_channels (int, optional): Number of input channels (if not provided, defaults to 1).
+            num_channels (int, optional): Number of input channels (defaults to 1 if not provided).
             use_sliding_windows (bool): If True, the input shape is assumed to be (input_dim, num_channels).
         """
         self.params['input_dim'] = input_dim
@@ -53,7 +53,7 @@ class Plugin:
             num_channels = 1
         self.params['num_channels'] = num_channels
 
-        # Compute layer sizes using the same method as the ANN plugin:
+        # Compute layer sizes using the same method as the ANN plugin.
         intermediate_layers = self.params.get('intermediate_layers', 3)
         initial_layer_size = self.params.get('initial_layer_size', 128)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
@@ -69,7 +69,7 @@ class Plugin:
         print(f"[configure_size] CNN Layer sizes (filters): {layers}")
         print(f"[configure_size] Input sequence length: {input_dim}, Channels: {num_channels}")
 
-        # Define input shape
+        # Define input shape for the CNN.
         cnn_input_shape = (input_dim, num_channels)
         inputs = Input(shape=cnn_input_shape, name="encoder_input")
         x = inputs
@@ -82,7 +82,7 @@ class Plugin:
                 name="conv1d_layer_1")(x)
         x = BatchNormalization(name="batch_norm_1")(x)
 
-        # Add intermediate layers with stride=2 for downsampling
+        # Add intermediate layers with stride=2 for downsampling.
         for i, filters in enumerate(layers[1:-1], start=2):
             x = Conv1D(filters=filters, kernel_size=3, strides=2, padding='same',
                     activation=LeakyReLU(alpha=0.1),
@@ -91,14 +91,14 @@ class Plugin:
                     name=f"conv1d_layer_{i}")(x)
             x = BatchNormalization(name=f"batch_norm_{i}")(x)
 
-        # Final Conv1D layer to produce latent representation
+        # Final Conv1D layer to produce latent representation.
         x = Conv1D(filters=layers[-1], kernel_size=1, strides=1, padding='same',
                 activation='linear',
                 kernel_initializer=GlorotUniform(),
                 kernel_regularizer=l2(l2_reg),
                 name="conv1d_final")(x)
         x = BatchNormalization(name="batch_norm_final")(x)
-        # NOTE: Removed GlobalAveragePooling1D so that the output remains 2D (sequence_length, filters)
+        # IMPORTANT: Remove GlobalAveragePooling1D so that output remains 3D (time_steps, filters)
         outputs = x
 
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_cnn")

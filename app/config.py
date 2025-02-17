@@ -24,7 +24,6 @@ DEFAULT_VALUES = {
     'load_config': None,
     'save_config': './config_out.json',
     'quiet_mode': False,
-    'force_date': True,
     'incremental_search': True, # if false performs decresing search instead
     'headers': True,
     'epochs': 600,  # Add epochs here

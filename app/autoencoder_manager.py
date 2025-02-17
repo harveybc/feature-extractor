@@ -23,9 +23,16 @@ class AutoencoderManager:
 
             # Determine if sliding windows are used
             use_sliding_windows = config.get('use_sliding_windows', True)
+            
+            # For CNN with sliding windows, set input_shape as a tuple (window_size, num_channels)
+            if use_sliding_windows and config.get('encoder_plugin', '').lower() == 'cnn':
+                # Here, input_shape should be a tuple: (window_size, num_channels)
+                cnn_input_shape = (config['window_size'], num_channels)
+            else:
+                cnn_input_shape = input_shape
 
-            # Configure encoder size
-            self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows)
+            # Configure encoder size (pass cnn_input_shape)
+            self.encoder_plugin.configure_size(cnn_input_shape, interface_size, num_channels, use_sliding_windows)
 
             # Get the encoder model
             self.encoder_model = self.encoder_plugin.encoder_model
@@ -36,37 +43,29 @@ class AutoencoderManager:
             encoder_output_shape = self.encoder_model.output_shape[1:]  # Exclude batch size
             print(f"Encoder output shape: {encoder_output_shape}")
 
-            # Configure the decoder size, passing the encoder's output shape
-            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_output_shape, use_sliding_windows)
+            # Configure the decoder size, passing the encoder's output shape and original cnn_input_shape
+            self.decoder_plugin.configure_size(interface_size, cnn_input_shape, num_channels, encoder_output_shape, use_sliding_windows)
 
             # Get the decoder model
             self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built and compiled successfully")
             self.decoder_model.summary()
 
-            # Build autoencoder model
+            # Build autoencoder model: connect encoder and decoder
             autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
 
             # Define optimizer
             adam_optimizer = Adam(
                 learning_rate=config['learning_rate'],  # Set the learning rate
-                beta_1=0.9,  # Default value
-                beta_2=0.999,  # Default value
-                epsilon=1e-7,  # Default value
-                amsgrad=False,  # Default value
-                clipnorm=1.0,  # Gradient clipping
-                clipvalue=0.5  # Gradient clipping
+                beta_1=0.9,
+                beta_2=0.999,
+                epsilon=1e-7,
+                amsgrad=False,
+                clipnorm=1.0,
+                clipvalue=0.5
             )
 
-            # Define custom R² score metric
-            def r2_score(y_true, y_pred):
-                """Calculate R² score."""
-                ss_res = tf.reduce_sum(tf.square(y_true - y_pred))  # Residual sum of squares
-                ss_tot = tf.reduce_sum(tf.square(y_true - tf.reduce_mean(y_true)))  # Total sum of squares
-                return 1 - (ss_res / (ss_tot + tf.keras.backend.epsilon()))  # Avoid division by zero
-
-            # Compile autoencoder with the custom loss function
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss=Huber(delta=1.0),

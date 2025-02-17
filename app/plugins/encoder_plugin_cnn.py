@@ -90,13 +90,14 @@ class Plugin:
 
         # Final Conv1D layer to produce latent representation
         x = Conv1D(filters=layers[-1], kernel_size=1, strides=1, padding='same',
-                   activation='linear',
-                   kernel_initializer=GlorotUniform(),
-                   kernel_regularizer=l2(l2_reg),
-                   name="conv1d_final")(x)
+                activation='linear',
+                kernel_initializer=GlorotUniform(),
+                kernel_regularizer=l2(l2_reg),
+                name="conv1d_final")(x)
         x = BatchNormalization(name="batch_norm_final")(x)
-        # Global average pooling converts the 3D output to a 1D vector.
-        x = GlobalAveragePooling1D()(x)
+        if not use_sliding_windows:
+            # For non-sliding windows, collapse the temporal dimension.
+            x = GlobalAveragePooling1D()(x)
         outputs = x
 
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_cnn")

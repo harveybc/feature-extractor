@@ -87,45 +87,46 @@ class AutoencoderManager:
         try:
             print(f"[train_autoencoder] Received data with shape: {data.shape}")
 
+            # Determine if sliding windows are used.
             use_sliding_windows = config.get('use_sliding_windows', True)
-            encoder_plugin = config.get('encoder_plugin', '').lower()
+            # Determine the plugin type (lowercase string from config)
+            plugin_type = config.get('encoder_plugin', '').lower()
 
-            # For non-sliding window data:
+            # For non-sliding data, we need to add a time dimension.
+            # For sequential models (LSTM, Transformer), the expected shape is (batch, time_steps, features)
+            # If our raw data shape is (batch, features) and features represents the time steps,
+            # we want to expand on the last axis.
             if not use_sliding_windows and len(data.shape) == 2:
-                if encoder_plugin == 'cnn':
-                    print("[train_autoencoder] Reshaping data for CNN non-sliding window: expanding dimension and tiling")
-                    data = np.expand_dims(data, axis=-1)            # (num_samples, features, 1)
-                    data = np.tile(data, (1, 1, data.shape[1]))       # (num_samples, features, features)
-                elif encoder_plugin in ['lstm', 'transformer']:
-                    print("[train_autoencoder] Reshaping data for sequential models (LSTM/Transformer): expanding dimension at axis 1")
-                    data = np.expand_dims(data, axis=1)              # (num_samples, 1, features)
-                elif encoder_plugin == 'ann':
-                    print("[train_autoencoder] ANN plugin detected; no reshaping applied.")
+                if plugin_type in ['lstm', 'transformer']:
+                    print("[train_autoencoder] Reshaping data for sequential models (LSTM/Transformer): expanding dimension at axis -1")
+                    data = np.expand_dims(data, axis=-1)
                 else:
-                    print("[train_autoencoder] Unknown plugin; expanding dimension at axis=-1")
+                    print("[train_autoencoder] Reshaping data to add channel dimension for non-sequential models: expanding dimension at axis=-1")
                     data = np.expand_dims(data, axis=-1)
                 print(f"[train_autoencoder] Reshaped data shape: {data.shape}")
 
-            # For CNN non-sliding window, our tiling ensures data shape is (num_samples, features, features)
-            if not use_sliding_windows and encoder_plugin == 'cnn':
-                num_channels = data.shape[-1]  # This equals the original number of features.
-            else:
-                num_channels = data.shape[-1]
-
-            # For all plugins, the input_shape is taken from the second dimension.
+            # Extract the number of channels and input shape from the data.
+            num_channels = data.shape[-1]
             input_shape = data.shape[1]
             interface_size = self.encoder_plugin.params.get('interface_size', 4)
 
+            # Build autoencoder with the correct number of channels if not already built.
             if not self.autoencoder_model:
                 self.build_autoencoder(input_shape, interface_size, config, num_channels)
 
+            # Validate data for NaN values.
             if np.isnan(data).any():
                 raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
 
+            # Calculate dataset information (entropy, etc.)
             self.calculate_dataset_information(data, config)
+
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
 
+            # Implement Early Stopping.
             early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True)
+
+            # Start training.
             history = self.autoencoder_model.fit(
                 data,
                 data,

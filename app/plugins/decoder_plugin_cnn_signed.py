@@ -34,7 +34,7 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, interface_size, output_shape):
+    def configure_size(self, interface_size, input_shape, num_channels,  output_shape, use_sliding_windows ):
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
@@ -79,7 +79,6 @@ class Plugin:
         # Add the Reshape layer
         self.model.add(Reshape((sequence_length, num_channels)))
 
-        # Step 3: Apply BatchNormalization
         self.model.add(BatchNormalization())
 
         for size in layer_sizes[1:-1]:
@@ -96,11 +95,12 @@ class Plugin:
 
             self.model.add(Conv1DTranspose(filters=size, kernel_size=kernel_size, strides=strides, padding='valid', activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001)))
             print(f"After Conv1DTranspose (filters={size}): {self.model.layers[-1].output_shape}")
-            self.model.add(BatchNormalization())
-            print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
+            #self.model.add(BatchNormalization())
+            #print(f"After BatchNormalization: {self.model.layers[-1].output_shape}")
             #self.model.add(Dropout(self.params['dropout_rate'] / 2))
             #print(f"After Dropout: {self.model.layers[-1].output_shape}")
 
+        self.model.add(BatchNormalization())
         # add a flatten layer
         self.model.add(Flatten())
         print(f"After Flatten: {self.model.layers[-1].output_shape}")
@@ -109,7 +109,7 @@ class Plugin:
         #self.model.add(Conv1DTranspose(filters=output_shape, kernel_size=kernel_size, padding='valid', activation=LeakyReLU(alpha=0.1), kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), name="decoder_output"))
         #print(f"After Final Conv1DTranspose: {self.model.layers[-1].output_shape}")
         #Final Dense lLayer
-        self.model.add(Dense(output_shape, activation='tanh', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001)))
+        self.model.add(Dense(output_shape, activation='linear', kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001)))
         print(f"After Final Dense: {self.model.layers[-1].output_shape}")
 
         # 5. Reshape the output to ensure the final output is (None, output_shape, 1)
@@ -136,7 +136,7 @@ class Plugin:
     def train(self, encoded_data, original_data):
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
         original_data = original_data.reshape((original_data.shape[0], -1))
-        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        early_stopping = EarlyStopping(monitor='loss', patience=25, restore_best_weights=True)
         self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping])
 
     def decode(self, encoded_data):

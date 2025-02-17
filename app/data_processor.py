@@ -97,6 +97,11 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
 
+    # Truncate validation data to have at most as many rows as training data
+    if validation_data.shape[0] > processed_data.shape[0]:
+        print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_data.shape[0]} rows to match training data rows: {processed_data.shape[0]}")
+        validation_data = validation_data[:processed_data.shape[0]]
+
     if not config.get('use_sliding_windows', True):
         config['original_feature_size'] = validation_data.shape[1]
         print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
@@ -170,7 +175,6 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         print(f"Debug info saved to {config['remote_log']}.")
 
     print(f"Execution time: {execution_time} seconds")
-
 
 
 

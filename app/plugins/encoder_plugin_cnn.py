@@ -17,7 +17,7 @@ class Plugin:
     plugin_params = {
 
         'intermediate_layers': 3, 
-        'learning_rate': 0.0001,
+        'learning_rate': 0.00002,
         'dropout_rate': 0.001,
     }
 
@@ -78,23 +78,21 @@ class Plugin:
         print(f"[DEBUG] Input shape: {x.shape}")
 
         # Initial Conv1D layer
-        x = Conv1D(filters=layers[0], kernel_size=3, strides=1, activation=LeakyReLU(alpha=0.1),
-                kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same')(x)
+        x = Conv1D(filters=layers[0], kernel_size=3, strides=1, activation='tanh',
+                kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
         print(f"[DEBUG] After Conv1D (filters={layers[0]}) shape: {x.shape}")
-        x = BatchNormalization()(x)
-        print(f"[DEBUG] After BatchNormalization shape: {x.shape}")
-
+        
         # Add intermediate layers with stride=2
         for i, size in enumerate(layers[1:-1]):
-            x = Conv1D(filters=size, kernel_size=3, strides=2, activation=LeakyReLU(alpha=0.1),
-                    kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same')(x)
+            x = Conv1D(filters=size, kernel_size=3, strides=2, activation='tanh',
+                    kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
             print(f"[DEBUG] After Conv1D (filters={size}, strides=2) shape: {x.shape}")
             x = BatchNormalization()(x)
             print(f"[DEBUG] After BatchNormalization shape: {x.shape}")
 
         # Final Conv1D layer to match the interface size
-        x = Conv1D(filters=interface_size, kernel_size=1, strides=1, activation=LeakyReLU(alpha=0.1),
-                kernel_initializer=HeNormal(), kernel_regularizer=l2(0.001), padding='same')(x)
+        x = Conv1D(filters=interface_size, kernel_size=1, strides=1, activation='tanh',
+                kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
         print(f"[DEBUG] After Final Conv1D (interface_size) shape: {x.shape}")
 
         # Output batch normalization layer
@@ -139,8 +137,8 @@ class Plugin:
 
         # Now proceed with training
         print(f"Training encoder with data shape: {data.shape}")
-        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping])
+        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True)
+        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping], validation_split = 0.2)
         print("Training completed.")
 
 

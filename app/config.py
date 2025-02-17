@@ -1,6 +1,6 @@
 DEFAULT_VALUES = {
-    'input_file': './tests/data/normalized_d1.csv',
-    'validation_file': './tests/data/normalized_d2.csv',
+    'input_file': './tests/data/phase_1_normalized_d1.csv',
+    'validation_file': './tests/data/phase_1_normalized_d2.csv',
     'output_file': './csv_output.csv',
     'save_encoder': './encoder_model.h5',
     'save_decoder': './decoder_model.h5',
@@ -8,10 +8,10 @@ DEFAULT_VALUES = {
     'load_decoder': None,
     'evaluate_encoder': './encoder_eval.csv',
     'evaluate_decoder': './decoder_eval.csv',
-    'encoder_plugin': 'cnn',
-    'decoder_plugin': 'cnn',
+    'encoder_plugin': 'ann',
+    'decoder_plugin': 'ann',
     'use_sliding_windows': False,
-    'window_size': 128, 
+    'window_size': 256, 
     'threshold_error': 0.5,
     'initial_size': 16,
     'step_size': 2,
@@ -27,9 +27,9 @@ DEFAULT_VALUES = {
     'force_date': True,
     'incremental_search': True, # if false performs decresing search instead
     'headers': True,
-    'epochs': 200,  # Add epochs here
-    'batch_size': 64,  # Add batch_size here
-    'learning_rate': 0.001,  # Add learning_rate here
+    'epochs': 600,  # Add epochs here
+    'batch_size': 128,  # Add batch_size here
+    'learning_rate': 0.0001,  # Add learning_rate here
     'dataset_periodicity': '1h'  # Add dataset_periodicity here, can be 1m, 5m, 15m, 30m, 1h, 4h, daily
 }
 

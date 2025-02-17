@@ -97,39 +97,37 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
 
-    # If using sliding windows AND the encoder plugin is ANN, flatten the data.
+    # For ANN with sliding windows, flatten the data as before.
     if config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'ann':
         print("[run_autoencoder_pipeline] Detected ANN plugin with sliding windows; flattening training and validation data.")
         processed_data = processed_data.reshape(processed_data.shape[0], -1)
         validation_data = validation_data.reshape(validation_data.shape[0], -1)
+    # For CNN in non-sliding window mode, we want to treat the entire feature vector as channels
+    # and use a single time step. (i.e. reshape from (samples, features) to (samples, 1, features))
+    elif not config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'cnn':
+        print("[run_autoencoder_pipeline] Detected CNN plugin without sliding windows; expanding dimension at axis 1.")
+        processed_data = np.expand_dims(processed_data, axis=1)  # shape becomes (samples, 1, features)
+        validation_data = np.expand_dims(validation_data, axis=1)
+        # Set input_size to 1 and original_feature_size to number of features
+        config['original_feature_size'] = processed_data.shape[-1]
+    else:
+        # For other plugins in non-sliding window mode:
+        config['original_feature_size'] = validation_data.shape[1]
     
-    # Truncate validation data to have at most as many rows as training data.
+    # Truncate validation data to have at most as many rows as training data
     if validation_data.shape[0] > processed_data.shape[0]:
         print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_data.shape[0]} rows to match training data rows: {processed_data.shape[0]}")
         validation_data = validation_data[:processed_data.shape[0]]
     
-    # For non-sliding windows:
-    if not config.get('use_sliding_windows', True):
-        # For the CNN plugin, the encoder expects a 2D “tiled” input.
-        if config.get('encoder_plugin', '').lower() == 'cnn':
-            # processed_data is (n, input_dim); we need (n, input_dim, input_dim).
-            print("[run_autoencoder_pipeline] Reshaping data for CNN non-sliding window: expanding dimension and tiling")
-            # Expand last axis to get shape (n, input_dim, 1)
-            processed_data = np.expand_dims(processed_data, axis=-1)
-            # Tile along the last axis so that the last dimension equals the input length.
-            processed_data = np.tile(processed_data, (1, 1, processed_data.shape[1]))
-            
-            # Do the same for validation data.
-            validation_data = np.expand_dims(validation_data, axis=-1)
-            validation_data = np.tile(validation_data, (1, 1, validation_data.shape[1]))
-        else:
-            # For other plugins, simply add a channel dimension.
-            print("[run_autoencoder_pipeline] Reshaping data for non-sliding window: expanding dimension")
-            processed_data = np.expand_dims(processed_data, axis=-1)
-            validation_data = np.expand_dims(validation_data, axis=-1)
-        
-        config['original_feature_size'] = validation_data.shape[1]
-        print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
+    # Determine input size:
+    # - For sliding window with ANN: flattened dimension
+    # - For CNN non-sliding: use 1 (time steps) and let channels be the original feature size.
+    if config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'ann':
+        input_size = processed_data.shape[1]
+    elif not config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'cnn':
+        input_size = 1
+    else:
+        input_size = config['window_size'] if config.get('use_sliding_windows', True) else processed_data.shape[1]
     
     initial_size = config['initial_size']
     step_size = config['step_size']
@@ -138,21 +136,13 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     epochs = config['epochs']
     incremental_search = config['incremental_search']
     
-    # Determine input size:
-    # - For sliding window with ANN: flattened dimension (window_size * num_features)
-    # - Otherwise: use the processed data's feature dimension
-    if config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'ann':
-        input_size = processed_data.shape[1]
-    else:
-        input_size = config['window_size'] if config.get('use_sliding_windows', True) else processed_data.shape[1]
-    
     while True:
         print(f"Training with interface size: {initial_size}")
         
-        autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
+        # Note: num_channels for the encoder is determined from processed_data shape.
         num_channels = processed_data.shape[-1]
     
-        # Build and train the autoencoder
+        autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         autoencoder_manager.build_autoencoder(input_size, initial_size, config, num_channels)
         autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
     
@@ -205,7 +195,6 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         print(f"Debug info saved to {config['remote_log']}.")
     
     print(f"Execution time: {execution_time} seconds")
-
 
 
 def load_and_evaluate_encoder(config):

@@ -10,7 +10,7 @@ DEFAULT_VALUES = {
     'evaluate_decoder': './decoder_eval.csv',
     'encoder_plugin': 'ann',
     'decoder_plugin': 'ann',
-    'use_sliding_windows': True,
+    'use_sliding_windows': False,
     'window_size': 256, 
     'threshold_error': 0.5,
     'initial_size': 16,

@@ -106,11 +106,11 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         config['original_feature_size'] = validation_data.shape[1]
         print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
     
-    # Adjust data shape based on plugin type:
+    # Adjust the shape of data based on the plugin type
     encoder_plugin_name = config.get('encoder_plugin', '').lower()
     if not config.get('use_sliding_windows', True):
         if encoder_plugin_name in ['lstm', 'transformer']:
-            # For sequential models, we want shape (samples, 1, features)
+            # For sequential models, we want the data to have shape (samples, 1, features)
             print("[run_autoencoder_pipeline] Detected sequential plugin without sliding windows; expanding dimension at axis 1.")
             processed_data = np.expand_dims(processed_data, axis=1)
             validation_data = np.expand_dims(validation_data, axis=1)
@@ -118,18 +118,18 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             print("[run_autoencoder_pipeline] Detected CNN plugin without sliding windows; expanding dimension at axis 1.")
             processed_data = np.expand_dims(processed_data, axis=1)
             validation_data = np.expand_dims(validation_data, axis=1)
-        else:
-            config['original_feature_size'] = validation_data.shape[1]
-            print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
+        # For ANN, no change is needed
     
     # Determine input size:
+    # - In sliding mode, use the window_size.
+    # - In non-sliding mode, for sequential (LSTM/Transformer) plugins, use the original feature count;
+    #   for CNN and ANN, use 1 (to represent a single time step).
     if config.get('use_sliding_windows', True):
         input_size = config['window_size']
     else:
-        # For sequential (LSTM/Transformer) plugins, use the original feature count rather than the expanded time dimension.
         if encoder_plugin_name in ['lstm', 'transformer']:
             input_size = config['original_feature_size']
-        elif encoder_plugin_name == 'cnn':
+        elif encoder_plugin_name in ['cnn', 'ann']:
             input_size = 1
         else:
             input_size = processed_data.shape[1]
@@ -172,7 +172,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             if current_size > processed_data.shape[1] or current_size <= 0:
                 print(f"Cannot adjust interface size beyond data dimensions. Stopping.")
                 break
-    
+
     encoder_model_filename = f"{config['save_encoder']}.keras"
     decoder_model_filename = f"{config['save_decoder']}.keras"
     autoencoder_manager.save_encoder(encoder_model_filename)
@@ -199,7 +199,6 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         print(f"Debug info saved to {config['remote_log']}.")
     
     print(f"Execution time: {execution_time} seconds")
-
 
 
 

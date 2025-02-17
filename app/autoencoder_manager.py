@@ -88,36 +88,50 @@ class AutoencoderManager:
         try:
             print(f"[train_autoencoder] Received data with shape: {data.shape}")
 
-            # Determine if sliding windows are used
+            # Determine if sliding windows are used and check the encoder plugin type
             use_sliding_windows = config.get('use_sliding_windows', True)
+            encoder_plugin_type = config.get('encoder_plugin', '').lower()
 
-            # Only add channel dimension if sliding windows are not used AND the encoder plugin is not ANN
-            if not use_sliding_windows and len(data.shape) == 2 and config.get('encoder_plugin', '').lower() != 'ann':
+            # Only add a channel dimension if sliding windows are not used
+            # and the encoder plugin is not ANN (which expects 2D inputs).
+            if (not use_sliding_windows) and (len(data.shape) == 2) and (encoder_plugin_type != 'ann'):
                 print("[train_autoencoder] Reshaping data to add channel dimension for Conv1D compatibility...")
-                data = np.expand_dims(data, axis=-1)  # Add channel dimension (num_samples, num_features, 1)
+                data = np.expand_dims(data, axis=-1)
                 print(f"[train_autoencoder] Reshaped data shape: {data.shape}")
+            else:
+                print(f"[train_autoencoder] Data shape remains unchanged: {data.shape}")
 
-            num_channels = data.shape[-1]
-            input_shape = data.shape[1]
+            # Determine number of channels and input shape for building the model.
+            if len(data.shape) == 2:
+                num_channels = 1
+                input_shape = data.shape[1]
+            else:
+                num_channels = data.shape[-1]
+                # For sliding windows, if data is 3D then input_shape is the product of window_size and num_features for ANN,
+                # or simply the window_size if using Conv1D models.
+                if encoder_plugin_type == 'ann' and use_sliding_windows:
+                    input_shape = data.shape[1] * data.shape[2]
+                else:
+                    input_shape = data.shape[1]
+
             interface_size = self.encoder_plugin.params.get('interface_size', 4)
 
-            # Build autoencoder with the correct num_channels
+            # Build autoencoder with the correct number of channels
             if not self.autoencoder_model:
                 self.build_autoencoder(input_shape, interface_size, config, num_channels)
 
-            # Validate data for NaN values before training
+            # Validate data for NaN values
             if np.isnan(data).any():
                 raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
 
-            # Calculate entropy and useful information using Shannon-Hartley theorem
+            # Calculate entropy and additional information
             self.calculate_dataset_information(data, config)
 
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
 
-            # Implement Early Stopping callback
+            # Early stopping callback
             early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True)
 
-            # Start training with early stopping
             history = self.autoencoder_model.fit(
                 data, data,
                 epochs=epochs,
@@ -127,7 +141,6 @@ class AutoencoderManager:
                 validation_split=0.2
             )
 
-            # Log training loss
             print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
             print("[train_autoencoder] Training completed.")
         except Exception as e:

@@ -51,34 +51,21 @@ class Plugin:
                 - In sliding-window mode, it must be a tuple (window_size, num_features).
             num_channels (int): Number of input features/channels.
             encoder_output_shape: Output shape of the encoder (excluding batch size).
-                - In sliding-window mode, this must be a tuple (compressed_time, latent_channels).
+                - In sliding-window mode, this should be a tuple (compressed_time, latent_channels).
             use_sliding_windows (bool): Whether sliding windows are used.
         """
         self.params['interface_size'] = interface_size
         self.params['input_shape'] = input_shape
 
-        # Retrieve architecture parameters (used only for non-sliding mode)
+        # Retrieve architecture parameters (used in non-sliding mode)
         intermediate_layers = self.params.get('intermediate_layers', 3)
         initial_layer_size = self.params.get('initial_layer_size', 128)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
         l2_reg = self.params.get('l2_reg', 1e-5)
         learning_rate = self.params.get('learning_rate', 0.00002)
 
-        # Compute the encoder's layer sizes as in the encoder.
-        encoder_layers = []
-        current_size = initial_layer_size
-        for i in range(intermediate_layers):
-            encoder_layers.append(current_size)
-            current_size = max(current_size // layer_size_divisor, 1)
-        encoder_layers.append(interface_size)
-        # Mirror the encoder intermediate layers (exclude the latent layer itself)
-        decoder_intermediate_layers = encoder_layers[:-1][::-1]
-        print(f"[configure_size] Encoder layer sizes: {encoder_layers}")
-        print(f"[configure_size] Decoder intermediate layer sizes: {decoder_intermediate_layers}")
-        print(f"[configure_size] Original input shape: {input_shape}")
-
         if not use_sliding_windows:
-            # --- Non-sliding branch (unchanged) ---
+            # Non-sliding branch: use the dense mirror approach (unchanged)
             if isinstance(input_shape, tuple):
                 final_output_units = int(np.prod(input_shape))
             else:
@@ -86,6 +73,14 @@ class Plugin:
             from keras.layers import Input, Dense
             decoder_input = Input(shape=(interface_size,), name="decoder_input")
             x = decoder_input
+            # Compute encoder layer sizes as in the encoder
+            encoder_layers = []
+            current_size = initial_layer_size
+            for i in range(intermediate_layers):
+                encoder_layers.append(current_size)
+                current_size = max(current_size // layer_size_divisor, 1)
+            encoder_layers.append(interface_size)
+            decoder_intermediate_layers = encoder_layers[:-1][::-1]
             for idx, size in enumerate(decoder_intermediate_layers, start=1):
                 x = Dense(units=size,
                         activation=LeakyReLU(alpha=0.1),
@@ -105,12 +100,12 @@ class Plugin:
             print("[configure_size] Decoder Model Summary (non-sliding branch):")
             self.model.summary()
         else:
-            # --- Sliding-window branch ---
-            # In sliding-window mode, input_shape must be a tuple (window_size, num_features)
+            # Sliding-window branch using Conv1DTranspose layers.
+            # Here, input_shape must be a tuple: (window_size, num_features)
             if not isinstance(input_shape, tuple):
                 raise ValueError("[configure_size] In sliding windows mode, input_shape must be a tuple (window_size, num_features).")
             target_time_steps, target_channels = input_shape
-            # The desired output has target_time_steps * target_channels units.
+            # The decoder must reconstruct the original sliding-window shape: (target_time_steps, target_channels)
             final_output_units = target_time_steps * target_channels
 
             # In sliding mode, we expect encoder_output_shape to be a tuple (compressed_time, latent_channels)
@@ -118,21 +113,54 @@ class Plugin:
                 raise ValueError("[configure_size] In sliding windows mode, encoder_output_shape must be a tuple (compressed_time, latent_channels).")
             compressed_time, latent_channels = encoder_output_shape
             print(f"[configure_size] Using sliding window mode with compressed_time={compressed_time}, latent_channels={latent_channels}")
-
-            from keras.layers import Input, Dense, Flatten, Reshape
-            # The decoder input shape is the encoder's output shape
+            
+            from keras.layers import Input, Conv1DTranspose, BatchNormalization
+            # The decoder input shape is the same as the encoder output shape.
             decoder_input = Input(shape=encoder_output_shape, name="decoder_input")
             x = decoder_input
-            # Flatten the encoder output: from (compressed_time, latent_channels) to (compressed_time * latent_channels,)
-            x = Flatten(name="decoder_flatten")(x)
-            # Map to the full reconstruction vector (final_output_units)
-            x = Dense(units=final_output_units,
-                    activation='linear',
-                    kernel_initializer=GlorotUniform(),
-                    kernel_regularizer=l2(l2_reg),
-                    name="decoder_dense_to_map")(x)
-            # Reshape to the target sliding window shape (target_time_steps, target_channels)
-            x = Reshape((target_time_steps, target_channels), name="decoder_final_reshape")(x)
+            # First, apply a Conv1DTranspose layer to upsample the time dimension.
+            # For example, if compressed_time * 2 <= target_time_steps, use stride=2.
+            # Here we assume two upsampling layers are sufficient: (compressed_time -> compressed_time*2 -> target_time_steps)
+            x = Conv1DTranspose(filters=decoder_intermediate_layers[0] if intermediate_layers > 0 else latent_channels,
+                                kernel_size=3,
+                                strides=2,
+                                padding='same',
+                                activation=LeakyReLU(alpha=0.1),
+                                kernel_initializer=HeNormal(),
+                                kernel_regularizer=l2(l2_reg),
+                                name="decoder_conv1dtrans_1")(x)
+            x = BatchNormalization(name="decoder_bn_1")(x)
+            # Second upsampling layer
+            x = Conv1DTranspose(filters=decoder_intermediate_layers[1] if len(decoder_intermediate_layers) > 1 else latent_channels,
+                                kernel_size=3,
+                                strides=2,
+                                padding='same',
+                                activation=LeakyReLU(alpha=0.1),
+                                kernel_initializer=HeNormal(),
+                                kernel_regularizer=l2(l2_reg),
+                                name="decoder_conv1dtrans_2")(x)
+            x = BatchNormalization(name="decoder_bn_2")(x)
+            # (Optional) Additional Conv1DTranspose layers can be added here if needed to exactly reach target_time_steps.
+            # Now, apply a final Conv1DTranspose to map the filters to target_channels.
+            x = Conv1DTranspose(filters=target_channels,
+                                kernel_size=1,
+                                strides=1,
+                                padding='same',
+                                activation='linear',
+                                kernel_initializer=GlorotUniform(),
+                                kernel_regularizer=l2(l2_reg),
+                                name="decoder_conv1dtrans_final")(x)
+            # At this point, x should have shape (None, new_time, target_channels)
+            # We now need to reshape x so that its time dimension equals target_time_steps.
+            # Compute current time dimension:
+            current_time = x.shape[1]
+            desired_time = target_time_steps
+            current_elements = int(current_time) * target_channels
+            desired_elements = desired_time * target_channels
+            if current_elements != desired_elements:
+                # Insert a Reshape layer to force the output shape.
+                x = Reshape((desired_time, target_channels), name="decoder_final_reshape")(x)
+                print(f"[configure_size] Reshaped decoder output to: ({desired_time}, {target_channels})")
             outputs = x
 
             self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder_cnn")

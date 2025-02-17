@@ -6,6 +6,8 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
 from tensorflow.keras.losses import Huber
+# add reshape
+from keras.layers import Reshape
 
 class Plugin:
     """

@@ -118,3 +118,29 @@ class Plugin:
         self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
         print("[configure_size] Transformer Decoder Model Summary:")
         self.model.summary()
+
+
+    def train(self, encoded_data, original_data):
+        print(f"Training transformer decoder with encoded data shape: {encoded_data.shape} and original data shape: {original_data.shape}")
+        self.model.fit(encoded_data, original_data, epochs=self.params.get('epochs',200), batch_size=self.params.get('batch_size',128), verbose=1)
+        print("Training completed.")
+
+    def decode(self, encoded_data):
+        print(f"Decoding data with shape: {encoded_data.shape}")
+        decoded_data = self.model.predict(encoded_data)
+        print(f"Decoded data shape: {decoded_data.shape}")
+        return decoded_data
+
+    def save(self, file_path):
+        save_model(self.model, file_path)
+        print(f"Decoder model saved to {file_path}")
+
+    def load(self, file_path):
+        self.model = load_model(file_path)
+        print(f"Decoder model loaded from {file_path}")
+
+if __name__ == "__main__":
+    plugin = Plugin()
+    plugin.configure_size(interface_size=4, output_shape=128)
+    debug_info = plugin.get_debug_info()
+    print(f"Debug Info: {debug_info}")

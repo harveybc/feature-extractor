@@ -1,5 +1,3 @@
-# config_merger.py
-
 import sys
 from app.config import DEFAULT_VALUES
 
@@ -25,48 +23,52 @@ def merge_config(defaults, plugin_params1, plugin_params2, file_config, cli_args
     5. 'cli_args': CLI arguments parsed by argparse (converted to a dict).
     6. 'unknown_args': Additional unknown arguments provided in the CLI.
 
-    The merging order ensures that if a key exists in multiple dictionaries,
-    the latter dictionary in the sequence overrides the earlier one.
-
-    This version expects six arguments, unlike the original that only handled five.
+    The final priority is:
+         Highest: CLI arguments,
+         Then: loaded parameters (file_config),
+         Then: defaults (config.py),
+         Then: plugin-specific parameters.
+         
+    This version expects six arguments.
     """
-
-    # Step 1: Start with default values from config.py
-    merged_config = defaults.copy()
-    print(f"Actual Step 1 Output: {merged_config}")
-
-    # Step 2: Merge with plugin_params1
+    # Step 1: Start with plugin-specific parameters (lowest priority)
+    merged_config = {}
     for k, v in plugin_params1.items():
-        print(f"Step 2 merging: plugin_param1 {k} = {v}")
+        print(f"Step 1 merging: plugin_param1 {k} = {v}")
         merged_config[k] = v
-
-    # Step 2.5: Merge with plugin_params2
     for k, v in plugin_params2.items():
-        print(f"Step 2.5 merging: plugin_param2 {k} = {v}")
+        print(f"Step 1.5 merging: plugin_param2 {k} = {v}")
         merged_config[k] = v
+    print(f"After merging plugin-specific parameters: {merged_config}")
 
-    # Step 3: Merge with file configuration
+    # Step 2: Merge with default values from config.py (override plugin-specific if needed)
+    for k, v in defaults.items():
+        print(f"Step 2 merging from defaults: {k} = {v}")
+        merged_config[k] = v
+    print(f"After merging defaults: {merged_config}")
+
+    # Step 3: Merge with file configuration (override defaults)
     for k, v in file_config.items():
         print(f"Step 3 merging from file config: {k} = {v}")
         merged_config[k] = v
+    print(f"After merging file config: {merged_config}")
 
-    print(f"Actual Step 3 Output: {merged_config}")
+    # Step 4: Merge with unknown CLI arguments
+    unknown = process_unknown_args(unknown_args)
+    for k, v in unknown.items():
+        converted_value = convert_type(v)
+        print(f"Step 4 merging from unknown args: {k} = {converted_value}")
+        merged_config[k] = converted_value
 
-    # Step 4: Merge with CLI arguments (ensure CLI args always override)
-    cli_keys = [arg.lstrip('--') for arg in sys.argv if arg.startswith('--')]
-    for key in cli_keys:
-        if key in cli_args:
-            print(f"Step 4 merging from CLI args: {key} = {cli_args[key]}")
-            merged_config[key] = cli_args[key]
-        elif key in unknown_args:
-            value = convert_type(unknown_args[key])
-            print(f"Step 4 merging from unknown args: {key} = {value}")
-            merged_config[key] = value
+    # Finally, merge CLI arguments so that they override any defined values
+    for k, v in cli_args.items():
+        if v is not None:
+            print(f"Step 4 merging from CLI args: {k} = {v}")
+            merged_config[k] = v
 
-    # Special handling for csv_file
+    # Special handling for positional csv_file (if provided)
     if len(sys.argv) > 1 and not sys.argv[1].startswith('--'):
         merged_config['x_train_file'] = sys.argv[1]
 
-    print(f"Actual Step 4 Output: {merged_config}")
+    print(f"Final merged configuration: {merged_config}")
     return merged_config
-

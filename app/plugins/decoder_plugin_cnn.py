@@ -47,7 +47,7 @@ class Plugin:
             input_shape (int or tuple): Original input shape fed to the encoder. If sliding windows
                 are used and input_shape is a tuple, the final number of units equals the product of dimensions.
             num_channels (int): Number of input features/channels.
-            encoder_output_shape (tuple): Output shape of the encoder (excluding batch size); expected to be (sequence_length, num_filters).
+            encoder_output_shape: Output shape of the encoder (excluding batch size); ideally a tuple (sequence_length, num_filters).
             use_sliding_windows (bool): Whether sliding windows are used.
         """
         self.params['interface_size'] = interface_size
@@ -74,26 +74,30 @@ class Plugin:
         print(f"[configure_size] Decoder intermediate layer sizes: {decoder_intermediate_layers}")
         print(f"[configure_size] Original input shape: {input_shape}")
 
-        # Determine final output units.
+        # Determine final output units:
         if use_sliding_windows and isinstance(input_shape, tuple):
             final_output_units = int(np.prod(input_shape))
         else:
             final_output_units = input_shape
 
-        # Unpack encoder_output_shape to extract sequence_length and num_filters.
-        try:
+        # Unpack encoder_output_shape.
+        # If it is not a 2-tuple, assume time dimension = 1 and the single value is num_filters.
+        if isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 2:
             sequence_length, num_filters = encoder_output_shape
-        except Exception as e:
-            raise ValueError(f"[configure_size] encoder_output_shape must be a tuple of (sequence_length, num_filters). Got {encoder_output_shape}") from e
-        print(f"[configure_size] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
+        else:
+            if isinstance(encoder_output_shape, tuple):
+                num_filters = encoder_output_shape[0]
+            else:
+                num_filters = encoder_output_shape
+            sequence_length = 1
+        print(f"[configure_size] Using sequence_length={sequence_length}, num_filters={num_filters}")
 
         # Build the decoder model.
-        # The decoder input is the latent vector of size (interface_size,)
         from keras.models import Model
         decoder_input = Input(shape=(interface_size,), name="decoder_input")
         x = decoder_input
 
-        # Add intermediate dense layers using reversed sizes.
+        # Add intermediate dense layers in reversed order.
         layer_idx = 0
         for size in decoder_intermediate_layers:
             layer_idx += 1
@@ -104,7 +108,7 @@ class Plugin:
                 kernel_regularizer=l2(l2_reg),
                 name=f"decoder_dense_layer_{layer_idx}"
             )(x)
-        # Final projection to reconstruct the original input dimension.
+        # Final projection to reconstruct original input.
         x = Dense(
             units=final_output_units,
             activation='linear',

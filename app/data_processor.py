@@ -46,6 +46,10 @@ def process_data(config):
     Returns:
         tuple: Processed training and validation datasets.
     """
+    # Map singular flag to plural for backward compatibility.
+    if 'use_sliding_window' in config and 'use_sliding_windows' not in config:
+        config['use_sliding_windows'] = config['use_sliding_window']
+
     print(f"Loading data from CSV file: {config['input_file']}")
     data = load_csv(
         file_path=config['input_file'],
@@ -86,7 +90,6 @@ def process_data(config):
         print(f"Validation processed shape: {windowed_validation_data.shape}")
 
     return processed_data, windowed_validation_data
-
 
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):

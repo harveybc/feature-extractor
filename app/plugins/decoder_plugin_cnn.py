@@ -44,8 +44,9 @@ class Plugin:
         
         Args:
             interface_size (int): Latent space dimension (decoder input size).
-            input_shape (int or tuple): Original input shape fed to the encoder. If sliding windows
-                are used and input_shape is a tuple, the final number of units equals the product of dimensions.
+            input_shape (int or tuple): Original input shape fed to the encoder.
+                If sliding windows are used and input_shape is a tuple, the final number of units equals the product of dimensions.
+                Otherwise (non-sliding), input_shape is the original feature count.
             num_channels (int): Number of input features/channels.
             encoder_output_shape: Output shape of the encoder (excluding batch size); ideally a tuple (sequence_length, num_filters).
             use_sliding_windows (bool): Whether sliding windows are used.
@@ -53,7 +54,7 @@ class Plugin:
         self.params['interface_size'] = interface_size
         self.params['input_shape'] = input_shape
 
-        # Retrieve architecture parameters
+        # Retrieve architecture parameters.
         intermediate_layers = self.params.get('intermediate_layers', 3)
         initial_layer_size = self.params.get('initial_layer_size', 128)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
@@ -74,11 +75,18 @@ class Plugin:
         print(f"[configure_size] Decoder intermediate layer sizes: {decoder_intermediate_layers}")
         print(f"[configure_size] Original input shape: {input_shape}")
 
-        # Determine final output units:
-        if use_sliding_windows and isinstance(input_shape, tuple):
-            final_output_units = int(np.prod(input_shape))
+        # Determine final output units.
+        if use_sliding_windows:
+            if isinstance(input_shape, tuple):
+                final_output_units = int(np.prod(input_shape))
+            else:
+                final_output_units = input_shape
         else:
-            final_output_units = input_shape
+            # Non-sliding: for CNN, we expect the encoder to have received data
+            # of shape (input_shape, input_shape) (via tiling). Therefore, we want to reconstruct that.
+            final_output_units = input_shape * num_channels  # Here num_channels should equal input_shape.
+        # For debugging:
+        print(f"[configure_size] Final output units (before reshape): {final_output_units}")
 
         # Unpack encoder_output_shape.
         # If it is not a 2-tuple, assume time dimension = 1 and the single value is num_filters.
@@ -93,7 +101,6 @@ class Plugin:
         print(f"[configure_size] Using sequence_length={sequence_length}, num_filters={num_filters}")
 
         # Build the decoder model.
-        from keras.models import Model
         decoder_input = Input(shape=(interface_size,), name="decoder_input")
         x = decoder_input
 
@@ -108,7 +115,8 @@ class Plugin:
                 kernel_regularizer=l2(l2_reg),
                 name=f"decoder_dense_layer_{layer_idx}"
             )(x)
-        # Final projection to reconstruct original input.
+
+        # Final projection to reconstruct the original input.
         x = Dense(
             units=final_output_units,
             activation='linear',
@@ -116,10 +124,15 @@ class Plugin:
             kernel_regularizer=l2(l2_reg),
             name="decoder_output"
         )(x)
+
+        # For non-sliding windows, reshape the flat output back to (input_shape, num_channels)
+        if not use_sliding_windows:
+            x = Reshape((input_shape, num_channels))(x)
+            print(f"[configure_size] Reshaped decoder output to: ({input_shape}, {num_channels})")
+        
         outputs = x
 
         self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder_cnn")
-        from keras.optimizers import Adam
         adam_optimizer = Adam(
             learning_rate=learning_rate,
             beta_1=0.9,

@@ -97,15 +97,21 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
 
+    # If using sliding windows AND the encoder plugin is ANN, flatten the data.
+    if config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'ann':
+        print("[run_autoencoder_pipeline] Detected ANN plugin with sliding windows; flattening training and validation data.")
+        processed_data = processed_data.reshape(processed_data.shape[0], -1)
+        validation_data = validation_data.reshape(validation_data.shape[0], -1)
+    
     # Truncate validation data to have at most as many rows as training data
     if validation_data.shape[0] > processed_data.shape[0]:
         print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_data.shape[0]} rows to match training data rows: {processed_data.shape[0]}")
         validation_data = validation_data[:processed_data.shape[0]]
-
+    
     if not config.get('use_sliding_windows', True):
         config['original_feature_size'] = validation_data.shape[1]
         print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
-
+    
     initial_size = config['initial_size']
     step_size = config['step_size']
     threshold_error = config['threshold_error']
@@ -113,49 +119,54 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     epochs = config['epochs']
     incremental_search = config['incremental_search']
     
-    current_size = initial_size
-    input_size = config['window_size'] if config['use_sliding_windows'] else processed_data.shape[1]
-
+    # Determine input size:
+    # - For sliding window with ANN: flattened dimension (window_size * num_features)
+    # - Otherwise: use the processed data's feature dimension
+    if config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'ann':
+        input_size = processed_data.shape[1]
+    else:
+        input_size = config['window_size'] if config.get('use_sliding_windows', True) else processed_data.shape[1]
+    
     while True:
-        print(f"Training with interface size: {current_size}")
+        print(f"Training with interface size: {initial_size}")
         
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         num_channels = processed_data.shape[-1]
-
+    
         # Build and train the autoencoder
-        autoencoder_manager.build_autoencoder(input_size, current_size, config, num_channels)
+        autoencoder_manager.build_autoencoder(input_size, initial_size, config, num_channels)
         autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
-
+    
         # Evaluate on training data
         training_mse, training_mae = autoencoder_manager.evaluate(processed_data, "Training", config)
-        print(f"Training Mean Squared Error with interface size {current_size}: {training_mse}")
-        print(f"Training Mean Absolute Error with interface size {current_size}: {training_mae}")
-
+        print(f"Training Mean Squared Error with interface size {initial_size}: {training_mse}")
+        print(f"Training Mean Absolute Error with interface size {initial_size}: {training_mae}")
+    
         # Evaluate on validation data
         validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data, "Validation", config)
-        print(f"Validation Mean Squared Error with interface size {current_size}: {validation_mse}")
-        print(f"Validation Mean Absolute Error with interface size {current_size}: {validation_mae}")
-
+        print(f"Validation Mean Squared Error with interface size {initial_size}: {validation_mse}")
+        print(f"Validation Mean Absolute Error with interface size {initial_size}: {validation_mae}")
+    
         # Check stopping condition
         if (incremental_search and validation_mae <= threshold_error) or (not incremental_search and validation_mae >= threshold_error):
-            print(f"Optimal interface size found: {current_size} with Validation MSE: {validation_mse} and Validation MAE: {validation_mae}")
+            print(f"Optimal interface size found: {initial_size} with Validation MSE: {validation_mse} and Validation MAE: {validation_mae}")
             break
         else:
             if incremental_search:
-                current_size += step_size
+                initial_size += step_size
             else:
-                current_size -= step_size
-            if current_size > processed_data.shape[1] or current_size <= 0:
+                initial_size -= step_size
+            if initial_size > processed_data.shape[1] or initial_size <= 0:
                 print(f"Cannot adjust interface size beyond data dimensions. Stopping.")
                 break
-
+    
     encoder_model_filename = f"{config['save_encoder']}.keras"
     decoder_model_filename = f"{config['save_decoder']}.keras"
     autoencoder_manager.save_encoder(encoder_model_filename)
     autoencoder_manager.save_decoder(decoder_model_filename)
     print(f"Saved encoder model to {encoder_model_filename}")
     print(f"Saved decoder model to {decoder_model_filename}")
-
+    
     end_time = time.time()
     execution_time = end_time - start_time
     debug_info = {
@@ -165,16 +176,17 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         'mse': validation_mse,
         'mae': validation_mae
     }
-
+    
     if 'save_log' in config and config['save_log']:
         save_debug_info(debug_info, config['save_log'])
         print(f"Debug info saved to {config['save_log']}.")
-
+    
     if 'remote_log' in config and config['remote_log']:
         remote_log(config, debug_info, config['remote_log'], config['username'], config['password'])
         print(f"Debug info saved to {config['remote_log']}.")
-
+    
     print(f"Execution time: {execution_time} seconds")
+
 
 
 

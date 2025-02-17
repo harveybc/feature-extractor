@@ -91,7 +91,6 @@ def process_data(config):
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     import time
-    import numpy as np
     from app.autoencoder_manager import AutoencoderManager
     from app.data_handler import load_csv
     from app.config_handler import save_debug_info, remote_log
@@ -101,7 +100,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     print("Running process_data...")
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
-
+    
     # Truncate validation data to have at most as many rows as training data
     if validation_data.shape[0] > processed_data.shape[0]:
         print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_data.shape[0]} rows to match training data rows: {processed_data.shape[0]}")
@@ -110,21 +109,38 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     # Get the encoder plugin name (lowercase)
     encoder_plugin_name = config.get('encoder_plugin', '').lower()
     
-    # Branch for LSTM/Transformer: reshape so that each row becomes (time_steps, channels)
-    if encoder_plugin_name in ['lstm', 'transformer']:
-        # For sequential models with multiple features, we want the shape to be (samples, time_steps, channels)
-        # Here, we assume that each row in processed_data (shape: (samples, features)) is interpreted as a sequence of length = features with one channel.
-        print("[run_autoencoder_pipeline] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at last axis.")
-        # processed_data currently has shape (samples, features); we convert it to (samples, features, 1)
-        processed_data = np.expand_dims(processed_data, axis=-1)
-        validation_data = np.expand_dims(validation_data, axis=-1)
-        # Set original_feature_size to the number of time steps (i.e. features)
-        config['original_feature_size'] = processed_data.shape[1]
-    else:
-        # For other plugins, preserve current behavior.
-        if not config.get('use_sliding_windows', True):
+    # If using sliding windows, we leave the processed_data as returned.
+    # For non-sliding windows, we adjust the data shape based on the plugin:
+    if not config.get('use_sliding_windows', True):
+        if encoder_plugin_name in ['lstm', 'transformer']:
+            # For sequential models, we want each sample to be a sequence of length 1 with channels = number of features.
+            # (i.e. shape (samples, 1, num_features))
+            if len(processed_data.shape) == 2:
+                print("[run_autoencoder_pipeline] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at axis -1.")
+                processed_data = np.expand_dims(processed_data, axis=-1)
+                validation_data = np.expand_dims(validation_data, axis=-1)
+            # Set original_feature_size to number of features (last dimension)
+            config['original_feature_size'] = processed_data.shape[-1]
+        elif encoder_plugin_name == 'cnn':
+            # For CNN, we follow the existing behavior.
+            print("[run_autoencoder_pipeline] Detected CNN plugin without sliding windows; expanding dimension at axis 1.")
+            processed_data = np.expand_dims(processed_data, axis=1)
+            validation_data = np.expand_dims(validation_data, axis=1)
+            config['original_feature_size'] = validation_data.shape[1]
+        else:
             config['original_feature_size'] = validation_data.shape[1]
             print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
+    
+    # Determine input size:
+    # If sliding windows are used, input_size equals the window_size.
+    # Otherwise, for sequential (LSTM/Transformer) plugins, we want input_size = number of features.
+    if config.get('use_sliding_windows', False):
+        input_size = config['window_size']
+    else:
+        if encoder_plugin_name in ['lstm', 'transformer']:
+            input_size = processed_data.shape[-1]  # number of features
+        else:
+            input_size = processed_data.shape[1]
     
     initial_size = config['initial_size']
     step_size = config['step_size']
@@ -132,9 +148,6 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     training_batch_size = config['batch_size']
     epochs = config['epochs']
     incremental_search = config['incremental_search']
-    
-    # Determine input_size: if sliding windows are used, use the window_size; otherwise, use the number of features.
-    input_size = config['window_size'] if config.get('use_sliding_windows', False) else processed_data.shape[1]
     
     current_size = initial_size
     
@@ -148,17 +161,14 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         autoencoder_manager.build_autoencoder(input_size, current_size, config, num_channels)
         autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
         
-        # Evaluate on training data
         training_mse, training_mae = autoencoder_manager.evaluate(processed_data, "Training", config)
         print(f"Training Mean Squared Error with interface size {current_size}: {training_mse}")
         print(f"Training Mean Absolute Error with interface size {current_size}: {training_mae}")
         
-        # Evaluate on validation data
         validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data, "Validation", config)
         print(f"Validation Mean Squared Error with interface size {current_size}: {validation_mse}")
         print(f"Validation Mean Absolute Error with interface size {current_size}: {validation_mae}")
         
-        # Check stopping condition
         if (incremental_search and validation_mae <= threshold_error) or (not incremental_search and validation_mae >= threshold_error):
             print(f"Optimal interface size found: {current_size} with Validation MSE: {validation_mse} and Validation MAE: {validation_mae}")
             break
@@ -170,7 +180,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             if current_size > processed_data.shape[1] or current_size <= 0:
                 print("Cannot adjust interface size beyond data dimensions. Stopping.")
                 break
-
+    
     encoder_model_filename = f"{config['save_encoder']}.keras"
     decoder_model_filename = f"{config['save_decoder']}.keras"
     autoencoder_manager.save_encoder(encoder_model_filename)

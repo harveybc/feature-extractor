@@ -97,7 +97,7 @@ class Plugin:
                    name="conv1d_final")(x)
         x = BatchNormalization(name="batch_norm_final")(x)
         # Global average pooling converts the 3D output to a 1D vector.
-        #x = GlobalAveragePooling1D()(x)
+        x = GlobalAveragePooling1D()(x)
         outputs = x
 
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_cnn")

@@ -102,7 +102,7 @@ class Plugin:
                 kernel_regularizer=l2(l2_reg),
                 name=f"decoder_dense_layer_{layer_idx}"
             )(x)
-            #x = BatchNormalization(name=f"decoder_batch_norm_{layer_idx}")(x)
+        x = BatchNormalization(name=f"decoder_batch_norm_{layer_idx}")(x)
 
         # Final projection to reconstruct the original input.
         x = Dense(
@@ -112,7 +112,8 @@ class Plugin:
             kernel_regularizer=l2(l2_reg),
             name="decoder_output"
         )(x)
-        outputs = BatchNormalization(name="decoder_last_batch_norm")(x)
+        outputs = x
+        #outputs = BatchNormalization(name="decoder_last_batch_norm")(x)
 
         self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder")
         adam_optimizer = Adam(

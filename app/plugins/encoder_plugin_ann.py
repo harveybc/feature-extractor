@@ -93,7 +93,7 @@ class Plugin:
                 kernel_regularizer=l2(l2_reg),
                 name=f"dense_layer_{layer_idx}"
             )(x)
-            #x = BatchNormalization(name=f"batch_norm_{layer_idx}")(x)
+        x = BatchNormalization(name=f"batch_norm_{layer_idx}")(x)
 
         # Final Dense layer to project into the latent space with linear activation
         x = Dense(

@@ -45,48 +45,44 @@ class Plugin:
         Configures the CNN decoder.
 
         Args:
-            interface_size (int): Latent space dimension for non-sliding mode.
-                (Ignored in sliding-window mode.)
+            interface_size (int): Latent space dimension (decoder input size) in non-sliding mode.
             input_shape (int or tuple): Original input shape fed to the encoder.
-                - In non-sliding mode, it is an integer representing the number of features.
+                - In non-sliding mode, it is an integer (number of features).
                 - In sliding-window mode, it must be a tuple (window_size, num_features).
             num_channels (int): Number of input features/channels.
             encoder_output_shape: Output shape of the encoder (excluding batch size).
-                - In sliding-window mode, this must be a tuple (sequence_length, latent_channels).
-                - In non-sliding mode, it is ignored.
+                - In sliding-window mode, this must be a tuple (compressed_time, latent_channels).
             use_sliding_windows (bool): Whether sliding windows are used.
         """
+        self.params['interface_size'] = interface_size
         self.params['input_shape'] = input_shape
 
-        if not use_sliding_windows:
-            # ===== Non-sliding mode (dense decoder) =====
-            # Retrieve architecture parameters
-            intermediate_layers = self.params.get('intermediate_layers', 3)
-            initial_layer_size = self.params.get('initial_layer_size', 128)
-            layer_size_divisor = self.params.get('layer_size_divisor', 2)
-            l2_reg = self.params.get('l2_reg', 1e-5)
-            learning_rate = self.params.get('learning_rate', 0.00002)
-            
-            # Compute encoder layer sizes as in the encoder
-            encoder_layers = []
-            current_size = initial_layer_size
-            for i in range(intermediate_layers):
-                encoder_layers.append(current_size)
-                current_size = max(current_size // layer_size_divisor, 1)
-            encoder_layers.append(interface_size)
-            
-            # Mirror the encoder intermediate layers
-            decoder_intermediate_layers = encoder_layers[:-1][::-1]
-            print(f"[configure_size] Encoder layer sizes: {encoder_layers}")
-            print(f"[configure_size] Decoder intermediate layer sizes: {decoder_intermediate_layers}")
+        # Retrieve architecture parameters (used only for non-sliding mode)
+        intermediate_layers = self.params.get('intermediate_layers', 3)
+        initial_layer_size = self.params.get('initial_layer_size', 128)
+        layer_size_divisor = self.params.get('layer_size_divisor', 2)
+        l2_reg = self.params.get('l2_reg', 1e-5)
+        learning_rate = self.params.get('learning_rate', 0.00002)
 
-            # Determine final output units
+        # Compute the encoder's layer sizes as in the encoder.
+        encoder_layers = []
+        current_size = initial_layer_size
+        for i in range(intermediate_layers):
+            encoder_layers.append(current_size)
+            current_size = max(current_size // layer_size_divisor, 1)
+        encoder_layers.append(interface_size)
+        # Mirror the encoder intermediate layers (exclude the latent layer itself)
+        decoder_intermediate_layers = encoder_layers[:-1][::-1]
+        print(f"[configure_size] Encoder layer sizes: {encoder_layers}")
+        print(f"[configure_size] Decoder intermediate layer sizes: {decoder_intermediate_layers}")
+        print(f"[configure_size] Original input shape: {input_shape}")
+
+        if not use_sliding_windows:
+            # --- Non-sliding branch (unchanged) ---
             if isinstance(input_shape, tuple):
                 final_output_units = int(np.prod(input_shape))
             else:
                 final_output_units = input_shape
-
-            # Build the decoder model using Dense layers
             from keras.layers import Input, Dense
             decoder_input = Input(shape=(interface_size,), name="decoder_input")
             x = decoder_input
@@ -103,46 +99,44 @@ class Plugin:
                     name="decoder_output")(x)
             outputs = x
             self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder_cnn")
+            from keras.optimizers import Adam
             adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
             self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
             print("[configure_size] Decoder Model Summary (non-sliding branch):")
             self.model.summary()
-
         else:
-            # ===== Sliding-window mode (conv transpose style) =====
-            # In sliding-window mode, the decoder should take as input the encoder output shape.
-            # Here we expect encoder_output_shape to be a tuple (sequence_length, latent_channels).
-            if not (isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 2):
-                raise ValueError("[configure_size] In sliding windows mode, encoder_output_shape must be a tuple (sequence_length, latent_channels).")
-            sequence_length, latent_channels = encoder_output_shape
-
-            # The target output shape is given by input_shape, which must be a tuple (window_size, num_features)
+            # --- Sliding-window branch ---
+            # In sliding-window mode, input_shape must be a tuple (window_size, num_features)
             if not isinstance(input_shape, tuple):
                 raise ValueError("[configure_size] In sliding windows mode, input_shape must be a tuple (window_size, num_features).")
             target_time_steps, target_channels = input_shape
-            # For best results, the final output should have target_time_steps * target_channels units.
+            # The desired output has target_time_steps * target_channels units.
             final_output_units = target_time_steps * target_channels
 
-            # Retrieve parameters
-            learning_rate = self.params.get('learning_rate', 0.00002)
-            l2_reg = self.params.get('l2_reg', 1e-5)
+            # In sliding mode, we expect encoder_output_shape to be a tuple (compressed_time, latent_channels)
+            if not (isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 2):
+                raise ValueError("[configure_size] In sliding windows mode, encoder_output_shape must be a tuple (compressed_time, latent_channels).")
+            compressed_time, latent_channels = encoder_output_shape
+            print(f"[configure_size] Using sliding window mode with compressed_time={compressed_time}, latent_channels={latent_channels}")
 
-            # Build the decoder model:
-            # The input to the decoder will be of shape encoder_output_shape.
-            from keras.layers import Input, Dense, Reshape
+            from keras.layers import Input, Dense, Flatten, Reshape
+            # The decoder input shape is the encoder's output shape
             decoder_input = Input(shape=encoder_output_shape, name="decoder_input")
             x = decoder_input
-            # Use a Dense layer to map the encoder output to the full reconstruction vector.
+            # Flatten the encoder output: from (compressed_time, latent_channels) to (compressed_time * latent_channels,)
+            x = Flatten(name="decoder_flatten")(x)
+            # Map to the full reconstruction vector (final_output_units)
             x = Dense(units=final_output_units,
                     activation='linear',
                     kernel_initializer=GlorotUniform(),
                     kernel_regularizer=l2(l2_reg),
                     name="decoder_dense_to_map")(x)
-            # Reshape to (target_time_steps, target_channels)
+            # Reshape to the target sliding window shape (target_time_steps, target_channels)
             x = Reshape((target_time_steps, target_channels), name="decoder_final_reshape")(x)
             outputs = x
 
             self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder_cnn")
+            from keras.optimizers import Adam
             adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
             self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
             print("[configure_size] Decoder Model Summary (sliding-window branch):")

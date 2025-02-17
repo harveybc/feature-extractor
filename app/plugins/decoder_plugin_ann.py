@@ -14,10 +14,10 @@ class Plugin:
     plugin_params = {
         # Training parameters (if training decoder standalone)
         # Architecture parameters (must mirror the encoder's design)
-        'intermediate_layers': 5,       # Number of dense layers before the final projection
-        'initial_layer_size': 256,       # Base number of hidden units (from encoder)
+        'intermediate_layers': 4,       # Number of dense layers before the final projection
+        'initial_layer_size': 128,       # Base number of hidden units (from encoder)
         'layer_size_divisor': 2,        # Divisor to compute subsequent layer sizes
-        'l2_reg': 1e-2,                 # L2 regularization factor
+        'l2_reg': 1e-5,                 # L2 regularization factor
     }
 
     plugin_debug_vars = ['input_shape', 'interface_size']
@@ -102,7 +102,7 @@ class Plugin:
                 kernel_regularizer=l2(l2_reg),
                 name=f"decoder_dense_layer_{layer_idx}"
             )(x)
-        x = BatchNormalization(name=f"decoder_batch_norm_{layer_idx}")(x)
+        #x = BatchNormalization(name=f"decoder_batch_norm_{layer_idx}")(x)
 
         # Final projection to reconstruct the original input.
         x = Dense(

@@ -15,10 +15,10 @@ class Plugin:
     plugin_params = {
         # Training parameter
         # Architecture parameters
-        'intermediate_layers': 5,       # Number of dense layers before the final projection
-        'initial_layer_size': 256,       # Base number of hidden units in the first dense layer
+        'intermediate_layers': 4,       # Number of dense layers before the final projection
+        'initial_layer_size': 128,       # Base number of hidden units in the first dense layer
         'layer_size_divisor': 2,        # Divisor for subsequent layer sizes
-        'l2_reg': 1e-2,                 # L2 regularization factor
+        'l2_reg': 1e-5,                 # L2 regularization factor
     }
 
     plugin_debug_vars = ['input_dim', 'encoding_dim']

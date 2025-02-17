@@ -11,13 +11,14 @@ class Plugin:
     An LSTM-based encoder plugin.
     Configurable similarly to the ANN plugin.
     """
+
     plugin_params = {
         'intermediate_layers': 3,        # Number of LSTM layers before the final projection
-        'initial_layer_size': 32,          # Base hidden units in the first LSTM layer
+        'initial_layer_size': 32,        # Base hidden units in first LSTM layer
         'layer_size_divisor': 2,
-        'l2_reg': 1e-2,
-        'learning_rate': 0.0001
+        'l2_reg': 1e-2
     }
+
     plugin_debug_vars = ['input_shape', 'encoding_dim']
 
     def __init__(self):
@@ -38,26 +39,21 @@ class Plugin:
         """
         Configures the LSTM-based encoder.
         Args:
-            input_shape (int or tuple): 
-                • If int (and not sliding), it represents the number of features; we then assume a single time step.
-                • If tuple, it is (time_steps, num_channels).
+            input_shape (int or tuple): If int, represents number of features (and sliding windows is False).
+                                        If tuple, it should be (time_steps, num_channels).
             encoding_dim (int): Dimension of the latent space.
-            num_channels (int, optional): Number of features per time step (used if input_shape is int).
-            use_sliding_windows (bool): If True, input_shape is treated as (time_steps, num_channels).
+            num_channels (int, optional): Only used when input_shape is provided as an int.
+            use_sliding_windows (bool, optional): If True, input_shape is treated as (time_steps, num_channels).
         """
-        # When not using sliding windows and input_shape is an int,
-        # we now interpret it as the number of features and set time_steps=1.
-        if isinstance(input_shape, int) and not use_sliding_windows:
-            if num_channels is None:
-                num_channels = input_shape  # Here, the entire int is the feature dimension.
+        # Update handling of integer input_shape:
+        if isinstance(input_shape, int):
+            if use_sliding_windows:
+                input_shape = (input_shape, num_channels if num_channels else 1)
             else:
-                # In this branch, we assume input_shape represents feature count.
-                num_channels = num_channels
-            input_shape = (1, num_channels)
-        elif isinstance(input_shape, int) and use_sliding_windows:
-            # If sliding windows are used, the caller should provide a tuple.
-            raise ValueError("[configure_size] In sliding windows mode, input_shape must be a tuple (time_steps, num_channels).")
-        # Otherwise, if input_shape is already a tuple, we leave it as is.
+                # For non-sliding window mode, assume that the provided int is the number of features.
+                # We want a single time step and the given number of features.
+                print("[configure_size] WARNING: Received int for input_shape without sliding windows. Assuming shape=(1, input_shape).")
+                input_shape = (1, input_shape)
         self.params['input_shape'] = input_shape
         self.params['encoding_dim'] = encoding_dim
 
@@ -67,7 +63,7 @@ class Plugin:
         l2_reg = self.params.get('l2_reg', 1e-2)
         learning_rate = self.params.get('learning_rate', 0.0001)
 
-        # Compute the LSTM layer sizes.
+        # Compute the layer sizes (as in the ANN plugin)
         layers = []
         current_size = initial_layer_size
         for i in range(intermediate_layers):
@@ -79,11 +75,12 @@ class Plugin:
 
         encoder_input = Input(shape=input_shape, name="encoder_input")
         x = encoder_input
-        # Add LSTM layers with return_sequences=True for all but final layer.
+
+        # Add LSTM layers with return_sequences=True for all but the final LSTM layer.
         for idx, size in enumerate(layers[:-1], start=1):
             x = LSTM(units=size, activation='tanh', recurrent_activation='sigmoid',
                      return_sequences=True, name=f"lstm_layer_{idx}")(x)
-        # Final LSTM layer without return_sequences.
+        # Final LSTM layer (without return_sequences)
         if len(layers) >= 2:
             x = LSTM(units=layers[-2], activation='tanh', recurrent_activation='sigmoid',
                      return_sequences=False, name="lstm_layer_final")(x)
@@ -92,6 +89,7 @@ class Plugin:
                                kernel_initializer=GlorotUniform(),
                                kernel_regularizer=l2(l2_reg),
                                name="encoder_output")(x)
+
         self.encoder_model = Model(inputs=encoder_input, outputs=encoder_output, name="encoder_lstm")
         adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
         self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
@@ -101,7 +99,7 @@ class Plugin:
     def train(self, data, validation_data):
         if self.encoder_model is None:
             raise ValueError("[train] Encoder model is not yet configured. Call configure_size first.")
-        print(f"[train] Training data shape: {data.shape}, validation shape: {validation_data.shape}")
+        print(f"[train] Starting training with data shape={data.shape}, validation shape={validation_data.shape}")
         early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
         history = self.encoder_model.fit(data, data, epochs=self.params.get('epochs',600),
                                           batch_size=self.params.get('batch_size',128),
@@ -115,7 +113,7 @@ class Plugin:
             raise ValueError("[encode] Encoder model is not configured.")
         print(f"[encode] Encoding data with shape: {data.shape}")
         encoded_data = self.encoder_model.predict(data, verbose=1)
-        print(f"[encode] Encoded data shape: {encoded_data.shape}")
+        print(f"[encode] Encoded output shape: {encoded_data.shape}")
         return encoded_data
 
     def save(self, file_path):
@@ -130,8 +128,7 @@ class Plugin:
 
 if __name__ == "__main__":
     plugin = Plugin()
-    # For example, if we have 8 features (non-sliding mode), we set input_shape=8 and num_channels=8.
-    # The resulting input shape will be (1, 8) so that each sample is a single time step with 8 features.
+    # For non-sliding windows with 8 features, the input_shape will be assumed as (1, 8)
     plugin.configure_size(input_shape=8, encoding_dim=4, num_channels=8, use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

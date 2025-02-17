@@ -90,11 +90,17 @@ class AutoencoderManager:
 
             # Determine if sliding windows are used
             use_sliding_windows = config.get('use_sliding_windows', True)
+            encoder_plugin = config.get('encoder_plugin', '').lower()
 
-            # Check and reshape data for compatibility with Conv1D layers
-            if not use_sliding_windows and len(data.shape) == 2:  # Row-by-row data (2D)
-                print("[train_autoencoder] Reshaping data to add channel dimension for Conv1D compatibility...")
-                data = np.expand_dims(data, axis=-1)  # Add channel dimension (num_samples, num_features, 1)
+            # For models that expect a time dimension (CNN, LSTM, transformer),
+            # if sliding windows are disabled and the data is 2D, expand dimension at axis 1.
+            if not use_sliding_windows and len(data.shape) == 2:
+                if encoder_plugin in ['cnn', 'lstm', 'transformer']:
+                    print("[train_autoencoder] Reshaping data for non-sliding window: expanding dimension at axis 1")
+                    data = np.expand_dims(data, axis=1)  # New shape: (num_samples, 1, num_features)
+                else:
+                    print("[train_autoencoder] Reshaping data to add channel dimension at the end")
+                    data = np.expand_dims(data, axis=-1)
                 print(f"[train_autoencoder] Reshaped data shape: {data.shape}")
 
             num_channels = data.shape[-1]
@@ -125,10 +131,9 @@ class AutoencoderManager:
                 batch_size=batch_size,
                 verbose=1,
                 callbacks=[early_stopping],
-                validation_split = 0.2
+                validation_split=0.2
             )
 
-            # Log training loss
             print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
             print("[train_autoencoder] Training completed.")
         except Exception as e:

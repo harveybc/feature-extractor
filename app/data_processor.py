@@ -100,13 +100,15 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     processed_data, validation_data = process_data(config)
     print("Processed data received.")
 
-    # If using sliding windows and the encoder plugin is ANN,
-    # flatten the 3D windowed data into 2D.
+    # If using sliding windows and the ANN plugin is selected,
+    # flatten the 3D windowed data into 2D and ensure the array is contiguous and of type float32.
     if config.get('use_sliding_windows', True) and config.get('encoder_plugin', '').lower() == 'ann':
         print("[run_autoencoder_pipeline] Detected ANN plugin with sliding windows; flattening training and validation data.")
-        # Flatten from (num_samples, window_size, num_features) to (num_samples, window_size*num_features)
         processed_data = processed_data.reshape(processed_data.shape[0], -1)
         validation_data = validation_data.reshape(validation_data.shape[0], -1)
+        # Convert explicitly to contiguous float32 arrays to avoid any type or memory layout issues.
+        processed_data = np.ascontiguousarray(processed_data, dtype=np.float32)
+        validation_data = np.ascontiguousarray(validation_data, dtype=np.float32)
 
     # Truncate validation data to have at most as many rows as training data
     if validation_data.shape[0] > processed_data.shape[0]:

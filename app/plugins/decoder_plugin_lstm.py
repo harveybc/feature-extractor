@@ -13,7 +13,7 @@ class Plugin:
     followed by a TimeDistributed Dense layer.
     """
     plugin_params = {
-        'dropout_rate': 0.0,
+        'dropout_rate': 0.01,
         'l2_reg': 1e-5,
         'initial_layer_size': 32,
         'intermediate_layers': 3,

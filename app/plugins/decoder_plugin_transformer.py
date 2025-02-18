@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from keras.models import Model, load_model, save_model
+from keras.models import Model
 from keras.layers import Input, Dense, Flatten, LayerNormalization, Add, TimeDistributed, RepeatVector, Lambda
 from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
@@ -12,7 +12,7 @@ def positional_encoding(seq_len, d_model):
     d_model_float = tf.cast(d_model, tf.float32)
     pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]
     i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]
-    angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i/2)) / d_model_float))
+    angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model_float))
     angle_rads = pos * angle_rates
     even_mask = tf.cast(tf.equal(tf.math.floormod(tf.range(d_model), 2), 0), tf.float32)
     even_mask = tf.reshape(even_mask, [1, d_model])
@@ -27,11 +27,6 @@ def add_positional_encoding(x):
     return x + pos_enc
 
 class Plugin:
-    """
-    A transformer-based decoder plugin that mirrors the encoder.
-    It expands the latent vector, repeats it to form a sequence, adds positional encoding,
-    and applies transformer blocks in reverse order using FP32 and tanh activations.
-    """
     plugin_params = {
         'intermediate_layers': 1,
         'layer_size_divisor': 2,
@@ -47,11 +42,10 @@ class Plugin:
         self.model = None
 
     def set_params(self, **kwargs):
-        for key, value in kwargs.items():
-            self.params[key] = value
+        self.params.update(kwargs)
 
     def get_debug_info(self):
-        return {var: self.params.get(var, None) for var in self.plugin_debug_vars}
+        return {k: self.params.get(k) for k in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
         debug_info.update(self.get_debug_info())
@@ -59,7 +53,8 @@ class Plugin:
     # Interface: configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False)
     def configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False):
         self.params['interface_size'] = interface_size
-        # If not using sliding windows, effective time_steps = 1.
+        # When using sliding windows, output_time_steps is the number of timesteps;
+        # otherwise, assume 1 timestep.
         time_steps = output_time_steps if use_sliding_windows else 1
         self.params['output_shape'] = time_steps
         if num_channels is None:
@@ -68,28 +63,29 @@ class Plugin:
         self.params['encoder_output_shape'] = encoder_output_shape
         self.params['use_sliding_windows'] = use_sliding_windows
 
-        initial_layer_size = self.params.get('initial_layer_size', 128)
-        layer_size_divisor = self.params.get('layer_size_divisor', 2)
-        int_layers = self.params.get('intermediate_layers', 1)
-        ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
-        learning_rate = self.params.get('learning_rate', 1e-5)
+        init_size = self.params.get('initial_layer_size', 128)
+        layer_div = self.params.get('layer_size_divisor', 2)
+        inter_layers = self.params.get('intermediate_layers', 1)
+        ff_div = self.params.get('ff_dim_divisor', 2)
+        lr = self.params.get('learning_rate', 1e-5)
 
-        layer_sizes = []
-        current_size = initial_layer_size
-        for i in range(int_layers):
-            layer_sizes.append(current_size)
-            current_size = max(current_size // layer_size_divisor, interface_size)
-        layer_sizes.append(interface_size)
-        layer_sizes.reverse()
-        print(f"[configure_size] Transformer decoder layer sizes (mirrored): {layer_sizes}")
+        # Compute layer sizes (mirroring the encoder).
+        sizes = []
+        current = init_size
+        for _ in range(inter_layers):
+            sizes.append(current)
+            current = max(current // layer_div, interface_size)
+        sizes.append(interface_size)
+        sizes.reverse()
+        print(f"[configure_size] Transformer decoder layer sizes (mirrored): {sizes}")
 
         inputs = Input(shape=(interface_size,), dtype=tf.float32)
         repeated = RepeatVector(time_steps)(inputs)
-        x = Dense(initial_layer_size, activation='tanh')(repeated)
+        x = Dense(init_size, activation='tanh')(repeated)
         x = Lambda(add_positional_encoding)(x)
 
-        for size in layer_sizes:
-            ff_dim = max(size // ff_dim_divisor, 1)
+        for size in sizes:
+            ff_dim = max(size // ff_div, 1)
             if size < 64:
                 num_heads = 2
             elif size < 128:
@@ -99,13 +95,6 @@ class Plugin:
             x = Dense(size)(x)
             x = MultiHeadAttention(head_num=num_heads)(x)
             x = LayerNormalization(epsilon=1e-6)(x)
-            x = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal())(x)
-            x = Dense(size)(x)
-            x = Add()([x, x])
-            # The above line is incorrect: we need to add the residual. Let's fix it.
-            # We need to store the input before FFN.
-            # I'll do it properly:
-            # Let's rewrite the block:
             residual = x
             ffn = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal())(x)
             ffn = Dense(size)(ffn)
@@ -116,13 +105,13 @@ class Plugin:
         outputs = Dense(time_steps, activation='linear', kernel_initializer=GlorotUniform())(x)
 
         self.model = Model(inputs=inputs, outputs=outputs)
-        adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
-        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        optimizer = Adam(learning_rate=lr, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
+        self.model.compile(optimizer=optimizer, loss='mean_squared_error')
         print("[configure_size] Transformer Decoder Model Summary:")
         self.model.summary()
 
 if __name__ == "__main__":
     plugin = Plugin()
-    plugin.configure_size(interface_size=4, output_time_steps=128, num_channels=1, encoder_output_shape=None, use_sliding_windows=False)
-    debug_info = plugin.get_debug_info()
-    print(f"Debug Info: {debug_info}")
+    # Example: interface size 4, sliding window length 256, 1 channel.
+    plugin.configure_size(interface_size=4, output_time_steps=256, num_channels=8, encoder_output_shape=None, use_sliding_windows=True)
+    print("Debug Info:", plugin.get_debug_info())

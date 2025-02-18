@@ -13,8 +13,8 @@ class Plugin:
     """
 
     plugin_params = {
-        'intermediate_layers': 3,        # Number of LSTM layers before the final projection
-        'initial_layer_size': 32,        # Base hidden units in the first LSTM layer
+        'intermediate_layers': 4,        # Number of LSTM layers before the final projection
+        'initial_layer_size': 128,        # Base hidden units in the first LSTM layer
         'layer_size_divisor': 2,
         'l2_reg': 1e-7,                  # Minimal regularization to avoid interfering with learning
         'dropout_rate': 0.0,             # No dropout for maximum accuracy

@@ -15,8 +15,8 @@ class Plugin:
     plugin_params = {
         'dropout_rate': 0.0,             # No dropout
         'l2_reg': 1e-7,                  # Minimal regularization
-        'initial_layer_size': 32,
-        'intermediate_layers': 3,
+        'initial_layer_size': 128,
+        'intermediate_layers': 4,
         'layer_size_divisor': 2,
         'recurrent_dropout_rate': 0.0     # No recurrent dropout
     }

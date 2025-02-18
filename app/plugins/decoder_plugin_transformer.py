@@ -30,7 +30,7 @@ class Plugin:
     """
     A transformer-based decoder plugin that mirrors the encoder.
     It expands the latent vector, repeats it to form a sequence, adds positional encoding,
-    and applies transformer blocks in reverse order.
+    and applies transformer blocks in reverse order using FP32 and tanh activations.
     """
     plugin_params = {
         'intermediate_layers': 1,
@@ -56,8 +56,7 @@ class Plugin:
     def add_debug_info(self, debug_info):
         debug_info.update(self.get_debug_info())
 
-    # New interface matching the other plugins:
-    # configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False)
+    # Interface: configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False)
     def configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False):
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_time_steps
@@ -73,7 +72,6 @@ class Plugin:
         ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
         learning_rate = self.params.get('learning_rate', 0.00001)
 
-        # Compute intermediate sizes like encoder.
         layer_sizes = []
         current_size = initial_layer_size
         for i in range(int_layers):
@@ -85,7 +83,8 @@ class Plugin:
 
         inputs = Input(shape=(interface_size,), name="decoder_input", dtype=tf.float32)
         repeated = RepeatVector(output_time_steps, name="repeat_vector")(inputs)
-        x = Dense(initial_layer_size, activation='relu', name="proj_dense")(repeated)
+        # Use tanh activation in the projection.
+        x = Dense(initial_layer_size, activation='tanh', name="proj_dense")(repeated)
         x = Lambda(add_positional_encoding, name="positional_encoding")(x)
 
         for size in layer_sizes:
@@ -99,7 +98,8 @@ class Plugin:
             x = Dense(size, name="proj_dense_block")(x)
             x = MultiHeadAttention(head_num=num_heads, name=f"multi_head_{size}")(x)
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)
-            ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
+            # Use tanh in the feed-forward network.
+            ffn_output = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
             ffn_output = Dense(size, name="ffn_dense_2")(ffn_output)
             x = Add(name="residual_add")([x, ffn_output])
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_2")(x)
@@ -115,7 +115,6 @@ class Plugin:
 
 if __name__ == "__main__":
     plugin = Plugin()
-    # Example: interface_size=4, output_time_steps=128, with default values for other params.
     plugin.configure_size(interface_size=4, output_time_steps=128, num_channels=1, encoder_output_shape=None, use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

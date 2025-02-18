@@ -11,8 +11,8 @@ tf.keras.mixed_precision.set_global_policy('float32')
 
 def positional_encoding(seq_len, d_model):
     d_model_float = tf.cast(d_model, tf.float32)
-    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]  # (seq_len, 1)
-    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]      # (1, d_model)
+    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]  # shape (seq_len, 1)
+    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]      # shape (1, d_model)
     angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model_float))
     angle_rads = pos * angle_rates
     even_mask = tf.cast(tf.equal(tf.math.floormod(tf.range(d_model), 2), 0), tf.float32)
@@ -52,7 +52,7 @@ class Plugin:
     def add_debug_info(self, debug_info):
         debug_info.update(self.get_debug_info())
 
-    # Note: Using the same interface as ANN/CNN/LSTM encoders.
+    # Interface: configure_size(self, input_shape, encoding_dim, num_channels=None, use_sliding_windows=False)
     def configure_size(self, input_shape, encoding_dim, num_channels=None, use_sliding_windows=False):
         if num_channels is None:
             num_channels = 1
@@ -93,7 +93,8 @@ class Plugin:
             x = Dense(size, name="proj_dense")(x)
             x = MultiHeadAttention(head_num=num_heads, name=f"multi_head_{size}")(x)
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)
-            ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
+            # Use tanh activation instead of ReLU in the feed-forward network.
+            ffn_output = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
             ffn_output = Dense(size, name="ffn_dense_2")(ffn_output)
             x = Add(name="residual_add")([x, ffn_output])
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_2")(x)
@@ -109,7 +110,6 @@ class Plugin:
 
 if __name__ == "__main__":
     plugin = Plugin()
-    # Example: sequence length 128, encoding dim 4, 1 channel.
     plugin.configure_size(input_shape=128, encoding_dim=4, num_channels=1, use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

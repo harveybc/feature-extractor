@@ -94,7 +94,7 @@ class Plugin:
             x = MultiHeadAttention(head_num=num_heads, name=f"multi_head_{size}")(x)
             x = LayerNormalization(epsilon=1e-6)(x)
             # Use tanh activation instead of ReLU in the feed-forward network.
-            ffn_output = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal()")(x)
+            ffn_output = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal())(x)
             ffn_output = Dense(size)(ffn_output)
             x = Add()([x, ffn_output])
             x = LayerNormalization(epsilon=1e-6)(x)

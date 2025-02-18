@@ -91,6 +91,7 @@ def process_data(config):
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     import time
+    import numpy as np
     start_time = time.time()
     
     print("Running process_data...")
@@ -101,11 +102,39 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     if validation_data.shape[0] > processed_data.shape[0]:
         print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_data.shape[0]} rows to match training data rows: {processed_data.shape[0]}")
         validation_data = validation_data[:processed_data.shape[0]]
-
+    
+    # Get the encoder plugin name (lowercase)
+    encoder_plugin_name = config.get('encoder_plugin', '').lower()
+    
+    # For sequential plugins (LSTM/Transformer) without sliding windows, expand dims at axis 1.
     if not config.get('use_sliding_windows', True):
-        config['original_feature_size'] = validation_data.shape[1]
-        print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
-
+        if encoder_plugin_name in ['lstm', 'transformer']:
+            print("[run_autoencoder_pipeline] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at axis 1.")
+            # Expand so that each sample becomes a sequence of length 1 with all features as channels.
+            processed_data = np.expand_dims(processed_data, axis=1)  # becomes (samples, 1, features)
+            validation_data = np.expand_dims(validation_data, axis=1)
+            # Set original_feature_size to number of features (i.e. last dimension)
+            config['original_feature_size'] = processed_data.shape[2]
+        elif encoder_plugin_name == 'cnn':
+            print("[run_autoencoder_pipeline] Detected CNN plugin without sliding windows; expanding dimension at axis 1.")
+            processed_data = np.expand_dims(processed_data, axis=1)
+            validation_data = np.expand_dims(validation_data, axis=1)
+            config['original_feature_size'] = validation_data.shape[2]
+        else:
+            config['original_feature_size'] = validation_data.shape[1]
+            print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
+    
+    # Determine input_size:
+    # - If sliding windows are used, input_size equals window_size.
+    # - For sequential plugins (LSTM/Transformer) without sliding windows, input_size should be the number of features.
+    if config.get('use_sliding_windows', False):
+        input_size = config['window_size']
+    else:
+        if encoder_plugin_name in ['lstm', 'transformer']:
+            input_size = config['original_feature_size']
+        else:
+            input_size = processed_data.shape[1]
+    
     initial_size = config['initial_size']
     step_size = config['step_size']
     threshold_error = config['threshold_error']
@@ -114,29 +143,26 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     incremental_search = config['incremental_search']
     
     current_size = initial_size
-    input_size = config['window_size'] if config['use_sliding_windows'] else processed_data.shape[1]
-
+    
     while True:
         print(f"Training with interface size: {current_size}")
         
-        autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
+        # num_channels is taken from the last dimension of processed_data.
         num_channels = processed_data.shape[-1]
-
-        # Build and train the autoencoder
+        
+        from app.autoencoder_manager import AutoencoderManager
+        autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         autoencoder_manager.build_autoencoder(input_size, current_size, config, num_channels)
         autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
-
-        # Evaluate on training data
+        
         training_mse, training_mae = autoencoder_manager.evaluate(processed_data, "Training", config)
         print(f"Training Mean Squared Error with interface size {current_size}: {training_mse}")
         print(f"Training Mean Absolute Error with interface size {current_size}: {training_mae}")
-
-        # Evaluate on validation data
+        
         validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data, "Validation", config)
         print(f"Validation Mean Squared Error with interface size {current_size}: {validation_mse}")
         print(f"Validation Mean Absolute Error with interface size {current_size}: {validation_mae}")
-
-        # Check stopping condition
+        
         if (incremental_search and validation_mae <= threshold_error) or (not incremental_search and validation_mae >= threshold_error):
             print(f"Optimal interface size found: {current_size} with Validation MSE: {validation_mse} and Validation MAE: {validation_mae}")
             break
@@ -146,7 +172,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             else:
                 current_size -= step_size
             if current_size > processed_data.shape[1] or current_size <= 0:
-                print(f"Cannot adjust interface size beyond data dimensions. Stopping.")
+                print("Cannot adjust interface size beyond data dimensions. Stopping.")
                 break
 
     encoder_model_filename = f"{config['save_encoder']}.keras"
@@ -166,14 +192,15 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         'mae': validation_mae
     }
 
+    from app.config_handler import save_debug_info, remote_log
     if 'save_log' in config and config['save_log']:
         save_debug_info(debug_info, config['save_log'])
         print(f"Debug info saved to {config['save_log']}.")
-
+    
     if 'remote_log' in config and config['remote_log']:
         remote_log(config, debug_info, config['remote_log'], config['username'], config['password'])
         print(f"Debug info saved to {config['remote_log']}.")
-
+    
     print(f"Execution time: {execution_time} seconds")
 
 

@@ -1,25 +1,35 @@
 import numpy as np
+import tensorflow as tf
 from keras.models import Model, load_model, save_model
-from keras.layers import Input, Dense, Flatten, GlobalAveragePooling1D, LayerNormalization, Dropout, Add, Activation
+from keras.layers import Input, Dense, Flatten, LayerNormalization, Add, Lambda
 from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
+# Helper function to compute fixed sinusoidal positional encoding.
+def positional_encoding(seq_len, d_model):
+    pos = np.arange(seq_len)[:, np.newaxis]
+    i = np.arange(d_model)[np.newaxis, :]
+    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+    angle_rads = pos * angle_rates
+    sines = np.sin(angle_rads[:, 0::2])
+    cosines = np.cos(angle_rads[:, 1::2])
+    pos_encoding = np.zeros(angle_rads.shape)
+    pos_encoding[:, 0::2] = sines
+    pos_encoding[:, 1::2] = cosines
+    pos_encoding = tf.cast(pos_encoding, dtype=tf.float32)
+    return pos_encoding
+
 class Plugin:
-    """
-    An encoder plugin using transformer layers.
-    """
-
     plugin_params = {
-
         'intermediate_layers': 1,
         'layer_size_divisor': 2,
         'ff_dim_divisor': 2,
         'learning_rate': 0.00001,
-        'dropout_rate': 0.1,
+        'dropout_rate': 0.0,  # Dropout removed for maximum accuracy
+        'initial_layer_size': 128,
     }
-
-    plugin_debug_vars = ['input_shape', 'intermediate_layers']
+    plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -30,94 +40,87 @@ class Plugin:
             self.params[key] = value
 
     def get_debug_info(self):
-        return {var: self.params[var] for var in self.plugin_debug_vars}
+        return {var: self.params.get(var, None) for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
-        plugin_debug_info = self.get_debug_info()
-        debug_info.update(plugin_debug_info)
+        debug_info.update(self.get_debug_info())
 
-    def configure_size(self, input_shape, interface_size):
+    def configure_size(self, input_shape, interface_size, num_channels=None, use_sliding_windows=False):
+        """
+        Configures the transformer-based encoder.
+        Args:
+            input_shape (int): The length of the input sequence.
+            interface_size (int): The dimension of the latent space.
+            num_channels (int, optional): Number of input channels (default=1).
+            use_sliding_windows (bool, optional): If True, input shape is (input_shape, num_channels); else, (input_shape, 1).
+        """
+        if num_channels is None:
+            num_channels = 1
         self.params['input_shape'] = input_shape
+        self.params['encoding_dim'] = interface_size
+        self.params['num_channels'] = num_channels
 
+        intermediate_layers = self.params.get('intermediate_layers', 1)
+        initial_layer_size = self.params.get('initial_layer_size', 128)
+        layer_size_divisor = self.params.get('layer_size_divisor', 2)
+        ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
+        dropout_rate = self.params.get('dropout_rate', 0.0)  # Using 0 dropout
+        learning_rate = self.params.get('learning_rate', 0.00001)
+
+        # Compute transformer block sizes.
         layers = []
-        current_size = input_shape
-        layer_size_divisor = self.params['layer_size_divisor'] 
-        current_location = input_shape
-        int_layers = 0
-        while (current_size > interface_size) and (int_layers < (self.params['intermediate_layers']+1)):
-            layers.append(current_location)
+        current_size = initial_layer_size
+        for i in range(intermediate_layers):
+            layers.append(current_size)
             current_size = max(current_size // layer_size_divisor, interface_size)
-            current_location = interface_size + current_size
-            int_layers += 1
         layers.append(interface_size)
-        # Debugging message
-        print(f"Encoder Layer sizes: {layers}")
+        print(f"[configure_size] Transformer Encoder Layer sizes: {layers}")
+        print(f"[configure_size] Input sequence length: {input_shape}, Channels: {num_channels}")
 
-        # set input layer
-        inputs = Input(shape=(input_shape, 1))
+        # Define the input shape as (input_shape, num_channels)
+        transformer_input_shape = (input_shape, num_channels)
+        inputs = Input(shape=transformer_input_shape, name="encoder_input")
         x = inputs
 
-        # add transformer layers
-        for size in layers:
-            ff_dim = size // self.params['ff_dim_divisor']
+        # Add fixed positional encoding.
+        def add_positional_encoding(x):
+            seq_len = tf.shape(x)[1]
+            d_model = tf.shape(x)[2]
+            pos_enc = positional_encoding(seq_len, d_model)
+            return x + pos_enc
+
+        x = Lambda(add_positional_encoding, name="positional_encoding")(x)
+
+        # Apply transformer blocks (without dropout) for each intermediate layer.
+        for size in layers[:-1]:
+            ff_dim = max(size // ff_dim_divisor, 1)
             if size < 64:
                 num_heads = 2
-            elif 64 <= size < 128:
+            elif size < 128:
                 num_heads = 4
             else:
                 num_heads = 8
+            x = Dense(size, name="proj_dense")(x)
+            x = MultiHeadAttention(head_num=num_heads, name="multi_head")(x)
+            x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)
+            # Dropout layers removed.
+            ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
+            ffn_output = Dense(size, name="ffn_dense_2")(ffn_output)
+            # Dropout layers removed.
+            x = Add(name="residual_add")([x, ffn_output])
+            x = LayerNormalization(epsilon=1e-6, name="layer_norm_2")(x)
 
-            dropout_rate = self.params['dropout_rate']
-            
-            x = Dense(size)(x)
-            x = MultiHeadAttention(head_num=num_heads)(x)
-            x = LayerNormalization(epsilon=1e-6)(x)
-            x = Dropout(dropout_rate)(x)
-            
-            ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal())(x)
-            ffn_output = Dense(size)(ffn_output)
-            ffn_output = Dropout(dropout_rate)(ffn_output)
-            x = Add()([x, ffn_output])
-            x = LayerNormalization(epsilon=1e-6)(x)
-
-        x = GlobalAveragePooling1D()(x)
         x = Flatten()(x)
-        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform())(x)
-        
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
-                # Define the Adam optimizer with custom parameters
-        adam_optimizer = Adam(
-            learning_rate= self.params['learning_rate'],   # Set the learning rate
-            beta_1=0.9,            # Default value
-            beta_2=0.999,          # Default value
-            epsilon=1e-7,          # Default value
-            amsgrad=False          # Default value
-        )
+        outputs = Dense(interface_size, activation='linear', kernel_initializer=GlorotUniform(), name="encoder_output")(x)
 
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_transformer")
+        adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
         self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
+        print("[configure_size] Encoder Model Summary:")
+        self.encoder_model.summary()
 
-    def train(self, data):
-        print(f"Training encoder with data shape: {data.shape}")
-        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1)
-        print("Training completed.")
-
-    def encode(self, data):
-        print(f"Encoding data with shape: {data.shape}")
-        encoded_data = self.encoder_model.predict(data)
-        print(f"Encoded data shape: {encoded_data.shape}")
-        return encoded_data
-
-    def save(self, file_path):
-        save_model(self.encoder_model, file_path)
-        print(f"Encoder model saved to {file_path}")
-
-    def load(self, file_path):
-        self.encoder_model = load_model(file_path)
-        print(f"Encoder model loaded from {file_path}")
-
-# Debugging usage example
 if __name__ == "__main__":
     plugin = Plugin()
-    plugin.configure_size(input_shape=128, interface_size=4)
+    plugin.configure_size(input_shape=128, interface_size=4, num_channels=1, use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

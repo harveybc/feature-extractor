@@ -6,9 +6,9 @@ from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
-# TensorFlow-based positional encoding function with proper dtype casting.
+# TensorFlow-based positional encoding function with proper dtype casting in add_positional_encoding.
 def positional_encoding(seq_len, d_model):
-    # d_model is expected as a scalar (tf.Tensor of type int32)
+    # Cast d_model to float32 for arithmetic operations.
     d_model_float = tf.cast(d_model, tf.float32)
     pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]  # shape (seq_len, 1)
     i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]      # shape (1, d_model)
@@ -19,13 +19,21 @@ def positional_encoding(seq_len, d_model):
     pos_encoding = even_mask * tf.sin(angle_rads) + (1 - even_mask) * tf.cos(angle_rads)
     return pos_encoding
 
+def add_positional_encoding(x):
+    seq_len = tf.shape(x)[1]
+    d_model = tf.shape(x)[2]
+    pos_enc = positional_encoding(seq_len, d_model)
+    # Cast positional encoding to the same dtype as x.
+    pos_enc = tf.cast(pos_enc, x.dtype)
+    return x + pos_enc
+
 class Plugin:
     plugin_params = {
         'intermediate_layers': 1,
         'layer_size_divisor': 2,
         'ff_dim_divisor': 2,
         'learning_rate': 0.00001,
-        'dropout_rate': 0.0,  # Dropout removed for maximum accuracy
+        'dropout_rate': 0.0,  # No dropout for maximum accuracy
         'initial_layer_size': 128,
     }
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
@@ -81,13 +89,7 @@ class Plugin:
         inputs = Input(shape=transformer_input_shape, name="encoder_input")
         x = inputs
 
-        # Add fixed positional encoding using the TensorFlow-based function.
-        def add_positional_encoding(x):
-            seq_len = tf.shape(x)[1]
-            d_model = tf.shape(x)[2]  # d_model is an int32 scalar
-            pos_enc = positional_encoding(seq_len, d_model)
-            return x + pos_enc
-
+        # Add positional encoding via Lambda layer.
         x = Lambda(add_positional_encoding, name="positional_encoding")(x)
 
         # Apply transformer blocks (with dropout removed) for each intermediate layer.

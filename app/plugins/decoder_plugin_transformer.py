@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from keras.models import Model
-from keras.layers import Input, Dense, Flatten, LayerNormalization, Add, TimeDistributed, RepeatVector, Lambda
+from keras.layers import Input, Dense, Flatten, LayerNormalization, Add, RepeatVector, Lambda, Reshape
 from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
@@ -27,6 +27,7 @@ def add_positional_encoding(x):
     return x + pos_enc
 
 class Plugin:
+    # Interface: configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False)
     plugin_params = {
         'intermediate_layers': 1,
         'layer_size_divisor': 2,
@@ -50,11 +51,9 @@ class Plugin:
     def add_debug_info(self, debug_info):
         debug_info.update(self.get_debug_info())
 
-    # Interface: configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False)
     def configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False):
         self.params['interface_size'] = interface_size
-        # When using sliding windows, output_time_steps is the number of timesteps;
-        # otherwise, assume 1 timestep.
+        # If using sliding windows, output_time_steps is as given; otherwise, assume 1 timestep.
         time_steps = output_time_steps if use_sliding_windows else 1
         self.params['output_shape'] = time_steps
         if num_channels is None:
@@ -79,39 +78,38 @@ class Plugin:
         sizes.reverse()
         print(f"[configure_size] Transformer decoder layer sizes (mirrored): {sizes}")
 
-        inputs = Input(shape=(interface_size,), dtype=tf.float32)
-        repeated = RepeatVector(time_steps)(inputs)
+        inp = Input(shape=(interface_size,), dtype=tf.float32)
+        repeated = RepeatVector(time_steps)(inp)
         x = Dense(init_size, activation='tanh')(repeated)
         x = Lambda(add_positional_encoding)(x)
 
         for size in sizes:
             ff_dim = max(size // ff_div, 1)
-            if size < 64:
-                num_heads = 2
-            elif size < 128:
-                num_heads = 4
-            else:
-                num_heads = 8
+            num_heads = 2 if size < 64 else (4 if size < 128 else 8)
             x = Dense(size)(x)
             x = MultiHeadAttention(head_num=num_heads)(x)
             x = LayerNormalization(epsilon=1e-6)(x)
-            residual = x
+            res = x
             ffn = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal())(x)
             ffn = Dense(size)(ffn)
-            x = Add()([residual, ffn])
+            x = Add()([res, ffn])
             x = LayerNormalization(epsilon=1e-6)(x)
 
         x = Flatten()(x)
-        outputs = Dense(time_steps, activation='linear', kernel_initializer=GlorotUniform())(x)
+        # To reconstruct the original input shape, we need output_units = time_steps * num_channels
+        out_units = time_steps * num_channels
+        x = Dense(out_units, activation='linear', kernel_initializer=GlorotUniform())(x)
+        # Reshape back to (time_steps, num_channels)
+        out = Reshape((time_steps, num_channels))(x)
 
-        self.model = Model(inputs=inputs, outputs=outputs)
+        self.model = Model(inputs=inp, outputs=out)
         optimizer = Adam(learning_rate=lr, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
         self.model.compile(optimizer=optimizer, loss='mean_squared_error')
         print("[configure_size] Transformer Decoder Model Summary:")
         self.model.summary()
 
 if __name__ == "__main__":
+    # Example: interface size=4, output timesteps=256, 8 channels, sliding windows enabled.
     plugin = Plugin()
-    # Example: interface size 4, sliding window length 256, 1 channel.
     plugin.configure_size(interface_size=4, output_time_steps=256, num_channels=8, encoder_output_shape=None, use_sliding_windows=True)
     print("Debug Info:", plugin.get_debug_info())

@@ -1,25 +1,24 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import LSTM, Dense, Input, BatchNormalization, Bidirectional, Dropout
+from keras.layers import LSTM, Dense, Input
 from keras.optimizers import Adam
-from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from tensorflow.keras.initializers import GlorotUniform
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
 
 class Plugin:
     """
-    An LSTM-based encoder plugin.
-    Configurable similarly to the ANN plugin.
+    An LSTM-based encoder plugin optimized for maximum reconstruction accuracy.
+    This version removes dropout and batch normalization to allow the network to fully capture the input signal.
     """
 
     plugin_params = {
         'intermediate_layers': 3,        # Number of LSTM layers before the final projection
-        'initial_layer_size': 32,         # Base hidden units in first LSTM layer
+        'initial_layer_size': 32,        # Base hidden units in the first LSTM layer
         'layer_size_divisor': 2,
-        'l2_reg': 1e-5,
-        'dropout_rate': 0.1,              # Dropout rate for LSTM layers
-        'recurrent_dropout_rate': 0.1,    # Recurrent dropout rate for LSTM layers
-        'use_bidirectional': True         # Use bidirectional LSTM for the first layer if applicable
+        'l2_reg': 1e-7,                  # Minimal regularization to avoid interfering with learning
+        'dropout_rate': 0.0,             # No dropout for maximum accuracy
+        'recurrent_dropout_rate': 0.0    # No recurrent dropout
     }
 
     plugin_debug_vars = ['input_shape', 'encoding_dim']
@@ -48,6 +47,7 @@ class Plugin:
             num_channels (int, optional): Only used when input_shape is provided as an int.
             use_sliding_windows (bool, optional): If True, input_shape is treated as (time_steps, num_channels).
         """
+        # Handle integer input_shape.
         if isinstance(input_shape, int):
             if use_sliding_windows:
                 input_shape = (input_shape, num_channels if num_channels else 1)
@@ -60,13 +60,13 @@ class Plugin:
         intermediate_layers = self.params.get('intermediate_layers', 3)
         initial_layer_size = self.params.get('initial_layer_size', 32)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
-        l2_reg = self.params.get('l2_reg', 1e-5)
-        dropout_rate = self.params.get('dropout_rate', 0.1)
-        recurrent_dropout_rate = self.params.get('recurrent_dropout_rate', 0.1)
+        l2_reg = self.params.get('l2_reg', 1e-7)
+        # Note: dropout rates are 0.0 for maximum accuracy
+        dropout_rate = self.params.get('dropout_rate', 0.0)
+        recurrent_dropout_rate = self.params.get('recurrent_dropout_rate', 0.0)
         learning_rate = self.params.get('learning_rate', 0.0001)
-        use_bidirectional = self.params.get('use_bidirectional', True)
 
-        # Compute the layer sizes (similar to the ANN plugin)
+        # Compute the layer sizes, e.g. [32, 16, 8, encoding_dim]
         layers = []
         current_size = initial_layer_size
         for i in range(intermediate_layers):
@@ -79,29 +79,29 @@ class Plugin:
         encoder_input = Input(shape=input_shape, name="encoder_input")
         x = encoder_input
 
-        # Add LSTM layers with return_sequences=True for all but the final LSTM layer.
+        # Build LSTM layers with return_sequences=True for all but the final LSTM layer.
         for idx, size in enumerate(layers[:-1], start=1):
-            lstm_layer = LSTM(units=size, activation='tanh', recurrent_activation='sigmoid',
-                              return_sequences=True, dropout=dropout_rate,
-                              recurrent_dropout=recurrent_dropout_rate,
-                              kernel_regularizer=l2(l2_reg),
-                              name=f"lstm_layer_{idx}")
-            # Use bidirectional wrapper for the first layer if input has more than one timestep.
-            if idx == 1 and use_bidirectional and input_shape[0] > 1:
-                x = Bidirectional(lstm_layer, name=f"bidirectional_lstm_layer_{idx}")(x)
-            else:
-                x = lstm_layer(x)
-
-        # Final LSTM layer (without return_sequences)
+            x = LSTM(units=size,
+                     activation='tanh',
+                     recurrent_activation='sigmoid',
+                     return_sequences=True,
+                     dropout=dropout_rate,
+                     recurrent_dropout=recurrent_dropout_rate,
+                     kernel_regularizer=l2(l2_reg),
+                     name=f"lstm_layer_{idx}")(x)
+        # Final LSTM layer without return_sequences.
         if len(layers) >= 2:
-            final_lstm = LSTM(units=layers[-2], activation='tanh', recurrent_activation='sigmoid',
-                              return_sequences=False, dropout=dropout_rate,
-                              recurrent_dropout=recurrent_dropout_rate,
-                              kernel_regularizer=l2(l2_reg),
-                              name="lstm_layer_final")
-            x = final_lstm(x)
-        x = BatchNormalization(name="batch_norm_final")(x)
-        encoder_output = Dense(units=layers[-1], activation='linear',
+            x = LSTM(units=layers[-2],
+                     activation='tanh',
+                     recurrent_activation='sigmoid',
+                     return_sequences=False,
+                     dropout=dropout_rate,
+                     recurrent_dropout=recurrent_dropout_rate,
+                     kernel_regularizer=l2(l2_reg),
+                     name="lstm_layer_final")(x)
+        # Direct projection to the latent space.
+        encoder_output = Dense(units=layers[-1],
+                               activation='linear',
                                kernel_initializer=GlorotUniform(),
                                kernel_regularizer=l2(l2_reg),
                                name="encoder_output")(x)
@@ -144,7 +144,7 @@ class Plugin:
 
 if __name__ == "__main__":
     plugin = Plugin()
-    # For non-sliding windows with 8 features, the input_shape will be assumed as (1, 8)
+    # For non-sliding windows with 8 features, the input_shape is assumed as (1, 8)
     plugin.configure_size(input_shape=8, encoding_dim=4, num_channels=8, use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

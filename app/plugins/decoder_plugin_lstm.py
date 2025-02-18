@@ -1,24 +1,24 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, LSTM, Dropout, RepeatVector, TimeDistributed
+from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed
 from keras.optimizers import Adam
-from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from tensorflow.keras.initializers import GlorotUniform
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
 
 class Plugin:
     """
-    A decoder plugin that mirrors the LSTM encoder's architecture.
-    It expands the latent vector, repeats it to form a sequence, then applies LSTM layers in reversed order
-    followed by a TimeDistributed Dense layer.
+    A decoder plugin that exactly mirrors the LSTM encoder's architecture.
+    This version is optimized for maximum reconstruction accuracy by removing dropout.
     """
+
     plugin_params = {
-        'dropout_rate': 0.1,
-        'l2_reg': 1e-5,
+        'dropout_rate': 0.0,             # No dropout
+        'l2_reg': 1e-7,                  # Minimal regularization
         'initial_layer_size': 32,
         'intermediate_layers': 3,
         'layer_size_divisor': 2,
-        'recurrent_dropout_rate': 0.1
+        'recurrent_dropout_rate': 0.0     # No recurrent dropout
     }
     plugin_debug_vars = []
 
@@ -40,7 +40,7 @@ class Plugin:
         """
         Configures the LSTM-based decoder.
         Args:
-            interface_size (int): Size of the latent vector (should match the encoder output dimension).
+            interface_size (int): Size of the latent vector (must match the encoder output dimension).
             output_time_steps (int): The desired sequence length of the output.
             num_channels (int, optional): Number of features per time step.
             encoder_output_shape: Not used in this mirror decoder.
@@ -54,11 +54,11 @@ class Plugin:
         initial_layer_size = self.params.get('initial_layer_size', 32)
         intermediate_layers = self.params.get('intermediate_layers', 3)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
-        l2_reg = self.params.get('l2_reg', 1e-5)
-        dropout_rate = self.params.get('dropout_rate', 0.1)
-        recurrent_dropout_rate = self.params.get('recurrent_dropout_rate', 0.1)
+        l2_reg = self.params.get('l2_reg', 1e-7)
+        dropout_rate = self.params.get('dropout_rate', 0.0)
+        recurrent_dropout_rate = self.params.get('recurrent_dropout_rate', 0.0)
 
-        # Compute the encoder layer sizes as used in the encoder.
+        # Recompute the encoder layer sizes exactly as in the encoder.
         encoder_layers = []
         current_size = initial_layer_size
         for i in range(intermediate_layers):
@@ -71,22 +71,20 @@ class Plugin:
         print(f"[configure_size] Decoder LSTM sizes (mirrored): {decoder_lstm_sizes}")
 
         self.model = Sequential(name="decoder_lstm")
-        # Expand the latent vector via Dense to match the last LSTM unit of the encoder.
+        # Expand the latent vector via a Dense layer to match the last LSTM unit of the encoder.
         latent_dense_units = encoder_layers[-2]
         self.model.add(Dense(
             latent_dense_units,
             input_shape=(interface_size,),
             activation='tanh',
-            kernel_initializer=HeNormal(),
+            kernel_initializer=GlorotUniform(),
             kernel_regularizer=l2(l2_reg),
             name="decoder_dense_expand"
         ))
-        if dropout_rate > 0.0:
-            self.model.add(Dropout(dropout_rate, name="decoder_dropout_after_dense"))
-        # Repeat the vector to form a sequence of length equal to output_time_steps.
+        # Repeat the vector to form a sequence of the desired output length.
         self.model.add(RepeatVector(output_time_steps))
         print(f"[configure_size] Added RepeatVector layer with output length: {output_time_steps}")
-        # Add mirrored LSTM layers with dropout and recurrent dropout.
+        # Add mirrored LSTM layers.
         for idx, units in enumerate(decoder_lstm_sizes, start=1):
             self.model.add(LSTM(
                 units=units,
@@ -99,16 +97,14 @@ class Plugin:
                 kernel_regularizer=l2(l2_reg),
                 name=f"decoder_lstm_{idx}"
             ))
-            if dropout_rate > 0.0:
-                self.model.add(Dropout(dropout_rate, name=f"decoder_dropout_after_lstm_{idx}"))
         # Final TimeDistributed Dense layer to produce output features.
         self.model.add(TimeDistributed(
             Dense(num_channels,
                   activation='linear',
                   kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(l2_reg)),
+                  kernel_regularizer=l2(l2_reg))),
             name="decoder_output"
-        ))
+        )
         self.model.compile(
             optimizer=Adam(learning_rate=self.params.get('learning_rate', 0.001),
                            beta_1=0.9, beta_2=0.999, epsilon=1e-7),
@@ -118,6 +114,7 @@ class Plugin:
         self.model.summary()
 
     def train(self, encoded_data, original_data):
+        # Ensure original_data has three dimensions (time_steps, features)
         if len(original_data.shape) == 2:
             original_data = np.expand_dims(original_data, axis=-1)
         early_stopping = EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True, verbose=1)
@@ -145,7 +142,7 @@ class Plugin:
 
 if __name__ == "__main__":
     plugin = Plugin()
-    # For non-sliding LSTM decoder, we assume output_time_steps equals the original time steps (e.g. 8)
+    # For non-sliding LSTM decoder, we assume output_time_steps equals the original time steps (e.g., 8)
     plugin.configure_size(interface_size=4, output_time_steps=8, num_channels=8, encoder_output_shape=(4,), use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

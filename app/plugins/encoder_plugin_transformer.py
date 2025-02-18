@@ -6,11 +6,11 @@ from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
-# TensorFlow-based positional encoding function with proper dtype casting.
+# Positional encoding function (with TF operations only)
 def positional_encoding(seq_len, d_model):
     d_model_float = tf.cast(d_model, tf.float32)
-    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]  # (seq_len, 1)
-    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]      # (1, d_model)
+    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]  # shape (seq_len, 1)
+    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]      # shape (1, d_model)
     angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model_float))
     angle_rads = pos * angle_rates
     even_mask = tf.cast(tf.equal(tf.math.floormod(tf.range(d_model), 2), 0), tf.float32)
@@ -24,6 +24,13 @@ def add_positional_encoding(x):
     pos_enc = positional_encoding(seq_len, d_model)
     pos_enc = tf.cast(pos_enc, x.dtype)
     return x + pos_enc
+
+# Helper functions for casting
+def cast_to_fp32(x):
+    return tf.cast(x, tf.float32)
+
+def cast_back(x, target_dtype):
+    return tf.cast(x, target_dtype)
 
 class Plugin:
     plugin_params = {
@@ -54,10 +61,10 @@ class Plugin:
         """
         Configures the transformer-based encoder.
         Args:
-            input_shape (int): The length of the input sequence.
-            interface_size (int): The dimension of the latent space.
-            num_channels (int, optional): Number of input channels (default=1).
-            use_sliding_windows (bool, optional): If True, input shape is (input_shape, num_channels); else, (input_shape, 1).
+          input_shape (int): Length of the input sequence.
+          interface_size (int): Dimension of the latent space.
+          num_channels (int, optional): Number of input channels (default=1).
+          use_sliding_windows (bool, optional): If True, input shape is (input_shape, num_channels); else, (input_shape, 1).
         """
         if num_channels is None:
             num_channels = 1
@@ -69,7 +76,6 @@ class Plugin:
         initial_layer_size = self.params.get('initial_layer_size', 128)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
         ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
-        dropout_rate = self.params.get('dropout_rate', 0.0)
         learning_rate = self.params.get('learning_rate', 0.00001)
 
         # Compute transformer block sizes.
@@ -90,7 +96,7 @@ class Plugin:
         # Add positional encoding.
         x = Lambda(add_positional_encoding, name="positional_encoding")(x)
 
-        # Apply transformer blocks.
+        # Apply transformer blocks (no dropout) for each intermediate layer.
         for size in layers[:-1]:
             ff_dim = max(size // ff_dim_divisor, 1)
             if size < 64:
@@ -102,7 +108,7 @@ class Plugin:
             x = Dense(size, name="proj_dense")(x)
             # Cast to float32 before attention.
             orig_dtype = x.dtype
-            x = Lambda(lambda z: tf.cast(z, tf.float32), name=f"cast_to_fp32_{size}")(x)
+            x = Lambda(cast_to_fp32, name=f"cast_to_fp32_{size}")(x)
             x = MultiHeadAttention(head_num=num_heads, name=f"multi_head_{size}")(x)
             x = Lambda(lambda z, dt=orig_dtype: tf.cast(z, dt), name=f"cast_back_{size}")(x)
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)

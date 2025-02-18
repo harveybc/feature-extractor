@@ -24,11 +24,17 @@ def add_positional_encoding(x):
     pos_enc = tf.cast(pos_enc, x.dtype)
     return x + pos_enc
 
+def cast_to_fp32(x):
+    return tf.cast(x, tf.float32)
+
+def cast_back(x, target_dtype):
+    return tf.cast(x, target_dtype)
+
 class Plugin:
     """
     A transformer-based decoder plugin that mirrors the encoder.
     It expands the latent vector, repeats it to form a sequence, adds positional encoding,
-    and applies transformer blocks in reverse order—with multi-head attention wrapped to fix dtype issues.
+    and applies transformer blocks in reverse order—with explicit casting around MultiHeadAttention.
     """
     plugin_params = {
         'intermediate_layers': 1,
@@ -58,13 +64,13 @@ class Plugin:
         """
         Configures the transformer-based decoder.
         Args:
-            interface_size (int): Size of the latent vector (decoder input).
-            output_shape (int): The desired length (number of timesteps) of the reconstructed output.
+          interface_size (int): Size of the latent vector (decoder input).
+          output_shape (int): The desired length (number of timesteps) of the reconstructed output.
         """
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
-        # Compute intermediate sizes similar to the encoder.
+        # Compute intermediate sizes as in the encoder.
         layer_sizes = []
         current_size = self.params.get('initial_layer_size', 128)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
@@ -96,9 +102,8 @@ class Plugin:
             else:
                 num_heads = 8
             x = Dense(size, name="proj_dense_block")(x)
-            # Cast to float32 before attention.
             orig_dtype = x.dtype
-            x = Lambda(lambda z: tf.cast(z, tf.float32), name=f"cast_to_fp32_{size}")(x)
+            x = Lambda(cast_to_fp32, name=f"cast_to_fp32_{size}")(x)
             x = MultiHeadAttention(head_num=num_heads, name=f"multi_head_{size}")(x)
             x = Lambda(lambda z, dt=orig_dtype: tf.cast(z, dt), name=f"cast_back_{size}")(x)
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)

@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import LSTM, Dense, Input, BatchNormalization
+from keras.layers import LSTM, Dense, Input, BatchNormalization, Bidirectional, Dropout
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
@@ -14,9 +14,12 @@ class Plugin:
 
     plugin_params = {
         'intermediate_layers': 3,        # Number of LSTM layers before the final projection
-        'initial_layer_size': 32,        # Base hidden units in first LSTM layer
+        'initial_layer_size': 32,         # Base hidden units in first LSTM layer
         'layer_size_divisor': 2,
-        'l2_reg': 1e-5
+        'l2_reg': 1e-5,
+        'dropout_rate': 0.1,              # Dropout rate for LSTM layers
+        'recurrent_dropout_rate': 0.1,    # Recurrent dropout rate for LSTM layers
+        'use_bidirectional': True         # Use bidirectional LSTM for the first layer if applicable
     }
 
     plugin_debug_vars = ['input_shape', 'encoding_dim']
@@ -45,13 +48,10 @@ class Plugin:
             num_channels (int, optional): Only used when input_shape is provided as an int.
             use_sliding_windows (bool, optional): If True, input_shape is treated as (time_steps, num_channels).
         """
-        # Update handling of integer input_shape:
         if isinstance(input_shape, int):
             if use_sliding_windows:
                 input_shape = (input_shape, num_channels if num_channels else 1)
             else:
-                # For non-sliding window mode, assume that the provided int is the number of features.
-                # We want a single time step and the given number of features.
                 print("[configure_size] WARNING: Received int for input_shape without sliding windows. Assuming shape=(1, input_shape).")
                 input_shape = (1, input_shape)
         self.params['input_shape'] = input_shape
@@ -60,10 +60,13 @@ class Plugin:
         intermediate_layers = self.params.get('intermediate_layers', 3)
         initial_layer_size = self.params.get('initial_layer_size', 32)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
-        l2_reg = self.params.get('l2_reg', 1e-2)
+        l2_reg = self.params.get('l2_reg', 1e-5)
+        dropout_rate = self.params.get('dropout_rate', 0.1)
+        recurrent_dropout_rate = self.params.get('recurrent_dropout_rate', 0.1)
         learning_rate = self.params.get('learning_rate', 0.0001)
+        use_bidirectional = self.params.get('use_bidirectional', True)
 
-        # Compute the layer sizes (as in the ANN plugin)
+        # Compute the layer sizes (similar to the ANN plugin)
         layers = []
         current_size = initial_layer_size
         for i in range(intermediate_layers):
@@ -78,12 +81,25 @@ class Plugin:
 
         # Add LSTM layers with return_sequences=True for all but the final LSTM layer.
         for idx, size in enumerate(layers[:-1], start=1):
-            x = LSTM(units=size, activation='tanh', recurrent_activation='sigmoid',
-                     return_sequences=True, name=f"lstm_layer_{idx}")(x)
+            lstm_layer = LSTM(units=size, activation='tanh', recurrent_activation='sigmoid',
+                              return_sequences=True, dropout=dropout_rate,
+                              recurrent_dropout=recurrent_dropout_rate,
+                              kernel_regularizer=l2(l2_reg),
+                              name=f"lstm_layer_{idx}")
+            # Use bidirectional wrapper for the first layer if input has more than one timestep.
+            if idx == 1 and use_bidirectional and input_shape[0] > 1:
+                x = Bidirectional(lstm_layer, name=f"bidirectional_lstm_layer_{idx}")(x)
+            else:
+                x = lstm_layer(x)
+
         # Final LSTM layer (without return_sequences)
         if len(layers) >= 2:
-            x = LSTM(units=layers[-2], activation='tanh', recurrent_activation='sigmoid',
-                     return_sequences=False, name="lstm_layer_final")(x)
+            final_lstm = LSTM(units=layers[-2], activation='tanh', recurrent_activation='sigmoid',
+                              return_sequences=False, dropout=dropout_rate,
+                              recurrent_dropout=recurrent_dropout_rate,
+                              kernel_regularizer=l2(l2_reg),
+                              name="lstm_layer_final")
+            x = final_lstm(x)
         x = BatchNormalization(name="batch_norm_final")(x)
         encoder_output = Dense(units=layers[-1], activation='linear',
                                kernel_initializer=GlorotUniform(),

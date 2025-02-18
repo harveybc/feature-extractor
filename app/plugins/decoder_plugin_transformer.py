@@ -6,7 +6,6 @@ from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
-# Force global precision to FP32.
 tf.keras.mixed_precision.set_global_policy('float32')
 
 def positional_encoding(seq_len, d_model):
@@ -31,7 +30,7 @@ class Plugin:
     """
     A transformer-based decoder plugin that mirrors the encoder.
     It expands the latent vector, repeats it to form a sequence, adds positional encoding,
-    and applies transformer blocks in reverse order. All operations are performed in FP32.
+    and applies transformer blocks in reverse order.
     """
     plugin_params = {
         'intermediate_layers': 1,
@@ -57,33 +56,38 @@ class Plugin:
     def add_debug_info(self, debug_info):
         debug_info.update(self.get_debug_info())
 
-    def configure_size(self, interface_size, output_shape):
-        """
-        Configures the transformer-based decoder using FP32 exclusively.
-        Args:
-          interface_size (int): Size of the latent vector (decoder input).
-          output_shape (int): The desired length (number of timesteps) of the reconstructed output.
-        """
+    # New interface matching the other plugins:
+    # configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False)
+    def configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False):
         self.params['interface_size'] = interface_size
-        self.params['output_shape'] = output_shape
+        self.params['output_shape'] = output_time_steps
+        if num_channels is None:
+            num_channels = 1
+        self.params['num_channels'] = num_channels
+        self.params['encoder_output_shape'] = encoder_output_shape
+        self.params['use_sliding_windows'] = use_sliding_windows
 
-        layer_sizes = []
-        current_size = self.params.get('initial_layer_size', 128)
+        initial_layer_size = self.params.get('initial_layer_size', 128)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
         int_layers = self.params.get('intermediate_layers', 1)
+        ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
+        learning_rate = self.params.get('learning_rate', 0.00001)
+
+        # Compute intermediate sizes like encoder.
+        layer_sizes = []
+        current_size = initial_layer_size
         for i in range(int_layers):
             layer_sizes.append(current_size)
             current_size = max(current_size // layer_size_divisor, interface_size)
         layer_sizes.append(interface_size)
         layer_sizes.reverse()
         print(f"[configure_size] Transformer decoder layer sizes (mirrored): {layer_sizes}")
-        
+
         inputs = Input(shape=(interface_size,), name="decoder_input", dtype=tf.float32)
-        repeated = RepeatVector(output_shape, name="repeat_vector")(inputs)
-        x = Dense(self.params.get('initial_layer_size', 128), activation='relu', name="proj_dense")(repeated)
+        repeated = RepeatVector(output_time_steps, name="repeat_vector")(inputs)
+        x = Dense(initial_layer_size, activation='relu', name="proj_dense")(repeated)
         x = Lambda(add_positional_encoding, name="positional_encoding")(x)
 
-        ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
         for size in layer_sizes:
             ff_dim = max(size // ff_dim_divisor, 1)
             if size < 64:
@@ -101,16 +105,17 @@ class Plugin:
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_2")(x)
 
         x = Flatten()(x)
-        outputs = Dense(output_shape, activation='linear', kernel_initializer=GlorotUniform(), name="decoder_output")(x)
+        outputs = Dense(output_time_steps, activation='linear', kernel_initializer=GlorotUniform(), name="decoder_output")(x)
+
         self.model = Model(inputs=inputs, outputs=outputs, name="decoder_transformer")
-        adam_optimizer = Adam(learning_rate=self.params.get('learning_rate', 0.00001),
-                              beta_1=0.9, beta_2=0.999, epsilon=1e-7)
+        adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
         self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
         print("[configure_size] Transformer Decoder Model Summary:")
         self.model.summary()
 
 if __name__ == "__main__":
     plugin = Plugin()
-    plugin.configure_size(interface_size=4, output_shape=128)
+    # Example: interface_size=4, output_time_steps=128, with default values for other params.
+    plugin.configure_size(interface_size=4, output_time_steps=128, num_channels=1, encoder_output_shape=None, use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

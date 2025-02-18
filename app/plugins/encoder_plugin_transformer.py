@@ -6,14 +6,13 @@ from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
-# Force global precision to float32.
+# Force global policy to FP32.
 tf.keras.mixed_precision.set_global_policy('float32')
 
 def positional_encoding(seq_len, d_model):
-    # All operations are in FP32.
     d_model_float = tf.cast(d_model, tf.float32)
-    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]  # shape (seq_len, 1)
-    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]      # shape (1, d_model)
+    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]  # (seq_len, 1)
+    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]      # (1, d_model)
     angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model_float))
     angle_rads = pos * angle_rates
     even_mask = tf.cast(tf.equal(tf.math.floormod(tf.range(d_model), 2), 0), tf.float32)
@@ -37,7 +36,7 @@ class Plugin:
         'dropout_rate': 0.0,  # No dropout for maximum accuracy
         'initial_layer_size': 128,
     }
-    plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
+    plugin_debug_vars = ['encoding_dim', 'input_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -53,19 +52,12 @@ class Plugin:
     def add_debug_info(self, debug_info):
         debug_info.update(self.get_debug_info())
 
-    def configure_size(self, input_shape, interface_size, num_channels=None, use_sliding_windows=False):
-        """
-        Configures the transformer-based encoder using FP32 exclusively.
-        Args:
-          input_shape (int): Length of the input sequence.
-          interface_size (int): Dimension of the latent space.
-          num_channels (int, optional): Number of input channels (default=1).
-          use_sliding_windows (bool, optional): If True, input shape is (input_shape, num_channels); else, (input_shape, 1).
-        """
+    # Note: Using the same interface as ANN/CNN/LSTM encoders.
+    def configure_size(self, input_shape, encoding_dim, num_channels=None, use_sliding_windows=False):
         if num_channels is None:
             num_channels = 1
         self.params['input_shape'] = input_shape
-        self.params['encoding_dim'] = interface_size
+        self.params['encoding_dim'] = encoding_dim
         self.params['num_channels'] = num_channels
 
         intermediate_layers = self.params.get('intermediate_layers', 1)
@@ -79,20 +71,17 @@ class Plugin:
         current_size = initial_layer_size
         for i in range(intermediate_layers):
             layers.append(current_size)
-            current_size = max(current_size // layer_size_divisor, interface_size)
-        layers.append(interface_size)
+            current_size = max(current_size // layer_size_divisor, encoding_dim)
+        layers.append(encoding_dim)
         print(f"[configure_size] Transformer Encoder Layer sizes: {layers}")
         print(f"[configure_size] Input sequence length: {input_shape}, Channels: {num_channels}")
 
-        # Define input shape as (input_shape, num_channels) in FP32.
         transformer_input_shape = (input_shape, num_channels)
         inputs = Input(shape=transformer_input_shape, name="encoder_input", dtype=tf.float32)
         x = inputs
 
-        # Add positional encoding.
         x = Lambda(add_positional_encoding, name="positional_encoding")(x)
 
-        # Apply transformer blocks.
         for size in layers[:-1]:
             ff_dim = max(size // ff_dim_divisor, 1)
             if size < 64:
@@ -110,7 +99,7 @@ class Plugin:
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_2")(x)
 
         x = Flatten()(x)
-        outputs = Dense(interface_size, activation='linear', kernel_initializer=GlorotUniform(), name="encoder_output")(x)
+        outputs = Dense(encoding_dim, activation='linear', kernel_initializer=GlorotUniform(), name="encoder_output")(x)
 
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_transformer")
         adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
@@ -120,6 +109,7 @@ class Plugin:
 
 if __name__ == "__main__":
     plugin = Plugin()
-    plugin.configure_size(input_shape=128, interface_size=4, num_channels=1, use_sliding_windows=False)
+    # Example: sequence length 128, encoding dim 4, 1 channel.
+    plugin.configure_size(input_shape=128, encoding_dim=4, num_channels=1, use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

@@ -6,19 +6,16 @@ from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
-# New TensorFlow-based positional encoding function.
+# TensorFlow-based positional encoding function with proper dtype casting.
 def positional_encoding(seq_len, d_model):
-    # Create position indices (seq_len, 1) using tf.range.
-    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]
-    # Create dimension indices (1, d_model)
-    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]
-    # Compute angle rates using tf.pow.
-    angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model))
+    # d_model is expected as a scalar (tf.Tensor of type int32)
+    d_model_float = tf.cast(d_model, tf.float32)
+    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]  # shape (seq_len, 1)
+    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]      # shape (1, d_model)
+    angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model_float))
     angle_rads = pos * angle_rates
-    # Create a mask for even indices.
     even_mask = tf.cast(tf.equal(tf.math.floormod(tf.range(d_model), 2), 0), tf.float32)
     even_mask = tf.reshape(even_mask, [1, d_model])
-    # Apply sin to even indices and cos to odd indices.
     pos_encoding = even_mask * tf.sin(angle_rads) + (1 - even_mask) * tf.cos(angle_rads)
     return pos_encoding
 
@@ -87,7 +84,7 @@ class Plugin:
         # Add fixed positional encoding using the TensorFlow-based function.
         def add_positional_encoding(x):
             seq_len = tf.shape(x)[1]
-            d_model = tf.shape(x)[2]
+            d_model = tf.shape(x)[2]  # d_model is an int32 scalar
             pos_enc = positional_encoding(seq_len, d_model)
             return x + pos_enc
 

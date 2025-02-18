@@ -8,9 +8,10 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 # Use the same TensorFlow-based positional encoding function.
 def positional_encoding(seq_len, d_model):
+    d_model_float = tf.cast(d_model, tf.float32)
     pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]
     i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]
-    angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model))
+    angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model_float))
     angle_rads = pos * angle_rates
     even_mask = tf.cast(tf.equal(tf.math.floormod(tf.range(d_model), 2), 0), tf.float32)
     even_mask = tf.reshape(even_mask, [1, d_model])

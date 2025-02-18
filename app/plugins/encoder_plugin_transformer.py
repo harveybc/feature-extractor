@@ -90,14 +90,14 @@ class Plugin:
                 num_heads = 4
             else:
                 num_heads = 8
-            x = Dense(size, name="proj_dense")(x)
+            x = Dense(size)(x)
             x = MultiHeadAttention(head_num=num_heads, name=f"multi_head_{size}")(x)
-            x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)
+            x = LayerNormalization(epsilon=1e-6)(x)
             # Use tanh activation instead of ReLU in the feed-forward network.
-            ffn_output = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
-            ffn_output = Dense(size, name="ffn_dense_2")(ffn_output)
-            x = Add(name="residual_add")([x, ffn_output])
-            x = LayerNormalization(epsilon=1e-6, name="layer_norm_2")(x)
+            ffn_output = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal()")(x)
+            ffn_output = Dense(size)(ffn_output)
+            x = Add()([x, ffn_output])
+            x = LayerNormalization(epsilon=1e-6)(x)
 
         x = Flatten()(x)
         outputs = Dense(encoding_dim, activation='linear', kernel_initializer=GlorotUniform(), name="encoder_output")(x)

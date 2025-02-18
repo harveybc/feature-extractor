@@ -102,8 +102,7 @@ class Plugin:
             Dense(num_channels,
                   activation='linear',
                   kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(l2_reg))),
-            name="decoder_output"
+                  kernel_regularizer=l2(l2_reg)))
         )
         self.model.compile(
             optimizer=Adam(learning_rate=self.params.get('learning_rate', 0.001),

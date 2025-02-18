@@ -16,7 +16,7 @@ class Plugin:
         'intermediate_layers': 3,        # Number of LSTM layers before the final projection
         'initial_layer_size': 32,        # Base hidden units in first LSTM layer
         'layer_size_divisor': 2,
-        'l2_reg': 1e-2
+        'l2_reg': 1e-5
     }
 
     plugin_debug_vars = ['input_shape', 'encoding_dim']
@@ -100,10 +100,10 @@ class Plugin:
         if self.encoder_model is None:
             raise ValueError("[train] Encoder model is not yet configured. Call configure_size first.")
         print(f"[train] Starting training with data shape={data.shape}, validation shape={validation_data.shape}")
-        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True)
         history = self.encoder_model.fit(data, data, epochs=self.params.get('epochs',600),
                                           batch_size=self.params.get('batch_size',128),
-                                          validation_data=(validation_data, validation_data),
+                                          validation_split=0.2,
                                           callbacks=[early_stopping], verbose=1)
         print("[train] Training completed.")
         return history

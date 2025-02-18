@@ -13,12 +13,12 @@ class Plugin:
     followed by a TimeDistributed Dense layer.
     """
     plugin_params = {
-        'dropout_rate': 0.1,
-        'l2_reg': 1e-2,
+        'dropout_rate': 0.0,
+        'l2_reg': 1e-5,
         'initial_layer_size': 32,
         'intermediate_layers': 3,
         'layer_size_divisor': 2,
-        'learning_rate': 0.001
+        'learning_rate': 0.0001
     }
     plugin_debug_vars = []
 
@@ -73,14 +73,14 @@ class Plugin:
         self.model.add(Dense(
             latent_dense_units,
             input_shape=(interface_size,),
-            activation='relu',
+            activation='tanh',
             kernel_initializer=HeNormal(),
             kernel_regularizer=l2(self.params.get('l2_reg', 1e-2)),
             name="decoder_dense_expand"
         ))
         # Optional dropout after expansion.
         dropout_rate = self.params.get('dropout_rate', 0.1)
-        if dropout_rate > 0:
+        if dropout_rate > 0.0:
             from keras.layers import Dropout
             self.model.add(Dropout(dropout_rate, name="decoder_dropout_after_dense"))
         # Repeat the vector to form a sequence of length equal to output_time_steps.
@@ -99,7 +99,7 @@ class Plugin:
                 kernel_regularizer=l2(self.params.get('l2_reg', 1e-2)),
                 name=f"decoder_lstm_{idx}"
             ))
-            if dropout_rate > 0:
+            if dropout_rate > 0.0:
                 from keras.layers import Dropout
                 self.model.add(Dropout(dropout_rate, name=f"decoder_dropout_after_lstm_{idx}"))
         # Final TimeDistributed Dense layer to produce output features.
@@ -124,11 +124,12 @@ class Plugin:
         if len(original_data.shape) == 2:
             original_data = np.expand_dims(original_data, axis=-1)
         from keras.callbacks import EarlyStopping
-        early_stopping = EarlyStopping(monitor='loss', patience=5, restore_best_weights=True, verbose=1)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True, verbose=1)
         self.model.fit(encoded_data, original_data,
                        epochs=self.params.get('epochs',200),
                        batch_size=self.params.get('batch_size',128),
                        verbose=1,
+                       validation_split=0.2,
                        callbacks=[early_stopping])
         print("[train] Training completed.")
 

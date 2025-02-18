@@ -6,8 +6,11 @@ from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
-# Positional encoding function (with TF operations only)
+# Force global precision to float32.
+tf.keras.mixed_precision.set_global_policy('float32')
+
 def positional_encoding(seq_len, d_model):
+    # All operations are in FP32.
     d_model_float = tf.cast(d_model, tf.float32)
     pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]  # shape (seq_len, 1)
     i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]      # shape (1, d_model)
@@ -22,15 +25,8 @@ def add_positional_encoding(x):
     seq_len = tf.shape(x)[1]
     d_model = tf.shape(x)[2]
     pos_enc = positional_encoding(seq_len, d_model)
-    pos_enc = tf.cast(pos_enc, x.dtype)
+    pos_enc = tf.cast(pos_enc, tf.float32)
     return x + pos_enc
-
-# Helper functions for casting
-def cast_to_fp32(x):
-    return tf.cast(x, tf.float32)
-
-def cast_back(x, target_dtype):
-    return tf.cast(x, target_dtype)
 
 class Plugin:
     plugin_params = {
@@ -59,7 +55,7 @@ class Plugin:
 
     def configure_size(self, input_shape, interface_size, num_channels=None, use_sliding_windows=False):
         """
-        Configures the transformer-based encoder.
+        Configures the transformer-based encoder using FP32 exclusively.
         Args:
           input_shape (int): Length of the input sequence.
           interface_size (int): Dimension of the latent space.
@@ -88,15 +84,15 @@ class Plugin:
         print(f"[configure_size] Transformer Encoder Layer sizes: {layers}")
         print(f"[configure_size] Input sequence length: {input_shape}, Channels: {num_channels}")
 
-        # Define input shape as (input_shape, num_channels)
+        # Define input shape as (input_shape, num_channels) in FP32.
         transformer_input_shape = (input_shape, num_channels)
-        inputs = Input(shape=transformer_input_shape, name="encoder_input")
+        inputs = Input(shape=transformer_input_shape, name="encoder_input", dtype=tf.float32)
         x = inputs
 
         # Add positional encoding.
         x = Lambda(add_positional_encoding, name="positional_encoding")(x)
 
-        # Apply transformer blocks (no dropout) for each intermediate layer.
+        # Apply transformer blocks.
         for size in layers[:-1]:
             ff_dim = max(size // ff_dim_divisor, 1)
             if size < 64:
@@ -106,11 +102,7 @@ class Plugin:
             else:
                 num_heads = 8
             x = Dense(size, name="proj_dense")(x)
-            # Cast to float32 before attention.
-            orig_dtype = x.dtype
-            x = Lambda(cast_to_fp32, name=f"cast_to_fp32_{size}")(x)
             x = MultiHeadAttention(head_num=num_heads, name=f"multi_head_{size}")(x)
-            x = Lambda(lambda z, dt=orig_dtype: tf.cast(z, dt), name=f"cast_back_{size}")(x)
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)
             ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
             ffn_output = Dense(size, name="ffn_dense_2")(ffn_output)

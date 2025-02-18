@@ -6,6 +6,9 @@ from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
+# Force global precision to FP32.
+tf.keras.mixed_precision.set_global_policy('float32')
+
 def positional_encoding(seq_len, d_model):
     d_model_float = tf.cast(d_model, tf.float32)
     pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]
@@ -21,20 +24,14 @@ def add_positional_encoding(x):
     seq_len = tf.shape(x)[1]
     d_model = tf.shape(x)[2]
     pos_enc = positional_encoding(seq_len, d_model)
-    pos_enc = tf.cast(pos_enc, x.dtype)
+    pos_enc = tf.cast(pos_enc, tf.float32)
     return x + pos_enc
-
-def cast_to_fp32(x):
-    return tf.cast(x, tf.float32)
-
-def cast_back(x, target_dtype):
-    return tf.cast(x, target_dtype)
 
 class Plugin:
     """
     A transformer-based decoder plugin that mirrors the encoder.
     It expands the latent vector, repeats it to form a sequence, adds positional encoding,
-    and applies transformer blocks in reverse order—with explicit casting around MultiHeadAttention.
+    and applies transformer blocks in reverse order. All operations are performed in FP32.
     """
     plugin_params = {
         'intermediate_layers': 1,
@@ -62,7 +59,7 @@ class Plugin:
 
     def configure_size(self, interface_size, output_shape):
         """
-        Configures the transformer-based decoder.
+        Configures the transformer-based decoder using FP32 exclusively.
         Args:
           interface_size (int): Size of the latent vector (decoder input).
           output_shape (int): The desired length (number of timesteps) of the reconstructed output.
@@ -70,7 +67,6 @@ class Plugin:
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
-        # Compute intermediate sizes as in the encoder.
         layer_sizes = []
         current_size = self.params.get('initial_layer_size', 128)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
@@ -82,17 +78,12 @@ class Plugin:
         layer_sizes.reverse()
         print(f"[configure_size] Transformer decoder layer sizes (mirrored): {layer_sizes}")
         
-        # Decoder input: latent vector of shape (interface_size,)
-        inputs = Input(shape=(interface_size,), name="decoder_input")
-        # Expand to a sequence using RepeatVector.
+        inputs = Input(shape=(interface_size,), name="decoder_input", dtype=tf.float32)
         repeated = RepeatVector(output_shape, name="repeat_vector")(inputs)
-        # Projection before transformer blocks.
         x = Dense(self.params.get('initial_layer_size', 128), activation='relu', name="proj_dense")(repeated)
-        # Add positional encoding.
         x = Lambda(add_positional_encoding, name="positional_encoding")(x)
-        
+
         ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
-        # Apply transformer blocks.
         for size in layer_sizes:
             ff_dim = max(size // ff_dim_divisor, 1)
             if size < 64:
@@ -102,16 +93,13 @@ class Plugin:
             else:
                 num_heads = 8
             x = Dense(size, name="proj_dense_block")(x)
-            orig_dtype = x.dtype
-            x = Lambda(cast_to_fp32, name=f"cast_to_fp32_{size}")(x)
             x = MultiHeadAttention(head_num=num_heads, name=f"multi_head_{size}")(x)
-            x = Lambda(lambda z, dt=orig_dtype: tf.cast(z, dt), name=f"cast_back_{size}")(x)
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)
             ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
             ffn_output = Dense(size, name="ffn_dense_2")(ffn_output)
             x = Add(name="residual_add")([x, ffn_output])
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_2")(x)
-        
+
         x = Flatten()(x)
         outputs = Dense(output_shape, activation='linear', kernel_initializer=GlorotUniform(), name="decoder_output")(x)
         self.model = Model(inputs=inputs, outputs=outputs, name="decoder_transformer")
@@ -120,26 +108,6 @@ class Plugin:
         self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
         print("[configure_size] Transformer Decoder Model Summary:")
         self.model.summary()
-
-    def train(self, encoded_data, original_data):
-        print(f"Training transformer decoder with encoded data shape: {encoded_data.shape} and original data shape: {original_data.shape}")
-        self.model.fit(encoded_data, original_data, epochs=self.params.get('epochs',200),
-                       batch_size=self.params.get('batch_size',128), verbose=1)
-        print("Training completed.")
-
-    def decode(self, encoded_data):
-        print(f"Decoding data with shape: {encoded_data.shape}")
-        decoded_data = self.model.predict(encoded_data)
-        print(f"Decoded data shape: {decoded_data.shape}")
-        return decoded_data
-
-    def save(self, file_path):
-        save_model(self.model, file_path)
-        print(f"Decoder model saved to {file_path}")
-
-    def load(self, file_path):
-        self.model = load_model(file_path)
-        print(f"Decoder model loaded from {file_path}")
 
 if __name__ == "__main__":
     plugin = Plugin()

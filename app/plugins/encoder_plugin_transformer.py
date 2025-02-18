@@ -6,18 +6,20 @@ from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
-# Helper function to compute fixed sinusoidal positional encoding.
+# New TensorFlow-based positional encoding function.
 def positional_encoding(seq_len, d_model):
-    pos = np.arange(seq_len)[:, np.newaxis]
-    i = np.arange(d_model)[np.newaxis, :]
-    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+    # Create position indices (seq_len, 1) using tf.range.
+    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]
+    # Create dimension indices (1, d_model)
+    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]
+    # Compute angle rates using tf.pow.
+    angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model))
     angle_rads = pos * angle_rates
-    sines = np.sin(angle_rads[:, 0::2])
-    cosines = np.cos(angle_rads[:, 1::2])
-    pos_encoding = np.zeros(angle_rads.shape)
-    pos_encoding[:, 0::2] = sines
-    pos_encoding[:, 1::2] = cosines
-    pos_encoding = tf.cast(pos_encoding, dtype=tf.float32)
+    # Create a mask for even indices.
+    even_mask = tf.cast(tf.equal(tf.math.floormod(tf.range(d_model), 2), 0), tf.float32)
+    even_mask = tf.reshape(even_mask, [1, d_model])
+    # Apply sin to even indices and cos to odd indices.
+    pos_encoding = even_mask * tf.sin(angle_rads) + (1 - even_mask) * tf.cos(angle_rads)
     return pos_encoding
 
 class Plugin:
@@ -64,7 +66,7 @@ class Plugin:
         initial_layer_size = self.params.get('initial_layer_size', 128)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
         ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
-        dropout_rate = self.params.get('dropout_rate', 0.0)  # Using 0 dropout
+        dropout_rate = self.params.get('dropout_rate', 0.0)
         learning_rate = self.params.get('learning_rate', 0.00001)
 
         # Compute transformer block sizes.
@@ -77,12 +79,12 @@ class Plugin:
         print(f"[configure_size] Transformer Encoder Layer sizes: {layers}")
         print(f"[configure_size] Input sequence length: {input_shape}, Channels: {num_channels}")
 
-        # Define the input shape as (input_shape, num_channels)
+        # Define input shape as (input_shape, num_channels)
         transformer_input_shape = (input_shape, num_channels)
         inputs = Input(shape=transformer_input_shape, name="encoder_input")
         x = inputs
 
-        # Add fixed positional encoding.
+        # Add fixed positional encoding using the TensorFlow-based function.
         def add_positional_encoding(x):
             seq_len = tf.shape(x)[1]
             d_model = tf.shape(x)[2]
@@ -91,7 +93,7 @@ class Plugin:
 
         x = Lambda(add_positional_encoding, name="positional_encoding")(x)
 
-        # Apply transformer blocks (without dropout) for each intermediate layer.
+        # Apply transformer blocks (with dropout removed) for each intermediate layer.
         for size in layers[:-1]:
             ff_dim = max(size // ff_dim_divisor, 1)
             if size < 64:
@@ -103,10 +105,8 @@ class Plugin:
             x = Dense(size, name="proj_dense")(x)
             x = MultiHeadAttention(head_num=num_heads, name="multi_head")(x)
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)
-            # Dropout layers removed.
             ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
             ffn_output = Dense(size, name="ffn_dense_2")(ffn_output)
-            # Dropout layers removed.
             x = Add(name="residual_add")([x, ffn_output])
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_2")(x)
 

@@ -6,17 +6,15 @@ from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
+# Use the same TensorFlow-based positional encoding function.
 def positional_encoding(seq_len, d_model):
-    pos = np.arange(seq_len)[:, np.newaxis]
-    i = np.arange(d_model)[np.newaxis, :]
-    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]
+    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]
+    angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model))
     angle_rads = pos * angle_rates
-    sines = np.sin(angle_rads[:, 0::2])
-    cosines = np.cos(angle_rads[:, 1::2])
-    pos_encoding = np.zeros(angle_rads.shape)
-    pos_encoding[:, 0::2] = sines
-    pos_encoding[:, 1::2] = cosines
-    pos_encoding = tf.cast(pos_encoding, dtype=tf.float32)
+    even_mask = tf.cast(tf.equal(tf.math.floormod(tf.range(d_model), 2), 0), tf.float32)
+    even_mask = tf.reshape(even_mask, [1, d_model])
+    pos_encoding = even_mask * tf.sin(angle_rads) + (1 - even_mask) * tf.cos(angle_rads)
     return pos_encoding
 
 def add_positional_encoding(x):
@@ -81,12 +79,11 @@ class Plugin:
         inputs = Input(shape=(interface_size,), name="decoder_input")
         # Expand to a sequence using RepeatVector to match the original sequence length.
         repeated = RepeatVector(output_shape, name="repeat_vector")(inputs)
-        # Optional projection before transformer blocks.
+        # Projection before transformer blocks.
         x = Dense(self.params.get('initial_layer_size', 128), activation='relu', name="proj_dense")(repeated)
         # Add fixed positional encoding.
         x = Lambda(add_positional_encoding, name="positional_encoding")(x)
         
-        dropout_rate = self.params.get('dropout_rate', 0.0)
         ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
         # Apply transformer blocks (with dropout removed) for each layer size.
         for size in layer_sizes:
@@ -100,24 +97,24 @@ class Plugin:
             x = Dense(size, name="proj_dense_block")(x)
             x = MultiHeadAttention(head_num=num_heads, name="multi_head")(x)
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)
-            # Dropout removed.
             ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
             ffn_output = Dense(size, name="ffn_dense_2")(ffn_output)
-            # Dropout removed.
             x = Add(name="residual_add")([x, ffn_output])
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_2")(x)
         
         x = Flatten()(x)
         outputs = Dense(output_shape, activation='linear', kernel_initializer=GlorotUniform(), name="decoder_output")(x)
         self.model = Model(inputs=inputs, outputs=outputs, name="decoder_transformer")
-        adam_optimizer = Adam(learning_rate=self.params.get('learning_rate', 0.00001), beta_1=0.9, beta_2=0.999, epsilon=1e-7)
+        adam_optimizer = Adam(learning_rate=self.params.get('learning_rate', 0.00001),
+                              beta_1=0.9, beta_2=0.999, epsilon=1e-7)
         self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
         print("[configure_size] Transformer Decoder Model Summary:")
         self.model.summary()
 
     def train(self, encoded_data, original_data):
         print(f"Training transformer decoder with encoded data shape: {encoded_data.shape} and original data shape: {original_data.shape}")
-        self.model.fit(encoded_data, original_data, epochs=self.params.get('epochs',200), batch_size=self.params.get('batch_size',128), verbose=1)
+        self.model.fit(encoded_data, original_data, epochs=self.params.get('epochs',200),
+                       batch_size=self.params.get('batch_size',128), verbose=1)
         print("Training completed.")
 
     def decode(self, encoded_data):

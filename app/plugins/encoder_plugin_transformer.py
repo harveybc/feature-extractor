@@ -1,19 +1,17 @@
 import numpy as np
 import tensorflow as tf
 from keras.models import Model, load_model, save_model
-from keras.layers import Input, Dense, Flatten, Reshape, GlobalAveragePooling1D, LayerNormalization, Dropout, Add, Activation, Lambda
+from keras.layers import Input, Dense, Flatten, LayerNormalization, Add, Lambda
 from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
 # Helper function to compute fixed sinusoidal positional encoding.
 def positional_encoding(seq_len, d_model):
-    # Create a matrix of shape (seq_len, d_model)
     pos = np.arange(seq_len)[:, np.newaxis]
     i = np.arange(d_model)[np.newaxis, :]
     angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
     angle_rads = pos * angle_rates
-    # Apply sin to even indices; cos to odd indices.
     sines = np.sin(angle_rads[:, 0::2])
     cosines = np.cos(angle_rads[:, 1::2])
     pos_encoding = np.zeros(angle_rads.shape)
@@ -28,7 +26,7 @@ class Plugin:
         'layer_size_divisor': 2,
         'ff_dim_divisor': 2,
         'learning_rate': 0.00001,
-        'dropout_rate': 0.1,
+        'dropout_rate': 0.0,  # Dropout removed for maximum accuracy
         'initial_layer_size': 128,
     }
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
@@ -62,15 +60,14 @@ class Plugin:
         self.params['encoding_dim'] = interface_size
         self.params['num_channels'] = num_channels
 
-        # Compute intermediate layer sizes similar to the ANN plugin:
         intermediate_layers = self.params.get('intermediate_layers', 1)
         initial_layer_size = self.params.get('initial_layer_size', 128)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
         ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
-        dropout_rate = self.params.get('dropout_rate', 0.1)
+        dropout_rate = self.params.get('dropout_rate', 0.0)  # Using 0 dropout
         learning_rate = self.params.get('learning_rate', 0.00001)
 
-        # Calculate a list of sizes for transformer blocks (similar to encoder layers)
+        # Compute transformer block sizes.
         layers = []
         current_size = initial_layer_size
         for i in range(intermediate_layers):
@@ -80,26 +77,23 @@ class Plugin:
         print(f"[configure_size] Transformer Encoder Layer sizes: {layers}")
         print(f"[configure_size] Input sequence length: {input_shape}, Channels: {num_channels}")
 
-        # Define input shape as (input_shape, num_channels)
+        # Define the input shape as (input_shape, num_channels)
         transformer_input_shape = (input_shape, num_channels)
         inputs = Input(shape=transformer_input_shape, name="encoder_input")
         x = inputs
 
-        # --- Add positional encoding --- 
-        # Define a Lambda layer that adds fixed positional encoding to x.
+        # Add fixed positional encoding.
         def add_positional_encoding(x):
             seq_len = tf.shape(x)[1]
             d_model = tf.shape(x)[2]
             pos_enc = positional_encoding(seq_len, d_model)
-            # Expand pos_enc to batch size: (1, seq_len, d_model) then add.
             return x + pos_enc
 
         x = Lambda(add_positional_encoding, name="positional_encoding")(x)
 
-        # Apply transformer blocks for each intermediate layer size (excluding final interface)
+        # Apply transformer blocks (without dropout) for each intermediate layer.
         for size in layers[:-1]:
             ff_dim = max(size // ff_dim_divisor, 1)
-            # Heuristic for number of heads:
             if size < 64:
                 num_heads = 2
             elif size < 128:
@@ -109,15 +103,15 @@ class Plugin:
             x = Dense(size, name="proj_dense")(x)
             x = MultiHeadAttention(head_num=num_heads, name="multi_head")(x)
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)
-            x = Dropout(dropout_rate, name="dropout_1")(x)
+            # Dropout layers removed.
             ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
             ffn_output = Dense(size, name="ffn_dense_2")(ffn_output)
-            ffn_output = Dropout(dropout_rate, name="dropout_2")(ffn_output)
+            # Dropout layers removed.
             x = Add(name="residual_add")([x, ffn_output])
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_2")(x)
 
         x = Flatten()(x)
-        outputs = Dense(interface_size, activation='tanh', kernel_initializer=GlorotUniform(), name="encoder_output")(x)
+        outputs = Dense(interface_size, activation='linear', kernel_initializer=GlorotUniform(), name="encoder_output")(x)
 
         self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_transformer")
         adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)

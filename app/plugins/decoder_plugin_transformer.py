@@ -95,7 +95,7 @@ class Plugin:
                 num_heads = 4
             else:
                 num_heads = 8
-            x = Dense(size, name="proj_dense_block")(x)
+            x = Dense(size)(x)
             x = MultiHeadAttention(head_num=num_heads, name=f"multi_head_{size}")(x)
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)
             # Use tanh in the feed-forward network.

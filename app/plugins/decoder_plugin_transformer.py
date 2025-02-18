@@ -28,7 +28,7 @@ class Plugin:
     """
     A transformer-based decoder plugin that mirrors the encoder.
     It expands the latent vector, repeats it to form a sequence, adds positional encoding,
-    and applies transformer blocks in reverse order—all with dropout removed for maximum accuracy.
+    and applies transformer blocks in reverse order—with multi-head attention wrapped to fix dtype issues.
     """
     plugin_params = {
         'intermediate_layers': 1,
@@ -78,15 +78,15 @@ class Plugin:
         
         # Decoder input: latent vector of shape (interface_size,)
         inputs = Input(shape=(interface_size,), name="decoder_input")
-        # Expand to a sequence using RepeatVector to match the original sequence length.
+        # Expand to a sequence using RepeatVector.
         repeated = RepeatVector(output_shape, name="repeat_vector")(inputs)
         # Projection before transformer blocks.
         x = Dense(self.params.get('initial_layer_size', 128), activation='relu', name="proj_dense")(repeated)
-        # Add fixed positional encoding.
+        # Add positional encoding.
         x = Lambda(add_positional_encoding, name="positional_encoding")(x)
         
         ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
-        # Apply transformer blocks (with dropout removed) for each layer size.
+        # Apply transformer blocks.
         for size in layer_sizes:
             ff_dim = max(size // ff_dim_divisor, 1)
             if size < 64:
@@ -96,7 +96,11 @@ class Plugin:
             else:
                 num_heads = 8
             x = Dense(size, name="proj_dense_block")(x)
-            x = MultiHeadAttention(head_num=num_heads, name="multi_head")(x)
+            # Cast to float32 before attention.
+            orig_dtype = x.dtype
+            x = Lambda(lambda z: tf.cast(z, tf.float32), name=f"cast_to_fp32_{size}")(x)
+            x = MultiHeadAttention(head_num=num_heads, name=f"multi_head_{size}")(x)
+            x = Lambda(lambda z, dt=orig_dtype: tf.cast(z, dt), name=f"cast_back_{size}")(x)
             x = LayerNormalization(epsilon=1e-6, name="layer_norm_1")(x)
             ffn_output = Dense(ff_dim, activation='relu', kernel_initializer=HeNormal(), name="ffn_dense_1")(x)
             ffn_output = Dense(size, name="ffn_dense_2")(ffn_output)

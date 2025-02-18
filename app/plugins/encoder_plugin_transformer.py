@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from keras.models import Model, load_model, save_model
+from keras.models import Model
 from keras.layers import Input, Dense, Flatten, LayerNormalization, Add, Lambda
 from keras.optimizers import Adam
 from keras_multi_head import MultiHeadAttention
@@ -11,8 +11,8 @@ tf.keras.mixed_precision.set_global_policy('float32')
 
 def positional_encoding(seq_len, d_model):
     d_model_float = tf.cast(d_model, tf.float32)
-    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]  # shape (seq_len, 1)
-    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]      # shape (1, d_model)
+    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]
+    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]
     angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model_float))
     angle_rads = pos * angle_rates
     even_mask = tf.cast(tf.equal(tf.math.floormod(tf.range(d_model), 2), 0), tf.float32)
@@ -32,8 +32,8 @@ class Plugin:
         'intermediate_layers': 1,
         'layer_size_divisor': 2,
         'ff_dim_divisor': 2,
-        'learning_rate': 0.00001,
-        'dropout_rate': 0.0,  # No dropout for maximum accuracy
+        'learning_rate': 1e-5,
+        'dropout_rate': 0.0,
         'initial_layer_size': 128,
     }
     plugin_debug_vars = ['encoding_dim', 'input_shape', 'intermediate_layers']
@@ -56,7 +56,9 @@ class Plugin:
     def configure_size(self, input_shape, encoding_dim, num_channels=None, use_sliding_windows=False):
         if num_channels is None:
             num_channels = 1
-        self.params['input_shape'] = input_shape
+        # If not using sliding windows, assume each sample is a single timestep.
+        time_steps = input_shape if use_sliding_windows else 1
+        self.params['input_shape'] = time_steps
         self.params['encoding_dim'] = encoding_dim
         self.params['num_channels'] = num_channels
 
@@ -64,7 +66,7 @@ class Plugin:
         initial_layer_size = self.params.get('initial_layer_size', 128)
         layer_size_divisor = self.params.get('layer_size_divisor', 2)
         ff_dim_divisor = self.params.get('ff_dim_divisor', 2)
-        learning_rate = self.params.get('learning_rate', 0.00001)
+        learning_rate = self.params.get('learning_rate', 1e-5)
 
         # Compute transformer block sizes.
         layers = []
@@ -74,13 +76,13 @@ class Plugin:
             current_size = max(current_size // layer_size_divisor, encoding_dim)
         layers.append(encoding_dim)
         print(f"[configure_size] Transformer Encoder Layer sizes: {layers}")
-        print(f"[configure_size] Input sequence length: {input_shape}, Channels: {num_channels}")
+        print(f"[configure_size] Input sequence length: {time_steps}, Channels: {num_channels}")
 
-        transformer_input_shape = (input_shape, num_channels)
-        inputs = Input(shape=transformer_input_shape, name="encoder_input", dtype=tf.float32)
+        transformer_input_shape = (time_steps, num_channels)
+        inputs = Input(shape=transformer_input_shape, dtype=tf.float32)
         x = inputs
 
-        x = Lambda(add_positional_encoding, name="positional_encoding")(x)
+        x = Lambda(add_positional_encoding)(x)
 
         for size in layers[:-1]:
             ff_dim = max(size // ff_dim_divisor, 1)
@@ -91,25 +93,26 @@ class Plugin:
             else:
                 num_heads = 8
             x = Dense(size)(x)
-            x = MultiHeadAttention(head_num=num_heads, name=f"multi_head_{size}")(x)
+            x = MultiHeadAttention(head_num=num_heads)(x)
             x = LayerNormalization(epsilon=1e-6)(x)
-            # Use tanh activation instead of ReLU in the feed-forward network.
+            # Use tanh activation in the feed-forward network.
             ffn_output = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal())(x)
             ffn_output = Dense(size)(ffn_output)
             x = Add()([x, ffn_output])
             x = LayerNormalization(epsilon=1e-6)(x)
 
         x = Flatten()(x)
-        outputs = Dense(encoding_dim, activation='linear', kernel_initializer=GlorotUniform(), name="encoder_output")(x)
+        outputs = Dense(encoding_dim, activation='linear', kernel_initializer=GlorotUniform())(x)
 
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_transformer")
+        self.encoder_model = Model(inputs=inputs, outputs=outputs)
         adam_optimizer = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
         self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
         print("[configure_size] Encoder Model Summary:")
         self.encoder_model.summary()
 
 if __name__ == "__main__":
+    # Example: if sliding windows are not used, input_shape becomes 1.
     plugin = Plugin()
-    plugin.configure_size(input_shape=128, encoding_dim=4, num_channels=1, use_sliding_windows=False)
+    plugin.configure_size(input_shape=128, encoding_dim=4, num_channels=8, use_sliding_windows=False)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

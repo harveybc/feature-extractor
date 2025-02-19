@@ -59,18 +59,53 @@ class AutoencoderManager:
                 clipvalue=0.5  # Gradient clipping
             )
 
-            # Define custom R² score metric
-            def r2_score(y_true, y_pred):
-                """Calculate R² score."""
-                ss_res = tf.reduce_sum(tf.square(y_true - y_pred))  # Residual sum of squares
-                ss_tot = tf.reduce_sum(tf.square(y_true - tf.reduce_mean(y_true)))  # Total sum of squares
-                return 1 - (ss_res / (ss_tot + tf.keras.backend.epsilon()))  # Avoid division by zero
+            # --- Begin Updated Loss Definition using MMD ---
+            # Gaussian RBF kernel function for two sets of samples.
+            def gaussian_kernel_matrix(x, y, sigma):
+                # x: (batch_size, features), y: (batch_size, features)
+                x_size = tf.shape(x)[0]
+                y_size = tf.shape(y)[0]
+                dim = tf.shape(x)[1]
+                # Expand dimensions for pairwise distance computation.
+                x_expanded = tf.reshape(x, [x_size, 1, dim])
+                y_expanded = tf.reshape(y, [1, y_size, dim])
+                # Compute squared L2 distance between each pair.
+                squared_diff = tf.reduce_sum(tf.square(x_expanded - y_expanded), axis=2)
+                return tf.exp(-squared_diff / (2.0 * sigma**2))
 
-            # Compile autoencoder with the custom loss function
+            # Compute the Maximum Mean Discrepancy (MMD) between two batches.
+            def mmd_loss_term(y_true, y_pred, sigma):
+                K_xx = gaussian_kernel_matrix(y_true, y_true, sigma)
+                K_yy = gaussian_kernel_matrix(y_pred, y_pred, sigma)
+                K_xy = gaussian_kernel_matrix(y_true, y_pred, sigma)
+                m = tf.cast(tf.shape(y_true)[0], tf.float32)
+                n = tf.cast(tf.shape(y_pred)[0], tf.float32)
+                # Compute the unbiased MMD statistic.
+                mmd = tf.reduce_sum(K_xx) / (m * m) + tf.reduce_sum(K_yy) / (n * n) - 2 * tf.reduce_sum(K_xy) / (m * n)
+                return mmd
+
+            # Combined loss: reconstruction (Huber) loss + weighted MMD loss.
+            def combined_loss(y_true, y_pred):
+                # Standard reconstruction loss using Huber loss.
+                huber_loss = tf.keras.losses.Huber(delta=1.0)(y_true, y_pred)
+                # Retrieve kernel width and statistical loss weight from config.
+                sigma = config.get('mmd_sigma', 1.0)  # Adjust kernel width as needed.
+                stat_weight = config.get('statistical_loss_weight', 1.0)
+                # Compute the MMD loss term.
+                mmd = mmd_loss_term(y_true, y_pred, sigma)
+                return huber_loss + stat_weight * mmd
+
+            # Optional: Define a metric to monitor the MMD term during training.
+            def mmd_metric(y_true, y_pred):
+                sigma = config.get('mmd_sigma', 1.0)
+                return mmd_loss_term(y_true, y_pred, sigma)
+            # --- End Updated Loss Definition using MMD ---
+
+            # Compile autoencoder with the combined loss and an additional metric for statistical fidelity.
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
-                loss=Huber(delta=1.0),
-                metrics=['mae'],
+                loss=combined_loss,
+                metrics=['mae', mmd_metric],
                 run_eagerly=True
             )
             print("[build_autoencoder] Autoencoder model built and compiled successfully")

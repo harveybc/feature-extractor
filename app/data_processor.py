@@ -220,12 +220,14 @@ def load_and_evaluate_encoder(config):
         from tensorflow.keras.activations import gelu
         from tensorflow.keras.layers import MultiHeadAttention as MHA
 
-        # Patched MultiHeadAttention to insert a default query_shape if missing.
+        # Patched MultiHeadAttention to insert defaults for missing keys.
         class PatchedMultiHeadAttention(MHA):
             @classmethod
             def from_config(cls, config):
                 if "query_shape" not in config:
                     config["query_shape"] = None
+                if "key_shape" not in config:
+                    config["key_shape"] = None
                 return super().from_config(config)
 
         custom_objects = {
@@ -252,7 +254,7 @@ def load_and_evaluate_encoder(config):
         processed_data = create_sliding_windows(data, window_size)
         print(f"Processed data shape for sliding windows: {processed_data.shape}")
     else:
-        # For sequential plugins (LSTM/Transformer), expand dims at axis 1 (to match training).
+        # For sequential plugins (LSTM/Transformer), expand dims at axis 1 to match training.
         encoder_plugin_name = config.get('encoder_plugin', '').lower()
         if encoder_plugin_name in ['lstm', 'transformer']:
             print("[load_and_evaluate_encoder] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at axis 1.")

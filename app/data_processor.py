@@ -220,7 +220,7 @@ def load_and_evaluate_encoder(config):
         from tensorflow.keras.activations import gelu
         from tensorflow.keras.layers import MultiHeadAttention as MHA
 
-        # Patched MultiHeadAttention to insert defaults for missing keys.
+        # Patched MultiHeadAttention to supply defaults for missing configuration keys.
         class PatchedMultiHeadAttention(MHA):
             @classmethod
             def from_config(cls, config):
@@ -228,6 +228,8 @@ def load_and_evaluate_encoder(config):
                     config["query_shape"] = None
                 if "key_shape" not in config:
                     config["key_shape"] = None
+                if "value_shape" not in config:
+                    config["value_shape"] = None
                 return super().from_config(config)
 
         custom_objects = {
@@ -285,7 +287,6 @@ def load_and_evaluate_encoder(config):
         encoded_df = pd.DataFrame(encoded_data_reshaped)
         encoded_df.to_csv(config['evaluate_encoder'], index=False)
         print(f"Encoded data saved to {config['evaluate_encoder']}")
-
 
 
 

@@ -84,56 +84,74 @@ class AutoencoderManager:
 
 
 
-    def train_autoencoder(self, data, epochs=100, batch_size=128, config=None):
+    def train_autoencoder(self, input_data, target_data=None, epochs=100, batch_size=128, config=None):
         try:
-            print(f"[train_autoencoder] Received data with shape: {data.shape}")
-
+            if target_data is None:
+                target_data = input_data
+            print(f"[train_autoencoder] Received input data with shape: {input_data.shape}")
             # Determine if sliding windows are used
             use_sliding_windows = config.get('use_sliding_windows', True)
 
-            # Check and reshape data for compatibility with Conv1D layers
-            if not use_sliding_windows and len(data.shape) == 2:  # Row-by-row data (2D)
-                print("[train_autoencoder] Reshaping data to add channel dimension for Conv1D compatibility...")
-                data = np.expand_dims(data, axis=-1)  # Add channel dimension (num_samples, num_features, 1)
-                print(f"[train_autoencoder] Reshaped data shape: {data.shape}")
+            # For non-sliding windows, reshape if needed.
+            if not use_sliding_windows and len(input_data.shape) == 2:
+                print("[train_autoencoder] Reshaping input data to add channel dimension for Conv1D compatibility...")
+                input_data = np.expand_dims(input_data, axis=-1)
+                target_data = np.expand_dims(target_data, axis=-1)
+                print(f"[train_autoencoder] Reshaped input data shape: {input_data.shape}")
 
-            num_channels = data.shape[-1]
-            input_shape = data.shape[1]
+            num_channels = input_data.shape[-1]
+            input_shape = input_data.shape[1]
             interface_size = self.encoder_plugin.params.get('interface_size', 4)
 
-            # Build autoencoder with the correct num_channels
+            # Build autoencoder if not already built.
             if not self.autoencoder_model:
                 self.build_autoencoder(input_shape, interface_size, config, num_channels)
 
-            # Validate data for NaN values before training
-            if np.isnan(data).any():
+            # Validate data for NaN values.
+            if np.isnan(input_data).any() or np.isnan(target_data).any():
                 raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
 
-            # Calculate entropy and useful information using Shannon-Hartley theorem
-            self.calculate_dataset_information(data, config)
+            # Calculate dataset information.
+            self.calculate_dataset_information(input_data, config)
 
-            print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
+            print(f"[train_autoencoder] Training autoencoder with input data shape: {input_data.shape} and target data shape: {target_data.shape}")
 
-            # Implement Early Stopping
+            # Implement Early Stopping.
             early_stopping = EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True)
 
-            # Start training with early stopping
+            # Start training with early stopping.
             history = self.autoencoder_model.fit(
-                data,
-                data,
+                input_data,
+                target_data,
                 epochs=epochs,
                 batch_size=batch_size,
                 verbose=1,
                 callbacks=[early_stopping],
-                validation_split = 0.2
+                validation_split=0.2
             )
 
-            # Log training loss
             print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
             print("[train_autoencoder] Training completed.")
         except Exception as e:
             print(f"[train_autoencoder] Exception occurred during training: {e}")
             raise
+
+
+    def evaluate(self, input_data, target_data=None, dataset_name, config):
+        print(f"[evaluate] Evaluating {dataset_name} data with shape: {input_data.shape}")
+        if target_data is None:
+            target_data = input_data
+
+        # Reshape data for Conv1D compatibility if sliding windows are not used.
+        if not config.get('use_sliding_windows', True) and len(input_data.shape) == 2:
+            input_data = np.expand_dims(input_data, axis=-1)
+            print(f"[evaluate] Reshaped {dataset_name} data for Conv1D compatibility: {input_data.shape}")
+
+        results = self.autoencoder_model.evaluate(input_data, target_data, verbose=1)
+        mse, mae = results[0], results[1]
+        print(f"[evaluate] {dataset_name} Evaluation results - MSE: {mse}, MAE: {mae}")
+        return mse, mae
+
 
 
 

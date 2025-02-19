@@ -224,12 +224,13 @@ def load_and_evaluate_encoder(config):
         class PatchedMultiHeadAttention(MHA):
             @classmethod
             def from_config(cls, config):
-                if "query_shape" not in config:
-                    config["query_shape"] = None
-                if "key_shape" not in config:
-                    config["key_shape"] = None
-                if "value_shape" not in config:
-                    config["value_shape"] = None
+                if "num_heads" not in config:
+                    config["num_heads"] = 8  # Default value; adjust if needed.
+                if "key_dim" not in config:
+                    config["key_dim"] = 64  # Default value; adjust if needed.
+                config.setdefault("query_shape", None)
+                config.setdefault("key_shape", None)
+                config.setdefault("value_shape", None)
                 return super().from_config(config)
 
         custom_objects = {

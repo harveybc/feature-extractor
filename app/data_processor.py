@@ -216,22 +216,19 @@ def load_and_evaluate_encoder(config):
     # Load the encoder model with custom objects for transformer plugins.
     if config.get('encoder_plugin', '').lower() == 'transformer':
         import tensorflow as tf
+        from keras_multi_head import MultiHeadAttention as OriginalMultiHeadAttention
         from tensorflow.keras.layers import LayerNormalization
         from tensorflow.keras.activations import gelu
-        from tensorflow.keras.layers import MultiHeadAttention as MHA
 
-        # Patched MultiHeadAttention to supply defaults for missing configuration keys.
-        class PatchedMultiHeadAttention(MHA):
+        # Patched MultiHeadAttention to handle 'head_num' properly.
+        class PatchedMultiHeadAttention(OriginalMultiHeadAttention):
             @classmethod
             def from_config(cls, config):
-                if "num_heads" not in config:
-                    config["num_heads"] = 8  # Default value; adjust if needed.
-                if "key_dim" not in config:
-                    config["key_dim"] = 64  # Default value; adjust if needed.
-                config.setdefault("query_shape", None)
-                config.setdefault("key_shape", None)
-                config.setdefault("value_shape", None)
-                return super().from_config(config)
+                # Remove 'head_num' from config and pass it as a positional argument.
+                head_num = config.pop("head_num", None)
+                if head_num is None:
+                    head_num = 8  # Default value; adjust as needed.
+                return cls(head_num, **config)
 
         custom_objects = {
             'MultiHeadAttention': PatchedMultiHeadAttention,
@@ -288,8 +285,6 @@ def load_and_evaluate_encoder(config):
         encoded_df = pd.DataFrame(encoded_data_reshaped)
         encoded_df.to_csv(config['evaluate_encoder'], index=False)
         print(f"Encoded data saved to {config['evaluate_encoder']}")
-
-
 
 # app/data_processor.py
 

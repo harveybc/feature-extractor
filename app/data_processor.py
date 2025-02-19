@@ -215,7 +215,6 @@ def load_and_evaluate_encoder(config):
         from keras_multi_head import MultiHeadAttention as OriginalMultiHeadAttention
         from tensorflow.keras.layers import LayerNormalization
         from tensorflow.keras.activations import gelu
-        # Import positional_encoding from your plugin without modifying it.
         from app.plugins.encoder_plugin_transformer import positional_encoding
 
         # Patched MultiHeadAttention to handle 'head_num' correctly.
@@ -231,7 +230,6 @@ def load_and_evaluate_encoder(config):
             'MultiHeadAttention': PatchedMultiHeadAttention,
             'LayerNormalization': LayerNormalization,
             'gelu': gelu,
-            # Supply the missing function so that the Lambda layer finds it.
             'positional_encoding': positional_encoding
         }
         model = load_model(config['load_encoder'], custom_objects=custom_objects)
@@ -277,9 +275,18 @@ def load_and_evaluate_encoder(config):
     else:
         raise ValueError(f"Unexpected encoded_data shape: {encoded_data.shape}")
 
+    # Create the DataFrame with encoded features.
+    encoded_df = pd.DataFrame(encoded_data_reshaped)
+    
+    # Attach the DATE_TIME column from the input, if available.
+    if "DATE_TIME" in data.columns:
+        encoded_df.insert(0, "DATE_TIME", data["DATE_TIME"].values)
+    elif data.index.name == "DATE_TIME":
+        encoded_df.insert(0, "DATE_TIME", data.index.values)
+
+    # Save the encoded data to CSV if evaluate_encoder is specified.
     if config.get('evaluate_encoder'):
         print(f"Saving encoded data to {config['evaluate_encoder']}")
-        encoded_df = pd.DataFrame(encoded_data_reshaped)
         encoded_df.to_csv(config['evaluate_encoder'], index=False)
         print(f"Encoded data saved to {config['evaluate_encoder']}")
 

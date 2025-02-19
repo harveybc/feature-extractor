@@ -44,10 +44,7 @@ def process_data(config):
         config (dict): Configuration dictionary with parameters for processing.
     
     Returns:
-        If future_shift == 0:
-            tuple: (processed_data, windowed_validation_data)
-        Else:
-            tuple: ((training_input, training_target), (validation_input, validation_target))
+        tuple: Processed training and validation datasets.
     """
     print(f"Loading data from CSV file: {config['input_file']}")
     data = load_csv(
@@ -63,12 +60,12 @@ def process_data(config):
 
         # Apply sliding windows to the entire dataset (multi-column)
         processed_data = create_sliding_windows(data, window_size)
-        print(f"Windowed data shape: {processed_data.shape}")  # (num_samples, window_size, num_features)
+        print(f"Windowed data shape: {processed_data.shape}")  # Should be (num_samples, window_size, num_features)
     else:
         print("Skipping sliding windows. Data will be fed row-by-row.")
         # Use data row-by-row as a NumPy array
         processed_data = data.to_numpy()
-        print(f"Processed data shape: {processed_data.shape}")  # (num_samples, num_features)
+        print(f"Processed data shape: {processed_data.shape}")  # Should be (num_samples, num_features)
 
     print(f"Loading validation data from CSV file: {config['validation_file']}")
     validation_data = load_csv(
@@ -88,61 +85,7 @@ def process_data(config):
         windowed_validation_data = validation_data.to_numpy()
         print(f"Validation processed shape: {windowed_validation_data.shape}")
 
-    # ----- FUTURE SHIFT LOGIC -----
-    future_shift = config.get('future_shift', 0)
-    if future_shift > 0:
-        print(f"Applying future_shift: {future_shift}")
-        # Process training data
-        if config['use_sliding_windows']:
-            # processed_data is a 3D array from sliding windows.
-            windows = processed_data  # shape: (num_windows, window_size, num_features)
-            valid_samples = windows.shape[0] - future_shift
-            if valid_samples <= 0:
-                raise ValueError("The combination of window_size and future_shift exceeds the available data rows.")
-            training_input = windows[:valid_samples]
-            # For window i, the target is taken from the original data at index (window_size - 1 + future_shift + i)
-            training_target = data.to_numpy()[config['window_size'] - 1 + future_shift : config['window_size'] - 1 + future_shift + valid_samples]
-            print(f"Future_shift trimming (training):")
-            print(f"  Original training windows: {windows.shape[0]} -> Valid samples: {valid_samples}")
-            print(f"  Training input shape: {training_input.shape}, Training target shape: {training_target.shape}")
-        else:
-            # processed_data is 2D (row-by-row)
-            raw = processed_data  # shape: (N, num_features)
-            valid_samples = raw.shape[0] - future_shift
-            if valid_samples <= 0:
-                raise ValueError("future_shift exceeds the number of data rows.")
-            training_input = raw[:valid_samples]
-            training_target = raw[future_shift:]
-            print(f"Future_shift trimming (training):")
-            print(f"  Original rows: {raw.shape[0]} -> Valid samples: {valid_samples}")
-            print(f"  Training input shape: {training_input.shape}, Training target shape: {training_target.shape}")
-            
-        # Process validation data similarly
-        if config['use_sliding_windows']:
-            val_windows = windowed_validation_data  # shape: (num_windows_val, window_size, num_features)
-            valid_samples_val = val_windows.shape[0] - future_shift
-            if valid_samples_val <= 0:
-                raise ValueError("The combination of window_size and future_shift exceeds the available validation data rows.")
-            validation_input = val_windows[:valid_samples_val]
-            validation_target = validation_data.to_numpy()[config['window_size'] - 1 + future_shift : config['window_size'] - 1 + future_shift + valid_samples_val]
-            print(f"Future_shift trimming (validation):")
-            print(f"  Original validation windows: {val_windows.shape[0]} -> Valid samples: {valid_samples_val}")
-            print(f"  Validation input shape: {validation_input.shape}, Validation target shape: {validation_target.shape}")
-        else:
-            raw_val = windowed_validation_data  # shape: (N_val, num_features)
-            valid_samples_val = raw_val.shape[0] - future_shift
-            if valid_samples_val <= 0:
-                raise ValueError("future_shift exceeds the number of validation data rows.")
-            validation_input = raw_val[:valid_samples_val]
-            validation_target = raw_val[future_shift:]
-            print(f"Future_shift trimming (validation):")
-            print(f"  Original validation rows: {raw_val.shape[0]} -> Valid samples: {valid_samples_val}")
-            print(f"  Validation input shape: {validation_input.shape}, Validation target shape: {validation_target.shape}")
-
-        return (training_input, training_target), (validation_input, validation_target)
-    else:
-        # future_shift is zero; return data unchanged.
-        return processed_data, windowed_validation_data
+    return processed_data, windowed_validation_data
 
 
 
@@ -152,53 +95,45 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     start_time = time.time()
     
     print("Running process_data...")
-    future_shift = config.get('future_shift', 0)
-    if future_shift > 0:
-        (training_input, training_target), (validation_input, validation_target) = process_data(config)
-        print("Processed data received with future_shift > 0.")
-    else:
-        training_input, validation_input = process_data(config)
-        training_target = training_input  # pure autoencoder reconstruction
-        validation_target = validation_input
-        print("Processed data received with future_shift = 0 (pure autoencoder).")
-    
-    # Truncate validation data if necessary (ensure matching sample counts)
-    if training_input.shape[0] > validation_input.shape[0]:
-        print(f"[run_autoencoder_pipeline] Truncating training data from {training_input.shape[0]} rows to match validation data rows: {validation_input.shape[0]}")
-        training_input = training_input[:validation_input.shape[0]]
-        training_target = training_target[:validation_input.shape[0]]
-    elif validation_input.shape[0] > training_input.shape[0]:
-        print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_input.shape[0]} rows to match training data rows: {training_input.shape[0]}")
-        validation_input = validation_input[:training_input.shape[0]]
-        validation_target = validation_target[:training_input.shape[0]]
+    processed_data, validation_data = process_data(config)
+    print("Processed data received.")
+
+    # Truncate validation data to have at most as many rows as training data
+    if validation_data.shape[0] > processed_data.shape[0]:
+        print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_data.shape[0]} rows to match training data rows: {processed_data.shape[0]}")
+        validation_data = validation_data[:processed_data.shape[0]]
     
     # Get the encoder plugin name (lowercase)
     encoder_plugin_name = config.get('encoder_plugin', '').lower()
     
-    # For sequential plugins (LSTM/Transformer) without sliding windows, adjust dimensions.
+    # For sequential plugins (LSTM/Transformer) without sliding windows, expand dims at axis 1.
     if not config.get('use_sliding_windows', True):
         if encoder_plugin_name in ['lstm', 'transformer']:
             print("[run_autoencoder_pipeline] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at axis 1.")
-            training_input = np.expand_dims(training_input, axis=1)
-            validation_input = np.expand_dims(validation_input, axis=1)
-            config['original_feature_size'] = training_input.shape[2]
+            # Expand so that each sample becomes a sequence of length 1 with all features as channels.
+            processed_data = np.expand_dims(processed_data, axis=1)  # becomes (samples, 1, features)
+            validation_data = np.expand_dims(validation_data, axis=1)
+            # Set original_feature_size to number of features (i.e. last dimension)
+            config['original_feature_size'] = processed_data.shape[2]
         elif encoder_plugin_name == 'cnn':
             print("[run_autoencoder_pipeline] Detected CNN plugin without sliding windows; expanding dimension at axis 1.")
-            training_input = np.expand_dims(training_input, axis=1)
-            validation_input = np.expand_dims(validation_input, axis=1)
-            config['original_feature_size'] = validation_input.shape[2]
+            processed_data = np.expand_dims(processed_data, axis=1)
+            validation_data = np.expand_dims(validation_data, axis=1)
+            config['original_feature_size'] = validation_data.shape[2]
         else:
-            config['original_feature_size'] = validation_input.shape[1]
+            config['original_feature_size'] = validation_data.shape[1]
             print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
     
     # Determine input_size:
+    # - If sliding windows are used, input_size equals window_size.
+    # - For sequential plugins (LSTM/Transformer) without sliding windows, input_size should be the number of features.
     if config.get('use_sliding_windows', False):
         input_size = config['window_size']
     else:
         if encoder_plugin_name in ['lstm', 'transformer']:
             input_size = config['original_feature_size']
         else:
-            input_size = training_input.shape[1]
+            input_size = processed_data.shape[1]
     
     initial_size = config['initial_size']
     step_size = config['step_size']
@@ -211,31 +146,32 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     
     while True:
         print(f"Training with interface size: {current_size}")
-        num_channels = training_input.shape[-1]
+        
+        # num_channels is taken from the last dimension of processed_data.
+        num_channels = processed_data.shape[-1]
         
         from app.autoencoder_manager import AutoencoderManager
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         autoencoder_manager.build_autoencoder(input_size, current_size, config, num_channels)
-        # Train with separate input and target arrays.
-        autoencoder_manager.train_autoencoder(training_input, training_target, epochs=epochs, batch_size=training_batch_size, config=config)
+        autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
         
-        training_mse, training_mae = autoencoder_manager.evaluate(training_input, training_target, "Training", config)
+        training_mse, training_mae = autoencoder_manager.evaluate(processed_data, "Training", config)
         print(f"Training Mean Squared Error with interface size {current_size}: {training_mse}")
         print(f"Training Mean Absolute Error with interface size {current_size}: {training_mae}")
         
-        validation_mse, validation_mae = autoencoder_manager.evaluate(validation_input, validation_target, "Validation", config)
+        validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data, "Validation", config)
         print(f"Validation Mean Squared Error with interface size {current_size}: {validation_mse}")
         print(f"Validation Mean Absolute Error with interface size {current_size}: {validation_mae}")
         
         if (incremental_search and validation_mae <= threshold_error) or (not incremental_search and validation_mae >= threshold_error):
-            print(f"Optimal interface size found: {current_size} with Validation MSE: {validation_mse} and MAE: {validation_mae}")
+            print(f"Optimal interface size found: {current_size} with Validation MSE: {validation_mse} and Validation MAE: {validation_mae}")
             break
         else:
             if incremental_search:
                 current_size += step_size
             else:
                 current_size -= step_size
-            if current_size > training_input.shape[1] or current_size <= 0:
+            if current_size > processed_data.shape[1] or current_size <= 0:
                 print("Cannot adjust interface size beyond data dimensions. Stopping.")
                 break
 

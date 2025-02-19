@@ -137,7 +137,7 @@ class AutoencoderManager:
             raise
 
 
-    def evaluate(self, input_data, target_data=None, dataset_name, config):
+    def evaluate(self, input_data, dataset_name, config, target_data=None):
         print(f"[evaluate] Evaluating {dataset_name} data with shape: {input_data.shape}")
         if target_data is None:
             target_data = input_data
@@ -151,6 +151,7 @@ class AutoencoderManager:
         mse, mae = results[0], results[1]
         print(f"[evaluate] {dataset_name} Evaluation results - MSE: {mse}, MAE: {mae}")
         return mse, mae
+
 
 
 

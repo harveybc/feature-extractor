@@ -209,31 +209,30 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 def load_and_evaluate_encoder(config):
     """
     Load and evaluate a pre-trained encoder with input data.
-
-    Args:
-        config (dict): Configuration dictionary with encoder and data details.
     """
-    # Load the encoder model with custom objects for transformer plugins.
     if config.get('encoder_plugin', '').lower() == 'transformer':
         import tensorflow as tf
         from keras_multi_head import MultiHeadAttention as OriginalMultiHeadAttention
         from tensorflow.keras.layers import LayerNormalization
         from tensorflow.keras.activations import gelu
+        # Import positional_encoding from your plugin without modifying it.
+        from app.plugins.encoder_plugin_transformer import positional_encoding
 
-        # Patched MultiHeadAttention to handle 'head_num' properly.
+        # Patched MultiHeadAttention to handle 'head_num' correctly.
         class PatchedMultiHeadAttention(OriginalMultiHeadAttention):
             @classmethod
             def from_config(cls, config):
-                # Remove 'head_num' from config and pass it as a positional argument.
                 head_num = config.pop("head_num", None)
                 if head_num is None:
-                    head_num = 8  # Default value; adjust as needed.
+                    head_num = 8  # Default value; adjust if needed.
                 return cls(head_num, **config)
 
         custom_objects = {
             'MultiHeadAttention': PatchedMultiHeadAttention,
             'LayerNormalization': LayerNormalization,
-            'gelu': gelu
+            'gelu': gelu,
+            # Supply the missing function so that the Lambda layer finds it.
+            'positional_encoding': positional_encoding
         }
         model = load_model(config['load_encoder'], custom_objects=custom_objects)
     else:
@@ -254,7 +253,6 @@ def load_and_evaluate_encoder(config):
         processed_data = create_sliding_windows(data, window_size)
         print(f"Processed data shape for sliding windows: {processed_data.shape}")
     else:
-        # For sequential plugins (LSTM/Transformer), expand dims at axis 1 to match training.
         encoder_plugin_name = config.get('encoder_plugin', '').lower()
         if encoder_plugin_name in ['lstm', 'transformer']:
             print("[load_and_evaluate_encoder] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at axis 1.")
@@ -279,12 +277,13 @@ def load_and_evaluate_encoder(config):
     else:
         raise ValueError(f"Unexpected encoded_data shape: {encoded_data.shape}")
 
-    # Save the encoded data to CSV if evaluate_encoder is specified.
     if config.get('evaluate_encoder'):
         print(f"Saving encoded data to {config['evaluate_encoder']}")
         encoded_df = pd.DataFrame(encoded_data_reshaped)
         encoded_df.to_csv(config['evaluate_encoder'], index=False)
         print(f"Encoded data saved to {config['evaluate_encoder']}")
+
+
 
 # app/data_processor.py
 

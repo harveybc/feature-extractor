@@ -213,34 +213,61 @@ def load_and_evaluate_encoder(config):
     Args:
         config (dict): Configuration dictionary with encoder and data details.
     """
-    model = load_model(config['load_encoder'])
+    # Load the encoder model with custom objects for transformer plugins.
+    if config.get('encoder_plugin', '').lower() == 'transformer':
+        import tensorflow as tf
+        from tensorflow.keras.layers import LayerNormalization
+        from tensorflow.keras.activations import gelu
+        from tensorflow.keras.layers import MultiHeadAttention as MHA
+
+        # Patched MultiHeadAttention to insert a default query_shape if missing.
+        class PatchedMultiHeadAttention(MHA):
+            @classmethod
+            def from_config(cls, config):
+                if "query_shape" not in config:
+                    config["query_shape"] = None
+                return super().from_config(config)
+
+        custom_objects = {
+            'MultiHeadAttention': PatchedMultiHeadAttention,
+            'LayerNormalization': LayerNormalization,
+            'gelu': gelu
+        }
+        model = load_model(config['load_encoder'], custom_objects=custom_objects)
+    else:
+        model = load_model(config['load_encoder'])
     print(f"Encoder model loaded from {config['load_encoder']}")
 
-    # Load the input data
+    # Load the input data.
     data = load_csv(
         file_path=config['input_file'],
         headers=config.get('headers', False),
         force_date=config.get('force_date', False)
     )
 
-    # Process data based on whether sliding windows are used
+    # Process data based on whether sliding windows are used.
     if config.get('use_sliding_windows', True):
         window_size = config['window_size']
         print(f"Creating sliding windows of size: {window_size}")
         processed_data = create_sliding_windows(data, window_size)
         print(f"Processed data shape for sliding windows: {processed_data.shape}")
     else:
-        # Reshape data to match expected input shape of the encoder
-        print(f"Reshaping data to match encoder input shape.")
-        processed_data = np.expand_dims(data.to_numpy(), axis=-1)  # Add channel dimension
+        # For sequential plugins (LSTM/Transformer), expand dims at axis 1 (to match training).
+        encoder_plugin_name = config.get('encoder_plugin', '').lower()
+        if encoder_plugin_name in ['lstm', 'transformer']:
+            print("[load_and_evaluate_encoder] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at axis 1.")
+            processed_data = np.expand_dims(data.to_numpy(), axis=1)
+        else:
+            print("Reshaping data to match encoder input shape.")
+            processed_data = np.expand_dims(data.to_numpy(), axis=-1)
         print(f"Processed data shape without sliding windows: {processed_data.shape}")
 
-    # Predict using the encoder
+    # Predict using the encoder.
     print(f"Encoding data with shape: {processed_data.shape}")
     encoded_data = model.predict(processed_data, verbose=1)
     print(f"Encoded data shape: {encoded_data.shape}")
 
-    # Flatten 3D encoded data to 2D for saving
+    # Flatten 3D encoded data to 2D for saving.
     if len(encoded_data.shape) == 3:
         num_samples, dim1, dim2 = encoded_data.shape
         encoded_data_reshaped = encoded_data.reshape(num_samples, dim1 * dim2)
@@ -250,13 +277,12 @@ def load_and_evaluate_encoder(config):
     else:
         raise ValueError(f"Unexpected encoded_data shape: {encoded_data.shape}")
 
-    # Save the encoded data to CSV
+    # Save the encoded data to CSV if evaluate_encoder is specified.
     if config.get('evaluate_encoder'):
         print(f"Saving encoded data to {config['evaluate_encoder']}")
         encoded_df = pd.DataFrame(encoded_data_reshaped)
         encoded_df.to_csv(config['evaluate_encoder'], index=False)
         print(f"Encoded data saved to {config['evaluate_encoder']}")
-
 
 
 

@@ -62,7 +62,7 @@ class AutoencoderManager:
             # --- Begin Updated Loss Definition using MMD ---
             # Gaussian RBF kernel function for two sets of samples.
             def gaussian_kernel_matrix(x, y, sigma):
-                # x: (batch_size, features), y: (batch_size, features)
+                # x and y are assumed to be 2D: (batch_size, features)
                 x_size = tf.shape(x)[0]
                 y_size = tf.shape(y)[0]
                 dim = tf.shape(x)[1]
@@ -75,6 +75,9 @@ class AutoencoderManager:
 
             # Compute the Maximum Mean Discrepancy (MMD) between two batches.
             def mmd_loss_term(y_true, y_pred, sigma):
+                # Flatten inputs to ensure they are 2D.
+                y_true = tf.reshape(y_true, [tf.shape(y_true)[0], -1])
+                y_pred = tf.reshape(y_pred, [tf.shape(y_pred)[0], -1])
                 K_xx = gaussian_kernel_matrix(y_true, y_true, sigma)
                 K_yy = gaussian_kernel_matrix(y_pred, y_pred, sigma)
                 K_xy = gaussian_kernel_matrix(y_true, y_pred, sigma)
@@ -86,12 +89,9 @@ class AutoencoderManager:
 
             # Combined loss: reconstruction (Huber) loss + weighted MMD loss.
             def combined_loss(y_true, y_pred):
-                # Standard reconstruction loss using Huber loss.
                 huber_loss = tf.keras.losses.Huber(delta=1.0)(y_true, y_pred)
-                # Retrieve kernel width and statistical loss weight from config.
-                sigma = config.get('mmd_sigma', 1.0)  # Adjust kernel width as needed.
+                sigma = config.get('mmd_sigma', 1.0)  # Configure kernel width if needed.
                 stat_weight = config.get('statistical_loss_weight', 1.0)
-                # Compute the MMD loss term.
                 mmd = mmd_loss_term(y_true, y_pred, sigma)
                 return huber_loss + stat_weight * mmd
 
@@ -101,7 +101,7 @@ class AutoencoderManager:
                 return mmd_loss_term(y_true, y_pred, sigma)
             # --- End Updated Loss Definition using MMD ---
 
-            # Compile autoencoder with the combined loss and an additional metric for statistical fidelity.
+            # Compile autoencoder with the combined loss and additional metric.
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss=combined_loss,
@@ -113,6 +113,7 @@ class AutoencoderManager:
         except Exception as e:
             print(f"[build_autoencoder] Exception occurred: {e}")
             raise
+
 
 
 

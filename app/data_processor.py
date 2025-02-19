@@ -247,8 +247,6 @@ def load_and_evaluate_encoder(config):
     )
     
     # Extract the original date information.
-    # When force_date is True, the load_csv function sets the first column as the index named 'date'
-    # Otherwise, if a column named "DATE_TIME" exists, we use that.
     original_dates = None
     if config.get('force_date', False) and data.index.name is not None:
         # Reset the index so that the date becomes a column.
@@ -290,11 +288,19 @@ def load_and_evaluate_encoder(config):
     if config.get('evaluate_encoder'):
         print(f"Saving encoded data to {config['evaluate_encoder']}")
         encoded_df = pd.DataFrame(encoded_data_reshaped)
-        # If original_dates was extracted and its length matches the encoded data, prepend it.
+        # Prepend the DATE_TIME column if available and if row counts match.
         if original_dates is not None and len(original_dates) == encoded_df.shape[0]:
             encoded_df.insert(0, "DATE_TIME", original_dates)
         else:
-            print("Warning: Original date information not available or does not match the number of rows.")
+            print("Warning: Original date information not available or row count mismatch.")
+        
+        # Rename the feature columns.
+        if "DATE_TIME" in encoded_df.columns:
+            new_columns = ["DATE_TIME"] + [f"feature_{i}" for i in range(encoded_df.shape[1] - 1)]
+        else:
+            new_columns = [f"feature_{i}" for i in range(encoded_df.shape[1])]
+        encoded_df.columns = new_columns
+        
         encoded_df.to_csv(config['evaluate_encoder'], index=False)
         print(f"Encoded data saved to {config['evaluate_encoder']}")
 

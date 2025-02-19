@@ -39,12 +39,8 @@ def create_sliding_windows(data, window_size):
 def process_data(config):
     """
     Process the data based on the configuration.
-    
-    Args:
-        config (dict): Configuration dictionary with parameters for processing.
-    
     Returns:
-        tuple: Processed training and validation datasets.
+        tuple: ((training_input, training_target), (validation_input, validation_target))
     """
     print(f"Loading data from CSV file: {config['input_file']}")
     data = load_csv(
@@ -53,20 +49,43 @@ def process_data(config):
         force_date=config.get('force_date', False)
     )
     print(f"Data loaded with shape: {data.shape}")
-
+    
+    future_shift = config.get('future_shift', 0)
+    window_size = config['window_size']
+    
+    # Process training data with sliding windows.
     if config['use_sliding_windows']:
-        window_size = config['window_size']
+        windows = create_sliding_windows(data, window_size)
         print(f"Applying sliding window of size: {window_size}")
-
-        # Apply sliding windows to the entire dataset (multi-column)
-        processed_data = create_sliding_windows(data, window_size)
-        print(f"Windowed data shape: {processed_data.shape}")  # Should be (num_samples, window_size, num_features)
+        if future_shift > 0:
+            valid_samples = windows.shape[0] - future_shift
+            if valid_samples <= 0:
+                raise ValueError("The combination of window_size and future_shift exceeds the available data rows.")
+            training_input = windows[:valid_samples]
+            # For window i, target is the row at index (i + window_size - 1 + future_shift)
+            training_target = data.to_numpy()[window_size - 1 + future_shift : window_size - 1 + future_shift + valid_samples]
+            print(f"Training input shape: {training_input.shape}, Training target shape: {training_target.shape}")
+        else:
+            # When future_shift == 0, the target is the last row of each window.
+            training_input = windows
+            training_target = windows[:, -1, :]
+            print(f"Training input shape: {training_input.shape}, Training target shape: {training_target.shape}")
     else:
         print("Skipping sliding windows. Data will be fed row-by-row.")
-        # Use data row-by-row as a NumPy array
-        processed_data = data.to_numpy()
-        print(f"Processed data shape: {processed_data.shape}")  # Should be (num_samples, num_features)
-
+        raw = data.to_numpy()
+        if future_shift > 0:
+            valid_samples = raw.shape[0] - future_shift
+            if valid_samples <= 0:
+                raise ValueError("future_shift exceeds the number of data rows.")
+            training_input = raw[:valid_samples]
+            training_target = raw[future_shift:]
+            print(f"Training input shape: {training_input.shape}, Training target shape: {training_target.shape}")
+        else:
+            training_input = raw
+            training_target = raw
+            print(f"Training input shape: {training_input.shape}, Training target shape: {training_target.shape}")
+    
+    # Process validation data similarly.
     print(f"Loading validation data from CSV file: {config['validation_file']}")
     validation_data = load_csv(
         file_path=config['validation_file'],
@@ -74,18 +93,32 @@ def process_data(config):
         force_date=config.get('force_date', False)
     )
     print(f"Validation data loaded with shape: {validation_data.shape}")
-
+    
     if config['use_sliding_windows']:
-        # Apply sliding windows to the validation dataset
-        windowed_validation_data = create_sliding_windows(validation_data, config['window_size'])
-        print(f"Windowed validation data shape: {windowed_validation_data.shape}")
+        val_windows = create_sliding_windows(validation_data, window_size)
+        if future_shift > 0:
+            valid_samples = val_windows.shape[0] - future_shift
+            if valid_samples <= 0:
+                raise ValueError("The combination of window_size and future_shift exceeds the available validation data rows.")
+            validation_input = val_windows[:valid_samples]
+            validation_target = validation_data.to_numpy()[window_size - 1 + future_shift : window_size - 1 + future_shift + valid_samples]
+        else:
+            validation_input = val_windows
+            validation_target = val_windows[:, -1, :]
     else:
-        print("Skipping sliding windows for validation data. Data will be fed row-by-row.")
-        # Use validation data row-by-row as a NumPy array
-        windowed_validation_data = validation_data.to_numpy()
-        print(f"Validation processed shape: {windowed_validation_data.shape}")
-
-    return processed_data, windowed_validation_data
+        raw_val = validation_data.to_numpy()
+        if future_shift > 0:
+            valid_samples = raw_val.shape[0] - future_shift
+            if valid_samples <= 0:
+                raise ValueError("future_shift exceeds the number of validation data rows.")
+            validation_input = raw_val[:valid_samples]
+            validation_target = raw_val[future_shift:]
+        else:
+            validation_input = raw_val
+            validation_target = raw_val
+    
+    print(f"Validation input shape: {validation_input.shape}, Validation target shape: {validation_target.shape}")
+    return (training_input, training_target), (validation_input, validation_target)
 
 
 

@@ -215,6 +215,7 @@ def load_and_evaluate_encoder(config):
         from keras_multi_head import MultiHeadAttention as OriginalMultiHeadAttention
         from tensorflow.keras.layers import LayerNormalization
         from tensorflow.keras.activations import gelu
+        # Import positional_encoding from your plugin without modifying it.
         from app.plugins.encoder_plugin_transformer import positional_encoding
 
         # Patched MultiHeadAttention to handle 'head_num' correctly.
@@ -230,6 +231,7 @@ def load_and_evaluate_encoder(config):
             'MultiHeadAttention': PatchedMultiHeadAttention,
             'LayerNormalization': LayerNormalization,
             'gelu': gelu,
+            # Supply the missing function so that the Lambda layer finds it.
             'positional_encoding': positional_encoding
         }
         model = load_model(config['load_encoder'], custom_objects=custom_objects)
@@ -243,7 +245,17 @@ def load_and_evaluate_encoder(config):
         headers=config.get('headers', False),
         force_date=config.get('force_date', False)
     )
-
+    
+    # Extract the original date information.
+    # When force_date is True, the load_csv function sets the first column as the index named 'date'
+    # Otherwise, if a column named "DATE_TIME" exists, we use that.
+    original_dates = None
+    if config.get('force_date', False) and data.index.name is not None:
+        # Reset the index so that the date becomes a column.
+        original_dates = data.index.to_series().rename("DATE_TIME").reset_index(drop=True)
+    elif "DATE_TIME" in data.columns:
+        original_dates = data["DATE_TIME"].reset_index(drop=True)
+    
     # Process data based on whether sliding windows are used.
     if config.get('use_sliding_windows', True):
         window_size = config['window_size']
@@ -275,18 +287,14 @@ def load_and_evaluate_encoder(config):
     else:
         raise ValueError(f"Unexpected encoded_data shape: {encoded_data.shape}")
 
-    # Create the DataFrame with encoded features.
-    encoded_df = pd.DataFrame(encoded_data_reshaped)
-    
-    # Attach the DATE_TIME column from the input, if available.
-    if "DATE_TIME" in data.columns:
-        encoded_df.insert(0, "DATE_TIME", data["DATE_TIME"].values)
-    elif data.index.name == "DATE_TIME":
-        encoded_df.insert(0, "DATE_TIME", data.index.values)
-
-    # Save the encoded data to CSV if evaluate_encoder is specified.
     if config.get('evaluate_encoder'):
         print(f"Saving encoded data to {config['evaluate_encoder']}")
+        encoded_df = pd.DataFrame(encoded_data_reshaped)
+        # If original_dates was extracted and its length matches the encoded data, prepend it.
+        if original_dates is not None and len(original_dates) == encoded_df.shape[0]:
+            encoded_df.insert(0, "DATE_TIME", original_dates)
+        else:
+            print("Warning: Original date information not available or does not match the number of rows.")
         encoded_df.to_csv(config['evaluate_encoder'], index=False)
         print(f"Encoded data saved to {config['evaluate_encoder']}")
 

@@ -15,7 +15,7 @@ DEFAULT_VALUES = {
     'threshold_error': 0.5,
     'initial_size': 16,
     'step_size': 1,
-    'future_shift': 1,
+    'future_shift': 0,
     'save_log': './debug_out.json',
     'remote_log': None,
     'remote_load_config': None,

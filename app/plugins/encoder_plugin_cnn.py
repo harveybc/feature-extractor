@@ -1,165 +1,182 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input, BatchNormalization
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
-
-from keras.regularizers import l2
-from keras.callbacks import EarlyStopping
-from keras.layers import BatchNormalization, LeakyReLU, Reshape
 from tensorflow.keras.losses import Huber
+from tensorflow.keras.regularizers import l2
+import tensorflow as tf
 
 class Plugin:
     """
-    An encoder plugin using a convolutional neural network (CNN) based on Keras, with dynamically configurable size.
+    A CNN-based encoder plugin for feature extraction using Keras.
+    This model architecture is adapted from the perfect CNN_MMD predictor but modified
+    so that its output dimension equals the desired interface size (i.e. the encoded representation).
+    No MMD loss or metrics are included, since the autoencoder manager will add them if needed.
     """
 
     plugin_params = {
-
-        'intermediate_layers': 3, 
-        'learning_rate': 0.00002,
-        'dropout_rate': 0.001,
+        'intermediate_layers': 3,
+        'initial_layer_size': 128,
+        'layer_size_divisor': 2,
+        'learning_rate': 0.0001,
+        'l2_reg': 1e-2,     # L2 regularization factor
+        'activation': 'tanh'
     }
 
-    plugin_debug_vars = ['input_shape', 'intermediate_layers']
+    plugin_debug_vars = ['interface_size', 'input_shape', 'intermediate_layers']
 
     def __init__(self):
+        """
+        Initializes the Plugin with default parameters and no model.
+        """
         self.params = self.plugin_params.copy()
         self.encoder_model = None
 
     def set_params(self, **kwargs):
+        """
+        Updates the plugin parameters with provided keyword arguments.
+        """
         for key, value in kwargs.items():
             self.params[key] = value
 
     def get_debug_info(self):
+        """
+        Retrieves the current values of debug variables.
+        """
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
+        """
+        Adds the plugin's debug information to an external debug_info dictionary.
+        """
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
     def configure_size(self, input_shape, interface_size, num_channels, use_sliding_windows):
         """
-        Configure the encoder based on input shape, interface size, and channel dimensions.
+        Configures and builds the encoder model.
         
-        Args:
-            input_shape (int): Length of the sequence or row.
-            interface_size (int): Dimension of the bottleneck layer.
-            num_channels (int): Number of input channels.
-            use_sliding_windows (bool): Whether sliding windows are being used.
+        Parameters:
+            input_shape (tuple): Must be of the form (window_size, features).
+            interface_size (int): Desired dimension of the encoded representation.
+            num_channels (int): Number of channels in the input data.
+            use_sliding_windows (bool): Indicates whether sliding windows are used.
+        
+        The final model will accept input_shape and output a vector of size interface_size.
         """
-        print(f"[DEBUG] Starting encoder configuration with input_shape={input_shape}, interface_size={interface_size}, num_channels={num_channels}, use_sliding_windows={use_sliding_windows}")
-
+        if not (isinstance(input_shape, tuple) and len(input_shape) == 2):
+            raise ValueError(f"Invalid input_shape {input_shape}. Expected tuple (window_size, features).")
         self.params['input_shape'] = input_shape
+        self.params['interface_size'] = interface_size
+        print(f"[configure_size] Encoder input_shape: {input_shape}, interface_size: {interface_size}, num_channels: {num_channels}, use_sliding_windows: {use_sliding_windows}")
 
-        # Determine the input shape for the first Conv1D layer
-        adjusted_channels = num_channels if use_sliding_windows else 1
-
-        # Initialize layers array with input_shape
-        layers = [adjusted_channels]  # First layer matches the number of input channels
-        num_intermediate_layers = self.params['intermediate_layers']
-
-        # Calculate sizes of intermediate layers based on downscaling by 2
-        current_size = adjusted_channels
-        for i in range(num_intermediate_layers - 1):
-            next_size = current_size // 2  # Scale down by half
-            if next_size < interface_size:
-                next_size = interface_size  # Ensure we don't go below the interface_size
-            layers.append(next_size)
-            current_size = next_size
-
-        # Append the final layer which is the interface size
+        # Build layer size list using the perfect predictor approach.
+        layers = []
+        current_size = self.params['initial_layer_size']
+        l2_reg = self.params.get('l2_reg', 1e-4)
+        layer_size_divisor = self.params['layer_size_divisor']
+        int_layers = 0
+        while int_layers < self.params['intermediate_layers']:
+            layers.append(current_size)
+            current_size = max(current_size // layer_size_divisor, 1)
+            int_layers += 1
+        # For the encoder, the final output is the interface size.
         layers.append(interface_size)
-        print(f"[DEBUG] Encoder Layer sizes: {layers}")
+        print(f"[configure_size] Encoder layer sizes: {layers}")
 
-        # Input layer
-        inputs = Input(shape=(input_shape, adjusted_channels))
-        x = inputs
-        print(f"[DEBUG] Input shape: {x.shape}")
+        # Define the Input layer
+        inp = Input(shape=input_shape, name="encoder_input")
+        x = inp
+        # Initial Dense projection
+        x = Dense(
+            units=layers[0],
+            activation=self.params['activation'],
+            kernel_initializer=GlorotUniform(),
+            kernel_regularizer=l2(l2_reg)
+        )(x)
+        # Add intermediate Conv1D and MaxPooling1D layers with unique names
+        for idx, size in enumerate(layers[:-1]):
+            if size > 1:
+                x = Conv1D(
+                    filters=size, 
+                    kernel_size=3, 
+                    activation='relu', 
+                    kernel_initializer=HeNormal(), 
+                    padding='same',
+                    kernel_regularizer=l2(l2_reg),
+                    name=f"conv1d_{idx+1}"
+                )(x)
+                x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
+        # A final Dense layer before output
+        x = Dense(
+            units=layers[0],
+            activation=self.params['activation'],
+            kernel_initializer=GlorotUniform(),
+            kernel_regularizer=l2(l2_reg),
+            name="dense_final"
+        )(x)
+        x = BatchNormalization(name="batch_norm")(x)
+        x = Flatten(name="flatten")
+        x = x(x) if callable(x) else x  # Ensure proper flattening
+        model_output = Dense(
+            units=interface_size,
+            activation='linear',
+            kernel_initializer=GlorotUniform(),
+            kernel_regularizer=l2(l2_reg),
+            name="encoder_output"
+        )(x)
 
-        # Initial Conv1D layer
-        x = Conv1D(filters=layers[0], kernel_size=3, strides=1, activation='tanh',
-                kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
-        print(f"[DEBUG] After Conv1D (filters={layers[0]}) shape: {x.shape}")
-        
-        # Add intermediate layers with stride=2
-        for i, size in enumerate(layers[1:-1]):
-            x = Conv1D(filters=size, kernel_size=3, strides=2, activation='tanh',
-                    kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
-            print(f"[DEBUG] After Conv1D (filters={size}, strides=2) shape: {x.shape}")
-            x = BatchNormalization()(x)
-            print(f"[DEBUG] After BatchNormalization shape: {x.shape}")
+        # Create the encoder model
+        self.encoder_model = Model(inputs=inp, outputs=model_output, name="cnn_mmd_encoder")
+        print("Encoder Model Summary:")
+        self.encoder_model.summary()
 
-        # Final Conv1D layer to match the interface size
-        x = Conv1D(filters=interface_size, kernel_size=1, strides=1, activation='tanh',
-                kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
-        print(f"[DEBUG] After Final Conv1D (interface_size) shape: {x.shape}")
-
-        # Output batch normalization layer
-        outputs = BatchNormalization()(x)
-        print(f"[DEBUG] Final Output shape: {outputs.shape}")
-
-        # Build the encoder model
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
-
-        # Define the Adam optimizer with custom parameters
+        # Define optimizer and compile the model with simple Huber loss
         adam_optimizer = Adam(
-            learning_rate=self.params['learning_rate'],  # Set the learning rate
-            beta_1=0.9,  # Default value
-            beta_2=0.999,  # Default value
-            epsilon=1e-7,  # Default value
-            amsgrad=False  # Default value
+            learning_rate=self.params['learning_rate'],
+            beta_1=0.9,
+            beta_2=0.999,
+            epsilon=1e-7,
+            amsgrad=False
         )
-
         self.encoder_model.compile(
             optimizer=adam_optimizer,
             loss=Huber(),
-            metrics=['mse', 'mae'],
-            run_eagerly=False  # Set to False for better performance unless debugging
+            metrics=['mae'],
+            run_eagerly=False
         )
-        print(f"[DEBUG] Encoder model compiled successfully.")
+        print("[configure_size] Encoder model compiled successfully.")
 
-
-
-
-
-    def train(self, data):
-        num_channels = data.shape[-1] if len(data.shape) > 2 else 1  # Get number of channels
-        input_shape = data.shape[1]  # Get the input sequence length
-        interface_size = self.params.get('interface_size', 4)  # Assuming interface size is in params
-
-        # Reshape 2D data to 3D if necessary
-        if len(data.shape) == 2:
-            data = np.expand_dims(data, axis=-1)  # Add a channel dimension
-
-        # Rebuild the model with dynamic channel size
-        self.configure_size(input_shape, interface_size, num_channels)
-
-        # Now proceed with training
-        print(f"Training encoder with data shape: {data.shape}")
-        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True)
-        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping], validation_split = 0.2)
-        print("Training completed.")
-
-
-
-    def encode(self, data):
-        print(f"Encoding data with shape: {data.shape}")
-        encoded_data = self.encoder_model.predict(data)
-        print(f"Encoded data shape: {encoded_data.shape}")
-        return encoded_data
+    def encode_data(self, data):
+        """
+        Encodes the input data using the encoder model.
+        
+        Parameters:
+            data (numpy.ndarray): Input data.
+        
+        Returns:
+            numpy.ndarray: Encoded representation.
+        """
+        print(f"[encode_data] Encoding data with shape: {data.shape}")
+        try:
+            encoded_data = self.encoder_model.predict(data)
+            print(f"[encode_data] Encoded data shape: {encoded_data.shape}")
+            return encoded_data
+        except Exception as e:
+            print(f"[encode_data] Exception occurred during encoding: {e}")
+            raise ValueError("[encode_data] Failed to encode data. Please check model compatibility and data shape.")
 
     def save(self, file_path):
+        """
+        Saves the encoder model to the specified file path.
+        """
         save_model(self.encoder_model, file_path)
-        print(f"Encoder model saved to {file_path}")
+        print(f"[save] Encoder model saved to {file_path}")
 
     def load(self, file_path):
+        """
+        Loads a trained encoder model from the specified file path.
+        """
         self.encoder_model = load_model(file_path)
-        print(f"Encoder model loaded from {file_path}")
-
-# Debugging usage example
-if __name__ == "__main__":
-    plugin = Plugin()
-    plugin.configure_size(input_shape=128, interface_size=4)
-    debug_info = plugin.get_debug_info()
-    print(f"Debug Info: {debug_info}")
+        print(f"[load] Encoder model loaded from {file_path}")

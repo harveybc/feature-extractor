@@ -209,38 +209,73 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 def load_and_evaluate_encoder(config):
     """
     Load and evaluate a pre-trained encoder with input data.
-
-    Args:
-        config (dict): Configuration dictionary with encoder and data details.
     """
-    model = load_model(config['load_encoder'])
+    if config.get('encoder_plugin', '').lower() == 'transformer':
+        import tensorflow as tf
+        from keras_multi_head import MultiHeadAttention as OriginalMultiHeadAttention
+        from tensorflow.keras.layers import LayerNormalization
+        from tensorflow.keras.activations import gelu
+        # Import positional_encoding from your plugin without modifying it.
+        from app.plugins.encoder_plugin_transformer import positional_encoding
+
+        # Patched MultiHeadAttention to handle 'head_num' correctly.
+        class PatchedMultiHeadAttention(OriginalMultiHeadAttention):
+            @classmethod
+            def from_config(cls, config):
+                head_num = config.pop("head_num", None)
+                if head_num is None:
+                    head_num = 8  # Default value; adjust if needed.
+                return cls(head_num, **config)
+
+        custom_objects = {
+            'MultiHeadAttention': PatchedMultiHeadAttention,
+            'LayerNormalization': LayerNormalization,
+            'gelu': gelu,
+            # Supply the missing function so that the Lambda layer finds it.
+            'positional_encoding': positional_encoding
+        }
+        model = load_model(config['load_encoder'], custom_objects=custom_objects)
+    else:
+        model = load_model(config['load_encoder'])
     print(f"Encoder model loaded from {config['load_encoder']}")
 
-    # Load the input data
+    # Load the input data.
     data = load_csv(
         file_path=config['input_file'],
         headers=config.get('headers', False),
         force_date=config.get('force_date', False)
     )
-
-    # Process data based on whether sliding windows are used
+    
+    # Extract the original date information.
+    original_dates = None
+    if config.get('force_date', False) and data.index.name is not None:
+        # Reset the index so that the date becomes a column.
+        original_dates = data.index.to_series().rename("DATE_TIME").reset_index(drop=True)
+    elif "DATE_TIME" in data.columns:
+        original_dates = data["DATE_TIME"].reset_index(drop=True)
+    
+    # Process data based on whether sliding windows are used.
     if config.get('use_sliding_windows', True):
         window_size = config['window_size']
         print(f"Creating sliding windows of size: {window_size}")
         processed_data = create_sliding_windows(data, window_size)
         print(f"Processed data shape for sliding windows: {processed_data.shape}")
     else:
-        # Reshape data to match expected input shape of the encoder
-        print(f"Reshaping data to match encoder input shape.")
-        processed_data = np.expand_dims(data.to_numpy(), axis=-1)  # Add channel dimension
+        encoder_plugin_name = config.get('encoder_plugin', '').lower()
+        if encoder_plugin_name in ['lstm', 'transformer']:
+            print("[load_and_evaluate_encoder] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at axis 1.")
+            processed_data = np.expand_dims(data.to_numpy(), axis=1)
+        else:
+            print("Reshaping data to match encoder input shape.")
+            processed_data = np.expand_dims(data.to_numpy(), axis=-1)
         print(f"Processed data shape without sliding windows: {processed_data.shape}")
 
-    # Predict using the encoder
+    # Predict using the encoder.
     print(f"Encoding data with shape: {processed_data.shape}")
     encoded_data = model.predict(processed_data, verbose=1)
     print(f"Encoded data shape: {encoded_data.shape}")
 
-    # Flatten 3D encoded data to 2D for saving
+    # Flatten 3D encoded data to 2D for saving.
     if len(encoded_data.shape) == 3:
         num_samples, dim1, dim2 = encoded_data.shape
         encoded_data_reshaped = encoded_data.reshape(num_samples, dim1 * dim2)
@@ -250,14 +285,24 @@ def load_and_evaluate_encoder(config):
     else:
         raise ValueError(f"Unexpected encoded_data shape: {encoded_data.shape}")
 
-    # Save the encoded data to CSV
     if config.get('evaluate_encoder'):
         print(f"Saving encoded data to {config['evaluate_encoder']}")
         encoded_df = pd.DataFrame(encoded_data_reshaped)
+        # Prepend the DATE_TIME column if available and if row counts match.
+        if original_dates is not None and len(original_dates) == encoded_df.shape[0]:
+            encoded_df.insert(0, "DATE_TIME", original_dates)
+        else:
+            print("Warning: Original date information not available or row count mismatch.")
+        
+        # Rename the feature columns.
+        if "DATE_TIME" in encoded_df.columns:
+            new_columns = ["DATE_TIME"] + [f"feature_{i}" for i in range(encoded_df.shape[1] - 1)]
+        else:
+            new_columns = [f"feature_{i}" for i in range(encoded_df.shape[1])]
+        encoded_df.columns = new_columns
+        
         encoded_df.to_csv(config['evaluate_encoder'], index=False)
         print(f"Encoded data saved to {config['evaluate_encoder']}")
-
-
 
 
 

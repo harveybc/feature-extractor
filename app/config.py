@@ -13,7 +13,7 @@ DEFAULT_VALUES = {
     'use_sliding_windows': False,
     'window_size': 256, 
     'threshold_error': 0.5,
-    'initial_size': 16,
+    'initial_size': 4,
     'step_size': 2,
     'save_log': './debug_out.json',
     'remote_log': None,

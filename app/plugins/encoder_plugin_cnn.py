@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input, BatchNormalization
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input, BatchNormalization, Dropout, LayerNormalization, MultiHeadAttention
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.callbacks import EarlyStopping
@@ -21,7 +21,8 @@ class Plugin:
         'layer_size_divisor': 2,
         'learning_rate': 0.0001,
         'l2_reg': 1e-4,
-        'activation': 'tanh'
+        'activation': 'tanh',
+        'dropout_rate': 0.1  # New dropout parameter
     }
     plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers', 'initial_layer_size', 'time_horizon']
 
@@ -63,15 +64,18 @@ class Plugin:
 
         inputs = Input(shape=input_shape, name="model_input")
         x = inputs
-        # First Dense layer uses tanh
+        # First Dense layer uses linear activation to maintain numerical stability;
+        # later layers use the activation defined in parameters.
         x = Dense(units=layers[0],
                   activation='linear',
                   kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(l2_reg))(x)
+                  kernel_regularizer=l2(l2_reg),
+                  name="dense_initial")(x)
         self.skip_connections = []  # Reset skip connections
+
+        # Convolution and pooling blocks with skip connection storage
         for idx, size in enumerate(layers[:-1]):
             if size > 1:
-                # Use tanh activation in Conv1D
                 x = Conv1D(filters=size,
                            kernel_size=3,
                            activation='tanh',
@@ -79,11 +83,26 @@ class Plugin:
                            padding='same',
                            kernel_regularizer=l2(l2_reg),
                            name=f"conv1d_{idx+1}")(x)
-                # Store skip connection BEFORE pooling
+                # Store skip connection BEFORE pooling for potential later use
                 self.skip_connections.append(x)
                 x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
+
+        # Batch normalization before the attention block
         x = BatchNormalization(name="batch_norm1")(x)
-        x = Dense(units=size,
+
+        # Insert a multi-head self-attention block to capture long-range dependencies
+        # The queries, keys, and values are all the same tensor 'x'
+        attn_output = MultiHeadAttention(num_heads=4,
+                                         key_dim=x.shape[-1],
+                                         dropout=0.1,
+                                         name="encoder_attention")(x, x)
+        # Residual connection and layer normalization
+        x = LayerNormalization(name="layer_norm_attn")(x + attn_output)
+        # Optional dropout for regularization
+        x = Dropout(rate=self.params.get('dropout_rate', 0.1), name="dropout_attn")(x)
+
+        # Final dense transformation before flattening
+        x = Dense(units=layers[-2],
                   activation=self.params['activation'],
                   kernel_initializer=GlorotUniform(),
                   kernel_regularizer=l2(l2_reg),

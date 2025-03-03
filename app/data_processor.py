@@ -110,10 +110,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     if not config.get('use_sliding_windows', True):
         if encoder_plugin_name in ['lstm', 'transformer']:
             print("[run_autoencoder_pipeline] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at axis 1.")
-            # Expand so that each sample becomes a sequence of length 1 with all features as channels.
             processed_data = np.expand_dims(processed_data, axis=1)  # becomes (samples, 1, features)
             validation_data = np.expand_dims(validation_data, axis=1)
-            # Set original_feature_size to number of features (i.e. last dimension)
             config['original_feature_size'] = processed_data.shape[2]
         elif encoder_plugin_name == 'cnn':
             print("[run_autoencoder_pipeline] Detected CNN plugin without sliding windows; expanding dimension at axis 1.")
@@ -125,10 +123,15 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             print(f"[run_autoencoder_pipeline] Set original_feature_size: {config['original_feature_size']}")
     
     # Determine input_size:
-    # - If sliding windows are used, input_size equals window_size.
-    # - For sequential plugins (LSTM/Transformer) without sliding windows, input_size should be the number of features.
+    # - If sliding windows are used:
+    #     For CNN plugins, input_size is a tuple (window_size, num_features);
+    #     Otherwise, input_size equals window_size.
+    # - For sequential plugins (LSTM/Transformer) without sliding windows, input_size is the number of features.
     if config.get('use_sliding_windows', False):
-        input_size = config['window_size']
+        if encoder_plugin_name == 'cnn':
+            input_size = (config['window_size'], processed_data.shape[-1])
+        else:
+            input_size = config['window_size']
     else:
         if encoder_plugin_name in ['lstm', 'transformer']:
             input_size = config['original_feature_size']

@@ -14,7 +14,6 @@ class Plugin:
     This model architecture is adapted from the provided CNN predictor plugin,
     with the final output dimension (time_horizon) set equal to the desired interface size.
     """
-    # Updated plugin_params to exactly match the provided plugin.
     plugin_params = {
         'batch_size': 128,
         'intermediate_layers': 3,
@@ -24,8 +23,6 @@ class Plugin:
         'l2_reg': 1e-2,     # L2 regularization factor
         'activation': 'tanh'
     }
-
-    # Updated plugin_debug_vars to include the same keys as the provided plugin.
     plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers', 'initial_layer_size', 'time_horizon']
 
     def __init__(self):
@@ -34,13 +31,11 @@ class Plugin:
         """
         self.params = self.plugin_params.copy()
         self.encoder_model = None
+        self.pre_flatten_shape = None  # NEW: to store the shape before flattening
 
     def set_params(self, **kwargs):
         """
         Updates the plugin parameters with provided keyword arguments.
-        
-        Args:
-            **kwargs: Arbitrary keyword arguments to update plugin parameters.
         """
         for key, value in kwargs.items():
             self.params[key] = value
@@ -48,18 +43,12 @@ class Plugin:
     def get_debug_info(self):
         """
         Retrieves the current values of debug variables.
-        
-        Returns:
-            dict: Dictionary containing debug information.
         """
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
         """
         Adds the plugin's debug information to an external debug_info dictionary.
-        
-        Args:
-            debug_info (dict): External dictionary to update with debug information.
         """
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
@@ -93,7 +82,7 @@ class Plugin:
             current_size = max(current_size // layer_size_divisor, 1)
             int_layers += 1
         # The output layer size is set to 'time_horizon'
-        layers.append(self.params['time_horizon'])
+        layers.append(interface_size)
         print(f"CNN Layer sizes: {layers}")
 
         # Define the Input layer with the provided name.
@@ -109,12 +98,12 @@ class Plugin:
         for idx, size in enumerate(layers[:-1]):
             if size > 1:
                 x = Conv1D(
-                    filters=size,
-                    kernel_size=3,
-                    activation='relu',
-                    kernel_initializer=HeNormal(),
+                    filters=size, 
+                    kernel_size=3, 
+                    activation='relu', 
+                    kernel_initializer=HeNormal(), 
                     padding='same',
-                    kernel_regularizer=l2(self.params.get('l2_reg', 1e-4)),
+                    kernel_regularizer=l2(l2_reg),
                     name=f"conv1d_{idx+1}"
                 )(x)
                 x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
@@ -123,9 +112,13 @@ class Plugin:
             units=size,
             activation=self.params['activation'],
             kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg)
+            kernel_regularizer=l2(l2_reg),
+            name="dense_final"
         )(x)
-        x = BatchNormalization()(x)
+        x = BatchNormalization(name="batch_norm")(x)
+        # *** NEW: Save the pre-flatten shape for use by the decoder ***
+        self.pre_flatten_shape = x.shape[1:]
+        print(f"[DEBUG] Pre-flatten shape: {self.pre_flatten_shape}")
         x = Flatten(name="flatten")(x)
         model_output = Dense(
             units=layers[-1],

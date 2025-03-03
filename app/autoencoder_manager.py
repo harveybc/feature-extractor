@@ -32,11 +32,11 @@ class AutoencoderManager:
             print("[build_autoencoder] Encoder model built and compiled successfully")
             self.encoder_model.summary()
 
-            # Get the encoder's output shape
-            encoder_output_shape = self.encoder_model.output_shape[1:]  # Exclude batch size
-            print(f"Encoder output shape: {encoder_output_shape}")
+            # **IMPORTANT**: Use the pre-flatten shape stored by the encoder.
+            encoder_output_shape = self.encoder_plugin.pre_flatten_shape
+            print(f"Encoder pre-flatten shape: {encoder_output_shape}")
 
-            # Configure the decoder size, passing the encoder's output shape
+            # Configure the decoder size, passing the encoder's pre-flatten shape
             self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_output_shape, use_sliding_windows)
 
             # Get the decoder model
@@ -44,7 +44,7 @@ class AutoencoderManager:
             print("[build_autoencoder] Decoder model built and compiled successfully")
             self.decoder_model.summary()
 
-            # Build autoencoder model
+            # Build autoencoder model by connecting encoder and decoder
             autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
 
@@ -60,22 +60,16 @@ class AutoencoderManager:
             )
 
             # --- Begin Updated Loss Definition using MMD ---
-            # Gaussian RBF kernel function for two sets of samples.
             def gaussian_kernel_matrix(x, y, sigma):
-                # x and y are assumed to be 2D: (batch_size, features)
                 x_size = tf.shape(x)[0]
                 y_size = tf.shape(y)[0]
                 dim = tf.shape(x)[1]
-                # Expand dimensions for pairwise distance computation.
                 x_expanded = tf.reshape(x, [x_size, 1, dim])
                 y_expanded = tf.reshape(y, [1, y_size, dim])
-                # Compute squared L2 distance between each pair.
                 squared_diff = tf.reduce_sum(tf.square(x_expanded - y_expanded), axis=2)
                 return tf.exp(-squared_diff / (2.0 * sigma**2))
 
-            # Compute the Maximum Mean Discrepancy (MMD) between two batches.
             def mmd_loss_term(y_true, y_pred, sigma):
-                # Flatten inputs to ensure they are 2D.
                 y_true = tf.reshape(y_true, [tf.shape(y_true)[0], -1])
                 y_pred = tf.reshape(y_pred, [tf.shape(y_pred)[0], -1])
                 K_xx = gaussian_kernel_matrix(y_true, y_true, sigma)
@@ -83,25 +77,21 @@ class AutoencoderManager:
                 K_xy = gaussian_kernel_matrix(y_true, y_pred, sigma)
                 m = tf.cast(tf.shape(y_true)[0], tf.float32)
                 n = tf.cast(tf.shape(y_pred)[0], tf.float32)
-                # Compute the unbiased MMD statistic.
                 mmd = tf.reduce_sum(K_xx) / (m * m) + tf.reduce_sum(K_yy) / (n * n) - 2 * tf.reduce_sum(K_xy) / (m * n)
                 return mmd
 
-            # Combined loss: reconstruction (Huber) loss + weighted MMD loss.
             def combined_loss(y_true, y_pred):
                 huber_loss = tf.keras.losses.Huber(delta=1.0)(y_true, y_pred)
-                sigma = config.get('mmd_sigma', 1.0)  # Configure kernel width if needed.
+                sigma = config.get('mmd_sigma', 1.0)
                 stat_weight = config.get('statistical_loss_weight', 1.0)
                 mmd = mmd_loss_term(y_true, y_pred, sigma)
                 return huber_loss + stat_weight * mmd
 
-            # Optional: Define a metric to monitor the MMD term during training.
             def mmd_metric(y_true, y_pred):
                 sigma = config.get('mmd_sigma', 1.0)
                 return mmd_loss_term(y_true, y_pred, sigma)
             # --- End Updated Loss Definition using MMD ---
 
-            # Compile autoencoder with the combined loss and additional metric.
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss=combined_loss,
@@ -113,7 +103,6 @@ class AutoencoderManager:
         except Exception as e:
             print(f"[build_autoencoder] Exception occurred: {e}")
             raise
-
 
 
 

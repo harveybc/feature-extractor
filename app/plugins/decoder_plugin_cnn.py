@@ -1,5 +1,5 @@
 import numpy as np
-from keras.models import Sequential, load_model, save_model, Model
+from keras.models import Model, load_model, save_model
 from keras.layers import Dense, Conv1D, UpSampling1D, Flatten, BatchNormalization, Input, Reshape, Concatenate
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
@@ -15,7 +15,7 @@ class Plugin:
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
         'learning_rate': 0.0001,
-        'l2_reg': 1e-2,
+        'l2_reg': 1e-2,     # L2 regularization factor
         'activation': 'tanh'
     }
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
@@ -38,16 +38,16 @@ class Plugin:
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):
         """
-        Configures and builds the decoder model as the mirror of the encoder, using skip connections.
+        Configures and builds the decoder model as the exact mirror of the encoder using skip connections.
         
         Parameters:
-            interface_size (int): Latent dimension (must equal encoder's output).
+            interface_size (int): The latent dimension (must equal encoder's output).
             output_shape (int or tuple): The original encoder input shape. If tuple, its first element (window size)
                                          is used and the second element is the original feature count.
             num_channels (int): Number of channels in the original input.
             encoder_output_shape (tuple): The encoder pre-flatten shape (T, F).
-            use_sliding_windows (bool): If True, the output retains temporal dimensions.
-            encoder_skip_connections (list): List of skip connection tensors from the encoder, ordered from first block to last.
+            use_sliding_windows (bool): If True, the decoder output retains temporal dimensions.
+            encoder_skip_connections (list): List of skip connection tensors from the encoder (ordered from first to last block).
         """
         print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
         
@@ -65,9 +65,9 @@ class Plugin:
         T, F = encoder_output_shape
         print(f"[DEBUG] Using encoder pre-flatten shape: T={T}, F={F}")
         
-        flat_dim = T * F
+        flat_dim = T * F  # e.g., 32*32 = 1024 if T=32, F=32
 
-        # Recompute encoder layer sizes as in encoder.
+        # Recompute encoder layer sizes exactly as in the encoder.
         enc_layers = []
         current = self.params['initial_layer_size']
         for i in range(self.params['intermediate_layers']):
@@ -75,65 +75,61 @@ class Plugin:
             current = max(current // self.params['layer_size_divisor'], interface_size)
         enc_layers.append(interface_size)
         print(f"[DEBUG] Encoder layer sizes (from encoder): {enc_layers}")
-        # Mirror conv filter sizes from encoder's conv blocks.
-        mirror_filters = enc_layers[:-1][::-1]  # e.g. [32, 64, 128]
+        # Mirror conv filter sizes from encoder's conv blocks (exclude final Dense mapping to interface_size).
+        mirror_filters = enc_layers[:-1][::-1]  # e.g., if enc_layers = [128, 64, 32, 32] then mirror_filters = [32, 64, 128]
         print(f"[DEBUG] Mirrored decoder conv filter sizes: {mirror_filters}")
 
-        # Build decoder model.
-        self.model = Sequential(name="decoder_cnn_model")
+        # Build decoder using the Functional API.
+        latent_input = Input(shape=(interface_size,), name="decoder_input")
         # Expand latent vector to flat_dim and reshape to (T, F)
-        self.model.add(Dense(units=flat_dim,
-                             activation=self.params['activation'],
-                             kernel_initializer=GlorotUniform(),
-                             kernel_regularizer=l2(self.params['l2_reg']),
-                             input_shape=(interface_size,)))
-        self.model.add(Reshape((T, F), name="reshape"))
+        x = Dense(units=flat_dim,
+                  activation=self.params['activation'],
+                  kernel_initializer=GlorotUniform(),
+                  kernel_regularizer=l2(self.params['l2_reg']))(latent_input)
+        x = Reshape((T, F), name="reshape")(x)
         
-        # We'll invert the encoder's pooling blocks.
-        # The encoder had 3 blocks. We assume encoder_skip_connections list has 3 elements:
-        # skip3 corresponds to the last block, skip2 to the middle, and skip1 to the first.
+        # Now, for each encoder block (from last to first), upsample and fuse skip connections.
+        # We assume encoder_skip_connections is a list of tensors from the encoder.
+        # They are ordered from first block to last, so for mirroring, we take them in reverse order.
         for idx in range(self.params['intermediate_layers']):
-            # Upsample by factor 2.
-            self.model.add(UpSampling1D(size=2))
-            # Get corresponding skip connection (reverse order)
-            # Ensure that the skip connection has the same time dimension as current x.
-            skip = encoder_skip_connections[-(idx+1)]
-            # Concatenate along the channel axis.
-            self.model.add(Concatenate(axis=-1, name=f"skip_concat_{idx+1}"))
-            # Apply a Conv1D layer to fuse the features. Use the mirror filter for this block.
-            filt = mirror_filters[idx]
-            self.model.add(Conv1D(
-                filters=filt,
-                kernel_size=3,
-                padding='same',
-                activation='relu',
-                kernel_initializer=HeNormal(),
-                kernel_regularizer=l2(self.params['l2_reg']),
-                name=f"conv1d_mirror_{idx+1}"
-            ))
-            self.model.add(BatchNormalization(name=f"bn_decoder_{idx+1}"))
-        # Final mapping: if sliding windows, map to original feature count.
-        if use_sliding_windows:
-            self.model.add(Conv1D(
-                filters=orig_features,
-                kernel_size=3,
-                strides=1,
-                padding='same',
-                activation='tanh',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(self.params['l2_reg']),
-                name="decoder_output_conv1d"
-            ))
-        else:
-            self.model.add(Flatten(name="decoder_flatten"))
-            self.model.add(Dense(
-                units=window_size,
-                activation='linear',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(self.params['l2_reg']),
-                name="decoder_dense_output"
-            ))
+            # Upsample the time dimension by factor 2.
+            x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
+            # Get corresponding skip connection (if available) and concatenate.
+            # If skip connection is not provided, simply continue.
+            if encoder_skip_connections and idx < len(encoder_skip_connections):
+                skip = encoder_skip_connections[-(idx+1)]
+                # Use Concatenate layer on the channel axis.
+                x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
+            # Apply a Conv1D layer with mirror filter.
+            filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
+            x = Conv1D(filters=filt,
+                       kernel_size=3,
+                       padding='same',
+                       activation='relu',
+                       kernel_initializer=HeNormal(),
+                       kernel_regularizer=l2(self.params['l2_reg']),
+                       name=f"conv1d_mirror_{idx+1}")(x)
+            x = BatchNormalization(name=f"bn_decoder_{idx+1}")(x)
         
+        # Final mapping: if using sliding windows, map to original feature count.
+        if use_sliding_windows:
+            output = Conv1D(filters=orig_features,
+                            kernel_size=3,
+                            strides=1,
+                            padding='same',
+                            activation='tanh',
+                            kernel_initializer=GlorotUniform(),
+                            kernel_regularizer=l2(self.params['l2_reg']),
+                            name="decoder_output_conv1d")(x)
+        else:
+            output = Flatten(name="decoder_flatten")(x)
+            output = Dense(units=window_size,
+                           activation='linear',
+                           kernel_initializer=GlorotUniform(),
+                           kernel_regularizer=l2(self.params['l2_reg']),
+                           name="decoder_dense_output")(output)
+        
+        self.model = Model(inputs=latent_input, outputs=output, name="decoder_cnn_model")
         final_output_shape = self.model.output_shape
         print(f"[DEBUG] Final Output Shape: {final_output_shape}")
         
@@ -151,7 +147,6 @@ class Plugin:
             run_eagerly=False
         )
         print(f"[DEBUG] Model compiled successfully.")
-
 
 
     def train(self, encoded_data, original_data):

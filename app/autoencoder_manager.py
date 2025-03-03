@@ -57,11 +57,51 @@ class AutoencoderManager:
                 clipvalue=0.5
             )
 
-            # Use pure Huber loss for reconstruction.
+            # If use_mmd is enabled in config, add the MMD loss term.
+            if config.get('use_mmd', False):
+                def gaussian_kernel_matrix(x, y, sigma):
+                    # x and y are 2D: (batch_size, features)
+                    x_size = tf.shape(x)[0]
+                    y_size = tf.shape(y)[0]
+                    dim = tf.shape(x)[1]
+                    x_expanded = tf.reshape(x, [x_size, 1, dim])
+                    y_expanded = tf.reshape(y, [1, y_size, dim])
+                    squared_diff = tf.reduce_sum(tf.square(x_expanded - y_expanded), axis=2)
+                    return tf.exp(-squared_diff / (2.0 * sigma**2))
+                
+                def mmd_loss_term(y_true, y_pred, sigma):
+                    # Flatten inputs to 2D.
+                    y_true = tf.reshape(y_true, [tf.shape(y_true)[0], -1])
+                    y_pred = tf.reshape(y_pred, [tf.shape(y_pred)[0], -1])
+                    K_xx = gaussian_kernel_matrix(y_true, y_true, sigma)
+                    K_yy = gaussian_kernel_matrix(y_pred, y_pred, sigma)
+                    K_xy = gaussian_kernel_matrix(y_true, y_pred, sigma)
+                    m = tf.cast(tf.shape(y_true)[0], tf.float32)
+                    n = tf.cast(tf.shape(y_pred)[0], tf.float32)
+                    mmd = tf.reduce_sum(K_xx) / (m * m) + tf.reduce_sum(K_yy) / (n * n) - 2 * tf.reduce_sum(K_xy) / (m * n)
+                    return mmd
+
+                def mmd_metric(y_true, y_pred):
+                    sigma = config.get('mmd_sigma', 1.0)
+                    return mmd_loss_term(y_true, y_pred, sigma)
+
+                def combined_loss(y_true, y_pred):
+                    huber_loss = Huber(delta=1.0)(y_true, y_pred)
+                    sigma = config.get('mmd_sigma', 1.0)
+                    stat_weight = config.get('statistical_loss_weight', 1.0)
+                    mmd = mmd_loss_term(y_true, y_pred, sigma)
+                    return huber_loss + stat_weight * mmd
+
+                loss_fn = combined_loss
+                metrics = ['mae', mmd_metric]
+            else:
+                loss_fn = Huber(delta=1.0)
+                metrics = ['mae']
+
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
-                loss=Huber(delta=1.0),
-                metrics=['mae'],
+                loss=loss_fn,
+                metrics=metrics,
                 run_eagerly=True
             )
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
@@ -69,6 +109,8 @@ class AutoencoderManager:
         except Exception as e:
             print(f"[build_autoencoder] Exception occurred: {e}")
             raise
+
+
 
     def train_autoencoder(self, data, epochs=100, batch_size=128, config=None):
         try:

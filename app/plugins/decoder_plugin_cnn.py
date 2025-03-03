@@ -43,16 +43,21 @@ class Plugin:
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
+        # If encoder_output_shape is of length 1, interpret it as (1, value)
+        if isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 1:
+            encoder_output_shape = (1, encoder_output_shape[0])
+        
+        # Extract sequence_length and num_filters from encoder_output_shape.
         sequence_length, num_filters = encoder_output_shape
         print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
 
         num_intermediate_layers = self.params['intermediate_layers']
         print(f"[DEBUG] Number of intermediate layers={num_intermediate_layers}")
         
-        layers = [output_shape*2]
-        current_size = output_shape*2
+        layers = [output_shape * 2]
+        current_size = output_shape * 2
         l2_reg = 1e-2
-        for i in range(num_intermediate_layers-1):
+        for i in range(num_intermediate_layers - 1):
             next_size = current_size // 2
             if next_size < interface_size:
                 next_size = interface_size
@@ -60,7 +65,6 @@ class Plugin:
             current_size = next_size
 
         layers.append(interface_size)
-
         layer_sizes = layers[::-1]
         print(f"[DEBUG] Calculated decoder layer sizes: {layer_sizes}")
 
@@ -77,7 +81,7 @@ class Plugin:
             padding='same',
             input_shape=(sequence_length, num_filters)
         ))
-        #self.model.add(BatchNormalization())
+        # self.model.add(BatchNormalization())
 
         for idx, size in enumerate(layer_sizes[1:], start=1):
             strides = 2 if idx < len(layer_sizes) - 1 else 1
@@ -90,7 +94,7 @@ class Plugin:
                 kernel_initializer=GlorotUniform(),
                 kernel_regularizer=l2(l2_reg)
             ))
-            #self.model.add(BatchNormalization())
+            # self.model.add(BatchNormalization())
 
         if use_sliding_windows:
             # For sliding windows, retain the temporal dimension
@@ -131,7 +135,6 @@ class Plugin:
             run_eagerly=False
         )
         print(f"[DEBUG] Model compiled successfully.")
-
 
 
 

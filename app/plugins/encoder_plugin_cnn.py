@@ -117,8 +117,9 @@ class Plugin:
             name="dense_final"
         )(x)
         x = BatchNormalization(name="batch_norm")(x)
-        x = Flatten(name="flatten")
-        x = x(x) if callable(x) else x  # Ensure proper flattening
+        # Correctly apply the Flatten layer:
+        flatten_layer = Flatten(name="flatten")
+        x = flatten_layer(x)
         model_output = Dense(
             units=interface_size,
             activation='linear',
@@ -147,6 +148,8 @@ class Plugin:
             run_eagerly=False
         )
         print("[configure_size] Encoder model compiled successfully.")
+
+
 
     def encode_data(self, data):
         """

@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Concatenate, Input, Add, LayerNormalization
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Concatenate, Input, Add, LayerNormalization, ZeroPadding1D
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
@@ -10,7 +10,7 @@ import tensorflow as tf
 class Plugin:
     plugin_params = {
         'batch_size': 128,
-        'intermediate_layers': 3,  # Configurable by the user
+        'intermediate_layers': 3,
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
         'learning_rate': 0.0001,
@@ -37,13 +37,19 @@ class Plugin:
     def residual_block(self, x, skip, filters, kernel_size=3, dilation_rate=1, name="res_block"):
         """
         Implements a residual convolutional block with dilation.
-        Ensures the skip connection matches `x` in shape before merging.
+        Ensures the skip connection matches `x` in both sequence length and feature depth before merging.
         """
         print(f"[DEBUG] residual_block - x shape: {x.shape}, skip shape: {skip.shape}")
 
-        # Project skip connection if shape does not match
+        # Fix mismatched sequence length with ZeroPadding
+        if skip.shape[1] < x.shape[1]:  # Skip tensor is shorter than x
+            pad_width = x.shape[1] - skip.shape[1]
+            print(f"[DEBUG] ZeroPadding skip connection from {skip.shape[1]} to {x.shape[1]}")
+            skip = ZeroPadding1D(padding=(0, pad_width))(skip)
+
+        # Fix mismatched feature depth with projection layer
         if skip.shape[-1] != x.shape[-1]:
-            print(f"[DEBUG] Adjusting skip connection from {skip.shape[-1]} to {x.shape[-1]} BEFORE merging")
+            print(f"[DEBUG] Adjusting skip connection depth from {skip.shape[-1]} to {x.shape[-1]} BEFORE merging")
             skip = Conv1D(filters=x.shape[-1], kernel_size=1, padding="same",
                           activation=None, kernel_initializer=HeNormal(),
                           kernel_regularizer=l2(self.params['l2_reg']),
@@ -97,14 +103,7 @@ class Plugin:
             if skip_tensors and idx < len(skip_tensors):
                 skip = skip_tensors[-(idx+1)]
 
-                if skip.shape[-1] != x.shape[-1]:
-                    print(f"[DEBUG] Adjusting skip connection from {skip.shape[-1]} to {x.shape[-1]}")
-                    skip = Conv1D(filters=x.shape[-1], kernel_size=1, padding="same",
-                                  activation=None, kernel_initializer=HeNormal(),
-                                  kernel_regularizer=l2(self.params['l2_reg']),
-                                  name=f"skip_proj_{idx+1}")(skip)
-                    skip = LayerNormalization(name=f"skip_norm_{idx+1}")(skip)  # Apply normalization after projection
-
+                # Fix both sequence length and feature depth before merging
                 x = self.residual_block(x, skip, filters=mirror_filters[idx], dilation_rate=2, name=f"res_block_{idx+1}")
             else:
                 x = Conv1D(filters=mirror_filters[idx], kernel_size=3, padding='same',

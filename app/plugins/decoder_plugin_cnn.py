@@ -105,7 +105,7 @@ class Plugin:
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):
         """
         Configures and builds the decoder model as the mirror of the encoder using optimized architecture.
-        
+
         Args:
             interface_size (int): The latent dimension.
             output_shape (int or tuple): Original input shape; if tuple, first element is window size, second is feature count.
@@ -114,7 +114,7 @@ class Plugin:
             use_sliding_windows (bool): Whether sliding windows are used.
             encoder_skip_connections (list): List of skip connection tensors from the encoder.
         """
-        self.params['interface_size'] = interface_size
+        self.params['interface_size'] = interface_size  # Ensure parameter is stored
 
         if isinstance(output_shape, tuple):
             window_size, orig_features = output_shape
@@ -125,15 +125,20 @@ class Plugin:
 
         if isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 1:
             encoder_output_shape = (1, encoder_output_shape[0])
-        T, F = encoder_output_shape
+
+        T, F = encoder_output_shape  # Extract pre-flatten shape from encoder
         print(f"[DEBUG] Using encoder pre-flatten shape: T={T}, F={F}")
         print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
 
+        # Ensure function receives all expected arguments and maintains compatibility
         latent_input = Input(shape=(interface_size,), name="decoder_latent")
         output = self.build_decoder(latent_input, encoder_skip_connections, output_shape, encoder_output_shape)
+
+        # Define the decoder model
         self.model = Model(inputs=[latent_input] + encoder_skip_connections, outputs=output, name="decoder_cnn_model")
         print(f"[DEBUG] Final Output Shape: {self.model.output_shape}")
 
+        # Optimizer and loss setup
         adam_optimizer = Adam(
             learning_rate=self.params['learning_rate'],
             beta_1=0.9,
@@ -142,7 +147,7 @@ class Plugin:
             amsgrad=False
         )
         self.model.compile(optimizer=adam_optimizer,
-                        loss=Huber(),
-                        metrics=['mse', 'mae'],
-                        run_eagerly=False)
+                            loss=Huber(),
+                            metrics=['mse', 'mae'],
+                            run_eagerly=False)
         print(f"[DEBUG] Model compiled successfully.")

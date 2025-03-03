@@ -10,7 +10,7 @@ from keras.callbacks import EarlyStopping
 class Plugin:
     plugin_params = {
         'batch_size': 128,
-        'intermediate_layers': 3, 
+        'intermediate_layers': 3,
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
         'learning_rate': 0.0001,
@@ -54,7 +54,7 @@ class Plugin:
         else:
             window_size = output_shape
             orig_features = None  # Should not occur
-        T, F = encoder_output_shape  # For example, (16, 32)
+        T, F = encoder_output_shape  # e.g., (16, 32)
         flat_dim = T * F
 
         # Expand latent vector to flat_dim and reshape to (T, F)
@@ -71,10 +71,10 @@ class Plugin:
             enc_layers.append(current)
             current = max(current // self.params['layer_size_divisor'], self.params['interface_size'])
         enc_layers.append(self.params['interface_size'])
-        # Mirror conv filter sizes from encoder conv blocks (exclude final Dense mapping)
-        mirror_filters = enc_layers[:-1][::-1]  # E.g., if enc_layers = [128, 64, 32, 32] then mirror_filters = [32, 64, 128]
+        # Mirror conv filter sizes from encoder conv blocks
+        mirror_filters = enc_layers[:-1][::-1]  # e.g., if enc_layers = [128, 64, 32, 32] then mirror_filters = [32, 64, 128]
         
-        # For each intermediate layer, upsample, concatenate corresponding skip, then apply Conv1D + BN with tanh.
+        # For each intermediate layer, upsample, concatenate the corresponding skip tensor, then apply Conv1D + BN with tanh.
         for idx in range(self.params['intermediate_layers']):
             x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
             if skip_tensors and idx < len(skip_tensors):
@@ -84,15 +84,15 @@ class Plugin:
             x = Conv1D(filters=filt,
                        kernel_size=3,
                        padding='same',
-                       activation='tanh',  # use tanh instead of LeakyReLU
+                       activation='tanh',  # using tanh here
                        kernel_initializer=HeNormal(),
                        kernel_regularizer=l2(self.params['l2_reg']),
                        name=f"conv1d_mirror_{idx+1}")(x)
             x = BatchNormalization(name=f"bn_decoder_{idx+1}")(x)
-        # Final mapping: flatten and then use a Dense layer with linear activation.
+        # Final mapping: flatten then Dense layer with linear activation, then reshape to (window_size, orig_features)
         x = Flatten(name="decoder_flatten")(x)
         x = Dense(units=window_size * orig_features,
-                  activation='linear',  # final mapping with linear activation
+                  activation='linear',
                   kernel_initializer=GlorotUniform(),
                   kernel_regularizer=l2(self.params['l2_reg']),
                   name="decoder_dense_output")(x)
@@ -111,7 +111,6 @@ class Plugin:
             use_sliding_windows (bool): Whether sliding windows are used.
             encoder_skip_connections (list): List of skip connection tensors from the encoder.
         """
-        # Ensure the latent dimension key is set.
         self.params['interface_size'] = interface_size
 
         if isinstance(output_shape, tuple):

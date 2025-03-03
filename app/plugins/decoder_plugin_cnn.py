@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Conv1D, UpSampling1D, BatchNormalization, Reshape, Concatenate, Flatten, Input
+from keras.layers import Dense, Conv1D, UpSampling1D, BatchNormalization, Reshape, Concatenate, Flatten, Input, LayerNormalization, MultiHeadAttention
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
@@ -58,10 +58,12 @@ class Plugin:
             orig_features = None  # Should not occur
         T, F = encoder_output_shape  # e.g., (16, 32)
         l2_reg = self.params.get('l2_reg', 1e-4)
+        activation = self.params.get('activation', 'tanh')
+        
         # Expand latent vector to match the encoder output shape
-        x = Dense(units=T * F, activation=self.params['activation'],
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(self.params['l2_reg']))(latent_input)
+        x = Dense(units=T * F, activation=activation,
+                  kernel_initializer=GlorotUniform(),
+                  kernel_regularizer=l2(l2_reg))(latent_input)
         x = Reshape((T, F), name="reshape")(x)
 
         # Reduce filter sizes in the decoder
@@ -83,24 +85,30 @@ class Plugin:
                 x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
             filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
             x = Conv1D(filters=filt,
-                    kernel_size=3,
-                    padding='same',
-                    activation='tanh',
-                    kernel_initializer=HeNormal(),
-                    kernel_regularizer=l2(self.params['l2_reg']),
-                    name=f"conv1d_mirror_{idx+1}")(x)
+                       kernel_size=3,
+                       padding='same',
+                       activation=activation,
+                       kernel_initializer=HeNormal(),
+                       kernel_regularizer=l2(l2_reg),
+                       name=f"conv1d_mirror_{idx+1}")(x)
+            # Add a multi-head self-attention block
+            attn_out = MultiHeadAttention(num_heads=4,
+                                          key_dim=filt,
+                                          dropout=0.1,
+                                          name=f"attn_{idx+1}")(x, x)
+            # Residual connection and layer normalization
+            x = LayerNormalization(name=f"layernorm_{idx+1}")(x + attn_out)
 
         # Final Conv1D layer to ensure proper channel alignment
         x = Conv1D(filters=orig_features, kernel_size=1, activation='linear',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(self.params['l2_reg']),
-                name="decoder_final_conv")(x)
+                   kernel_initializer=GlorotUniform(),
+                   kernel_regularizer=l2(l2_reg),
+                   name="decoder_final_conv")(x)
         x = Dense(units=orig_features,
                   activation='linear',
                   kernel_initializer=GlorotUniform(),
                   kernel_regularizer=l2(l2_reg))(x)
         return x
-
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):
         """
@@ -142,7 +150,7 @@ class Plugin:
             amsgrad=False
         )
         self.model.compile(optimizer=adam_optimizer,
-                        loss=Huber(),
-                        metrics=['mse', 'mae'],
-                        run_eagerly=False)
+                           loss=Huber(),
+                           metrics=['mse', 'mae'],
+                           run_eagerly=False)
         print(f"[DEBUG] Model compiled successfully.")

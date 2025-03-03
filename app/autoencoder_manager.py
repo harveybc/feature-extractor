@@ -23,24 +23,29 @@ class AutoencoderManager:
 
             use_sliding_windows = config.get('use_sliding_windows', True)
 
-            # Configure encoder; this will store pre_flatten_shape and skip_connections.
+            # Configure encoder; this stores pre_flatten_shape and skip_connections.
             self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows)
             self.encoder_model = self.encoder_plugin.encoder_model
             print("[build_autoencoder] Encoder model built and compiled successfully")
             self.encoder_model.summary()
 
-            # Use the stored pre-flatten shape and skip connections from encoder.
+            # Retrieve encoder pre-flatten shape and skip connections.
             encoder_preflatten = self.encoder_plugin.pre_flatten_shape
             encoder_skips = self.encoder_plugin.skip_connections
             print(f"Encoder pre-flatten shape: {encoder_preflatten}")
-            # Configure decoder, now also passing encoder skip connections.
+
+            # Configure decoder using the pre-flatten shape and skip connections.
+            # Build decoder as a multi-input Functional model.
             self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_preflatten, use_sliding_windows, encoder_skips)
             self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built and compiled successfully")
             self.decoder_model.summary()
 
             # Build autoencoder by chaining encoder and decoder.
-            autoencoder_output = self.decoder_model(self.encoder_model.output)
+            # The decoder model expects inputs: [latent] + skip_connections.
+            latent = self.encoder_model.output  # shape: (None, interface_size)
+            decoder_inputs = [latent] + encoder_skips
+            autoencoder_output = self.decoder_model(decoder_inputs)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
 
             adam_optimizer = Adam(
@@ -97,9 +102,6 @@ class AutoencoderManager:
         except Exception as e:
             print(f"[build_autoencoder] Exception occurred: {e}")
             raise
-
-
-
 
 
     def train_autoencoder(self, data, epochs=100, batch_size=128, config=None):

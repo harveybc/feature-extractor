@@ -11,8 +11,8 @@ import tensorflow as tf
 class Plugin:
     """
     A CNN-based encoder plugin for feature extraction using Keras.
-    This model architecture is adapted from the provided CNN predictor plugin,
-    with the final output dimension (time_horizon) set equal to the desired interface size.
+    This architecture is adapted from a CNN predictor and outputs a latent vector
+    of dimension equal to the desired interface size.
     """
     plugin_params = {
         'batch_size': 128,
@@ -20,7 +20,7 @@ class Plugin:
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
         'learning_rate': 0.0001,
-        'l2_reg': 1e-2,     # L2 regularization factor
+        'l2_reg': 1e-2,
         'activation': 'tanh'
     }
     plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers', 'initial_layer_size', 'time_horizon']
@@ -29,7 +29,7 @@ class Plugin:
         self.params = self.plugin_params.copy()
         self.encoder_model = None
         self.pre_flatten_shape = None  # NEW: store shape before flattening
-        self.skip_connections = []     # NEW: store skip connections
+        self.skip_connections = []     # NEW: store outputs before each pooling
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
@@ -39,8 +39,7 @@ class Plugin:
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
-        plugin_debug_info = self.get_debug_info()
-        debug_info.update(plugin_debug_info)
+        debug_info.update(self.get_debug_info())
 
     def configure_size(self, input_shape, interface_size, num_channels, use_sliding_windows):
         if not (isinstance(input_shape, tuple) and len(input_shape) == 2):
@@ -63,66 +62,53 @@ class Plugin:
 
         inputs = Input(shape=input_shape, name="model_input")
         x = inputs
-        x = Dense(
-            units=layers[0],
-            activation=self.params['activation'],
-            kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg)
-        )(x)
-        self.skip_connections = []  # initialize list for skip outputs
+        x = Dense(units=layers[0],
+                  activation=self.params['activation'],
+                  kernel_initializer=GlorotUniform(),
+                  kernel_regularizer=l2(l2_reg))(x)
+        self.skip_connections = []  # reset skip connections
         for idx, size in enumerate(layers[:-1]):
             if size > 1:
-                x = Conv1D(
-                    filters=size,
-                    kernel_size=3,
-                    activation='relu',
-                    kernel_initializer=HeNormal(),
-                    padding='same',
-                    kernel_regularizer=l2(l2_reg),
-                    name=f"conv1d_{idx+1}"
-                )(x)
+                x = Conv1D(filters=size,
+                           kernel_size=3,
+                           activation='relu',
+                           kernel_initializer=HeNormal(),
+                           padding='same',
+                           kernel_regularizer=l2(l2_reg),
+                           name=f"conv1d_{idx+1}")(x)
                 # Store skip connection BEFORE pooling
                 self.skip_connections.append(x)
                 x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
-        x = Dense(
-            units=size,
-            activation=self.params['activation'],
-            kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg),
-            name="dense_final"
-        )(x)
+        x = Dense(units=size,
+                  activation=self.params['activation'],
+                  kernel_initializer=GlorotUniform(),
+                  kernel_regularizer=l2(l2_reg),
+                  name="dense_final")(x)
         x = BatchNormalization(name="batch_norm")(x)
         # Save pre-flatten shape for decoder usage.
         self.pre_flatten_shape = x.shape[1:]
         print(f"[DEBUG] Pre-flatten shape: {self.pre_flatten_shape}")
         x = Flatten(name="flatten")(x)
-        model_output = Dense(
-            units=layers[-1],
-            activation='linear',
-            kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg),
-            name="model_output"
-        )(x)
+        model_output = Dense(units=layers[-1],
+                             activation='linear',
+                             kernel_initializer=GlorotUniform(),
+                             kernel_regularizer=l2(l2_reg),
+                             name="model_output")(x)
 
         self.encoder_model = Model(inputs=inputs, outputs=model_output, name="encoder_cnn_model")
         print("CNN Model Summary:")
         self.encoder_model.summary()
 
-        adam_optimizer = Adam(
-            learning_rate=self.params['learning_rate'],
-            beta_1=0.9,
-            beta_2=0.999,
-            epsilon=1e-7,
-            amsgrad=False
-        )
-        self.encoder_model.compile(
-            optimizer=adam_optimizer,
-            loss=Huber(),
-            metrics=['mse', 'mae'],
-            run_eagerly=False
-        )
+        adam_optimizer = Adam(learning_rate=self.params['learning_rate'],
+                              beta_1=0.9,
+                              beta_2=0.999,
+                              epsilon=1e-7,
+                              amsgrad=False)
+        self.encoder_model.compile(optimizer=adam_optimizer,
+                                   loss=Huber(),
+                                   metrics=['mse', 'mae'],
+                                   run_eagerly=False)
         print("CNN Model compiled successfully.")
-
 
     def encode_data(self, data):
         """

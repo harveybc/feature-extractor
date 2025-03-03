@@ -58,14 +58,10 @@ class Plugin:
         flat_dim = T * F
 
         # Expand latent vector to match the encoder output shape
-        x = Dense(units=flat_dim // 2,  # Reduce dimensionality here
+        x = Dense(units=flat_dim,  # Ensure this matches encoder shape
                 activation=self.params['activation'],
                 kernel_initializer=GlorotUniform(),
                 kernel_regularizer=l2(self.params['l2_reg']))(latent_input)
-        x = Dense(units=flat_dim,  # Expand progressively instead of jumping to full size
-                activation=self.params['activation'],
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(self.params['l2_reg']))(x)
         x = Reshape((T, F), name="reshape")(x)
 
         # Recompute layer sizes with reduced filters in the decoder
@@ -94,9 +90,9 @@ class Plugin:
                     kernel_regularizer=l2(self.params['l2_reg']),
                     name=f"conv1d_mirror_{idx+1}")(x)
 
-        # Final mapping: reduce the dense layer size to avoid excessive parameters
+        # Final mapping: ensure correct output size for reshaping
         x = Flatten(name="decoder_flatten")(x)
-        x = Dense(units=window_size * orig_features // 2,  # Reduce final dense output size
+        x = Dense(units=window_size * orig_features,  # Ensure exact output shape
                 activation='linear',
                 kernel_initializer=GlorotUniform(),
                 kernel_regularizer=l2(self.params['l2_reg']),

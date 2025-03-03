@@ -103,6 +103,7 @@ class Plugin:
 
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):
+
         """
         Configures and builds the decoder model as the mirror of the encoder using optimized architecture.
         

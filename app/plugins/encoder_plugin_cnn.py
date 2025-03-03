@@ -6,6 +6,7 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
+from tensorflow.keras.activations import linear
 import tensorflow as tf
 
 class Plugin:
@@ -63,7 +64,7 @@ class Plugin:
         inputs = Input(shape=input_shape, name="model_input")
         x = inputs
         x = Dense(units=layers[0],
-                  activation=self.params['activation'],
+                  activation=linear,
                   kernel_initializer=GlorotUniform(),
                   kernel_regularizer=l2(l2_reg))(x)
         self.skip_connections = []  # reset skip connections

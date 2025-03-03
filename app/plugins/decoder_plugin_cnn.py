@@ -7,6 +7,8 @@ from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
 from keras.callbacks import EarlyStopping
 from sklearn.metrics import r2_score
+#linear layer
+from tensorflow.keras.activations import linear
 
 class Plugin:
     plugin_params = {
@@ -92,7 +94,7 @@ class Plugin:
                        name=f"conv1d_mirror_{idx+1}")(x)
             x = BatchNormalization(name=f"bn_decoder_{idx+1}")(x)
         # Final mapping: map to original feature count.
-        output = Conv1D(filters=orig_features,
+        x = Conv1D(filters=orig_features,
                         kernel_size=3,
                         strides=1,
                         padding='same',
@@ -100,6 +102,10 @@ class Plugin:
                         kernel_initializer=GlorotUniform(),
                         kernel_regularizer=l2(self.params['l2_reg']),
                         name="decoder_output_conv1d")(x)
+        output = Dense(units=orig_features,
+                activation=linear,
+                kernel_initializer=GlorotUniform(),
+                kernel_regularizer=l2(self.params['l2_reg']))(x)
         return output
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):

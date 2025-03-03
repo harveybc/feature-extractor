@@ -55,16 +55,14 @@ class Plugin:
             window_size = output_shape
             orig_features = None  # Should not occur
         T, F = encoder_output_shape  # e.g., (16, 32)
-        flat_dim = T * F
 
         # Expand latent vector to match the encoder output shape
-        x = Dense(units=flat_dim,  # Ensure this matches encoder shape
-                activation=self.params['activation'],
+        x = Dense(units=T * F, activation=self.params['activation'],
                 kernel_initializer=GlorotUniform(),
                 kernel_regularizer=l2(self.params['l2_reg']))(latent_input)
         x = Reshape((T, F), name="reshape")(x)
 
-        # Recompute layer sizes with reduced filters in the decoder
+        # Reduce filter sizes in the decoder
         enc_layers = []
         current = self.params['initial_layer_size']
         for i in range(self.params['intermediate_layers']):
@@ -72,10 +70,10 @@ class Plugin:
             current = max(current // self.params['layer_size_divisor'], self.params['interface_size'])
         enc_layers.append(self.params['interface_size'])
         
-        # Mirror conv filter sizes but reduce dimensions
+        # Mirror conv filter sizes with lightweight architecture
         mirror_filters = [max(f // 2, self.params['interface_size']) for f in enc_layers[:-1][::-1]]
 
-        # Upsampling and mirroring the encoder structure
+        # Upsampling and mirroring the encoder structure with lightweight layers
         for idx in range(self.params['intermediate_layers']):
             x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
             if skip_tensors and idx < len(skip_tensors):
@@ -90,18 +88,13 @@ class Plugin:
                     kernel_regularizer=l2(self.params['l2_reg']),
                     name=f"conv1d_mirror_{idx+1}")(x)
 
-        # Final mapping: ensure correct output size for reshaping
-        x = Flatten(name="decoder_flatten")(x)
-        x = Dense(units=window_size * orig_features,  # Ensure exact output shape
-                activation='linear',
+        # Final Conv1D layer to ensure proper channel alignment
+        x = Conv1D(filters=orig_features, kernel_size=1, activation='linear',
                 kernel_initializer=GlorotUniform(),
                 kernel_regularizer=l2(self.params['l2_reg']),
-                name="decoder_dense_output")(x)
+                name="decoder_final_conv")(x)
 
-        # Final reshape to match the original input shape
-        output = Reshape((window_size, orig_features), name="decoder_output")(x)
-        
-        return output
+        return x
 
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):

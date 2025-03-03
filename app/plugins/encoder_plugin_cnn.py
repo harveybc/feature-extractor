@@ -26,49 +26,26 @@ class Plugin:
     plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers', 'initial_layer_size', 'time_horizon']
 
     def __init__(self):
-        """
-        Initializes the Plugin with default parameters and no model.
-        """
         self.params = self.plugin_params.copy()
         self.encoder_model = None
-        self.pre_flatten_shape = None  # NEW: to store the shape before flattening
+        self.pre_flatten_shape = None  # NEW: store shape before flattening
+        self.skip_connections = []     # NEW: store skip connections
 
     def set_params(self, **kwargs):
-        """
-        Updates the plugin parameters with provided keyword arguments.
-        """
         for key, value in kwargs.items():
             self.params[key] = value
 
     def get_debug_info(self):
-        """
-        Retrieves the current values of debug variables.
-        """
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
-        """
-        Adds the plugin's debug information to an external debug_info dictionary.
-        """
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
     def configure_size(self, input_shape, interface_size, num_channels, use_sliding_windows):
-        """
-        Configures and builds the encoder model.
-        
-        Parameters:
-            input_shape (tuple): Must be of the form (window_size, features).
-            interface_size (int): Desired dimension of the encoded representation.
-            num_channels (int): Number of channels in the input data.
-            use_sliding_windows (bool): Indicates whether sliding windows are used.
-        
-        The final model will accept input_shape and output a vector of size interface_size.
-        """
         if not (isinstance(input_shape, tuple) and len(input_shape) == 2):
             raise ValueError(f"Invalid input_shape {input_shape}. Expected tuple (window_size, features).")
         self.params['input_shape'] = input_shape
-        # Set the output dimension key "time_horizon" equal to the desired interface size.
         self.params['time_horizon'] = interface_size
         print(f"CNN input_shape: {input_shape}")
 
@@ -81,11 +58,9 @@ class Plugin:
             layers.append(current_size)
             current_size = max(current_size // layer_size_divisor, 1)
             int_layers += 1
-        # The output layer size is set to 'time_horizon'
         layers.append(interface_size)
         print(f"CNN Layer sizes: {layers}")
 
-        # Define the Input layer with the provided name.
         inputs = Input(shape=input_shape, name="model_input")
         x = inputs
         x = Dense(
@@ -94,20 +69,21 @@ class Plugin:
             kernel_initializer=GlorotUniform(),
             kernel_regularizer=l2(l2_reg)
         )(x)
-        # Add intermediate Conv1D and MaxPooling1D layers.
+        self.skip_connections = []  # initialize list for skip outputs
         for idx, size in enumerate(layers[:-1]):
             if size > 1:
                 x = Conv1D(
-                    filters=size, 
-                    kernel_size=3, 
-                    activation='relu', 
-                    kernel_initializer=HeNormal(), 
+                    filters=size,
+                    kernel_size=3,
+                    activation='relu',
+                    kernel_initializer=HeNormal(),
                     padding='same',
                     kernel_regularizer=l2(l2_reg),
                     name=f"conv1d_{idx+1}"
                 )(x)
+                # Store skip connection BEFORE pooling
+                self.skip_connections.append(x)
                 x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
-        # Add a Dense projection after the convolutional blocks.
         x = Dense(
             units=size,
             activation=self.params['activation'],
@@ -116,7 +92,7 @@ class Plugin:
             name="dense_final"
         )(x)
         x = BatchNormalization(name="batch_norm")(x)
-        # *** NEW: Save the pre-flatten shape for use by the decoder ***
+        # Save pre-flatten shape for decoder usage.
         self.pre_flatten_shape = x.shape[1:]
         print(f"[DEBUG] Pre-flatten shape: {self.pre_flatten_shape}")
         x = Flatten(name="flatten")(x)
@@ -128,12 +104,10 @@ class Plugin:
             name="model_output"
         )(x)
 
-        # Create the encoder model and assign it to self.encoder_model.
         self.encoder_model = Model(inputs=inputs, outputs=model_output, name="encoder_cnn_model")
         print("CNN Model Summary:")
         self.encoder_model.summary()
 
-        # Define the Adam optimizer.
         adam_optimizer = Adam(
             learning_rate=self.params['learning_rate'],
             beta_1=0.9,
@@ -141,7 +115,6 @@ class Plugin:
             epsilon=1e-7,
             amsgrad=False
         )
-        # Compile the model with Huber loss and evaluation metrics.
         self.encoder_model.compile(
             optimizer=adam_optimizer,
             loss=Huber(),
@@ -149,6 +122,7 @@ class Plugin:
             run_eagerly=False
         )
         print("CNN Model compiled successfully.")
+
 
     def encode_data(self, data):
         """

@@ -21,61 +21,50 @@ class AutoencoderManager:
         try:
             print("[build_autoencoder] Starting to build autoencoder...")
 
-            # Determine if sliding windows are used
             use_sliding_windows = config.get('use_sliding_windows', True)
 
-            # Configure encoder size
+            # Configure encoder; this will store pre_flatten_shape and skip_connections.
             self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows)
-
-            # Get the encoder model
             self.encoder_model = self.encoder_plugin.encoder_model
             print("[build_autoencoder] Encoder model built and compiled successfully")
             self.encoder_model.summary()
 
-            # IMPORTANT: Use the pre-flatten shape stored by the encoder
-            encoder_output_shape = self.encoder_plugin.pre_flatten_shape
-            print(f"Encoder pre-flatten shape: {encoder_output_shape}")
-
-            # Configure the decoder size, passing the encoder's pre-flatten shape
-            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_output_shape, use_sliding_windows)
-
-            # Get the decoder model
+            # Use the stored pre-flatten shape and skip connections from encoder.
+            encoder_preflatten = self.encoder_plugin.pre_flatten_shape
+            encoder_skips = self.encoder_plugin.skip_connections
+            print(f"Encoder pre-flatten shape: {encoder_preflatten}")
+            # Configure decoder, now also passing encoder skip connections.
+            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_preflatten, use_sliding_windows, encoder_skips)
             self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built and compiled successfully")
             self.decoder_model.summary()
 
-            # Build autoencoder model by connecting encoder and decoder
+            # Build autoencoder by chaining encoder and decoder.
             autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
 
-            # Define optimizer
             adam_optimizer = Adam(
-                learning_rate=config['learning_rate'],  # Set the learning rate
-                beta_1=0.9,  
-                beta_2=0.999,  
-                epsilon=1e-7,  
+                learning_rate=config['learning_rate'],
+                beta_1=0.9,
+                beta_2=0.999,
+                epsilon=1e-7,
                 amsgrad=False,
                 clipnorm=1.0,
                 clipvalue=0.5
             )
 
-            # --- Begin Updated Loss Definition using MMD with explicit dtype casting ---
-                        # --- Begin Updated Loss Definition using MMD with explicit flattening ---
             def gaussian_kernel_matrix(x, y, sigma):
-                # x and y are now 2D: (batch_size, features)
                 x = tf.cast(x, tf.float32)
                 y = tf.cast(y, tf.float32)
                 x_size = tf.shape(x)[0]
                 y_size = tf.shape(y)[0]
                 dim = tf.shape(x)[1]
-                # Expand dimensions for pairwise distance computation.
                 x_expanded = tf.reshape(x, [x_size, 1, dim])
                 y_expanded = tf.reshape(y, [1, y_size, dim])
                 squared_diff = tf.reduce_sum(tf.square(x_expanded - y_expanded), axis=2)
                 return tf.exp(-squared_diff / (2.0 * sigma**2))
 
             def mmd_loss_term(y_true, y_pred, sigma):
-                # Flatten both y_true and y_pred to 2D: (batch_size, features)
                 y_true_flat = tf.reshape(y_true, [tf.shape(y_true)[0], -1])
                 y_pred_flat = tf.reshape(y_pred, [tf.shape(y_pred)[0], -1])
                 K_xx = gaussian_kernel_matrix(y_true_flat, y_true_flat, sigma)
@@ -96,7 +85,6 @@ class AutoencoderManager:
             def mmd_metric(y_true, y_pred):
                 sigma = config.get('mmd_sigma', 1.0)
                 return mmd_loss_term(y_true, y_pred, sigma)
-            # --- End Updated Loss Definition using MMD with explicit flattening ---
 
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
@@ -109,7 +97,6 @@ class AutoencoderManager:
         except Exception as e:
             print(f"[build_autoencoder] Exception occurred: {e}")
             raise
-
 
 
 

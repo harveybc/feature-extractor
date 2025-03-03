@@ -6,6 +6,8 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
 from keras.callbacks import EarlyStopping
+#import linear
+from 
 
 class Plugin:
     plugin_params = {
@@ -55,7 +57,7 @@ class Plugin:
             window_size = output_shape
             orig_features = None  # Should not occur
         T, F = encoder_output_shape  # e.g., (16, 32)
-
+        l2_reg = self.params.get('l2_reg', 1e-4)
         # Expand latent vector to match the encoder output shape
         x = Dense(units=T * F, activation=self.params['activation'],
                 kernel_initializer=GlorotUniform(),

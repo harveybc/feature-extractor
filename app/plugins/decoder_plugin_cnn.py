@@ -14,7 +14,7 @@ class Plugin:
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
         'learning_rate': 0.0001,
-        'l2_reg': 1e-2,
+        'l2_reg': 1e-5,
         'activation': 'tanh'
     }
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
@@ -88,7 +88,7 @@ class Plugin:
                        kernel_initializer=HeNormal(),
                        kernel_regularizer=l2(self.params['l2_reg']),
                        name=f"conv1d_mirror_{idx+1}")(x)
-            x = BatchNormalization(name=f"bn_decoder_{idx+1}")(x)
+            #x = BatchNormalization(name=f"bn_decoder_{idx+1}")(x)
         # Final mapping: flatten then Dense layer with linear activation, then reshape to (window_size, orig_features)
         x = Flatten(name="decoder_flatten")(x)
         x = Dense(units=window_size * orig_features,

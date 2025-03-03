@@ -20,7 +20,7 @@ class Plugin:
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
         'learning_rate': 0.0001,
-        'l2_reg': 1e-2,
+        'l2_reg': 1e-5,
         'activation': 'tanh'
     }
     plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers', 'initial_layer_size', 'time_horizon']
@@ -82,6 +82,7 @@ class Plugin:
                 # Store skip connection BEFORE pooling
                 self.skip_connections.append(x)
                 x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
+        x = BatchNormalization(name="batch_norm")(x)
         x = Dense(units=size,
                   activation=self.params['activation'],
                   kernel_initializer=GlorotUniform(),

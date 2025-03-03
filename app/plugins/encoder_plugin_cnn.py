@@ -3,6 +3,7 @@ from keras.models import Model, load_model, save_model
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input, BatchNormalization
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
 import tensorflow as tf
@@ -10,12 +11,12 @@ import tensorflow as tf
 class Plugin:
     """
     A CNN-based encoder plugin for feature extraction using Keras.
-    This model architecture is adapted from the perfect CNN_MMD predictor but modified
-    so that its output dimension equals the desired interface size (i.e. the encoded representation).
-    No MMD loss or metrics are included, since the autoencoder manager will add them if needed.
+    This model architecture is adapted from the provided CNN predictor plugin,
+    with the final output dimension (time_horizon) set equal to the desired interface size.
     """
-
+    # Updated plugin_params to exactly match the provided plugin.
     plugin_params = {
+        'batch_size': 128,
         'intermediate_layers': 3,
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
@@ -24,7 +25,8 @@ class Plugin:
         'activation': 'tanh'
     }
 
-    plugin_debug_vars = ['interface_size', 'input_shape', 'intermediate_layers']
+    # Updated plugin_debug_vars to include the same keys as the provided plugin.
+    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers', 'initial_layer_size', 'time_horizon']
 
     def __init__(self):
         """
@@ -36,6 +38,9 @@ class Plugin:
     def set_params(self, **kwargs):
         """
         Updates the plugin parameters with provided keyword arguments.
+        
+        Args:
+            **kwargs: Arbitrary keyword arguments to update plugin parameters.
         """
         for key, value in kwargs.items():
             self.params[key] = value
@@ -43,12 +48,18 @@ class Plugin:
     def get_debug_info(self):
         """
         Retrieves the current values of debug variables.
+        
+        Returns:
+            dict: Dictionary containing debug information.
         """
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
         """
         Adds the plugin's debug information to an external debug_info dictionary.
+        
+        Args:
+            debug_info (dict): External dictionary to update with debug information.
         """
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
@@ -68,10 +79,10 @@ class Plugin:
         if not (isinstance(input_shape, tuple) and len(input_shape) == 2):
             raise ValueError(f"Invalid input_shape {input_shape}. Expected tuple (window_size, features).")
         self.params['input_shape'] = input_shape
-        self.params['interface_size'] = interface_size
-        print(f"[configure_size] Encoder input_shape: {input_shape}, interface_size: {interface_size}, num_channels: {num_channels}, use_sliding_windows: {use_sliding_windows}")
+        # Set the output dimension key "time_horizon" equal to the desired interface size.
+        self.params['time_horizon'] = interface_size
+        print(f"CNN input_shape: {input_shape}")
 
-        # Build layer size list using the perfect predictor approach.
         layers = []
         current_size = self.params['initial_layer_size']
         l2_reg = self.params.get('l2_reg', 1e-4)
@@ -81,59 +92,55 @@ class Plugin:
             layers.append(current_size)
             current_size = max(current_size // layer_size_divisor, 1)
             int_layers += 1
-        # For the encoder, the final output is the interface size.
-        layers.append(interface_size)
-        print(f"[configure_size] Encoder layer sizes: {layers}")
+        # The output layer size is set to 'time_horizon'
+        layers.append(self.params['time_horizon'])
+        print(f"CNN Layer sizes: {layers}")
 
-        # Define the Input layer
-        inp = Input(shape=input_shape, name="encoder_input")
-        x = inp
-        # Initial Dense projection
+        # Define the Input layer with the provided name.
+        inputs = Input(shape=input_shape, name="model_input")
+        x = inputs
         x = Dense(
             units=layers[0],
             activation=self.params['activation'],
             kernel_initializer=GlorotUniform(),
             kernel_regularizer=l2(l2_reg)
         )(x)
-        # Add intermediate Conv1D and MaxPooling1D layers with unique names
+        # Add intermediate Conv1D and MaxPooling1D layers.
         for idx, size in enumerate(layers[:-1]):
             if size > 1:
                 x = Conv1D(
-                    filters=size, 
-                    kernel_size=3, 
-                    activation='relu', 
-                    kernel_initializer=HeNormal(), 
+                    filters=size,
+                    kernel_size=3,
+                    activation='relu',
+                    kernel_initializer=HeNormal(),
                     padding='same',
-                    kernel_regularizer=l2(l2_reg),
+                    kernel_regularizer=l2(self.params.get('l2_reg', 1e-4)),
                     name=f"conv1d_{idx+1}"
                 )(x)
                 x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
-        # A final Dense layer before output
+        # Add a Dense projection after the convolutional blocks.
         x = Dense(
-            units=layers[0],
+            units=size,
             activation=self.params['activation'],
             kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg),
-            name="dense_final"
+            kernel_regularizer=l2(l2_reg)
         )(x)
-        x = BatchNormalization(name="batch_norm")(x)
-        # Correctly apply the Flatten layer:
-        flatten_layer = Flatten(name="flatten")
-        x = flatten_layer(x)
+        x = BatchNormalization()(x)
+        x = Flatten(name="flatten")(x)
         model_output = Dense(
-            units=interface_size,
+            units=layers[-1],
             activation='linear',
             kernel_initializer=GlorotUniform(),
             kernel_regularizer=l2(l2_reg),
-            name="encoder_output"
+            name="model_output"
         )(x)
 
-        # Create the encoder model
-        self.encoder_model = Model(inputs=inp, outputs=model_output, name="cnn_mmd_encoder")
-        print("Encoder Model Summary:")
+        # Create the encoder model and assign it to self.encoder_model.
+        self.encoder_model = Model(inputs=inputs, outputs=model_output, name="cnn_model")
+        print("CNN Model Summary:")
         self.encoder_model.summary()
 
-        # Define optimizer and compile the model with simple Huber loss
+        # Define the Adam optimizer.
         adam_optimizer = Adam(
             learning_rate=self.params['learning_rate'],
             beta_1=0.9,
@@ -141,15 +148,14 @@ class Plugin:
             epsilon=1e-7,
             amsgrad=False
         )
+        # Compile the model with Huber loss and evaluation metrics.
         self.encoder_model.compile(
             optimizer=adam_optimizer,
             loss=Huber(),
-            metrics=['mae'],
+            metrics=['mse', 'mae'],
             run_eagerly=False
         )
-        print("[configure_size] Encoder model compiled successfully.")
-
-
+        print("CNN Model compiled successfully.")
 
     def encode_data(self, data):
         """

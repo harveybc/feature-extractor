@@ -60,25 +60,29 @@ class AutoencoderManager:
             )
 
             # --- Begin Updated Loss Definition using MMD with explicit dtype casting ---
+                        # --- Begin Updated Loss Definition using MMD with explicit flattening ---
             def gaussian_kernel_matrix(x, y, sigma):
+                # x and y are now 2D: (batch_size, features)
                 x = tf.cast(x, tf.float32)
                 y = tf.cast(y, tf.float32)
                 x_size = tf.shape(x)[0]
                 y_size = tf.shape(y)[0]
                 dim = tf.shape(x)[1]
+                # Expand dimensions for pairwise distance computation.
                 x_expanded = tf.reshape(x, [x_size, 1, dim])
                 y_expanded = tf.reshape(y, [1, y_size, dim])
                 squared_diff = tf.reduce_sum(tf.square(x_expanded - y_expanded), axis=2)
                 return tf.exp(-squared_diff / (2.0 * sigma**2))
 
             def mmd_loss_term(y_true, y_pred, sigma):
-                y_true = tf.cast(y_true, tf.float32)
-                y_pred = tf.cast(y_pred, tf.float32)
-                K_xx = gaussian_kernel_matrix(y_true, y_true, sigma)
-                K_yy = gaussian_kernel_matrix(y_pred, y_pred, sigma)
-                K_xy = gaussian_kernel_matrix(y_true, y_pred, sigma)
-                m = tf.cast(tf.shape(y_true)[0], tf.float32)
-                n = tf.cast(tf.shape(y_pred)[0], tf.float32)
+                # Flatten both y_true and y_pred to 2D: (batch_size, features)
+                y_true_flat = tf.reshape(y_true, [tf.shape(y_true)[0], -1])
+                y_pred_flat = tf.reshape(y_pred, [tf.shape(y_pred)[0], -1])
+                K_xx = gaussian_kernel_matrix(y_true_flat, y_true_flat, sigma)
+                K_yy = gaussian_kernel_matrix(y_pred_flat, y_pred_flat, sigma)
+                K_xy = gaussian_kernel_matrix(y_true_flat, y_pred_flat, sigma)
+                m = tf.cast(tf.shape(y_true_flat)[0], tf.float32)
+                n = tf.cast(tf.shape(y_pred_flat)[0], tf.float32)
                 mmd = tf.reduce_sum(K_xx) / (m * m) + tf.reduce_sum(K_yy) / (n * n) - 2 * tf.reduce_sum(K_xy) / (m * n)
                 return mmd
 
@@ -92,7 +96,7 @@ class AutoencoderManager:
             def mmd_metric(y_true, y_pred):
                 sigma = config.get('mmd_sigma', 1.0)
                 return mmd_loss_term(y_true, y_pred, sigma)
-            # --- End Updated Loss Definition using MMD ---
+            # --- End Updated Loss Definition using MMD with explicit flattening ---
 
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,

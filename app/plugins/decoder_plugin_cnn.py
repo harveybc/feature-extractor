@@ -7,7 +7,7 @@ from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
 from keras.callbacks import EarlyStopping
 #import linear
-from 
+
 
 class Plugin:
     plugin_params = {

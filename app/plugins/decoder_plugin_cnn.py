@@ -43,8 +43,8 @@ class Plugin:
         
         Parameters:
             interface_size (int): The latent dimension (must equal the encoder’s output).
-            output_shape (int or tuple): The original encoder input shape. If a tuple, its first element (window size)
-                                         is used and the second element is the original number of features.
+            output_shape (int or tuple): The original encoder input shape. If tuple, its first element (window size)
+                                         is used and the second element is the original feature count.
             num_channels (int): Number of channels in the original input.
             encoder_output_shape (tuple): The encoder pre-flatten shape (T, F), where T = window_size/(2^intermediate_layers)
                                           and F is the number of filters from the last Conv1D.
@@ -53,7 +53,6 @@ class Plugin:
         print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
         
         self.params['interface_size'] = interface_size
-        # If output_shape is a tuple, extract window size and original feature count.
         if isinstance(output_shape, tuple):
             window_size, orig_features = output_shape
         else:
@@ -64,15 +63,14 @@ class Plugin:
         # Ensure encoder_output_shape is a tuple of length 2.
         if isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 1:
             encoder_output_shape = (1, encoder_output_shape[0])
-        # encoder_output_shape should be (T, F). For example, for a 256-step input with 3 poolings, T = 256/8 = 32,
-        # and if the last Conv1D has 32 filters then F = 32.
+        # encoder_output_shape should be (T, F)
         T, F = encoder_output_shape
         print(f"[DEBUG] Using encoder pre-flatten shape: T={T}, F={F}")
         
-        # Compute the flattened dimension (should equal the number of units output by encoder's flatten layer).
-        flat_dim = T * F  # e.g., 32 * 32 = 1024
+        # Compute flattened dimension from encoder: flat_dim = T * F.
+        flat_dim = T * F
 
-        # Compute the encoder's layer sizes exactly as in the encoder.
+        # Recompute encoder layer sizes exactly as in the encoder.
         enc_layers = []
         current = self.params['initial_layer_size']
         for i in range(self.params['intermediate_layers']):
@@ -80,13 +78,13 @@ class Plugin:
             current = max(current // self.params['layer_size_divisor'], interface_size)
         enc_layers.append(interface_size)
         print(f"[DEBUG] Encoder layer sizes (from encoder): {enc_layers}")
-        # The mirror of the encoder's layer sizes is simply the reverse.
-        mirror_layers = enc_layers[::-1]  # e.g., [32, 32, 64, 128]
+        # Mirror the conv filter sizes (exclude the final interface size)
+        mirror_layers = enc_layers[:-1][::-1]  # e.g., if enc_layers = [128, 64, 32, 32] then mirror_layers = [32, 64, 128]
         print(f"[DEBUG] Mirrored decoder conv filter sizes: {mirror_layers}")
         
         # Build the decoder model.
         self.model = Sequential(name="decoder_cnn_model")
-        # Input: latent vector of shape (interface_size,)
+        # Expand latent vector to flat_dim and reshape to (T, F)
         self.model.add(Dense(units=flat_dim,
                              activation=self.params['activation'],
                              kernel_initializer=GlorotUniform(),
@@ -94,11 +92,8 @@ class Plugin:
                              input_shape=(interface_size,)))
         self.model.add(Reshape((T, F), name="reshape"))
         
-        # Apply a series of Conv1DTranspose layers to upsample the time dimension.
-        # We want to go from T (e.g., 32) to the original window size (e.g., 256).
-        # Using intermediate_layers (here, 3) upsampling layers with strides=2 gives an overall factor of 2^3 = 8.
-        # Use the first (n-1) values from mirror_layers for upsampling.
-        for idx, filt in enumerate(mirror_layers[:-1]):
+        # Apply a series of Conv1DTranspose layers with stride=2 to upsample from T to window_size.
+        for idx, filt in enumerate(mirror_layers):
             self.model.add(Conv1DTranspose(
                 filters=filt,
                 kernel_size=3,
@@ -109,17 +104,27 @@ class Plugin:
                 kernel_regularizer=l2(self.params['l2_reg']),
                 name=f"conv1d_transpose_{idx+1}"
             ))
-        # Final layer: map the filters to the original number of channels.
-        self.model.add(Conv1D(
-            filters=orig_features,
-            kernel_size=3,
-            strides=1,
-            padding='same',
-            activation='tanh',
-            kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(self.params['l2_reg']),
-            name="decoder_output_conv1d"
-        ))
+        # Final mapping: if using sliding windows, map channels to original feature count.
+        if use_sliding_windows:
+            self.model.add(Conv1D(
+                filters=orig_features,
+                kernel_size=3,
+                strides=1,
+                padding='same',
+                activation='tanh',
+                kernel_initializer=GlorotUniform(),
+                kernel_regularizer=l2(self.params['l2_reg']),
+                name="decoder_output_conv1d"
+            ))
+        else:
+            self.model.add(Flatten(name="decoder_flatten"))
+            self.model.add(Dense(
+                units=window_size,
+                activation='linear',
+                kernel_initializer=GlorotUniform(),
+                kernel_regularizer=l2(self.params['l2_reg']),
+                name="decoder_dense_output"
+            ))
         
         final_output_shape = self.model.output_shape
         print(f"[DEBUG] Final Output Shape: {final_output_shape}")
@@ -194,7 +199,7 @@ class Plugin:
 if __name__ == "__main__":
     plugin = Plugin()
     # For example, assume:
-    # - The encoder input shape was (256, 44).
+    # - The original encoder input shape was (256, 44).
     # - The encoder produced a pre-flatten shape of (32, 32) (i.e. T=32, F=32).
     # - The number of channels originally was 44.
     plugin.configure_size(interface_size=32, output_shape=(256, 44), num_channels=44, encoder_output_shape=(32, 32), use_sliding_windows=True)

@@ -65,7 +65,7 @@ class Plugin:
         x = inputs
         # First Dense layer uses tanh
         x = Dense(units=layers[0],
-                  activation='tanh',
+                  activation='linear',
                   kernel_initializer=GlorotUniform(),
                   kernel_regularizer=l2(l2_reg))(x)
         self.skip_connections = []  # Reset skip connections

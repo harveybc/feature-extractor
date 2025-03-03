@@ -93,7 +93,10 @@ class Plugin:
                 kernel_initializer=GlorotUniform(),
                 kernel_regularizer=l2(self.params['l2_reg']),
                 name="decoder_final_conv")(x)
-
+        x = Dense(units=orig_features,
+                  activation='linear',
+                  kernel_initializer=GlorotUniform(),
+                  kernel_regularizer=l2(l2_reg))(x)
         return x
 
 

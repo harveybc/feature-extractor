@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model, save_model, Model
-from keras.layers import Dense, Conv1D, Conv1DTranspose, Reshape, Flatten, BatchNormalization, MaxPooling1D, Input
+from keras.layers import Dense, Conv1D, Conv1DTranspose, Reshape, Flatten, BatchNormalization, Input
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
@@ -42,97 +42,88 @@ class Plugin:
         Configures and builds the decoder model as the exact mirror of the encoder.
         
         Parameters:
-            interface_size (int): Desired latent dimension (must equal the encoder’s output).
-            output_shape (int or tuple): The original window size. If tuple, the first element is used.
+            interface_size (int): The latent dimension (must equal the encoder's output).
+            output_shape (int or tuple): The original encoder input window size (if tuple, first element is used) and feature dimension.
             num_channels (int): Number of channels in the original input.
-            encoder_output_shape (tuple): Pre-flatten shape from the encoder. If length==1, it is converted to (1, value).
+            encoder_output_shape (tuple): Pre-flatten shape from the encoder (e.g., (T, F) where T * F equals the flattened size).
             use_sliding_windows (bool): If True, the output retains temporal dimensions.
         """
         print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
         
         self.params['interface_size'] = interface_size
-        # Ensure output_shape is a scalar representing the window size.
+        # Interpret output_shape: if tuple, extract window_size and original feature count.
         if isinstance(output_shape, tuple):
-            window_size = output_shape[0]
+            window_size, original_features = output_shape
         else:
             window_size = output_shape
+            original_features = num_channels
         self.params['output_shape'] = window_size
 
-        # Process encoder_output_shape: if length==1, convert to (1, value)
+        # Ensure encoder_output_shape is a tuple of length 2.
         if isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 1:
             encoder_output_shape = (1, encoder_output_shape[0])
-        # Extract sequence_length and num_filters from encoder_output_shape.
-        sequence_length, num_filters = encoder_output_shape
-        print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
+        # Here, encoder_output_shape should be (T, F); for example, (32, 32)
+        T, F = encoder_output_shape
+        print(f"[DEBUG] Using encoder pre-flatten shape: T={T}, F={F}")
 
-        num_intermediate_layers = self.params['intermediate_layers']
-        print(f"[DEBUG] Number of intermediate layers={num_intermediate_layers}")
-        
-        # Use l2_reg from parameters.
-        l2_reg = self.params['l2_reg']
-        # Here, we use window_size (a scalar) to compute the mirror sizes.
-        layers = [window_size * 2]
-        current_size = window_size * 2
-        for i in range(num_intermediate_layers - 1):
-            next_size = current_size // self.params['layer_size_divisor']
-            if next_size < interface_size:
-                next_size = interface_size
-            layers.append(next_size)
-            current_size = next_size
+        # Calculate the flattened dimension from the encoder.
+        flat_dim = T * F
 
-        layers.append(interface_size)
-        layer_sizes = layers[::-1]
-        print(f"[DEBUG] Calculated decoder layer sizes: {layer_sizes}")
+        # Mirror the encoder's conv filter sizes.
+        enc_filters = []
+        current = self.params['initial_layer_size']
+        for i in range(self.params['intermediate_layers']):
+            enc_filters.append(current)
+            current = max(current // self.params['layer_size_divisor'], interface_size)
+        mirror_filters = enc_filters[::-1]
+        print(f"[DEBUG] Encoder conv filters: {enc_filters}, mirrored: {mirror_filters}")
 
-        # Create the Sequential model with the required name.
+        # Build the decoder model.
         self.model = Sequential(name="decoder_cnn_model")
-
-        print(f"[DEBUG] Adding first Conv1DTranspose layer with input_shape=(sequence_length={sequence_length}, num_filters={num_filters})")
-        self.model.add(Conv1DTranspose(
-            filters=layer_sizes[0],
-            kernel_size=3,
-            strides=1,
-            activation='tanh',
-            kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg),
-            padding='same',
-            input_shape=(sequence_length, num_filters)
-        ))
-
-        for idx, size in enumerate(layer_sizes[1:], start=1):
-            strides = 2 if idx < len(layer_sizes) - 1 else 1
+        # Input: latent vector of shape (interface_size,)
+        self.model.add(Dense(units=flat_dim,
+                             activation=self.params['activation'],
+                             kernel_initializer=GlorotUniform(),
+                             kernel_regularizer=l2(self.params['l2_reg']),
+                             input_shape=(interface_size,)))
+        self.model.add(Reshape((T, F), name="reshape"))
+        
+        # Apply a series of Conv1DTranspose layers to mirror the encoder's Conv1D + pooling blocks.
+        # Each Conv1DTranspose upsamples the time dimension by a factor of 2.
+        for idx, filt in enumerate(mirror_filters):
             self.model.add(Conv1DTranspose(
-                filters=size,
+                filters=filt,
                 kernel_size=3,
-                strides=strides,
+                strides=2,
                 padding='same',
                 activation='tanh',
                 kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg)
+                kernel_regularizer=l2(self.params['l2_reg']),
+                name=f"conv1d_transpose_{idx+1}"
             ))
-
+        # At this point, the time dimension should be approximately restored to window_size.
         if use_sliding_windows:
-            # For sliding windows, map the output to the original number of channels.
-            self.model.add(Conv1DTranspose(
-                filters=num_channels,
+            # Final mapping to original feature dimension.
+            self.model.add(Conv1D(
+                filters=original_features,
                 kernel_size=3,
+                strides=1,
                 padding='same',
                 activation='tanh',
                 kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg),
-                name="decoder_output"
+                kernel_regularizer=l2(self.params['l2_reg']),
+                name="decoder_output_conv1d"
             ))
         else:
-            # For row-by-row data, flatten the output and use a Dense layer.
             self.model.add(Flatten(name="decoder_flatten"))
             self.model.add(Dense(
                 units=window_size,
                 activation='linear',
                 kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg),
+                kernel_regularizer=l2(self.params['l2_reg']),
                 name="decoder_dense_output"
             ))
-
+        
         final_output_shape = self.model.output_shape
         print(f"[DEBUG] Final Output Shape: {final_output_shape}")
 
@@ -205,6 +196,8 @@ class Plugin:
 # Debugging usage example
 if __name__ == "__main__":
     plugin = Plugin()
-    plugin.configure_size(interface_size=32, output_shape=(256, 44), num_channels=44, encoder_output_shape=(32,), use_sliding_windows=True)
+    # For example, assume the encoder pre-flatten shape is (32, 32) (i.e. from 256->32 via pooling)
+    # and the original input shape was (256, 44) with 44 channels.
+    plugin.configure_size(interface_size=32, output_shape=(256, 44), num_channels=44, encoder_output_shape=(32, 32), use_sliding_windows=True)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

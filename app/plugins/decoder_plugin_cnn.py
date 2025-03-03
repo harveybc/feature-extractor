@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Concatenate, Input, Add, LayerNormalization, ZeroPadding1D
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Input, Add, LayerNormalization, ZeroPadding1D
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
@@ -104,6 +104,12 @@ class Plugin:
                 skip = skip_tensors[-(idx+1)]
 
                 # Fix both sequence length and feature depth before merging
+                skip = Conv1D(filters=x.shape[-1], kernel_size=1, padding="same",
+                              activation=None, kernel_initializer=HeNormal(),
+                              kernel_regularizer=l2(self.params['l2_reg']),
+                              name=f"skip_proj_{idx+1}")(skip)
+                skip = LayerNormalization(name=f"skip_norm_{idx+1}")(skip)  # Apply normalization after projection
+                
                 x = self.residual_block(x, skip, filters=mirror_filters[idx], dilation_rate=2, name=f"res_block_{idx+1}")
             else:
                 x = Conv1D(filters=mirror_filters[idx], kernel_size=3, padding='same',

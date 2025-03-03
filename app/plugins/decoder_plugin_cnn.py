@@ -158,6 +158,8 @@ class Plugin:
         latent_input = Input(shape=(interface_size,), name="decoder_latent")
         output = self.build_decoder(latent_input, encoder_skip_connections, output_shape, encoder_output_shape)
         self.model = Model(inputs=[latent_input] + encoder_skip_connections, outputs=output, name="decoder_cnn_model")
+
+
         print(f"[DEBUG] Final Output Shape: {self.model.output_shape}")
 
         adam_optimizer = Adam(

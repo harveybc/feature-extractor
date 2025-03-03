@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Conv1D, UpSampling1D, BatchNormalization, Reshape, Concatenate, Input
+from keras.layers import Dense, Conv1D, UpSampling1D, BatchNormalization, Reshape, Concatenate, Flatten, Input
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
@@ -36,7 +36,8 @@ class Plugin:
 
     def build_decoder(self, latent_input, skip_tensors, output_shape, encoder_output_shape):
         """
-        Builds the decoder model (as a Functional submodel) by expanding the latent vector and inverting the encoder blocks.
+        Builds the decoder model (as a Functional submodel) by expanding the latent vector
+        and mirroring the encoder blocks.
         
         Args:
             latent_input: Keras tensor for the latent vector (shape: (None, interface_size)).
@@ -73,34 +74,29 @@ class Plugin:
         # Mirror conv filter sizes from encoder conv blocks (exclude final Dense mapping)
         mirror_filters = enc_layers[:-1][::-1]  # E.g., if enc_layers = [128, 64, 32, 32] then mirror_filters = [32, 64, 128]
         
-        # For each intermediate layer, upsample, fuse with skip connection, then apply Conv1D + BN + LeakyReLU.
+        # For each intermediate layer, upsample, concatenate corresponding skip, then apply Conv1D + BN with tanh.
         for idx in range(self.params['intermediate_layers']):
             x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
-            # Concatenate the corresponding skip tensor if available
             if skip_tensors and idx < len(skip_tensors):
-                # Use the skip connection from encoder in reverse order.
                 skip = skip_tensors[-(idx+1)]
                 x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
             filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
             x = Conv1D(filters=filt,
                        kernel_size=3,
                        padding='same',
+                       activation='tanh',  # use tanh instead of LeakyReLU
                        kernel_initializer=HeNormal(),
                        kernel_regularizer=l2(self.params['l2_reg']),
                        name=f"conv1d_mirror_{idx+1}")(x)
-            # Use LeakyReLU for better gradient flow
-            from keras.layers import LeakyReLU
-            x = LeakyReLU(alpha=0.1, name=f"leakyrelu_{idx+1}")(x)
             x = BatchNormalization(name=f"bn_decoder_{idx+1}")(x)
-        # Final mapping to original feature count.
-        output = Conv1D(filters=orig_features,
-                        kernel_size=3,
-                        strides=1,
-                        padding='same',
-                        activation='tanh',
-                        kernel_initializer=GlorotUniform(),
-                        kernel_regularizer=l2(self.params['l2_reg']),
-                        name="decoder_output_conv1d")(x)
+        # Final mapping: flatten and then use a Dense layer with linear activation.
+        x = Flatten(name="decoder_flatten")(x)
+        x = Dense(units=window_size * orig_features,
+                  activation='linear',  # final mapping with linear activation
+                  kernel_initializer=GlorotUniform(),
+                  kernel_regularizer=l2(self.params['l2_reg']),
+                  name="decoder_dense_output")(x)
+        output = Reshape((window_size, orig_features), name="decoder_output")(x)
         return output
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):
@@ -131,9 +127,7 @@ class Plugin:
         print(f"[DEBUG] Using encoder pre-flatten shape: T={T}, F={F}")
         print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
 
-        # Build the decoder using the Functional API.
         latent_input = Input(shape=(interface_size,), name="decoder_latent")
-        # Note: Instead of creating new Inputs for skip connections, we reuse the actual tensors computed in the encoder.
         output = self.build_decoder(latent_input, encoder_skip_connections, output_shape, encoder_output_shape)
         self.model = Model(inputs=[latent_input] + encoder_skip_connections, outputs=output, name="decoder_cnn_model")
         print(f"[DEBUG] Final Output Shape: {self.model.output_shape}")
@@ -150,67 +144,3 @@ class Plugin:
                            metrics=['mse', 'mae'],
                            run_eagerly=False)
         print(f"[DEBUG] Model compiled successfully.")
-
-
-
-    def train(self, encoded_data, original_data):
-        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
-        original_data = original_data.reshape((original_data.shape[0], -1))
-        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True, verbose=1)
-        self.model.fit(encoded_data, original_data, epochs=self.params.get('epochs', 100), batch_size=self.params.get('batch_size', 128), verbose=1, callbacks=[early_stopping], validation_split=0.2)
-
-    def decode(self, encoded_data, use_sliding_windows, original_feature_size):
-        print(f"[decode] Decoding data with shape: {encoded_data.shape}")
-        decoded_data = self.model.predict(encoded_data)
-        if not use_sliding_windows:
-            decoded_data = decoded_data.reshape((decoded_data.shape[0], original_feature_size))
-            print(f"[decode] Reshaped decoded data to match original feature size: {decoded_data.shape}")
-        else:
-            print(f"[decode] Decoded data shape: {decoded_data.shape}")
-        return decoded_data
-
-    def save(self, file_path):
-        self.model.save(file_path)
-        print(f"Predictor model saved to {file_path}")
-
-    def load(self, file_path):
-        self.model = load_model(file_path)
-        print(f"Predictor model loaded from {file_path}")
-
-    def calculate_mse(self, original_data, reconstructed_data):
-        original_data = original_data.reshape((original_data.shape[0], -1))
-        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))
-        mse = np.mean(np.square(original_data - reconstructed_data))
-        return mse
-
-    def calculate_mae(self, original_data, reconstructed_data):
-        print(f"Calculating MAE for shapes: original_data={original_data.shape}, reconstructed_data={reconstructed_data.shape}")
-        if original_data.shape != reconstructed_data.shape:
-            raise ValueError(f"Shape mismatch in calculate_mae: original_data={original_data.shape}, reconstructed_data={reconstructed_data.shape}")
-        original_data_flat = original_data.reshape(-1)
-        reconstructed_data_flat = reconstructed_data.reshape(-1)
-        mae = np.mean(np.abs(original_data_flat - reconstructed_data_flat))
-        return mae
-
-    def calculate_r2(self, y_true, y_pred):
-        print(f"Calculating R² for shapes: y_true={y_true.shape}, y_pred={y_pred.shape}")
-        if y_true.shape != y_pred.shape:
-            raise ValueError(f"Shape mismatch in calculate_r2: y_true={y_true.shape}, y_pred={y_pred.shape}")
-        ss_res = np.sum((y_true - y_pred) ** 2, axis=1)
-        ss_tot = np.sum((y_true - np.mean(y_true, axis=1, keepdims=True)) ** 2, axis=1)
-        r2_scores = 1 - (ss_res / ss_tot)
-        r2_scores = np.where(ss_tot == 0, 0, r2_scores)
-        r2 = np.mean(r2_scores)
-        print(f"Calculated R²: {r2}")
-        return r2
-
-# Debugging usage example
-if __name__ == "__main__":
-    plugin = Plugin()
-    # For example, assume:
-    # - The original encoder input shape was (256, 44).
-    # - The encoder produced a pre-flatten shape of (32, 32) (i.e. T=32, F=32).
-    # - The number of channels originally was 44.
-    plugin.configure_size(interface_size=32, output_shape=(256, 44), num_channels=44, encoder_output_shape=(32, 32), use_sliding_windows=True)
-    debug_info = plugin.get_debug_info()
-    print(f"Debug Info: {debug_info}")

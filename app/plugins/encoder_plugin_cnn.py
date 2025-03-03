@@ -6,7 +6,6 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
-from tensorflow.keras.activations import linear
 import tensorflow as tf
 
 class Plugin:
@@ -29,8 +28,8 @@ class Plugin:
     def __init__(self):
         self.params = self.plugin_params.copy()
         self.encoder_model = None
-        self.pre_flatten_shape = None  # NEW: store shape before flattening
-        self.skip_connections = []     # NEW: store outputs before each pooling
+        self.pre_flatten_shape = None  # Store shape before flattening
+        self.skip_connections = []     # Store outputs before each pooling
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
@@ -63,8 +62,9 @@ class Plugin:
 
         inputs = Input(shape=input_shape, name="model_input")
         x = inputs
+        # First Dense layer now uses tanh
         x = Dense(units=layers[0],
-                  activation=linear,
+                  activation='tanh',
                   kernel_initializer=GlorotUniform(),
                   kernel_regularizer=l2(l2_reg))(x)
         self.skip_connections = []  # reset skip connections
@@ -72,7 +72,7 @@ class Plugin:
             if size > 1:
                 x = Conv1D(filters=size,
                            kernel_size=3,
-                           activation='relu',
+                           activation='tanh',  # use tanh instead of relu
                            kernel_initializer=HeNormal(),
                            padding='same',
                            kernel_regularizer=l2(l2_reg),
@@ -81,7 +81,7 @@ class Plugin:
                 self.skip_connections.append(x)
                 x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
         x = Dense(units=size,
-                  activation=self.params['activation'],
+                  activation=self.params['activation'],  # tanh as specified in params
                   kernel_initializer=GlorotUniform(),
                   kernel_regularizer=l2(l2_reg),
                   name="dense_final")(x)
@@ -91,7 +91,7 @@ class Plugin:
         print(f"[DEBUG] Pre-flatten shape: {self.pre_flatten_shape}")
         x = Flatten(name="flatten")(x)
         model_output = Dense(units=layers[-1],
-                             activation='linear',
+                             activation='linear',  # final output remains linear
                              kernel_initializer=GlorotUniform(),
                              kernel_regularizer=l2(l2_reg),
                              name="model_output")(x)
@@ -112,15 +112,6 @@ class Plugin:
         print("CNN Model compiled successfully.")
 
     def encode_data(self, data):
-        """
-        Encodes the input data using the encoder model.
-        
-        Parameters:
-            data (numpy.ndarray): Input data.
-        
-        Returns:
-            numpy.ndarray: Encoded representation.
-        """
         print(f"[encode_data] Encoding data with shape: {data.shape}")
         try:
             encoded_data = self.encoder_model.predict(data)
@@ -131,15 +122,9 @@ class Plugin:
             raise ValueError("[encode_data] Failed to encode data. Please check model compatibility and data shape.")
 
     def save(self, file_path):
-        """
-        Saves the encoder model to the specified file path.
-        """
         save_model(self.encoder_model, file_path)
         print(f"[save] Encoder model saved to {file_path}")
 
     def load(self, file_path):
-        """
-        Loads a trained encoder model from the specified file path.
-        """
         self.encoder_model = load_model(file_path)
         print(f"[load] Encoder model loaded from {file_path}")

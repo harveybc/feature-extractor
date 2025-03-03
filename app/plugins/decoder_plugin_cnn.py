@@ -103,6 +103,7 @@ class Plugin:
                                   activation=None, kernel_initializer=HeNormal(),
                                   kernel_regularizer=l2(self.params['l2_reg']),
                                   name=f"skip_proj_{idx+1}")(skip)
+                    skip = LayerNormalization(name=f"skip_norm_{idx+1}")(skip)  # Apply normalization after projection
 
                 x = self.residual_block(x, skip, filters=mirror_filters[idx], dilation_rate=2, name=f"res_block_{idx+1}")
             else:
@@ -117,3 +118,39 @@ class Plugin:
                    name="decoder_final_conv")(x)
 
         return x
+
+    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):
+        """
+        Configures and builds the decoder model.
+        """
+        self.params['interface_size'] = interface_size
+
+        if isinstance(output_shape, tuple):
+            window_size, orig_features = output_shape
+        else:
+            window_size = output_shape
+            orig_features = num_channels
+        self.params['output_shape'] = window_size
+
+        T, F = encoder_output_shape
+        print(f"[DEBUG] Using encoder pre-flatten shape: T={T}, F={F}")
+        print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
+
+        latent_input = Input(shape=(interface_size,), name="decoder_latent")
+        output = self.build_decoder(latent_input, encoder_skip_connections, output_shape, encoder_output_shape)
+        self.model = Model(inputs=[latent_input] + encoder_skip_connections, outputs=output, name="decoder_cnn_model")
+
+        print(f"[DEBUG] Final Output Shape: {self.model.output_shape}")
+
+        adam_optimizer = Adam(
+            learning_rate=self.params['learning_rate'],
+            beta_1=0.9,
+            beta_2=0.999,
+            epsilon=1e-2,
+            amsgrad=False
+        )
+        self.model.compile(optimizer=adam_optimizer,
+                           loss=Huber(),
+                           metrics=['mse', 'mae'],
+                           run_eagerly=False)
+        print(f"[DEBUG] Model compiled successfully.")

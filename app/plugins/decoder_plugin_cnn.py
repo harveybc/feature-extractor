@@ -16,7 +16,7 @@ class Plugin:
         'learning_rate': 0.0001,
         'l2_reg': 1e-4,
         'activation': 'swish',
-        'use_residual': True  # Toggle residual connections ON/OFF
+        'use_residual': True  # Set to False if residuals cause any issue
     }
 
     def __init__(self):
@@ -31,21 +31,25 @@ class Plugin:
     def residual_block(self, x, skip, filters, name="res_block"):
         """
         Implements a residual convolutional block.
-        Ensures the skip connection matches `x` in shape before merging.
+        Guarantees that `x` and `skip` match in shape before merging.
         """
-        print(f"[DEBUG] {name} - x shape: {x.shape}, skip shape: {skip.shape}")
 
-        # Adjust skip depth **before merging**
+        # Fix sequence length mismatch
+        if skip.shape[1] != x.shape[1]:
+            pad_size = abs(x.shape[1] - skip.shape[1])
+            print(f"[DEBUG] {name} - Adjusting skip length with ZeroPadding: {skip.shape[1]} -> {x.shape[1]}")
+            skip = ZeroPadding1D(padding=(0, pad_size))(skip)
+
+        # Fix feature depth mismatch
         if skip.shape[-1] != x.shape[-1]:
-            print(f"[DEBUG] {name} - Projecting skip depth {skip.shape[-1]} -> {x.shape[-1]}")
+            print(f"[DEBUG] {name} - Adjusting skip depth with Conv1D: {skip.shape[-1]} -> {x.shape[-1]}")
             skip = Conv1D(filters=x.shape[-1], kernel_size=1, padding="same",
                           activation=None, kernel_initializer=HeNormal(),
                           kernel_regularizer=l2(self.params['l2_reg']),
                           name=f"{name}_skip_proj")(skip)
 
-        print(f"[DEBUG] {name} - After projection: skip shape: {skip.shape}")
+        print(f"[DEBUG] {name} - Shapes after alignment: x {x.shape}, skip {skip.shape}")
 
-        # Convolution layers
         x = Conv1D(filters=filters, kernel_size=3, padding="same",
                    activation=self.params['activation'], kernel_initializer=HeNormal(),
                    kernel_regularizer=l2(self.params['l2_reg']),
@@ -64,9 +68,10 @@ class Plugin:
 
     def build_decoder(self, latent_input, skip_tensors, output_shape, encoder_output_shape):
         """
-        Builds the decoder model.
+        Builds the decoder model with guaranteed shape alignment.
         """
-        T, F = encoder_output_shape  
+
+        T, F = encoder_output_shape  # Time steps and feature size
         window_size, orig_features = output_shape  
 
         x = Dense(units=T * F, activation=self.params['activation'],
@@ -75,7 +80,6 @@ class Plugin:
                   name="latent_dense")(latent_input)
         x = Reshape((T, F), name="latent_reshape")(x)
 
-        # Reverse the filters to match upsampling order
         filters = [self.params['initial_layer_size'] // (2 ** i) for i in range(self.params['intermediate_layers'])]
         filters.reverse()
 
@@ -85,11 +89,7 @@ class Plugin:
             if skip_tensors and idx < len(skip_tensors):
                 skip = skip_tensors[-(idx+1)]
 
-                if skip.shape[1] != x.shape[1]:
-                    pad_size = abs(skip.shape[1] - x.shape[1])
-                    print(f"[DEBUG] Padding skip connection at {idx+1} with {pad_size} units")
-                    skip = ZeroPadding1D(padding=(0, pad_size))(skip)
-
+                # Ensure skip matches x before merging
                 x = self.residual_block(x, skip, filters=f, name=f"res_block_{idx+1}")
             else:
                 x = Conv1D(filters=f, kernel_size=3, padding='same',
@@ -103,7 +103,7 @@ class Plugin:
 
         return x
 
-    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):
+    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, encoder_skip_connections):
         """
         Configures and builds the decoder model.
         """

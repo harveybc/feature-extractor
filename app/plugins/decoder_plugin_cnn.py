@@ -114,31 +114,33 @@ class Plugin:
             use_sliding_windows (bool): Whether sliding windows are used.
             encoder_skip_connections (list): List of skip connection tensors from the encoder.
         """
-        self.params['interface_size'] = interface_size  # Ensure parameter is stored
+        self.params['interface_size'] = interface_size  # Store interface size
 
         if isinstance(output_shape, tuple):
             window_size, orig_features = output_shape
         else:
             window_size = output_shape
-            orig_features = num_channels
+            orig_features = num_channels  # Ensure feature count is correctly inferred
+
         self.params['output_shape'] = window_size
 
+        # Handle case where encoder output shape is a single dimension
         if isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 1:
             encoder_output_shape = (1, encoder_output_shape[0])
 
-        T, F = encoder_output_shape  # Extract pre-flatten shape from encoder
+        T, F = encoder_output_shape
         print(f"[DEBUG] Using encoder pre-flatten shape: T={T}, F={F}")
         print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
 
-        # Ensure function receives all expected arguments and maintains compatibility
+        # Ensure all arguments are handled
         latent_input = Input(shape=(interface_size,), name="decoder_latent")
         output = self.build_decoder(latent_input, encoder_skip_connections, output_shape, encoder_output_shape)
-        
+
         # Define the decoder model
         self.model = Model(inputs=[latent_input] + encoder_skip_connections, outputs=output, name="decoder_cnn_model")
         print(f"[DEBUG] Final Output Shape: {self.model.output_shape}")
 
-        # Optimizer and loss setup
+        # Compile the model
         adam_optimizer = Adam(
             learning_rate=self.params['learning_rate'],
             beta_1=0.9,

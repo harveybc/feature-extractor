@@ -37,7 +37,7 @@ class Plugin:
     def build_decoder(self, latent_input, skip_tensors, output_shape, encoder_output_shape):
         """
         Builds the decoder model (as a Functional submodel) by expanding the latent vector
-        and mirroring the encoder blocks.
+        and mirroring the encoder blocks with reduced dimensionality.
         
         Args:
             latent_input: Keras tensor for the latent vector (shape: (None, interface_size)).
@@ -48,7 +48,7 @@ class Plugin:
         Returns:
             Keras tensor for the decoder output.
         """
-        # Extract window size and original feature count.
+        # Extract window size and original feature count
         if isinstance(output_shape, tuple):
             window_size, orig_features = output_shape
         else:
@@ -57,24 +57,29 @@ class Plugin:
         T, F = encoder_output_shape  # e.g., (16, 32)
         flat_dim = T * F
 
-        # Expand latent vector to flat_dim and reshape to (T, F)
-        x = Dense(units=flat_dim,
-                  activation=self.params['activation'],
-                  kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(self.params['l2_reg']))(latent_input)
+        # Expand latent vector to match the encoder output shape
+        x = Dense(units=flat_dim // 2,  # Reduce dimensionality here
+                activation=self.params['activation'],
+                kernel_initializer=GlorotUniform(),
+                kernel_regularizer=l2(self.params['l2_reg']))(latent_input)
+        x = Dense(units=flat_dim,  # Expand progressively instead of jumping to full size
+                activation=self.params['activation'],
+                kernel_initializer=GlorotUniform(),
+                kernel_regularizer=l2(self.params['l2_reg']))(x)
         x = Reshape((T, F), name="reshape")(x)
 
-        # Recompute encoder layer sizes as in the encoder.
+        # Recompute layer sizes with reduced filters in the decoder
         enc_layers = []
         current = self.params['initial_layer_size']
         for i in range(self.params['intermediate_layers']):
             enc_layers.append(current)
             current = max(current // self.params['layer_size_divisor'], self.params['interface_size'])
         enc_layers.append(self.params['interface_size'])
-        # Mirror conv filter sizes from encoder conv blocks
-        mirror_filters = enc_layers[:-1][::-1]  # e.g., if enc_layers = [128, 64, 32, 32] then mirror_filters = [32, 64, 128]
         
-        # For each intermediate layer, upsample, concatenate the corresponding skip tensor, then apply Conv1D + BN with tanh.
+        # Mirror conv filter sizes but reduce dimensions
+        mirror_filters = [max(f // 2, self.params['interface_size']) for f in enc_layers[:-1][::-1]]
+
+        # Upsampling and mirroring the encoder structure
         for idx in range(self.params['intermediate_layers']):
             x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
             if skip_tensors and idx < len(skip_tensors):
@@ -82,26 +87,30 @@ class Plugin:
                 x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
             filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
             x = Conv1D(filters=filt,
-                       kernel_size=3,
-                       padding='same',
-                       activation='tanh',  # using tanh here
-                       kernel_initializer=HeNormal(),
-                       kernel_regularizer=l2(self.params['l2_reg']),
-                       name=f"conv1d_mirror_{idx+1}")(x)
-            #x = BatchNormalization(name=f"bn_decoder_{idx+1}")(x)
-        # Final mapping: flatten then Dense layer with linear activation, then reshape to (window_size, orig_features)
+                    kernel_size=3,
+                    padding='same',
+                    activation='tanh',
+                    kernel_initializer=HeNormal(),
+                    kernel_regularizer=l2(self.params['l2_reg']),
+                    name=f"conv1d_mirror_{idx+1}")(x)
+
+        # Final mapping: reduce the dense layer size to avoid excessive parameters
         x = Flatten(name="decoder_flatten")(x)
-        x = Dense(units=window_size * orig_features,
-                  activation='linear',
-                  kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(self.params['l2_reg']),
-                  name="decoder_dense_output")(x)
+        x = Dense(units=window_size * orig_features // 2,  # Reduce final dense output size
+                activation='linear',
+                kernel_initializer=GlorotUniform(),
+                kernel_regularizer=l2(self.params['l2_reg']),
+                name="decoder_dense_output")(x)
+
+        # Final reshape to match the original input shape
         output = Reshape((window_size, orig_features), name="decoder_output")(x)
+        
         return output
+
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):
         """
-        Configures and builds the decoder model as the mirror of the encoder using skip connections.
+        Configures and builds the decoder model as the mirror of the encoder using optimized architecture.
         
         Args:
             interface_size (int): The latent dimension.
@@ -139,7 +148,7 @@ class Plugin:
             amsgrad=False
         )
         self.model.compile(optimizer=adam_optimizer,
-                           loss=Huber(),
-                           metrics=['mse', 'mae'],
-                           run_eagerly=False)
+                        loss=Huber(),
+                        metrics=['mse', 'mae'],
+                        run_eagerly=False)
         print(f"[DEBUG] Model compiled successfully.")

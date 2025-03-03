@@ -15,7 +15,8 @@ class Plugin:
         'layer_size_divisor': 2,
         'learning_rate': 0.0001,
         'l2_reg': 1e-4,
-        'activation': 'swish'
+        'activation': 'swish',
+        'use_residual': True  # Toggle residual connections ON/OFF
     }
 
     def __init__(self):
@@ -34,13 +35,15 @@ class Plugin:
         """
         print(f"[DEBUG] {name} - x shape: {x.shape}, skip shape: {skip.shape}")
 
-        # Adjust depth if necessary
+        # Adjust skip depth **before merging**
         if skip.shape[-1] != x.shape[-1]:
             print(f"[DEBUG] {name} - Projecting skip depth {skip.shape[-1]} -> {x.shape[-1]}")
             skip = Conv1D(filters=x.shape[-1], kernel_size=1, padding="same",
                           activation=None, kernel_initializer=HeNormal(),
                           kernel_regularizer=l2(self.params['l2_reg']),
                           name=f"{name}_skip_proj")(skip)
+
+        print(f"[DEBUG] {name} - After projection: skip shape: {skip.shape}")
 
         # Convolution layers
         x = Conv1D(filters=filters, kernel_size=3, padding="same",
@@ -53,7 +56,11 @@ class Plugin:
                    kernel_regularizer=l2(self.params['l2_reg']),
                    name=f"{name}_conv2")(x)
 
-        return Add(name=f"{name}_residual")([x, skip])  # Residual connection
+        if self.params['use_residual']:
+            return Add(name=f"{name}_residual")([x, skip])  # Residual connection
+        else:
+            print(f"[DEBUG] {name} - Residuals DISABLED, skipping Add()")
+            return x  # No residual
 
     def build_decoder(self, latent_input, skip_tensors, output_shape, encoder_output_shape):
         """
@@ -84,6 +91,11 @@ class Plugin:
                     skip = ZeroPadding1D(padding=(0, pad_size))(skip)
 
                 x = self.residual_block(x, skip, filters=f, name=f"res_block_{idx+1}")
+            else:
+                x = Conv1D(filters=f, kernel_size=3, padding='same',
+                           activation='tanh', kernel_initializer=HeNormal(),
+                           kernel_regularizer=l2(self.params['l2_reg']),
+                           name=f"conv1d_mirror_{idx+1}")(x)
 
         x = Conv1D(filters=orig_features, kernel_size=1, activation='linear',
                    kernel_initializer=GlorotUniform(), kernel_regularizer=l2(self.params['l2_reg']),

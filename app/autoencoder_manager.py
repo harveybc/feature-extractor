@@ -32,7 +32,7 @@ class AutoencoderManager:
             print("[build_autoencoder] Encoder model built and compiled successfully")
             self.encoder_model.summary()
 
-            # **IMPORTANT**: Use the pre-flatten shape stored by the encoder.
+            # IMPORTANT: Use the pre-flatten shape stored by the encoder
             encoder_output_shape = self.encoder_plugin.pre_flatten_shape
             print(f"Encoder pre-flatten shape: {encoder_output_shape}")
 
@@ -51,16 +51,18 @@ class AutoencoderManager:
             # Define optimizer
             adam_optimizer = Adam(
                 learning_rate=config['learning_rate'],  # Set the learning rate
-                beta_1=0.9,  # Default value
-                beta_2=0.999,  # Default value
-                epsilon=1e-7,  # Default value
-                amsgrad=False,  # Default value
-                clipnorm=1.0,  # Gradient clipping
-                clipvalue=0.5  # Gradient clipping
+                beta_1=0.9,  
+                beta_2=0.999,  
+                epsilon=1e-7,  
+                amsgrad=False,
+                clipnorm=1.0,
+                clipvalue=0.5
             )
 
-            # --- Begin Updated Loss Definition using MMD ---
+            # --- Begin Updated Loss Definition using MMD with explicit dtype casting ---
             def gaussian_kernel_matrix(x, y, sigma):
+                x = tf.cast(x, tf.float32)
+                y = tf.cast(y, tf.float32)
                 x_size = tf.shape(x)[0]
                 y_size = tf.shape(y)[0]
                 dim = tf.shape(x)[1]
@@ -70,8 +72,8 @@ class AutoencoderManager:
                 return tf.exp(-squared_diff / (2.0 * sigma**2))
 
             def mmd_loss_term(y_true, y_pred, sigma):
-                y_true = tf.reshape(y_true, [tf.shape(y_true)[0], -1])
-                y_pred = tf.reshape(y_pred, [tf.shape(y_pred)[0], -1])
+                y_true = tf.cast(y_true, tf.float32)
+                y_pred = tf.cast(y_pred, tf.float32)
                 K_xx = gaussian_kernel_matrix(y_true, y_true, sigma)
                 K_yy = gaussian_kernel_matrix(y_pred, y_pred, sigma)
                 K_xy = gaussian_kernel_matrix(y_true, y_pred, sigma)

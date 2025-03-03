@@ -85,8 +85,14 @@ def process_data(config):
         windowed_validation_data = validation_data.to_numpy()
         print(f"Validation processed shape: {windowed_validation_data.shape}")
 
-    return processed_data, windowed_validation_data
+    # NEW: Truncate the datasets to a maximum number of steps if specified in config.
+    if "max_steps" in config:
+        max_steps = config["max_steps"]
+        processed_data = processed_data[:max_steps]
+        windowed_validation_data = windowed_validation_data[:max_steps]
+        print(f"Data truncated to {max_steps} steps. Training shape: {processed_data.shape}, Validation shape: {windowed_validation_data.shape}")
 
+    return processed_data, windowed_validation_data
 
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):

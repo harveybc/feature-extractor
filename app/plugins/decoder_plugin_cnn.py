@@ -1,20 +1,22 @@
 import numpy as np
-from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Conv1D, UpSampling1D, BatchNormalization, Reshape, Concatenate, Input, Add, LayerNormalization
+from keras.models import Model
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Concatenate, Input, Add, LayerNormalization
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
+import tensorflow as tf
+
 
 class Plugin:
     plugin_params = {
         'batch_size': 128,
-        'intermediate_layers': 3,
+        'intermediate_layers': 3,  # Configurable by the user
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
         'learning_rate': 0.0001,
         'l2_reg': 1e-4,
-        'activation': 'tanh'
+        'activation': 'swish'  # Swish is smoother than tanh
     }
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
 
@@ -33,28 +35,18 @@ class Plugin:
     def add_debug_info(self, debug_info):
         debug_info.update(self.get_debug_info())
 
-    def residual_block(self, x, skip, filters, kernel_size=3, dilation_rate=2, name="res_block"):
+    def residual_block(self, x, filters, kernel_size=3, dilation_rate=1, name="res_block"):
         """
         Implements a residual convolutional block with dilation.
-        If the skip connection does not match the shape of x, a projection layer is applied.
 
         Args:
-            x: Main input tensor.
-            skip: Skip connection tensor from the encoder.
+            x: Input tensor.
             filters: Number of filters.
             kernel_size: Kernel size.
             dilation_rate: Dilation for expanded receptive field.
             name: Name of the block.
         """
-        print(f"[DEBUG] residual_block - x shape: {x.shape}, skip shape: {skip.shape}")
-
-        if x.shape[-1] != skip.shape[-1]:
-            print(f"[DEBUG] Mismatch detected, applying projection: {x.shape[-1]} -> {skip.shape[-1]}")
-            skip = Conv1D(filters=filters, kernel_size=1, padding="same",
-                          activation=None, kernel_initializer=HeNormal(),
-                          kernel_regularizer=l2(self.params['l2_reg']),
-                          name=f"{name}_proj")(skip)
-
+        skip = x  # Save input for residual connection
         x = Conv1D(filters=filters, kernel_size=kernel_size, padding="same",
                    dilation_rate=dilation_rate, activation=self.params['activation'],
                    kernel_initializer=HeNormal(), kernel_regularizer=l2(self.params['l2_reg']),
@@ -111,24 +103,19 @@ class Plugin:
             x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
             if skip_tensors and idx < len(skip_tensors):
                 skip = skip_tensors[-(idx+1)]
-                x = self.residual_block(x, skip, filters=mirror_filters[idx], dilation_rate=2, name=f"res_block_{idx+1}")
-            else:
-                filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
-                x = Conv1D(filters=filt, kernel_size=3, padding='same',
-                           activation='tanh', kernel_initializer=HeNormal(),
-                           kernel_regularizer=l2(self.params['l2_reg']),
-                           name=f"conv1d_mirror_{idx+1}")(x)
+                x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
+
+            filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
+
+            # Apply residual convolutional block with dilation
+            x = self.residual_block(x, filters=filt, dilation_rate=2, name=f"res_block_{idx+1}")
 
         # Final Conv1D layer to ensure correct shape
         x = Conv1D(filters=orig_features, kernel_size=1, activation='linear',
                    kernel_initializer=GlorotUniform(),
                    kernel_regularizer=l2(self.params['l2_reg']),
                    name="decoder_final_conv")(x)
-        x = Dense(units=orig_features,
-                  activation='linear',
-                  kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(l2_reg))(x)
-        
+
         return x
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):

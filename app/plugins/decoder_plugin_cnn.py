@@ -49,7 +49,7 @@ class Plugin:
         """
         print(f"[DEBUG] residual_block - x shape: {x.shape}, skip shape: {skip.shape}")
 
-        # If skip connection shape does not match x, apply a projection layer
+        # Ensure skip connection matches x in last dimension
         if x.shape[-1] != skip.shape[-1]:
             print(f"[DEBUG] Mismatch detected! Projecting skip from {skip.shape[-1]} to {x.shape[-1]}")
             skip = Conv1D(filters=x.shape[-1], kernel_size=1, padding="same",
@@ -114,6 +114,15 @@ class Plugin:
 
             if skip_tensors and idx < len(skip_tensors):
                 skip = skip_tensors[-(idx+1)]
+
+                # Ensure skip connection is the correct shape before merging
+                if skip.shape[-1] != x.shape[-1]:
+                    print(f"[DEBUG] Adjusting skip connection from {skip.shape[-1]} to {x.shape[-1]}")
+                    skip = Conv1D(filters=x.shape[-1], kernel_size=1, padding="same",
+                                  activation=None, kernel_initializer=HeNormal(),
+                                  kernel_regularizer=l2(self.params['l2_reg']),
+                                  name=f"skip_proj_{idx+1}")(skip)
+
                 x = self.residual_block(x, skip, filters=mirror_filters[idx], dilation_rate=2, name=f"res_block_{idx+1}")
             else:
                 filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
@@ -158,19 +167,3 @@ class Plugin:
         latent_input = Input(shape=(interface_size,), name="decoder_latent")
         output = self.build_decoder(latent_input, encoder_skip_connections, output_shape, encoder_output_shape)
         self.model = Model(inputs=[latent_input] + encoder_skip_connections, outputs=output, name="decoder_cnn_model")
-
-
-        print(f"[DEBUG] Final Output Shape: {self.model.output_shape}")
-
-        adam_optimizer = Adam(
-            learning_rate=self.params['learning_rate'],
-            beta_1=0.9,
-            beta_2=0.999,
-            epsilon=1e-2,
-            amsgrad=False
-        )
-        self.model.compile(optimizer=adam_optimizer,
-                           loss=Huber(),
-                           metrics=['mse', 'mae'],
-                           run_eagerly=False)
-        print(f"[DEBUG] Model compiled successfully.")

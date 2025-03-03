@@ -136,7 +136,7 @@ class Plugin:
         )(x)
 
         # Create the encoder model and assign it to self.encoder_model.
-        self.encoder_model = Model(inputs=inputs, outputs=model_output, name="cnn_model")
+        self.encoder_model = Model(inputs=inputs, outputs=model_output, name="encoder_cnn_model")
         print("CNN Model Summary:")
         self.encoder_model.summary()
 

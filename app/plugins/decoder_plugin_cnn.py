@@ -9,10 +9,9 @@ from keras.callbacks import EarlyStopping
 from sklearn.metrics import r2_score
 
 class Plugin:
-    # Use the exact same plugin parameters as the encoder.
     plugin_params = {
         'batch_size': 128,
-        'intermediate_layers': 3,
+        'intermediate_layers': 3, 
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
         'learning_rate': 0.0001,
@@ -44,20 +43,24 @@ class Plugin:
         
         Parameters:
             interface_size (int): Desired latent dimension (must equal the encoder’s output).
-            output_shape (int): The original window size.
+            output_shape (int or tuple): The original window size. If tuple, the first element is used.
             num_channels (int): Number of channels in the original input.
-            encoder_output_shape (tuple): Pre-flatten shape from the encoder (e.g. (T, F)).
+            encoder_output_shape (tuple): Pre-flatten shape from the encoder. If length==1, it is converted to (1, value).
             use_sliding_windows (bool): If True, the output retains temporal dimensions.
         """
         print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
         
         self.params['interface_size'] = interface_size
-        self.params['output_shape'] = output_shape
+        # Ensure output_shape is a scalar representing the window size.
+        if isinstance(output_shape, tuple):
+            window_size = output_shape[0]
+        else:
+            window_size = output_shape
+        self.params['output_shape'] = window_size
 
-        # Ensure encoder_output_shape is a tuple of length 2.
+        # Process encoder_output_shape: if length==1, convert to (1, value)
         if isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 1:
             encoder_output_shape = (1, encoder_output_shape[0])
-        
         # Extract sequence_length and num_filters from encoder_output_shape.
         sequence_length, num_filters = encoder_output_shape
         print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
@@ -65,10 +68,11 @@ class Plugin:
         num_intermediate_layers = self.params['intermediate_layers']
         print(f"[DEBUG] Number of intermediate layers={num_intermediate_layers}")
         
-        # Use the l2 regularization factor from plugin parameters.
+        # Use l2_reg from parameters.
         l2_reg = self.params['l2_reg']
-        layers = [output_shape * 2]
-        current_size = output_shape * 2
+        # Here, we use window_size (a scalar) to compute the mirror sizes.
+        layers = [window_size * 2]
+        current_size = window_size * 2
         for i in range(num_intermediate_layers - 1):
             next_size = current_size // self.params['layer_size_divisor']
             if next_size < interface_size:
@@ -80,7 +84,8 @@ class Plugin:
         layer_sizes = layers[::-1]
         print(f"[DEBUG] Calculated decoder layer sizes: {layer_sizes}")
 
-        self.model = Sequential(name="decoder")
+        # Create the Sequential model with the required name.
+        self.model = Sequential(name="decoder_cnn_model")
 
         print(f"[DEBUG] Adding first Conv1DTranspose layer with input_shape=(sequence_length={sequence_length}, num_filters={num_filters})")
         self.model.add(Conv1DTranspose(
@@ -107,7 +112,7 @@ class Plugin:
             ))
 
         if use_sliding_windows:
-            # For sliding windows, map to original channel dimension.
+            # For sliding windows, map the output to the original number of channels.
             self.model.add(Conv1DTranspose(
                 filters=num_channels,
                 kernel_size=3,
@@ -118,10 +123,10 @@ class Plugin:
                 name="decoder_output"
             ))
         else:
-            # For row-by-row data, flatten and use a Dense layer.
+            # For row-by-row data, flatten the output and use a Dense layer.
             self.model.add(Flatten(name="decoder_flatten"))
             self.model.add(Dense(
-                units=output_shape,
+                units=window_size,
                 activation='linear',
                 kernel_initializer=GlorotUniform(),
                 kernel_regularizer=l2(l2_reg),
@@ -200,6 +205,6 @@ class Plugin:
 # Debugging usage example
 if __name__ == "__main__":
     plugin = Plugin()
-    plugin.configure_size(interface_size=4, output_shape=128, num_channels=8, encoder_output_shape=(32, 32), use_sliding_windows=True)
+    plugin.configure_size(interface_size=32, output_shape=(256, 44), num_channels=44, encoder_output_shape=(32,), use_sliding_windows=True)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

@@ -123,6 +123,7 @@ class Plugin:
         print(f"        use_sliding_windows: {use_sliding_windows}")
         print(f"        encoder_skip_connections: {len(encoder_skip_connections) if encoder_skip_connections else 0}")
 
+        # Fix to match exactly what AutoencoderManager calls
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
@@ -161,6 +162,5 @@ class Plugin:
                         metrics=['mse', 'mae'],
                         run_eagerly=False)
         print(f"[DEBUG] Decoder model compiled successfully.")
-
 
 

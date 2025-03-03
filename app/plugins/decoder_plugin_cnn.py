@@ -123,6 +123,11 @@ class Plugin:
                                   kernel_regularizer=l2(self.params['l2_reg']),
                                   name=f"skip_proj_{idx+1}")(skip)
 
+                # Ensure shape matches before merging
+                if skip.shape != x.shape:
+                    print(f"[DEBUG] Skip connection still mismatched, final projection applied")
+                    skip = tf.image.resize(skip, size=[tf.shape(x)[1], x.shape[-1]])
+
                 x = self.residual_block(x, skip, filters=mirror_filters[idx], dilation_rate=2, name=f"res_block_{idx+1}")
             else:
                 filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
@@ -142,14 +147,6 @@ class Plugin:
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):
         """
         Configures and builds the decoder model as the mirror of the encoder using optimized architecture.
-        
-        Args:
-            interface_size (int): The latent dimension.
-            output_shape (int or tuple): Original input shape; if tuple, first element is window size, second is feature count.
-            num_channels (int): Number of channels in the original input.
-            encoder_output_shape (tuple): Encoder pre-flatten shape (T, F).
-            use_sliding_windows (bool): Whether sliding windows are used.
-            encoder_skip_connections (list): List of skip connection tensors from the encoder.
         """
         self.params['interface_size'] = interface_size
 

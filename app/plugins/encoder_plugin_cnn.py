@@ -28,8 +28,8 @@ class Plugin:
     def __init__(self):
         self.params = self.plugin_params.copy()
         self.encoder_model = None
-        self.pre_flatten_shape = None  # Store shape before flattening
-        self.skip_connections = []     # Store outputs before each pooling
+        self.pre_flatten_shape = None  # Stores shape before flattening
+        self.skip_connections = []     # Stores outputs before each pooling
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
@@ -48,6 +48,7 @@ class Plugin:
         self.params['time_horizon'] = interface_size
         print(f"CNN input_shape: {input_shape}")
 
+        # Determine layer sizes
         layers = []
         current_size = self.params['initial_layer_size']
         l2_reg = self.params.get('l2_reg', 1e-4)
@@ -62,17 +63,18 @@ class Plugin:
 
         inputs = Input(shape=input_shape, name="model_input")
         x = inputs
-        # First Dense layer now uses tanh
+        # First Dense layer uses tanh
         x = Dense(units=layers[0],
                   activation='tanh',
                   kernel_initializer=GlorotUniform(),
                   kernel_regularizer=l2(l2_reg))(x)
-        self.skip_connections = []  # reset skip connections
+        self.skip_connections = []  # Reset skip connections
         for idx, size in enumerate(layers[:-1]):
             if size > 1:
+                # Use tanh activation in Conv1D
                 x = Conv1D(filters=size,
                            kernel_size=3,
-                           activation='tanh',  # use tanh instead of relu
+                           activation='tanh',
                            kernel_initializer=HeNormal(),
                            padding='same',
                            kernel_regularizer=l2(l2_reg),
@@ -81,17 +83,17 @@ class Plugin:
                 self.skip_connections.append(x)
                 x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
         x = Dense(units=size,
-                  activation=self.params['activation'],  # tanh as specified in params
+                  activation=self.params['activation'],
                   kernel_initializer=GlorotUniform(),
                   kernel_regularizer=l2(l2_reg),
                   name="dense_final")(x)
         x = BatchNormalization(name="batch_norm")(x)
-        # Save pre-flatten shape for decoder usage.
         self.pre_flatten_shape = x.shape[1:]
         print(f"[DEBUG] Pre-flatten shape: {self.pre_flatten_shape}")
         x = Flatten(name="flatten")(x)
+        # Final layer with linear activation for reconstruction of latent vector
         model_output = Dense(units=layers[-1],
-                             activation='linear',  # final output remains linear
+                             activation='linear',
                              kernel_initializer=GlorotUniform(),
                              kernel_regularizer=l2(l2_reg),
                              name="model_output")(x)

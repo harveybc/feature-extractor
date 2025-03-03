@@ -14,7 +14,7 @@ class Plugin:
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
         'learning_rate': 0.0001,
-        'l2_reg': 1e-6,
+        'l2_reg': 1e-4,
         'activation': 'tanh'
     }
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']

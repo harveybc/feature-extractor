@@ -1,11 +1,12 @@
 import numpy as np
-from keras.models import Model
+from keras.models import Model, load_model, save_model
 from keras.layers import Dense, Conv1D, UpSampling1D, Flatten, BatchNormalization, Reshape, Concatenate, Input
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
 from keras.callbacks import EarlyStopping
+from sklearn.metrics import r2_score
 
 class Plugin:
     plugin_params = {
@@ -34,28 +35,28 @@ class Plugin:
     def add_debug_info(self, debug_info):
         debug_info.update(self.get_debug_info())
 
-    def build_decoder(self, latent_input, skip_tensors, output_shape, encoder_preflatten):
+    def build_decoder(self, latent_input, skip_tensors, output_shape, encoder_output_shape):
         """
         Builds the decoder model as a mirror of the encoder.
         
         Args:
-            latent_input: Keras tensor representing the latent vector (shape: (None, interface_size)).
-            skip_tensors: List of skip connection tensors from the encoder (ordered as in encoder, from first to last).
-            output_shape (tuple): The original encoder input shape, e.g. (window_size, original_features).
-            encoder_preflatten (tuple): The encoder's pre-flatten shape (T, F).
+            latent_input: Keras tensor for the latent vector (shape: (None, interface_size)).
+            skip_tensors: List of skip connection tensors from the encoder.
+            output_shape (tuple): Original input shape, e.g. (window_size, original_features).
+            encoder_output_shape (tuple): Encoder pre-flatten shape (T, F).
         
         Returns:
-            Keras tensor representing the decoder output.
+            Keras tensor for the decoder output.
         """
-        # Extract window size and original features.
+        # If output_shape is a tuple, extract window_size and original feature count.
         if isinstance(output_shape, tuple):
             window_size, orig_features = output_shape
         else:
             window_size = output_shape
-            orig_features = None  # Should not happen for CNN
-        
-        T, F = encoder_preflatten  # e.g., (16, 32)
-        flat_dim = T * F
+            orig_features = None  # Should not occur for CNN
+
+        T, F = encoder_output_shape  # e.g., (16, 32)
+        flat_dim = T * F  # e.g., 16*32 = 512
 
         # Expand latent vector to flat_dim and reshape to (T, F)
         x = Dense(units=flat_dim,
@@ -71,16 +72,14 @@ class Plugin:
             enc_layers.append(current)
             current = max(current // self.params['layer_size_divisor'], self.params['interface_size'])
         enc_layers.append(self.params['interface_size'])
-        # Mirror conv filters from encoder conv blocks (exclude final Dense)
-        mirror_filters = enc_layers[:-1][::-1]  # e.g., if enc_layers = [128, 64, 32, 32] then mirror_filters = [32, 64, 128]
+        # Mirror conv filters from encoder's conv blocks (exclude the final Dense mapping)
+        mirror_filters = enc_layers[:-1][::-1]  # For example, if enc_layers = [128, 64, 32, 32] then mirror_filters = [32, 64, 128]
         
-        # For each intermediate layer, upsample, concatenate corresponding skip connection, then apply Conv1D + BN.
+        # For each intermediate layer, upsample, concatenate corresponding skip tensor, and apply Conv1D + BN.
         for idx in range(self.params['intermediate_layers']):
             x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
-            # Use the corresponding skip tensor from the encoder.
-            # We assume skip_tensors are in order from first to last; for mirroring, use them in reverse.
+            # Use corresponding skip tensor from encoder (reverse order)
             if skip_tensors and idx < len(skip_tensors):
-                # Directly use the tensor from encoder; it must be from the same graph.
                 skip = skip_tensors[-(idx+1)]
                 x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
             filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
@@ -92,7 +91,7 @@ class Plugin:
                        kernel_regularizer=l2(self.params['l2_reg']),
                        name=f"conv1d_mirror_{idx+1}")(x)
             x = BatchNormalization(name=f"bn_decoder_{idx+1}")(x)
-        # Final mapping: map channels to original feature count.
+        # Final mapping: map to original feature count.
         output = Conv1D(filters=orig_features,
                         kernel_size=3,
                         strides=1,
@@ -105,27 +104,40 @@ class Plugin:
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):
         """
-        Configures and builds the decoder model.
-        This method builds the decoder using the Functional API by creating a new Input for the latent vector
-        and reusing the encoder's skip connection tensors.
+        Configures and builds the decoder model as the mirror of the encoder using the encoder's skip tensors.
         
         Args:
-            interface_size (int): Latent dimension.
+            interface_size (int): The latent dimension.
             output_shape (int or tuple): Original input shape; if tuple, first element is window size, second is feature count.
-            num_channels (int): Number of channels in original input.
+            num_channels (int): Number of channels in the original input.
             encoder_output_shape (tuple): Encoder pre-flatten shape (T, F).
             use_sliding_windows (bool): Whether sliding windows are used.
             encoder_skip_connections (list): List of skip connection tensors from the encoder.
         """
+        # IMPORTANT: Ensure that 'interface_size' is set in self.params.
+        self.params['interface_size'] = interface_size
+
         if isinstance(output_shape, tuple):
             window_size, orig_features = output_shape
         else:
             window_size = output_shape
             orig_features = num_channels
+        self.params['output_shape'] = window_size
+
+        if isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 1:
+            encoder_output_shape = (1, encoder_output_shape[0])
+        T, F = encoder_output_shape
+        print(f"[DEBUG] Using encoder pre-flatten shape: T={T}, F={F}")
+
+        print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
+        
+        # Build decoder using the Functional API.
         latent_input = Input(shape=(interface_size,), name="decoder_latent")
+        # Here, we reuse the encoder_skip_connections directly.
         output = self.build_decoder(latent_input, encoder_skip_connections, output_shape, encoder_output_shape)
         self.model = Model(inputs=[latent_input] + encoder_skip_connections, outputs=output, name="decoder_cnn_model")
         print(f"[DEBUG] Final Output Shape: {self.model.output_shape}")
+
         adam_optimizer = Adam(
             learning_rate=self.params['learning_rate'],
             beta_1=0.9,
@@ -138,7 +150,6 @@ class Plugin:
                            metrics=['mse', 'mae'],
                            run_eagerly=False)
         print(f"[DEBUG] Model compiled successfully.")
-
 
     def train(self, encoded_data, original_data):
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))

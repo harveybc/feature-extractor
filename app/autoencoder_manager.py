@@ -35,14 +35,13 @@ class AutoencoderManager:
             print(f"Encoder pre-flatten shape: {encoder_preflatten}")
 
             # Configure decoder using the pre-flatten shape and skip connections.
-            # Build decoder as a multi-input Functional model.
             self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_preflatten, use_sliding_windows, encoder_skips)
             self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built and compiled successfully")
             self.decoder_model.summary()
 
-            # Build autoencoder by chaining encoder and decoder.
-            # The decoder model expects inputs: [latent] + skip_connections.
+            # Build autoencoder by connecting encoder and decoder.
+            # The decoder now expects a list of inputs: [latent] + skip_connections.
             latent = self.encoder_model.output  # shape: (None, interface_size)
             decoder_inputs = [latent] + encoder_skips
             autoencoder_output = self.decoder_model(decoder_inputs)

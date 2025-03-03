@@ -111,6 +111,7 @@ class Plugin:
         # Upsampling and applying stronger intermediate layers
         for idx in range(self.params['intermediate_layers']):
             x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
+
             if skip_tensors and idx < len(skip_tensors):
                 skip = skip_tensors[-(idx+1)]
                 x = self.residual_block(x, skip, filters=mirror_filters[idx], dilation_rate=2, name=f"res_block_{idx+1}")

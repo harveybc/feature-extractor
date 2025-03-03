@@ -8,6 +8,30 @@ from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
 import tensorflow as tf
 
+# New: Custom PositionalEncoding layer
+class PositionalEncoding(tf.keras.layers.Layer):
+    def __init__(self, d_model, **kwargs):
+        super(PositionalEncoding, self).__init__(**kwargs)
+        self.d_model = d_model
+
+    def call(self, inputs):
+        # inputs: (batch_size, window_size, num_features)
+        window_size = tf.shape(inputs)[1]
+        positions = tf.range(start=0, limit=window_size, delta=1, dtype=tf.float32)
+        positions = tf.expand_dims(positions, axis=1)  # (window_size, 1)
+        i = tf.range(start=0, limit=self.d_model, delta=1, dtype=tf.float32)
+        i = tf.expand_dims(i, axis=0)  # (1, d_model)
+        angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i/2))) / tf.cast(self.d_model, tf.float32))
+        angle_rads = tf.cast(positions, tf.float32) * angle_rates  # (window_size, d_model)
+        sinusoids = tf.concat([tf.sin(angle_rads[:, 0::2]), tf.cos(angle_rads[:, 1::2])], axis=-1)
+        pos_encoding = tf.expand_dims(sinusoids, axis=0)  # (1, window_size, d_model)
+        return inputs + pos_encoding
+
+    def get_config(self):
+        config = super(PositionalEncoding, self).get_config()
+        config.update({"d_model": self.d_model})
+        return config
+
 class Plugin:
     """
     A CNN-based encoder plugin for feature extraction using Keras.
@@ -22,7 +46,8 @@ class Plugin:
         'learning_rate': 0.0001,
         'l2_reg': 1e-4,
         'activation': 'tanh',
-        'dropout_rate': 0.1  # New dropout parameter
+        'dropout_rate': 0.1,
+        'positional_encoding_dim': 16  # New parameter for positional encoding dimension
     }
     plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers', 'initial_layer_size', 'time_horizon']
 
@@ -64,8 +89,24 @@ class Plugin:
 
         inputs = Input(shape=input_shape, name="model_input")
         x = inputs
-        # First Dense layer uses linear activation to maintain numerical stability;
-        # later layers use the activation defined in parameters.
+        # If using sliding windows, add positional encoding
+        if use_sliding_windows:
+            d_model = self.params.get('positional_encoding_dim', 16)
+            original_features = input_shape[1]
+            # Optionally project input to d_model and back if dimensions differ
+            if original_features != d_model:
+                x = Dense(units=d_model, activation=self.params['activation'],
+                          kernel_initializer=GlorotUniform(),
+                          kernel_regularizer=l2(l2_reg),
+                          name="proj_to_d_model")(x)
+            x = PositionalEncoding(d_model=d_model, name="positional_encoding")(x)
+            if original_features != d_model:
+                x = Dense(units=original_features, activation=self.params['activation'],
+                          kernel_initializer=GlorotUniform(),
+                          kernel_regularizer=l2(l2_reg),
+                          name="proj_back")(x)
+
+        # First Dense layer uses linear activation for stability
         x = Dense(units=layers[0],
                   activation='linear',
                   kernel_initializer=GlorotUniform(),
@@ -83,7 +124,6 @@ class Plugin:
                            padding='same',
                            kernel_regularizer=l2(l2_reg),
                            name=f"conv1d_{idx+1}")(x)
-                # Store skip connection BEFORE pooling for potential later use
                 self.skip_connections.append(x)
                 x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
 
@@ -91,14 +131,11 @@ class Plugin:
         x = BatchNormalization(name="batch_norm1")(x)
 
         # Insert a multi-head self-attention block to capture long-range dependencies
-        # The queries, keys, and values are all the same tensor 'x'
         attn_output = MultiHeadAttention(num_heads=4,
                                          key_dim=x.shape[-1],
                                          dropout=0.1,
                                          name="encoder_attention")(x, x)
-        # Residual connection and layer normalization
         x = LayerNormalization(name="layer_norm_attn")(x + attn_output)
-        # Optional dropout for regularization
         x = Dropout(rate=self.params.get('dropout_rate', 0.1), name="dropout_attn")(x)
 
         # Final dense transformation before flattening
@@ -111,7 +148,6 @@ class Plugin:
         self.pre_flatten_shape = x.shape[1:]
         print(f"[DEBUG] Pre-flatten shape: {self.pre_flatten_shape}")
         x = Flatten(name="flatten")(x)
-        # Final layer with linear activation for reconstruction of latent vector
         model_output = Dense(units=layers[-1],
                              activation='linear',
                              kernel_initializer=GlorotUniform(),

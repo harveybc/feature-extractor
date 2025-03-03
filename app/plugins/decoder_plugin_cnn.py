@@ -1,13 +1,12 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Conv1D, UpSampling1D, BatchNormalization, Reshape, Concatenate, Flatten, Input, LayerNormalization, MultiHeadAttention
+from keras.layers import Dense, Conv1D, UpSampling1D, BatchNormalization, Reshape, Concatenate, Flatten, Input
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
 from keras.callbacks import EarlyStopping
-#import linear
-
+import tensorflow as tf
 
 class Plugin:
     plugin_params = {
@@ -58,13 +57,26 @@ class Plugin:
             orig_features = None  # Should not occur
         T, F = encoder_output_shape  # e.g., (16, 32)
         l2_reg = self.params.get('l2_reg', 1e-4)
-        activation = self.params.get('activation', 'tanh')
-        
         # Expand latent vector to match the encoder output shape
-        x = Dense(units=T * F, activation=activation,
+        x = Dense(units=T * F, activation=self.params['activation'],
                   kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(l2_reg))(latent_input)
+                  kernel_regularizer=l2(self.params['l2_reg']))(latent_input)
         x = Reshape((T, F), name="reshape")(x)
+
+        # If sliding windows are used, add positional encoding to the reshaped tensor.
+        if self.params.get('use_sliding_windows', False):
+            def add_pos_enc(x):
+                window_size = tf.shape(x)[1]
+                positions = tf.range(start=0, limit=window_size, delta=1, dtype=tf.float32)
+                positions = tf.expand_dims(positions, axis=1)  # (window_size, 1)
+                i = tf.range(start=0, limit=F, delta=1, dtype=tf.float32)
+                i = tf.expand_dims(i, axis=0)  # (1, F)
+                angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i/2))) / tf.cast(F, tf.float32))
+                angle_rads = tf.cast(positions, tf.float32) * angle_rates
+                sinusoids = tf.concat([tf.sin(angle_rads[:, 0::2]), tf.cos(angle_rads[:, 1::2])], axis=-1)
+                pos_encoding = tf.expand_dims(sinusoids, axis=0)
+                return x + pos_encoding
+            x = tf.keras.layers.Lambda(add_pos_enc, name="decoder_positional_encoding")(x)
 
         # Reduce filter sizes in the decoder
         enc_layers = []
@@ -87,17 +99,10 @@ class Plugin:
             x = Conv1D(filters=filt,
                        kernel_size=3,
                        padding='same',
-                       activation=activation,
+                       activation=self.params['activation'],
                        kernel_initializer=HeNormal(),
                        kernel_regularizer=l2(l2_reg),
                        name=f"conv1d_mirror_{idx+1}")(x)
-            # Add a multi-head self-attention block
-            attn_out = MultiHeadAttention(num_heads=4,
-                                          key_dim=filt,
-                                          dropout=0.1,
-                                          name=f"attn_{idx+1}")(x, x)
-            # Residual connection and layer normalization
-            x = LayerNormalization(name=f"layernorm_{idx+1}")(x + attn_out)
 
         # Final Conv1D layer to ensure proper channel alignment
         x = Conv1D(filters=orig_features, kernel_size=1, activation='linear',
@@ -123,6 +128,7 @@ class Plugin:
             encoder_skip_connections (list): List of skip connection tensors from the encoder.
         """
         self.params['interface_size'] = interface_size
+        self.params['use_sliding_windows'] = use_sliding_windows
 
         if isinstance(output_shape, tuple):
             window_size, orig_features = output_shape

@@ -14,7 +14,7 @@ DEFAULT_VALUES = {
     'window_size': 128, 
     'threshold_error': 0.5,
     'initial_size': 32,
-    'step_size': 2,
+    'step_size': 1,
     'save_log': './phase_3_debug_out.json',
     'remote_log': None,
     'remote_load_config': None,

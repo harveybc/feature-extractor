@@ -161,7 +161,7 @@ class AutoencoderManager:
                 batch_size=batch_size,
                 verbose=1,
                 callbacks=[early_stopping],
-                validation_data=(data, data),
+                validation_data=val_data,
                 #validation_split = 0.2
             )
 

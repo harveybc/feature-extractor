@@ -64,6 +64,55 @@ class MemoryCleanupCallback(Callback):
         gc.collect()
         print(f"[MemoryCleanup] Epoch {epoch+1}: Garbage collection executed.")
 
+def gaussian_kernel_sum(x, y, sigma, chunk_size=32):
+    """
+    Compute the sum of Gaussian kernel values between each pair of rows in x and y
+    in a memory-efficient manner by processing in chunks.
+    x: Tensor of shape [n, d]
+    y: Tensor of shape [m, d]
+    sigma: bandwidth parameter for the Gaussian kernel.
+    Returns the scalar sum of exp(-||x_i - y_j||^2 / (2*sigma^2)) over all pairs.
+    """
+    n = tf.shape(x)[0]
+    total = tf.constant(0.0, dtype=tf.float32)
+    
+    # Use tf.while_loop for chunked computation.
+    i = tf.constant(0)
+    def cond(i, total):
+        return tf.less(i, n)
+    def body(i, total):
+        end_i = tf.minimum(i + chunk_size, n)
+        x_chunk = x[i:end_i]  # shape [chunk, d]
+        # Compute pairwise differences between x_chunk and all of y.
+        diff = tf.expand_dims(x_chunk, axis=1) - tf.expand_dims(y, axis=0)  # shape [chunk, m, d]
+        squared_diff = tf.reduce_sum(tf.square(diff), axis=2)  # shape [chunk, m]
+        kernel_chunk = tf.exp(-squared_diff / (2.0 * sigma**2))
+        total += tf.reduce_sum(kernel_chunk)
+        return i + chunk_size, total
+    i, total = tf.while_loop(cond, body, [i, total])
+    return total
+
+def mmd_loss_term(y_true, y_pred, sigma, chunk_size=32):
+    """
+    Compute the Maximum Mean Discrepancy (MMD) loss between y_true and y_pred using
+    a Gaussian kernel computed in a memory-efficient way.
+    """
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+    y_true = tf.reshape(y_true, [tf.shape(y_true)[0], -1])
+    y_pred = tf.reshape(y_pred, [tf.shape(y_pred)[0], -1])
+    sum_K_xx = gaussian_kernel_sum(y_true, y_true, sigma, chunk_size)
+    sum_K_yy = gaussian_kernel_sum(y_pred, y_pred, sigma, chunk_size)
+    sum_K_xy = gaussian_kernel_sum(y_true, y_pred, sigma, chunk_size)
+    m = tf.cast(tf.shape(y_true)[0], tf.float32)
+    n = tf.cast(tf.shape(y_pred)[0], tf.float32)
+    mmd = sum_K_xx / (m * m) + sum_K_yy / (n * n) - 2 * sum_K_xy / (m * n)
+    return mmd
+
+def mmd_metric(y_true, y_pred, config):
+    sigma = config.get('mmd_sigma', 1.0)
+    return mmd_loss_term(y_true, y_pred, sigma)
+
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
         """
@@ -74,7 +123,6 @@ class AutoencoderManager:
         self.autoencoder_model = None
         self.encoder_model = None
         self.decoder_model = None
-        # This variable will hold the penalty computed from the MAE gap.
         self.overfit_penalty = None  
         print(f"[AutoencoderManager] Initialized with encoder plugin and decoder plugin")
 
@@ -86,7 +134,6 @@ class AutoencoderManager:
             print("[build_autoencoder] Starting to build autoencoder...")
             use_sliding_windows = config.get('use_sliding_windows', True)
 
-            # Configure the encoder and retrieve its model, pre-flatten shape, and skip connections.
             self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows)
             self.encoder_model = self.encoder_plugin.encoder_model
             print("[build_autoencoder] Encoder model built and compiled successfully")
@@ -96,24 +143,20 @@ class AutoencoderManager:
             encoder_skips = self.encoder_plugin.skip_connections
             print(f"Encoder pre-flatten shape: {encoder_preflatten}")
 
-            # Configure the decoder using encoder information.
             self.decoder_plugin.configure_size(interface_size, input_shape, num_channels,
                                                encoder_preflatten, use_sliding_windows, encoder_skips)
             self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built and compiled successfully")
             self.decoder_model.summary()
 
-            # Build autoencoder by connecting encoder and decoder.
-            latent = self.encoder_model.output  # (None, interface_size)
+            latent = self.encoder_model.output
             decoder_inputs = [latent] + encoder_skips
             autoencoder_output = self.decoder_model(decoder_inputs)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
 
-            # Initialize the overfit_penalty variable as a non-trainable scalar (float32)
             self.overfit_penalty = tf.Variable(0.0, trainable=False, dtype=tf.float32)
             self.autoencoder_model.overfit_penalty = self.overfit_penalty
 
-            # Use an initial learning rate of 0.01 if not provided.
             initial_lr = config.get('learning_rate', 0.01)
             adam_optimizer = Adam(
                 learning_rate=initial_lr,
@@ -125,47 +168,17 @@ class AutoencoderManager:
                 clipvalue=0.5
             )
 
-            # Helper functions for the MMD loss term.
-            def gaussian_kernel_matrix(x, y, sigma):
-                x = tf.cast(x, tf.float32)
-                y = tf.cast(y, tf.float32)
-                x_size = tf.shape(x)[0]
-                y_size = tf.shape(y)[0]
-                dim = tf.shape(x)[1]
-                x_expanded = tf.reshape(x, [x_size, 1, dim])
-                y_expanded = tf.reshape(y, [1, y_size, dim])
-                squared_diff = tf.reduce_sum(tf.square(x_expanded - y_expanded), axis=2)
-                return tf.exp(-squared_diff / (2.0 * sigma**2))
-
-            def mmd_loss_term(y_true, y_pred, sigma):
-                y_true = tf.cast(y_true, tf.float32)
-                y_pred = tf.cast(y_pred, tf.float32)
-                y_true = tf.reshape(y_true, [tf.shape(y_true)[0], -1])
-                y_pred = tf.reshape(y_pred, [tf.shape(y_pred)[0], -1])
-                K_xx = gaussian_kernel_matrix(y_true, y_true, sigma)
-                K_yy = gaussian_kernel_matrix(y_pred, y_pred, sigma)
-                K_xy = gaussian_kernel_matrix(y_true, y_pred, sigma)
-                m = tf.cast(tf.shape(y_true)[0], tf.float32)
-                n = tf.cast(tf.shape(y_pred)[0], tf.float32)
-                mmd = tf.reduce_sum(K_xx) / (m * m) + tf.reduce_sum(K_yy) / (n * n) - 2 * tf.reduce_sum(K_xy) / (m * n)
-                return mmd
-
-            def mmd_metric(y_true, y_pred):
-                sigma = config.get('mmd_sigma', 1.0)
-                return mmd_loss_term(y_true, y_pred, sigma)
-
-            # Combined loss includes Huber loss, MMD loss, and the overfit penalty term.
             def combined_loss(y_true, y_pred):
                 huber_loss = Huber(delta=1.0)(y_true, y_pred)
                 sigma = config.get('mmd_sigma', 1.0)
                 stat_weight = config.get('statistical_loss_weight', 1.0)
-                mmd = mmd_loss_term(y_true, y_pred, sigma)
+                mmd = mmd_loss_term(y_true, y_pred, sigma, chunk_size=32)
                 penalty_term = tf.cast(1.0, tf.float32) * tf.stop_gradient(self.overfit_penalty)
                 return huber_loss + (stat_weight * mmd) + penalty_term
 
             if config.get('use_mmd', False):
                 loss_fn = combined_loss
-                metrics = ['mae', mmd_metric]
+                metrics = ['mae', lambda yt, yp: mmd_metric(yt, yp, config)]
             else:
                 loss_fn = Huber(delta=1.0)
                 metrics = ['mae']
@@ -185,10 +198,9 @@ class AutoencoderManager:
         """
         Train the autoencoder using provided training and validation data.
         The UpdateOverfitPenalty callback updates the penalty term at the end of each epoch.
-        Additionally, ReduceLROnPlateau monitors the validation MAE and reduces the learning rate
-        if no improvement is observed for a specified number of epochs.
-        Debug messages report the current learning rate and patience counters.
-        A MemoryCleanupCallback forces garbage collection at the end of each epoch.
+        ReduceLROnPlateau monitors the validation MAE and reduces the learning rate if no improvement is observed.
+        DebugLearningRateCallback reports the current learning rate and patience counters.
+        MemoryCleanupCallback forces garbage collection at the end of each epoch.
         """
         try:
             print(f"[train_autoencoder] Received data with shape: {data.shape}")

@@ -60,7 +60,7 @@ class Plugin:
         # Expand latent vector to match the encoder output shape
         x = Dense(units=T * F, activation=self.params['activation'],
                   kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(self.params['l2_reg']))(latent_input)
+                  kernel_regularizer=l2(l2_reg))(latent_input)
         x = Reshape((T, F), name="reshape")(x)
 
         # If sliding windows are used, add positional encoding to the reshaped tensor.
@@ -81,7 +81,7 @@ class Plugin:
 
             x = tf.keras.layers.Lambda(add_pos_enc, name="decoder_positional_encoding")(x)
 
-        # Reduce filter sizes in the decoder
+        # Compute the intermediate layer sizes for the decoder.
         enc_layers = []
         current = self.params['initial_layer_size']
         for i in range(self.params['intermediate_layers']):
@@ -89,25 +89,36 @@ class Plugin:
             current = max(current // self.params['layer_size_divisor'], self.params['interface_size'])
         enc_layers.append(self.params['interface_size'])
         
-        # Mirror conv filter sizes with lightweight architecture
+        # Compute mirror filter sizes.
         mirror_filters = [max(f // 2, self.params['interface_size']) for f in enc_layers[:-1][::-1]]
 
-        # Upsampling and mirroring the encoder structure with lightweight layers
+        # Upsampling blocks: in each block we perform an upsampling, then apply two consecutive Conv1D layers (each followed by BatchNormalization)
         for idx in range(self.params['intermediate_layers']):
             x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
             if skip_tensors and idx < len(skip_tensors):
                 skip = skip_tensors[-(idx+1)]
                 x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
             filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
+            # First convolution in the block
             x = Conv1D(filters=filt,
                        kernel_size=3,
                        padding='same',
                        activation=self.params['activation'],
                        kernel_initializer=HeNormal(),
                        kernel_regularizer=l2(l2_reg),
-                       name=f"conv1d_mirror_{idx+1}")(x)
+                       name=f"conv1d_mirror_{idx+1}_a")(x)
+            x = BatchNormalization(name=f"bn_mirror_{idx+1}_a")(x)
+            # Second convolution in the block
+            x = Conv1D(filters=filt,
+                       kernel_size=3,
+                       padding='same',
+                       activation=self.params['activation'],
+                       kernel_initializer=HeNormal(),
+                       kernel_regularizer=l2(l2_reg),
+                       name=f"conv1d_mirror_{idx+1}_b")(x)
+            x = BatchNormalization(name=f"bn_mirror_{idx+1}_b")(x)
 
-        # Final Conv1D layer to ensure proper channel alignment
+        # Final Conv1D layer to ensure proper channel alignment.
         x = Conv1D(filters=orig_features, kernel_size=1, activation='linear',
                    kernel_initializer=GlorotUniform(),
                    kernel_regularizer=l2(l2_reg),

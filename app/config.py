@@ -36,6 +36,7 @@ DEFAULT_VALUES = {
     'mmd_sigma': 1.0,  # adjust as needed
     'statistical_loss_weight': 1.0,  # adjust as needed
     'use_pos_enc': False,
-    'l2_reg': 1e-4
+    'l2_reg': 1e-4,
+    'loss_metric': 'val_mae'
 }
 

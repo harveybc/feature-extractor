@@ -149,7 +149,9 @@ class AutoencoderManager:
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
 
             # Implement Early Stopping
-            early_stopping = EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True)
+            early_patience = config.get('early_patience', 30)
+            early_monitor = config.get('early_monitor', 'val_loss')  
+            early_stopping = EarlyStopping(monitor=early_monitor, patience=early_patience, restore_best_weights=True)
 
             # Start training with early stopping
             history = self.autoencoder_model.fit(

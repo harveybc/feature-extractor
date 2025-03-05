@@ -11,7 +11,6 @@ import tensorflow as tf
 class Plugin:
     plugin_params = {
         'batch_size': 128,
-        'interface_size': 4,
         'intermediate_layers': 3,
         'initial_layer_size': 128,
         'layer_size_divisor': 2,

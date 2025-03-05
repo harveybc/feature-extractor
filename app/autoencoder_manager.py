@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model
-from keras.callbacks import EarlyStopping, Callback
+from keras.callbacks import EarlyStopping, Callback, ReduceLROnPlateau
 import tensorflow as tf
 from keras.optimizers import Adam
 from tensorflow.keras.losses import Huber
@@ -23,9 +23,7 @@ class UpdateOverfitPenalty(Callback):
         if train_mae is None or val_mae is None:
             print("[UpdateOverfitPenalty] MAE metrics not available; overfit penalty not updated.")
             return
-        # Compute the penalty only if validation MAE is higher than training MAE.
         penalty = 0.1 * max(0, val_mae - train_mae)
-        # Update the model's overfit_penalty variable.
         tf.keras.backend.set_value(self.model.overfit_penalty, penalty)
         print(f"[UpdateOverfitPenalty] Epoch {epoch+1}: Updated overfit penalty to {penalty:.6f}")
 
@@ -49,10 +47,9 @@ class AutoencoderManager:
         """
         try:
             print("[build_autoencoder] Starting to build autoencoder...")
-
             use_sliding_windows = config.get('use_sliding_windows', True)
 
-            # Configure encoder and retrieve its model, pre-flatten shape, and skip connections.
+            # Configure the encoder and retrieve its model, pre-flatten shape, and skip connections.
             self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows)
             self.encoder_model = self.encoder_plugin.encoder_model
             print("[build_autoencoder] Encoder model built and compiled successfully")
@@ -62,7 +59,7 @@ class AutoencoderManager:
             encoder_skips = self.encoder_plugin.skip_connections
             print(f"Encoder pre-flatten shape: {encoder_preflatten}")
 
-            # Configure decoder using encoder information.
+            # Configure the decoder using encoder information.
             self.decoder_plugin.configure_size(interface_size, input_shape, num_channels,
                                                encoder_preflatten, use_sliding_windows, encoder_skips)
             self.decoder_model = self.decoder_plugin.model
@@ -75,14 +72,14 @@ class AutoencoderManager:
             autoencoder_output = self.decoder_model(decoder_inputs)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
 
-            # Initialize the overfit_penalty variable as a non-trainable scalar (float32)
+            # Initialize the overfit_penalty variable as a non-trainable scalar (float32).
             self.overfit_penalty = tf.Variable(0.0, trainable=False, dtype=tf.float32)
-            # Attach it to the model so that it can be updated by the callback.
             self.autoencoder_model.overfit_penalty = self.overfit_penalty
 
-            # Define the optimizer.
+            # Use an initial learning rate of 0.01 if not provided.
+            initial_lr = config.get('learning_rate', 0.01)
             adam_optimizer = Adam(
-                learning_rate=config['learning_rate'],
+                learning_rate=initial_lr,
                 beta_1=0.9,
                 beta_2=0.999,
                 epsilon=1e-7,
@@ -126,7 +123,7 @@ class AutoencoderManager:
                 sigma = config.get('mmd_sigma', 1.0)
                 stat_weight = config.get('statistical_loss_weight', 1.0)
                 mmd = mmd_loss_term(y_true, y_pred, sigma)
-                # Use stop_gradient to ensure the penalty is treated as a constant during backpropagation.
+                # Use stop_gradient so that the penalty is treated as a constant during backpropagation.
                 penalty_term = tf.cast(1.0, tf.float32) * tf.stop_gradient(self.overfit_penalty)
                 return huber_loss + (stat_weight * mmd) + penalty_term
 
@@ -138,7 +135,6 @@ class AutoencoderManager:
                 loss_fn = Huber(delta=1.0)
                 metrics = ['mae']
 
-            # Compile the autoencoder model.
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss=loss_fn,
@@ -154,6 +150,8 @@ class AutoencoderManager:
         """
         Train the autoencoder using provided training and validation data.
         The UpdateOverfitPenalty callback updates the penalty term at the end of each epoch.
+        Additionally, ReduceLROnPlateau monitors the validation MAE and reduces the learning rate
+        if no improvement is observed for a specified number of epochs.
         """
         try:
             print(f"[train_autoencoder] Received data with shape: {data.shape}")
@@ -181,10 +179,19 @@ class AutoencoderManager:
             early_monitor = config.get('early_monitor', 'val_loss')
             early_stopping = EarlyStopping(monitor=early_monitor, patience=early_patience, restore_best_weights=True)
 
-            # Instantiate the callback that updates the overfit penalty variable.
             update_penalty_cb = UpdateOverfitPenalty()
 
-            # If validation data is provided as a NumPy array, wrap it as a tuple.
+            # Adaptive learning rate reduction: If no improvement in validation MAE for half the early_patience epochs,
+            # reduce the learning rate by a factor of 0.1.
+            lr_reducer = ReduceLROnPlateau(
+                monitor='val_mae',
+                factor=0.1,
+                patience=int(early_patience / 2),
+                verbose=1,
+                min_lr=config.get('min_lr', 1e-4)
+            )
+
+            # Wrap validation data as a tuple if provided as a NumPy array.
             if val_data is not None and isinstance(val_data, np.ndarray):
                 val_data = (val_data, val_data)
 
@@ -194,7 +201,7 @@ class AutoencoderManager:
                 epochs=epochs,
                 batch_size=batch_size,
                 verbose=1,
-                callbacks=[early_stopping, update_penalty_cb],
+                callbacks=[early_stopping, update_penalty_cb, lr_reducer],
                 validation_data=val_data
             )
 

@@ -11,6 +11,12 @@ import tensorflow as tf
 class Plugin:
     plugin_params = {
         'batch_size': 128,
+        'interface_size': 4,
+        'intermediate_layers': 3,
+        'initial_layer_size': 32,
+        'layer_size_divisor': 2,
+        'learning_rate': 0.0001,
+        'l2_reg': 1e-4,
         'activation': 'tanh'
     }
     # For the encoder, "interface_size" is the latent dimension,

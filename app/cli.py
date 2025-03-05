@@ -3,7 +3,8 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(description="Feature-extractor: A tool for encoding and decoding CSV data with support for dynamic plugins.")
     parser.add_argument('--input_file', type=str, help='Path to the input CSV file.')
-    parser.add_argument('--validation_file', type=str, help='Path to the input CSV file uset do test the trained autoencoder.')
+    parser.add_argument('--validation_file', type=str, help='Path to the input CSV file uset do training validation with the autoencoder.')
+    parser.add_argument('--test_file', type=str, help='Path to the input CSV file uset do test the trained autoencoder.')
     
     parser.add_argument('--output_file', type=str, help='Path to the output CSV file.')
     parser.add_argument('--save_encoder', type=str, help='Filename to save the trained encoder model.')

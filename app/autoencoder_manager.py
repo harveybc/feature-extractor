@@ -1,3 +1,4 @@
+import gc  # For garbage collection
 import numpy as np
 from keras.models import Model, load_model
 from keras.callbacks import EarlyStopping, Callback, ReduceLROnPlateau
@@ -5,6 +6,15 @@ import tensorflow as tf
 from keras.optimizers import Adam
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.mixed_precision import set_global_policy
+
+# Enable GPU memory growth
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except Exception as e:
+        print("Error setting GPU memory growth:", e)
 
 # Set global mixed precision policy
 set_global_policy('mixed_float16')
@@ -30,7 +40,7 @@ class UpdateOverfitPenalty(Callback):
 class DebugLearningRateCallback(Callback):
     """
     Debug Callback that prints the current learning rate,
-    the wait counter for early stopping, and for the LR reducer.
+    the wait counter for EarlyStopping, and for the LR reducer.
     """
     def __init__(self, early_stopping_cb, lr_reducer_cb):
         super(DebugLearningRateCallback, self).__init__()
@@ -44,6 +54,15 @@ class DebugLearningRateCallback(Callback):
         lr_wait = getattr(self.lr_reducer_cb, "wait", None)
         best_val = getattr(self.lr_reducer_cb, "best", None)
         print(f"[DebugLR] Epoch {epoch+1}: Learning Rate = {current_lr:.6e}, EarlyStopping wait = {es_wait}, LRReducer wait = {lr_wait}, LRReducer best = {best_val}")
+
+class MemoryCleanupCallback(Callback):
+    """
+    Callback to force garbage collection at the end of each epoch.
+    This can help free up unused memory and mitigate memory leaks.
+    """
+    def on_epoch_end(self, epoch, logs=None):
+        gc.collect()
+        print(f"[MemoryCleanup] Epoch {epoch+1}: Garbage collection executed.")
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
@@ -167,8 +186,9 @@ class AutoencoderManager:
         Train the autoencoder using provided training and validation data.
         The UpdateOverfitPenalty callback updates the penalty term at the end of each epoch.
         Additionally, ReduceLROnPlateau monitors the validation MAE and reduces the learning rate
-        if no improvement is observed for a specified number of epochs. Debug messages report the
-        current learning rate and patience counters.
+        if no improvement is observed for a specified number of epochs.
+        Debug messages report the current learning rate and patience counters.
+        A MemoryCleanupCallback forces garbage collection at the end of each epoch.
         """
         try:
             print(f"[train_autoencoder] Received data with shape: {data.shape}")
@@ -206,6 +226,7 @@ class AutoencoderManager:
             )
 
             debug_lr_cb = DebugLearningRateCallback(early_stopping, lr_reducer)
+            memory_cleanup_cb = MemoryCleanupCallback()
 
             if val_data is not None and isinstance(val_data, np.ndarray):
                 val_data = (val_data, val_data)
@@ -216,7 +237,7 @@ class AutoencoderManager:
                 epochs=epochs,
                 batch_size=batch_size,
                 verbose=1,
-                callbacks=[early_stopping, update_penalty_cb, lr_reducer, debug_lr_cb],
+                callbacks=[early_stopping, update_penalty_cb, lr_reducer, debug_lr_cb, memory_cleanup_cb],
                 validation_data=val_data
             )
 

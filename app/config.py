@@ -11,7 +11,7 @@ DEFAULT_VALUES = {
     'encoder_plugin': 'cnn',
     'decoder_plugin': 'cnn',
     'use_sliding_windows': True,
-    'window_size': 128, 
+    'window_size': 256, 
     'threshold_error': 0.5,
     'initial_size': 32,
     'step_size': 1,

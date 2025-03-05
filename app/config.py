@@ -40,6 +40,6 @@ DEFAULT_VALUES = {
     'use_pos_enc': False,
     'l2_reg': 1e-4,
     'early_monitor': 'val_mae',
-    'early_patience': 5
+    'early_patience': 10
 }
 

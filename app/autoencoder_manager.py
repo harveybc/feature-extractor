@@ -62,7 +62,7 @@ class MemoryCleanupCallback(Callback):
     """
     def on_epoch_end(self, epoch, logs=None):
         gc.collect()
-        print(f"[MemoryCleanup] Epoch {epoch+1}: Garbage collection executed.")
+        #print(f"[MemoryCleanup] Epoch {epoch+1}: Garbage collection executed.")
 
 def gaussian_kernel_sum(x, y, sigma, chunk_size=16):
     """

@@ -93,7 +93,7 @@ class AutoencoderManager:
                 sigma = config.get('mmd_sigma', 1.0)
                 stat_weight = config.get('statistical_loss_weight', 1.0)
                 mmd = mmd_loss_term(y_true, y_pred, sigma)
-                return huber_loss + stat_weight * mmd
+                return huber_loss + (stat_weight * mmd)
 
             # Choose loss and metrics based on config.
             if config.get('use_mmd', False):

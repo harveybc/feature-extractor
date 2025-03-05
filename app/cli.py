@@ -17,6 +17,10 @@ def parse_args():
     parser.add_argument('--window_size', type=int, help='Sliding window size to use for processing time series data.')
     parser.add_argument('--threshold_error', type=float, help='MSE error threshold to stop the training processes.')
     parser.add_argument('--initial_size', type=int, help='Initial size of the encoder/decoder interface.')
+    parser.add_argument('--initial_layer_size', type=int, help='Initial size of the encoder/decoder interface.')
+    parser.add_argument('--intermediate_layers', type=int, help='Initial size of the encoder/decoder interface.')
+    parser.add_argument('--layer_size_divisor', type=int, help='Initial size of the encoder/decoder interface.')
+    
     parser.add_argument('--step_size', type=int, help='Step size to adjust the size of the encoder/decoder interface.')
     parser.add_argument('--max_steps', type=int, help='Max rows to feed the model.')
     parser.add_argument('--remote_log', type=str, help='URL of a remote API endpoint for saving debug variables in JSON format.')

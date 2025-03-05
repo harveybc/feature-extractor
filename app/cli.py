@@ -33,5 +33,6 @@ def parse_args():
     parser.add_argument('--headers', action='store_true', help='Indicate if the CSV file has headers.')
     parser.add_argument('--use_sliding_windows', action='store_true', help='Indicate if the CSV file has headers.')
     parser.add_argument('--use_pos_enc', action='store_true', help='generate positional encoding layer.')
-    
+    parser.add_argument('--l2_reg', type=float, help='L2 regulaization value.')
+        
     return parser.parse_known_args()

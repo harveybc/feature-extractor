@@ -11,10 +11,10 @@ set_global_policy('mixed_float16')
 
 class UpdateOverfitPenalty(Callback):
     """
-    Custom Callback to update the overfit penalty value that is used in the loss function.
+    Custom Callback to update the overfit penalty value used in the loss function.
     At the end of each epoch, it computes the difference between validation MAE and training MAE,
     multiplies it by a scaling factor (0.1), and updates a TensorFlow variable in the model.
-    The penalty is applied only if the validation MAE is higher than the training MAE.
+    The penalty is applied only if validation MAE is higher than training MAE.
     """
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
@@ -52,7 +52,7 @@ class AutoencoderManager:
 
             use_sliding_windows = config.get('use_sliding_windows', True)
 
-            # Configure the encoder and retrieve its model, pre-flatten shape, and skip connections.
+            # Configure encoder and retrieve its model, pre-flatten shape, and skip connections.
             self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows)
             self.encoder_model = self.encoder_plugin.encoder_model
             print("[build_autoencoder] Encoder model built and compiled successfully")
@@ -62,8 +62,9 @@ class AutoencoderManager:
             encoder_skips = self.encoder_plugin.skip_connections
             print(f"Encoder pre-flatten shape: {encoder_preflatten}")
 
-            # Configure the decoder using encoder information.
-            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_preflatten, use_sliding_windows, encoder_skips)
+            # Configure decoder using encoder information.
+            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels,
+                                               encoder_preflatten, use_sliding_windows, encoder_skips)
             self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built and compiled successfully")
             self.decoder_model.summary()
@@ -74,9 +75,9 @@ class AutoencoderManager:
             autoencoder_output = self.decoder_model(decoder_inputs)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
 
-            # Initialize the overfit_penalty variable as a non-trainable scalar (float32).
+            # Initialize the overfit_penalty variable as a non-trainable scalar (float32)
             self.overfit_penalty = tf.Variable(0.0, trainable=False, dtype=tf.float32)
-            # Attach it to the model so it can be updated by the callback.
+            # Attach it to the model so that it can be updated by the callback.
             self.autoencoder_model.overfit_penalty = self.overfit_penalty
 
             # Define the optimizer.
@@ -125,8 +126,8 @@ class AutoencoderManager:
                 sigma = config.get('mmd_sigma', 1.0)
                 stat_weight = config.get('statistical_loss_weight', 1.0)
                 mmd = mmd_loss_term(y_true, y_pred, sigma)
-                # The penalty term is taken from the overfit_penalty variable updated every epoch.
-                penalty_term = tf.cast(0.1, tf.float32) * self.overfit_penalty
+                # Use stop_gradient to ensure the penalty is treated as a constant during backpropagation.
+                penalty_term = tf.cast(0.1, tf.float32) * tf.stop_gradient(self.overfit_penalty)
                 return huber_loss + (stat_weight * mmd) + penalty_term
 
             # Choose loss and metrics based on configuration.
@@ -141,8 +142,7 @@ class AutoencoderManager:
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss=loss_fn,
-                metrics=metrics,
-                run_eagerly=True
+                metrics=metrics
             )
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
             self.autoencoder_model.summary()
@@ -206,7 +206,7 @@ class AutoencoderManager:
 
     def calculate_dataset_information(self, data, config):
         """
-        Calculate dataset statistics including entropy and channel capacity using Shannon-Hartley theorem.
+        Calculate dataset statistics including entropy and channel capacity using the Shannon-Hartley theorem.
         Supports both 2D (row-by-row) and 3D (sliding windows) data.
         """
         try:

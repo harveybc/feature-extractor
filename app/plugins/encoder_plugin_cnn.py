@@ -14,7 +14,6 @@ class Plugin:
         'intermediate_layers': 3,
         'initial_layer_size': 128,
         'layer_size_divisor': 2,
-        'learning_rate': 0.0001,
         'l2_reg': 1e-4,
         'activation': 'tanh'
     }

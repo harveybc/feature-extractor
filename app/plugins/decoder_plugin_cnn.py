@@ -64,7 +64,7 @@ class Plugin:
         x = Reshape((T, F), name="reshape")(x)
 
         # If sliding windows are used, add positional encoding to the reshaped tensor.
-        if self.params.get('use_sliding_windows', False):
+        if self.params.get('use_pos_enc', False):
             def add_pos_enc(x):
                 window_size = tf.shape(x)[1]
                 positions = tf.range(start=0, limit=window_size, delta=1, dtype=tf.float32)

@@ -72,7 +72,7 @@ class Plugin:
 
         # If using sliding windows, add positional encoding to the input.
         # This mirrors the decoder's addition of positional information.
-        if use_sliding_windows:
+        if self.params.get('use_pos_enc', False):
             def add_pos_enc(x):
                 window_size = tf.shape(x)[1]
                 positions = tf.range(start=0, limit=window_size, delta=1, dtype=tf.float32)

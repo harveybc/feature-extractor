@@ -18,6 +18,7 @@ def parse_args():
     parser.add_argument('--threshold_error', type=float, help='MSE error threshold to stop the training processes.')
     parser.add_argument('--initial_size', type=int, help='Initial size of the encoder/decoder interface.')
     parser.add_argument('--step_size', type=int, help='Step size to adjust the size of the encoder/decoder interface.')
+    parser.add_argument('--max_steps', type=int, help='Max rows to feed the model.')
     parser.add_argument('--remote_log', type=str, help='URL of a remote API endpoint for saving debug variables in JSON format.')
     parser.add_argument('--remote_load_config', type=str, help='URL of a remote JSON configuration file to download and execute.')
     parser.add_argument('--remote_save_config', type=str, help='URL of a remote API endpoint for saving configuration in JSON format.')

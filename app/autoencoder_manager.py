@@ -118,7 +118,7 @@ class AutoencoderManager:
 
 
 
-    def train_autoencoder(self, data, epochs=100, batch_size=128, config=None):
+    def train_autoencoder(self, data, val_data, epochs=100, batch_size=128, config=None):
         try:
             print(f"[train_autoencoder] Received data with shape: {data.shape}")
 
@@ -161,7 +161,8 @@ class AutoencoderManager:
                 batch_size=batch_size,
                 verbose=1,
                 callbacks=[early_stopping],
-                validation_split = 0.2
+                validation_data=(data, data),
+                #validation_split = 0.2
             )
 
             # Log training loss
@@ -255,7 +256,7 @@ class AutoencoderManager:
 
     def evaluate(self, data, dataset_name, config):
         """
-        Evaluate the autoencoder model on the provided dataset and calculate the MSE and MAE.
+        Evaluate the autoencoder model on the provided dataset and calculate the MSE, MAE, and R².
 
         Args:
             data (np.ndarray): Input data to evaluate (original input data).
@@ -263,7 +264,7 @@ class AutoencoderManager:
             config (dict): Configuration dictionary.
 
         Returns:
-            tuple: Calculated MSE and MAE for the dataset.
+            tuple: Calculated MSE, MAE, and R² for the dataset.
         """
         print(f"[evaluate] Evaluating {dataset_name} data with shape: {data.shape}")
 
@@ -272,12 +273,16 @@ class AutoencoderManager:
             data = np.expand_dims(data, axis=-1)
             print(f"[evaluate] Reshaped {dataset_name} data for Conv1D compatibility: {data.shape}")
 
-        # Evaluate the autoencoder
+        # Evaluate the autoencoder to obtain loss (MSE) and MAE
         results = self.autoencoder_model.evaluate(data, data, verbose=1)
         mse, mae = results[0], results[1]  # Retrieve MSE (loss) and MAE
 
-        print(f"[evaluate] {dataset_name} Evaluation results - MSE: {mse}, MAE: {mae}")
-        return mse, mae
+        # Generate predictions and calculate R²
+        predictions = self.autoencoder_model.predict(data)
+        r2 = self.calculate_r2(data, predictions)
+
+        print(f"[evaluate] {dataset_name} Evaluation results - MSE: {mse}, MAE: {mae}, R²: {r2}")
+        return mse, mae, r2
 
 
 
@@ -417,5 +422,38 @@ class AutoencoderManager:
 
 
 
+    def calculate_r2(self, y_true, y_pred):
+        """
+        Calculates the R² (Coefficient of Determination) score between true and predicted values.
 
+        Args:
+            y_true (numpy.ndarray): True target values of shape (N, time_horizon).
+            y_pred (numpy.ndarray): Predicted target values of shape (N, time_horizon).
+
+        Returns:
+            float: Calculated R² score.
+
+        Raises:
+            ValueError: If the shapes of y_true and y_pred do not match.
+        """
+        print(f"Calculating R² for shapes: y_true={y_true.shape}, y_pred={y_pred.shape}")
+
+        # Ensure both y_true and y_pred have the same shape
+        if y_true.shape != y_pred.shape:
+            raise ValueError(
+                f"Shape mismatch in calculate_r2: y_true={y_true.shape}, y_pred={y_pred.shape}"
+            )
+
+        # Calculate R² score for each sample and then average
+        ss_res = np.sum((y_true - y_pred) ** 2, axis=1)
+        ss_tot = np.sum((y_true - np.mean(y_true, axis=1, keepdims=True)) ** 2, axis=1)
+        r2_scores = 1 - (ss_res / ss_tot)
+
+        # Handle cases where ss_tot is zero
+        r2_scores = np.where(ss_tot == 0, 0, r2_scores)
+
+        # Calculate the average R² score
+        r2 = np.mean(r2_scores)
+        print(f"Calculated R²: {r2}")
+        return r2
 

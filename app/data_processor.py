@@ -44,7 +44,7 @@ def process_data(config):
         config (dict): Configuration dictionary with parameters for processing.
     
     Returns:
-        tuple: Processed training and validation datasets.
+        tuple: Processed training, validation, and test datasets.
     """
     print(f"Loading data from CSV file: {config['input_file']}")
     data = load_csv(
@@ -60,12 +60,11 @@ def process_data(config):
 
         # Apply sliding windows to the entire dataset (multi-column)
         processed_data = create_sliding_windows(data, window_size)
-        print(f"Windowed data shape: {processed_data.shape}")  # Should be (num_samples, window_size, num_features)
+        print(f"Windowed data shape: {processed_data.shape}")  # (num_samples, window_size, num_features)
     else:
         print("Skipping sliding windows. Data will be fed row-by-row.")
-        # Use data row-by-row as a NumPy array
         processed_data = data.to_numpy()
-        print(f"Processed data shape: {processed_data.shape}")  # Should be (num_samples, num_features)
+        print(f"Processed data shape: {processed_data.shape}")  # (num_samples, num_features)
 
     print(f"Loading validation data from CSV file: {config['validation_file']}")
     validation_data = load_csv(
@@ -76,23 +75,39 @@ def process_data(config):
     print(f"Validation data loaded with shape: {validation_data.shape}")
 
     if config['use_sliding_windows']:
-        # Apply sliding windows to the validation dataset
         windowed_validation_data = create_sliding_windows(validation_data, config['window_size'])
         print(f"Windowed validation data shape: {windowed_validation_data.shape}")
     else:
         print("Skipping sliding windows for validation data. Data will be fed row-by-row.")
-        # Use validation data row-by-row as a NumPy array
         windowed_validation_data = validation_data.to_numpy()
         print(f"Validation processed shape: {windowed_validation_data.shape}")
 
-    # NEW: Truncate the datasets to a maximum number of steps if specified in config.
+    print(f"Loading test data from CSV file: {config['test_file']}")
+    test_data = load_csv(
+        file_path=config['test_file'],
+        headers=config.get('headers', False),
+        force_date=config.get('force_date', False)
+    )
+    print(f"Test data loaded with shape: {test_data.shape}")
+
+    if config['use_sliding_windows']:
+        windowed_test_data = create_sliding_windows(test_data, config['window_size'])
+        print(f"Windowed test data shape: {windowed_test_data.shape}")
+    else:
+        print("Skipping sliding windows for test data. Data will be fed row-by-row.")
+        windowed_test_data = test_data.to_numpy()
+        print(f"Test processed shape: {windowed_test_data.shape}")
+
+    # Truncate the datasets to a maximum number of steps if specified in config.
     if "max_steps" in config:
         max_steps = config["max_steps"]
         processed_data = processed_data[:max_steps]
         windowed_validation_data = windowed_validation_data[:max_steps]
-        print(f"Data truncated to {max_steps} steps. Training shape: {processed_data.shape}, Validation shape: {windowed_validation_data.shape}")
+        windowed_test_data = windowed_test_data[:max_steps]
+        print(f"Data truncated to {max_steps} steps. Training shape: {processed_data.shape}, "
+              f"Validation shape: {windowed_validation_data.shape}, Test shape: {windowed_test_data.shape}")
 
-    return processed_data, windowed_validation_data
+    return processed_data, windowed_validation_data, windowed_test_data
 
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
@@ -101,13 +116,14 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
     start_time = time.time()
     
     print("Running process_data...")
-    processed_data, validation_data = process_data(config)
+    processed_data, validation_data, test_data = process_data(config)
     print("Processed data received.")
 
     # Truncate validation data to have at most as many rows as training data
     if validation_data.shape[0] > processed_data.shape[0]:
         print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_data.shape[0]} rows to match training data rows: {processed_data.shape[0]}")
         validation_data = validation_data[:processed_data.shape[0]]
+        test_data = test_data[:processed_data.shape[0]]
     
     # Get the encoder plugin name (lowercase)
     encoder_plugin_name = config.get('encoder_plugin', '').lower()
@@ -118,11 +134,13 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
             print("[run_autoencoder_pipeline] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at axis 1.")
             processed_data = np.expand_dims(processed_data, axis=1)  # becomes (samples, 1, features)
             validation_data = np.expand_dims(validation_data, axis=1)
+            test_data = np.expand_dims(test_data, axis=1)
             config['original_feature_size'] = processed_data.shape[2]
         elif encoder_plugin_name == 'cnn':
             print("[run_autoencoder_pipeline] Detected CNN plugin without sliding windows; expanding dimension at axis 1.")
             processed_data = np.expand_dims(processed_data, axis=1)
             validation_data = np.expand_dims(validation_data, axis=1)
+            test_data = np.expand_dims(test_data, axis=1)
             config['original_feature_size'] = validation_data.shape[2]
         else:
             config['original_feature_size'] = validation_data.shape[1]
@@ -162,18 +180,21 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         from app.autoencoder_manager import AutoencoderManager
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         autoencoder_manager.build_autoencoder(input_size, current_size, config, num_channels)
-        autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
+        autoencoder_manager.train_autoencoder(processed_data, validation_data, epochs=epochs, batch_size=training_batch_size, config=config)
         
-        training_mse, training_mae = autoencoder_manager.evaluate(processed_data, "Training", config)
-        print(f"Training Mean Squared Error with interface size {current_size}: {training_mse}")
-        print(f"Training Mean Absolute Error with interface size {current_size}: {training_mae}")
+        training_mse, training_mae, training_r2= autoencoder_manager.evaluate(processed_data, "Training", config)
+        print(f"Training Mean Absolute Error with interface size {current_size}: {training_mae}, R2: {training_r2}")
         
-        validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data, "Validation", config)
-        print(f"Validation Mean Squared Error with interface size {current_size}: {validation_mse}")
-        print(f"Validation Mean Absolute Error with interface size {current_size}: {validation_mae}")
+        validation_mse, validation_mae, validation_r2 = autoencoder_manager.evaluate(validation_data, "Validation", config)
+        print(f"Validation Mean Absolute Error with interface size {current_size}: {validation_mae}, R2: {validation_r2}")
+        \
+        test_mse, test_mae, test_r2 = autoencoder_manager.evaluate(test_data, "Test", config)
+        print(f"Test Mean Absolute Error with interface size {current_size}: {test_mae}, R2: {test_r2}")
         
         if (incremental_search and validation_mae <= threshold_error) or (not incremental_search and validation_mae >= threshold_error):
-            print(f"Optimal interface size found: {current_size} with Validation MSE: {validation_mse} and Validation MAE: {validation_mae}")
+            print(f"Optimal interface size found: {current_size} Validation MAE: {validation_mae} and Test MAE: {test_mae}")
+            print(f"Optimal interface size found: {current_size} Validation R2: {validation_r2} and Test MAE: {test_r2}")
+            
             break
         else:
             if incremental_search:

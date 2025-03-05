@@ -41,7 +41,7 @@ DEFAULT_VALUES = {
     'statistical_loss_weight': 1.0,  # adjust as needed
     'use_pos_enc': False,
     'l2_reg': 1e-4,
-    'early_monitor': 'val_mae',
+    'early_monitor': 'val_loss',
     'early_patience': 10
 }
 

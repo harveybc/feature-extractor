@@ -127,7 +127,7 @@ class AutoencoderManager:
                 stat_weight = config.get('statistical_loss_weight', 1.0)
                 mmd = mmd_loss_term(y_true, y_pred, sigma)
                 # Use stop_gradient to ensure the penalty is treated as a constant during backpropagation.
-                penalty_term = tf.cast(0.1, tf.float32) * tf.stop_gradient(self.overfit_penalty)
+                penalty_term = tf.cast(1.0, tf.float32) * tf.stop_gradient(self.overfit_penalty)
                 return huber_loss + (stat_weight * mmd) + penalty_term
 
             # Choose loss and metrics based on configuration.

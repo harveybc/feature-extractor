@@ -172,7 +172,7 @@ class AutoencoderManager:
     def train_autoencoder(self, data, val_data, epochs=100, batch_size=128, config=None):
         """
         Train the autoencoder model using the provided training and validation data.
-        This function also integrates early stopping and the custom overfitting monitor callback.
+        This function integrates early stopping and the custom overfitting monitor callback.
         """
         try:
             print(f"[train_autoencoder] Received data with shape: {data.shape}")
@@ -190,7 +190,7 @@ class AutoencoderManager:
             input_shape = data.shape[1]
             interface_size = self.encoder_plugin.params.get('interface_size', 4)
 
-            # Build the autoencoder model if it has not been built yet.
+            # Build the autoencoder model if not already built.
             if not self.autoencoder_model:
                 self.build_autoencoder(input_shape, interface_size, config, num_channels)
 
@@ -198,7 +198,7 @@ class AutoencoderManager:
             if np.isnan(data).any():
                 raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your preprocessing pipeline.")
 
-            # Calculate dataset information (e.g., entropy, channel capacity).
+            # Calculate dataset information (entropy, channel capacity, etc.).
             self.calculate_dataset_information(data, config)
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
 
@@ -212,7 +212,12 @@ class AutoencoderManager:
             overfit_patience = config.get('overfit_patience', 5)
             overfitting_monitor = OverfittingMonitor(threshold=overfit_threshold, patience=overfit_patience)
 
-            # Start training with both early stopping and the overfitting monitor.
+            # Ensure validation data is provided as a tuple (inputs, targets) if it's a NumPy array.
+            if val_data is not None:
+                if isinstance(val_data, np.ndarray):
+                    val_data = (val_data, val_data)
+
+            # Start training with early stopping and overfitting monitoring.
             history = self.autoencoder_model.fit(
                 data,
                 data,
@@ -220,7 +225,7 @@ class AutoencoderManager:
                 batch_size=batch_size,
                 verbose=1,
                 callbacks=[early_stopping, overfitting_monitor],
-                validation_data=val_data,
+                validation_data=val_data
             )
 
             print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
@@ -231,14 +236,13 @@ class AutoencoderManager:
 
     def calculate_dataset_information(self, data, config):
         """
-        Calculate dataset statistics including entropy and channel capacity
-        using Shannon-Hartley theorem. Supports both 2D (row-by-row) and 3D (sliding windows) data.
+        Calculate dataset statistics including entropy and channel capacity using the Shannon-Hartley theorem.
+        Supports both 2D (row-by-row) and 3D (sliding windows) data.
         """
         try:
             print("[calculate_dataset_information] Calculating dataset entropy and useful information...")
             normalized_columns = []
 
-            # Process sliding window (3D) or row-by-row (2D) data.
             if len(data.shape) == 3:
                 for col in range(data.shape[-1]):
                     column_data = data[:, :, col].flatten()

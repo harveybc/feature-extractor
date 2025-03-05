@@ -77,7 +77,6 @@ class Plugin:
                 window_size = tf.shape(x)[1]
                 positions = tf.range(start=0, limit=window_size, delta=1, dtype=tf.float32)
                 positions = tf.expand_dims(positions, axis=1)  # (window_size, 1)
-                # Using the number of input features for the positional encoding dimension.
                 feat_dim = tf.shape(x)[-1]
                 i = tf.range(start=0, limit=feat_dim, delta=1, dtype=tf.float32)
                 i = tf.expand_dims(i, axis=0)  # (1, feat_dim)
@@ -85,7 +84,9 @@ class Plugin:
                 angle_rads = tf.cast(positions, tf.float32) * angle_rates
                 sinusoids = tf.concat([tf.sin(angle_rads[:, 0::2]), tf.cos(angle_rads[:, 1::2])], axis=-1)
                 pos_encoding = tf.expand_dims(sinusoids, axis=0)  # (1, window_size, feat_dim)
+                pos_encoding = tf.cast(pos_encoding, x.dtype)      # Cast to match x's dtype
                 return x + pos_encoding
+
             x = tf.keras.layers.Lambda(add_pos_enc, name="encoder_positional_encoding")(x)
 
         # Build convolutional blocks that downsample the input

@@ -64,38 +64,40 @@ class MemoryCleanupCallback(Callback):
         gc.collect()
         print(f"[MemoryCleanup] Epoch {epoch+1}: Garbage collection executed.")
 
-def gaussian_kernel_sum(x, y, sigma, chunk_size=32):
+def gaussian_kernel_sum(x, y, sigma, chunk_size=16):
     """
     Compute the sum of Gaussian kernel values between each pair of rows in x and y
     in a memory-efficient manner by processing in chunks.
     x: Tensor of shape [n, d]
     y: Tensor of shape [m, d]
-    sigma: bandwidth parameter for the Gaussian kernel.
-    Returns the scalar sum of exp(-||x_i - y_j||^2 / (2*sigma^2)) over all pairs.
+    sigma: Bandwidth parameter for the Gaussian kernel.
+    Returns a scalar equal to the sum of exp(-||x_i - y_j||^2/(2*sigma^2)) for all pairs.
     """
     n = tf.shape(x)[0]
     total = tf.constant(0.0, dtype=tf.float32)
-    
-    # Use tf.while_loop for chunked computation.
     i = tf.constant(0)
+    
     def cond(i, total):
         return tf.less(i, n)
+    
     def body(i, total):
         end_i = tf.minimum(i + chunk_size, n)
         x_chunk = x[i:end_i]  # shape [chunk, d]
-        # Compute pairwise differences between x_chunk and all of y.
         diff = tf.expand_dims(x_chunk, axis=1) - tf.expand_dims(y, axis=0)  # shape [chunk, m, d]
         squared_diff = tf.reduce_sum(tf.square(diff), axis=2)  # shape [chunk, m]
-        kernel_chunk = tf.exp(-squared_diff / (2.0 * sigma**2))
+        # Use tf.square for sigma to avoid potential issues with inline exponentiation.
+        divisor = 2.0 * tf.square(sigma)
+        kernel_chunk = tf.exp(-squared_diff / divisor)
         total += tf.reduce_sum(kernel_chunk)
         return i + chunk_size, total
+    
     i, total = tf.while_loop(cond, body, [i, total])
     return total
 
-def mmd_loss_term(y_true, y_pred, sigma, chunk_size=32):
+def mmd_loss_term(y_true, y_pred, sigma, chunk_size=16):
     """
     Compute the Maximum Mean Discrepancy (MMD) loss between y_true and y_pred using
-    a Gaussian kernel computed in a memory-efficient way.
+    a memory-efficient chunked Gaussian kernel sum.
     """
     y_true = tf.cast(y_true, tf.float32)
     y_pred = tf.cast(y_pred, tf.float32)
@@ -111,7 +113,7 @@ def mmd_loss_term(y_true, y_pred, sigma, chunk_size=32):
 
 def mmd_metric(y_true, y_pred, config):
     sigma = config.get('mmd_sigma', 1.0)
-    return mmd_loss_term(y_true, y_pred, sigma)
+    return mmd_loss_term(y_true, y_pred, sigma, chunk_size=16)
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
@@ -133,30 +135,30 @@ class AutoencoderManager:
         try:
             print("[build_autoencoder] Starting to build autoencoder...")
             use_sliding_windows = config.get('use_sliding_windows', True)
-
+            
             self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows)
             self.encoder_model = self.encoder_plugin.encoder_model
             print("[build_autoencoder] Encoder model built and compiled successfully")
             self.encoder_model.summary()
-
+            
             encoder_preflatten = self.encoder_plugin.pre_flatten_shape
             encoder_skips = self.encoder_plugin.skip_connections
             print(f"Encoder pre-flatten shape: {encoder_preflatten}")
-
+            
             self.decoder_plugin.configure_size(interface_size, input_shape, num_channels,
                                                encoder_preflatten, use_sliding_windows, encoder_skips)
             self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built and compiled successfully")
             self.decoder_model.summary()
-
+            
             latent = self.encoder_model.output
             decoder_inputs = [latent] + encoder_skips
             autoencoder_output = self.decoder_model(decoder_inputs)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
-
+            
             self.overfit_penalty = tf.Variable(0.0, trainable=False, dtype=tf.float32)
             self.autoencoder_model.overfit_penalty = self.overfit_penalty
-
+            
             initial_lr = config.get('learning_rate', 0.01)
             adam_optimizer = Adam(
                 learning_rate=initial_lr,
@@ -167,22 +169,22 @@ class AutoencoderManager:
                 clipnorm=1.0,
                 clipvalue=0.5
             )
-
+            
             def combined_loss(y_true, y_pred):
                 huber_loss = Huber(delta=1.0)(y_true, y_pred)
                 sigma = config.get('mmd_sigma', 1.0)
                 stat_weight = config.get('statistical_loss_weight', 1.0)
-                mmd = mmd_loss_term(y_true, y_pred, sigma, chunk_size=32)
+                mmd = mmd_loss_term(y_true, y_pred, sigma, chunk_size=16)
                 penalty_term = tf.cast(1.0, tf.float32) * tf.stop_gradient(self.overfit_penalty)
                 return huber_loss + (stat_weight * mmd) + penalty_term
-
+            
             if config.get('use_mmd', False):
                 loss_fn = combined_loss
                 metrics = ['mae', lambda yt, yp: mmd_metric(yt, yp, config)]
             else:
                 loss_fn = Huber(delta=1.0)
                 metrics = ['mae']
-
+            
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss=loss_fn,
@@ -209,40 +211,40 @@ class AutoencoderManager:
                 print("[train_autoencoder] Reshaping data to add channel dimension for Conv1D compatibility...")
                 data = np.expand_dims(data, axis=-1)
                 print(f"[train_autoencoder] Reshaped data shape: {data.shape}")
-
+            
             num_channels = data.shape[-1]
             input_shape = data.shape[1]
             interface_size = self.encoder_plugin.params.get('interface_size', 4)
-
+            
             if not self.autoencoder_model:
                 self.build_autoencoder(input_shape, interface_size, config, num_channels)
-
+            
             if np.isnan(data).any():
                 raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your preprocessing pipeline.")
-
+            
             self.calculate_dataset_information(data, config)
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
-
+            
             early_patience = config.get('early_patience', 30)
             early_monitor = config.get('early_monitor', 'val_loss')
             early_stopping = EarlyStopping(monitor=early_monitor, patience=early_patience, restore_best_weights=True)
-
+            
             update_penalty_cb = UpdateOverfitPenalty()
-
+            
             lr_reducer = ReduceLROnPlateau(
                 monitor='val_mae',
                 factor=0.1,
-                patience=int(early_patience / 4),
+                patience=int(early_patience / 2),
                 verbose=1,
                 min_lr=config.get('min_lr', 1e-4)
             )
-
+            
             debug_lr_cb = DebugLearningRateCallback(early_stopping, lr_reducer)
             memory_cleanup_cb = MemoryCleanupCallback()
-
+            
             if val_data is not None and isinstance(val_data, np.ndarray):
                 val_data = (val_data, val_data)
-
+            
             history = self.autoencoder_model.fit(
                 data,
                 data,
@@ -252,7 +254,7 @@ class AutoencoderManager:
                 callbacks=[early_stopping, update_penalty_cb, lr_reducer, debug_lr_cb, memory_cleanup_cb],
                 validation_data=val_data
             )
-
+            
             print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
             print("[train_autoencoder] Training completed.")
         except Exception as e:
@@ -281,7 +283,7 @@ class AutoencoderManager:
                     normalized_columns.append(normalized_column)
             else:
                 raise ValueError("[calculate_dataset_information] Unsupported data shape for processing.")
-
+            
             concatenated_data = np.concatenate(normalized_columns, axis=0)
             num_samples = concatenated_data.shape[0]
             concatenated_data_tf = tf.convert_to_tensor(concatenated_data, dtype=tf.float32)
@@ -292,7 +294,7 @@ class AutoencoderManager:
                 lambda: (mean_val / std_val) ** 2,
                 lambda: tf.constant(0.0, dtype=tf.float32)
             )
-
+            
             periodicity = config['dataset_periodicity']
             periodicity_seconds_map = {
                 "1min": 60,
@@ -307,20 +309,20 @@ class AutoencoderManager:
                 sampling_frequency = tf.constant(1 / sampling_period_seconds, dtype=tf.float32)
             else:
                 sampling_frequency = tf.constant(0.0, dtype=tf.float32)
-
+            
             channel_capacity = tf.cond(
                 tf.math.logical_and(tf.greater(snr, 0), tf.greater(sampling_frequency, 0)),
                 lambda: sampling_frequency * tf.math.log(1 + snr) / tf.math.log(2.0),
                 lambda: tf.constant(0.0, dtype=tf.float32)
             )
             total_information_bits = channel_capacity * num_samples * sampling_period_seconds
-
+            
             bins = 1000
             histogram = tf.histogram_fixed_width(concatenated_data_tf, [0.0, 1.0], nbins=bins)
             histogram = tf.cast(histogram, tf.float32)
             probabilities = histogram / tf.reduce_sum(histogram)
             entropy = -tf.reduce_sum(probabilities * tf.math.log(probabilities + 1e-10) / tf.math.log(2.0))
-
+            
             print(f"[calculate_dataset_information] Calculated SNR: {snr.numpy()}")
             print(f"[calculate_dataset_information] Sampling frequency: {sampling_frequency.numpy()} Hz")
             print(f"[calculate_dataset_information] Channel capacity: {channel_capacity.numpy()} bits/second")

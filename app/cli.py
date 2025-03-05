@@ -17,6 +17,7 @@ def parse_args():
     parser.add_argument('--decoder_plugin', type=str, help='Name of the decoder plugin to use.')
     parser.add_argument('--window_size', type=int, help='Sliding window size to use for processing time series data.')
     parser.add_argument('--threshold_error', type=float, help='MSE error threshold to stop the training processes.')
+    parser.add_argument('--learning_rate', type=float, help='Learning rate.')
     parser.add_argument('--initial_size', type=int, help='Initial size of the encoder/decoder interface.')
     parser.add_argument('--initial_layer_size', type=int, help='Initial size of the encoder/decoder interface.')
     parser.add_argument('--intermediate_layers', type=int, help='Initial size of the encoder/decoder interface.')

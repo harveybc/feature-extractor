@@ -32,8 +32,8 @@ DEFAULT_VALUES = {
     'incremental_search': True, # if false performs decresing search instead
     'headers': True,
     'epochs': 2000,  # Add epochs here
-    'batch_size': 128,  # Add batch_size here
-    'learning_rate': 0.001,  # Add learning_rate here
+    'batch_size': 256,  # Add batch_size here
+    'learning_rate': 0.0001,  # Add learning_rate here
     'dataset_periodicity': '1h',  # Add dataset_periodicity here, can be 1m, 5m, 15m, 30m, 1h, 4h, daily
     'max_steps':20000, # max number of rows to read from input file
     'use_mmd':True,
@@ -42,6 +42,6 @@ DEFAULT_VALUES = {
     'use_pos_enc': False,
     'l2_reg': 1e-4,
     'early_monitor': 'val_loss',
-    'early_patience': 20
+    'early_patience': 40
 }
 

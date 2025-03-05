@@ -27,6 +27,24 @@ class UpdateOverfitPenalty(Callback):
         tf.keras.backend.set_value(self.model.overfit_penalty, penalty)
         print(f"[UpdateOverfitPenalty] Epoch {epoch+1}: Updated overfit penalty to {penalty:.6f}")
 
+class DebugLearningRateCallback(Callback):
+    """
+    Debug Callback that prints the current learning rate,
+    the wait counter for early stopping, and for the LR reducer.
+    """
+    def __init__(self, early_stopping_cb, lr_reducer_cb):
+        super(DebugLearningRateCallback, self).__init__()
+        self.early_stopping_cb = early_stopping_cb
+        self.lr_reducer_cb = lr_reducer_cb
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        current_lr = tf.keras.backend.get_value(self.model.optimizer.lr)
+        es_wait = getattr(self.early_stopping_cb, "wait", None)
+        lr_wait = getattr(self.lr_reducer_cb, "wait", None)
+        best_val = getattr(self.lr_reducer_cb, "best", None)
+        print(f"[DebugLR] Epoch {epoch+1}: Learning Rate = {current_lr:.6e}, EarlyStopping wait = {es_wait}, LRReducer wait = {lr_wait}, LRReducer best = {best_val}")
+
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
         """
@@ -72,7 +90,7 @@ class AutoencoderManager:
             autoencoder_output = self.decoder_model(decoder_inputs)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
 
-            # Initialize the overfit_penalty variable as a non-trainable scalar (float32).
+            # Initialize the overfit_penalty variable as a non-trainable scalar (float32)
             self.overfit_penalty = tf.Variable(0.0, trainable=False, dtype=tf.float32)
             self.autoencoder_model.overfit_penalty = self.overfit_penalty
 
@@ -123,11 +141,9 @@ class AutoencoderManager:
                 sigma = config.get('mmd_sigma', 1.0)
                 stat_weight = config.get('statistical_loss_weight', 1.0)
                 mmd = mmd_loss_term(y_true, y_pred, sigma)
-                # Use stop_gradient so that the penalty is treated as a constant during backpropagation.
                 penalty_term = tf.cast(1.0, tf.float32) * tf.stop_gradient(self.overfit_penalty)
                 return huber_loss + (stat_weight * mmd) + penalty_term
 
-            # Choose loss and metrics based on configuration.
             if config.get('use_mmd', False):
                 loss_fn = combined_loss
                 metrics = ['mae', mmd_metric]
@@ -151,11 +167,11 @@ class AutoencoderManager:
         Train the autoencoder using provided training and validation data.
         The UpdateOverfitPenalty callback updates the penalty term at the end of each epoch.
         Additionally, ReduceLROnPlateau monitors the validation MAE and reduces the learning rate
-        if no improvement is observed for a specified number of epochs.
+        if no improvement is observed for a specified number of epochs. Debug messages report the
+        current learning rate and patience counters.
         """
         try:
             print(f"[train_autoencoder] Received data with shape: {data.shape}")
-
             use_sliding_windows = config.get('use_sliding_windows', True)
             if not use_sliding_windows and len(data.shape) == 2:
                 print("[train_autoencoder] Reshaping data to add channel dimension for Conv1D compatibility...")
@@ -181,8 +197,6 @@ class AutoencoderManager:
 
             update_penalty_cb = UpdateOverfitPenalty()
 
-            # Adaptive learning rate reduction: If no improvement in validation MAE for half the early_patience epochs,
-            # reduce the learning rate by a factor of 0.1.
             lr_reducer = ReduceLROnPlateau(
                 monitor='val_mae',
                 factor=0.1,
@@ -191,7 +205,8 @@ class AutoencoderManager:
                 min_lr=config.get('min_lr', 1e-4)
             )
 
-            # Wrap validation data as a tuple if provided as a NumPy array.
+            debug_lr_cb = DebugLearningRateCallback(early_stopping, lr_reducer)
+
             if val_data is not None and isinstance(val_data, np.ndarray):
                 val_data = (val_data, val_data)
 
@@ -201,7 +216,7 @@ class AutoencoderManager:
                 epochs=epochs,
                 batch_size=batch_size,
                 verbose=1,
-                callbacks=[early_stopping, update_penalty_cb, lr_reducer],
+                callbacks=[early_stopping, update_penalty_cb, lr_reducer, debug_lr_cb],
                 validation_data=val_data
             )
 

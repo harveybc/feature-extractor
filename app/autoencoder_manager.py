@@ -232,7 +232,7 @@ class AutoencoderManager:
             update_penalty_cb = UpdateOverfitPenalty()
             
             lr_reducer = ReduceLROnPlateau(
-                monitor='val_mae',
+                monitor='val_loss',
                 factor=0.1,
                 patience=int(early_patience / 2),
                 verbose=1,

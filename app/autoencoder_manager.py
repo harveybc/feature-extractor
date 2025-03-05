@@ -236,7 +236,7 @@ class AutoencoderManager:
                 factor=0.1,
                 patience=int(early_patience / 2),
                 verbose=1,
-                min_lr=config.get('min_lr', 1e-4)
+                min_lr=config.get('min_lr', 1e-6)
             )
             
             debug_lr_cb = DebugLearningRateCallback(early_stopping, lr_reducer)

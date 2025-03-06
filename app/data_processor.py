@@ -193,7 +193,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
         
         if (incremental_search and validation_mae <= threshold_error) or (not incremental_search and validation_mae >= threshold_error):
             print(f"Optimal interface size found: {current_size} Validation MAE: {validation_mae} and Test MAE: {test_mae}")
-            print(f"Optimal interface size found: {current_size} Validation R2: {validation_r2} and Test MAE: {test_r2}")
+            print(f"Optimal interface size found: {current_size} Validation R2: {validation_r2} and Test R2: {test_r2}")
             
             break
         else:

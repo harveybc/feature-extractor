@@ -240,7 +240,9 @@ def load_and_evaluate_encoder(config):
     """
     Load and evaluate a pre-trained encoder with input data.
     The returned encoded data will include a DATE_TIME column that corresponds
-    to the last timestamp in each sliding window.
+    to the last timestamp in each sliding window. Additionally, if config["include_base"]
+    is True, the exported CSV will also include the base feature columns:
+    OPEN, HIGH, LOW, CLOSE, BC-BO, BH-BL, BH-BO, BO-BL from the input dataset.
     """
     # Load the encoder model (with custom objects if needed)
     if config.get('encoder_plugin', '').lower() == 'transformer':
@@ -273,8 +275,7 @@ def load_and_evaluate_encoder(config):
         force_date=config.get('force_date', False)
     )
     
-    # Extract original date information
-    # If sliding windows are used, we take dates from index[window_size-1:]
+    # Extract original date information from the DataFrame
     window_size = config.get('window_size', 1)
     if config.get('force_date', False):
         if data.index.name is not None:
@@ -286,7 +287,7 @@ def load_and_evaluate_encoder(config):
     else:
         original_dates = None
 
-    # Create sliding windows (if enabled)
+    # Create sliding windows if enabled
     if config.get('use_sliding_windows', True):
         processed_data = create_sliding_windows(data, window_size)
         print(f"Processed data shape for sliding windows: {processed_data.shape}")
@@ -302,27 +303,53 @@ def load_and_evaluate_encoder(config):
     encoded_data = model.predict(processed_data, verbose=1)
     print(f"Encoded data shape: {encoded_data.shape}")
 
-    # Flatten encoded data if it is 3D (for saving as 2D)
+    # Flatten encoded data if it is 3D (to obtain a 2D array for saving)
     if len(encoded_data.shape) == 3:
         num_samples, dim1, dim2 = encoded_data.shape
         encoded_data = encoded_data.reshape(num_samples, dim1 * dim2)
         print(f"Reshaped encoded data to 2D: {encoded_data.shape}")
 
-    # Save the encoded data with DATE_TIME column if available and lengths match.
+    import pandas as pd
+    # Create a DataFrame from the encoded data
+    encoded_df = pd.DataFrame(encoded_data)
+    if original_dates is not None and len(original_dates) == encoded_df.shape[0]:
+        encoded_df.insert(0, "DATE_TIME", original_dates)
+    else:
+        print("Warning: Original date information not available or row count mismatch.")
+    
+    # Rename encoded feature columns (if DATE_TIME is present, skip it)
+    if "DATE_TIME" in encoded_df.columns:
+        num_encoded = encoded_df.shape[1] - 1
+        encoded_feature_cols = [f"feature_{i}" for i in range(num_encoded)]
+        new_columns = ["DATE_TIME"] + encoded_feature_cols
+    else:
+        new_columns = [f"feature_{i}" for i in range(encoded_df.shape[1])]
+    encoded_df.columns = new_columns
+
+    # If include_base is True, merge base columns from the original dataset.
+    if config.get("include_base", False):
+        base_columns = ["OPEN", "HIGH", "LOW", "CLOSE", "BC-BO", "BH-BL", "BH-BO", "BO-BL"]
+        # For sliding windows, the corresponding base row is the last row in the window.
+        if config.get('use_sliding_windows', True):
+            base_df = data.iloc[window_size - 1:].reset_index(drop=True)[base_columns]
+        else:
+            base_df = data[base_columns].reset_index(drop=True)
+        # Align the number of rows between base_df and encoded_df
+        if len(base_df) != len(encoded_df):
+            print("Warning: Base data row count does not match encoded data. Truncating to the common length.")
+            common_len = min(len(base_df), len(encoded_df))
+            base_df = base_df.iloc[:common_len]
+            encoded_df = encoded_df.iloc[:common_len]
+        # Merge base columns into encoded_df.
+        # Here we insert the base columns after the DATE_TIME column.
+        if "DATE_TIME" in encoded_df.columns:
+            encoded_df = pd.concat([encoded_df[["DATE_TIME"]], base_df, encoded_df.drop(columns=["DATE_TIME"])], axis=1)
+        else:
+            encoded_df = pd.concat([base_df, encoded_df], axis=1)
+
+    # Save the final encoded DataFrame to CSV if evaluate_encoder is set in the config.
     if config.get('evaluate_encoder'):
         print(f"Saving encoded data to {config['evaluate_encoder']}")
-        import pandas as pd
-        encoded_df = pd.DataFrame(encoded_data)
-        if original_dates is not None and len(original_dates) == encoded_df.shape[0]:
-            encoded_df.insert(0, "DATE_TIME", original_dates)
-        else:
-            print("Warning: Original date information not available or row count mismatch.")
-        # Rename feature columns
-        if "DATE_TIME" in encoded_df.columns:
-            new_columns = ["DATE_TIME"] + [f"feature_{i}" for i in range(encoded_df.shape[1] - 1)]
-        else:
-            new_columns = [f"feature_{i}" for i in range(encoded_df.shape[1])]
-        encoded_df.columns = new_columns
         encoded_df.to_csv(config['evaluate_encoder'], index=False)
         print(f"Encoded data saved to {config['evaluate_encoder']}")
 
@@ -384,61 +411,4 @@ def load_and_evaluate_decoder(config):
         force_date=config.get('force_date', False)
     )
     print(f"Decoded data saved to {evaluate_filename}")
-
-
-# app/data_processor.py
-
-def load_and_evaluate_decoder(config):
-    model = load_model(config['load_decoder'])
-    print(f"Decoder model loaded from {config['load_decoder']}")
-
-    # Load the input data with headers and date based on config
-    data = load_csv(
-        file_path=config['input_file'],
-        headers=config.get('headers', False),
-        force_date=config.get('force_date', False)
-    )
-
-    # Apply sliding window
-    window_size = config['window_size']
-    windowed_data = create_sliding_windows(data, window_size)
-
-    print(f"Decoding data with shape: {windowed_data.shape}")
-    decoded_data = model.predict(windowed_data)
-    print(f"Decoded data shape: {decoded_data.shape}")
-
-    # Reshape decoded_data from (samples, 32, 8) to (samples, 256)
-    if len(decoded_data.shape) == 3:
-        samples, dim1, dim2 = decoded_data.shape
-        decoded_data = decoded_data.reshape(samples, dim1 * dim2)
-        print(f"Reshaped decoded data to: {decoded_data.shape}")
-    elif len(decoded_data.shape) != 2:
-        raise ValueError(f"Unexpected decoded_data shape: {decoded_data.shape}")
-
-    if config.get('force_date', False):
-        # Extract corresponding dates for each window
-        dates = data.index[window_size - 1:]
-        # Create a DataFrame with dates and decoded features
-        decoded_df = pd.DataFrame(decoded_data, index=dates)
-        decoded_df.index.name = 'date'
-    else:
-        # Create a DataFrame without dates
-        decoded_df = pd.DataFrame(decoded_data)
-
-    # Assign headers for decoded features, e.g., 'decoded_feature_1', 'decoded_feature_2', etc.
-    feature_names = [f'decoded_feature_{i+1}' for i in range(decoded_data.shape[1])]
-    decoded_df.columns = feature_names
-
-    # Save the decoded data to CSV using the write_csv function
-    evaluate_filename = config['evaluate_decoder']
-    write_csv(
-        file_path=evaluate_filename,
-        data=decoded_df,
-        include_date=config.get('force_date', False),
-        headers=True,  # Always include headers for decoded features
-        force_date=config.get('force_date', False)
-    )
-    print(f"Decoded data saved to {evaluate_filename}")
-
-
 

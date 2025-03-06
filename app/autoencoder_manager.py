@@ -184,8 +184,8 @@ class AutoencoderManager:
                 clipnorm=1.0,
                 clipvalue=0.5
             )
-            from tensroflow.keras.losses import Huber
             def combined_loss(y_true, y_pred):
+                from tensorflow.keras.losses import Huber
                 huber_loss = Huber(delta=1.0)(y_true, y_pred)
                 sigma = config.get('mmd_sigma', 1.0)
                 stat_weight = config.get('statistical_loss_weight', 1.0)

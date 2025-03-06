@@ -42,6 +42,7 @@ DEFAULT_VALUES = {
     'use_pos_enc': False,
     'l2_reg': 1e-4,
     'early_monitor': 'val_loss',
-    'early_patience': 32
+    'early_patience': 32,
+    'include_base': True # includes high, low, close and open into the output csv when evaluating an encoder
 }
 

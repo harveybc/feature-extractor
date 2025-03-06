@@ -42,6 +42,6 @@ DEFAULT_VALUES = {
     'use_pos_enc': False,
     'l2_reg': 1e-4,
     'early_monitor': 'val_loss',
-    'early_patience': 30
+    'early_patience': 32
 }
 

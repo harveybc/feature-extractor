@@ -115,7 +115,8 @@ class Plugin:
         x = Dense(units=orig_features,
                   activation='linear',
                   kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(l2_reg))(x)
+                  kernel_regularizer=l2(l2_reg),
+                  name="out_dense_linear")(x)
         return x
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):

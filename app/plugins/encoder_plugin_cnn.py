@@ -101,7 +101,7 @@ class Plugin:
                         kernel_initializer=HeNormal(),
                         padding='same',
                         kernel_regularizer=l2(l2_reg),
-                        name=f"conv1d_{idx+1}")(x)
+                        name=f"in_conv1d_linear")(x)
             else:
                 x = Conv1D(filters=size,
                         kernel_size=3,

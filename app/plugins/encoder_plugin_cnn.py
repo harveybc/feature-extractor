@@ -88,24 +88,18 @@ class Plugin:
                 return x + pos_encoding
 
             x = tf.keras.layers.Lambda(add_pos_enc, name="encoder_positional_encoding")(x)
-        x = Conv1D(filters=input_shape[0],
-                       kernel_size=3,
-                       activation='linear',
-                       kernel_initializer=HeNormal(),
-                       padding='same',
-                       kernel_regularizer=l2(l2_reg))(x)
 
         # Build convolutional blocks that downsample the input
         # Each block applies a Conv1D layer then downsampling via MaxPooling1D.
         self.skip_connections = []  # Reset skip connections (to be used by the decoder)
         for idx, size in enumerate(layers[:-1]):  # Exclude the final interface_size
             if idx==0:
-                        x = Conv1D(filters=size
-                       kernel_size=3,
-                       activation='linear',
-                       kernel_initializer=HeNormal(),
-                       padding='same',
-                       kernel_regularizer=l2(l2_reg))(x)
+                    x = Conv1D(filters=size
+                    kernel_size=3,
+                    activation='linear',
+                    kernel_initializer=HeNormal(),
+                    padding='same',
+                    kernel_regularizer=l2(l2_reg))(x)
             else:
                 x = Conv1D(filters=size,
                         kernel_size=3,

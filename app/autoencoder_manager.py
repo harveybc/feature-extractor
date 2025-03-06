@@ -201,7 +201,8 @@ class AutoencoderManager:
                 print("Using combined loss with MMD and overfit penalty.")
             else:
                 print("Using Huber loss.")
-            self.model.compile(
+            
+            self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss=loss_fn,
                 metrics=metrics

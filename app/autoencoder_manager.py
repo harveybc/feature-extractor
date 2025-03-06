@@ -184,23 +184,24 @@ class AutoencoderManager:
                 clipnorm=1.0,
                 clipvalue=0.5
             )
-            def combined_loss(y_true, y_pred):
-                from tensorflow.keras.losses import Huber
-                huber_loss = Huber(delta=1.0)(y_true, y_pred)
-                sigma = config.get('mmd_sigma', 1.0)
-                stat_weight = config.get('statistical_loss_weight', 1.0)
-                mmd = mmd_loss_term(y_true, y_pred, sigma, chunk_size=16)
-                penalty_term = tf.cast(1.0, tf.float32) * tf.stop_gradient(self.overfit_penalty)
-                return huber_loss + (stat_weight * mmd) + penalty_term
-            
-            if config.get('use_mmd', False):
+            if config is not None and config.get('use_mmd', False):
+                def combined_loss(y_true, y_pred):
+                    huber_loss = Huber(delta=1.0)(y_true, y_pred)
+                    sigma = config.get('mmd_sigma', 1.0)
+                    stat_weight = config.get('statistical_loss_weight', 1.0)
+                    mmd = mmd_loss_term(y_true, y_pred, sigma, chunk_size=16)
+                    penalty_term = tf.cast(1.0, tf.float32) * tf.stop_gradient(self.overfit_penalty)
+                    return huber_loss + stat_weight * mmd + penalty_term
                 loss_fn = combined_loss
                 metrics = ['mae', lambda yt, yp: mmd_metric(yt, yp, config)]
             else:
                 loss_fn = Huber(delta=1.0)
                 metrics = ['mae']
-            
-            self.autoencoder_model.compile(
+            if config is not None and config.get('use_mmd', False):
+                print("Using combined loss with MMD and overfit penalty.")
+            else:
+                print("Using Huber loss.")
+            self.model.compile(
                 optimizer=adam_optimizer,
                 loss=loss_fn,
                 metrics=metrics

@@ -33,14 +33,14 @@ DEFAULT_VALUES = {
     'headers': True,
     'epochs': 2000,  # Add epochs here
     'batch_size': 32,  # Add batch_size here (best: 32)
-    'learning_rate': 1e-4,  # Add learning_rate here
+    'learning_rate': 1e-4,  # Add learning_rate here (best 1e-4)
     'dataset_periodicity': '1h',  # Add dataset_periodicity here, can be 1m, 5m, 15m, 30m, 1h, 4h, daily
     'max_steps':20000, # max number of rows to read from input file
     'use_mmd':True,
     'mmd_sigma': 1.0,  # adjust as needed
     'statistical_loss_weight': 3.0,  # adjust as needed
     'use_pos_enc': False,
-    'l2_reg': 1e-3,
+    'l2_reg': 1e-5,
     'early_monitor': 'val_loss',
     'early_patience': 45,
     'include_base': True # includes high, low, close and open into the output csv when evaluating an encoder

@@ -92,7 +92,7 @@ class Plugin:
         
         l2_reg = self.params.get('l2_reg', 1e-4)
         x = Dense(
-            units=input_shape[0],
+            units=input_shape[1],
             activation='linear',
             kernel_initializer=GlorotUniform(),
             kernel_regularizer=l2(l2_reg),

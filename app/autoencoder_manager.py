@@ -64,7 +64,7 @@ class DebugLearningRateCallback(Callback):
                     if hasattr(layer, 'kernel_regularizer') and layer.kernel_regularizer is not None:
                         if isinstance(layer.kernel_regularizer, tf.keras.regularizers.L2):
                             old_l2 = layer.kernel_regularizer.l2
-                            new_l2 = 3.16227766*self.model.initial_l2 / scaling_factor
+                            new_l2 = self.model.initial_l2 * scaling_factor
                             layer.kernel_regularizer.l2 = new_l2
                             print(f"[DebugLR] Updated l2_reg in layer {layer.name} from {old_l2} to {new_l2}")
 

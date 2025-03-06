@@ -61,7 +61,6 @@ class Plugin:
         x = Dense(units=T * F, activation=self.params['activation'],
                   kernel_initializer=GlorotUniform(),
                   kernel_regularizer=l2(self.params['l2_reg']))(latent_input)
-        
         x = Reshape((T, F), name="reshape")(x)
 
         # If sliding windows are used, add positional encoding to the reshaped tensor.
@@ -96,9 +95,9 @@ class Plugin:
         # Upsampling and mirroring the encoder structure with lightweight layers
         for idx in range(self.params['intermediate_layers']):
             x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
-            #if skip_tensors and idx < len(skip_tensors):
-                #skip = skip_tensors[-(idx+1)]
-               #x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
+            if skip_tensors and idx < len(skip_tensors):
+                skip = skip_tensors[-(idx+1)]
+                x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
             filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
             x = Conv1D(filters=filt,
                        kernel_size=3,
@@ -113,7 +112,6 @@ class Plugin:
                    kernel_initializer=GlorotUniform(),
                    kernel_regularizer=l2(l2_reg),
                    name="decoder_final_conv")(x)
-        #x = BatchNormalization()(x)
         x = Dense(units=orig_features,
                   activation='linear',
                   kernel_initializer=GlorotUniform(),

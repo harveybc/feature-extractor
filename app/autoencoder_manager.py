@@ -41,6 +41,8 @@ class DebugLearningRateCallback(Callback):
     """
     Debug Callback that prints the current learning rate,
     the wait counter for EarlyStopping, and for the LR reducer.
+    Additionally, updates the l2 regularization factor in layers with a kernel_regularizer of type L2,
+    scaling it proportionally to the learning rate change relative to the initial learning rate.
     """
     def __init__(self, early_stopping_cb, lr_reducer_cb):
         super(DebugLearningRateCallback, self).__init__()
@@ -54,6 +56,19 @@ class DebugLearningRateCallback(Callback):
         lr_wait = getattr(self.lr_reducer_cb, "wait", None)
         best_val = getattr(self.lr_reducer_cb, "best", None)
         print(f"[DebugLR] Epoch {epoch+1}: Learning Rate = {current_lr:.6e}, EarlyStopping wait = {es_wait}, LRReducer wait = {lr_wait}, LRReducer best = {best_val}")
+        # Update L2 regularization if initial values are stored on the model.
+        if hasattr(self.model, 'initial_lr') and self.model.initial_lr is not None:
+            scaling_factor = current_lr / self.model.initial_lr
+            if hasattr(self.model, 'initial_l2') and self.model.initial_l2 is not None:
+                for layer in self.model.layers:
+                    if hasattr(layer, 'kernel_regularizer') and layer.kernel_regularizer is not None:
+                        if isinstance(layer.kernel_regularizer, tf.keras.regularizers.L2):
+                            old_l2 = layer.kernel_regularizer.l2
+                            new_l2 = 3.16227766*self.model.initial_l2 / scaling_factor
+                            layer.kernel_regularizer.l2 = new_l2
+                            print(f"[DebugLR] Updated l2_reg in layer {layer.name} from {old_l2} to {new_l2}")
+
+
 
 class MemoryCleanupCallback(Callback):
     """
@@ -146,7 +161,7 @@ class AutoencoderManager:
             print(f"Encoder pre-flatten shape: {encoder_preflatten}")
             
             self.decoder_plugin.configure_size(interface_size, input_shape, num_channels,
-                                               encoder_preflatten, use_sliding_windows, encoder_skips)
+                                            encoder_preflatten, use_sliding_windows, encoder_skips)
             self.decoder_model = self.decoder_plugin.model
             print("[build_autoencoder] Decoder model built and compiled successfully")
             self.decoder_model.summary()
@@ -192,9 +207,13 @@ class AutoencoderManager:
             )
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
             self.autoencoder_model.summary()
+            # Store the initial learning rate and l2 regularization value on the model for dynamic updates.
+            self.autoencoder_model.initial_lr = config.get('learning_rate', 0.01)
+            self.autoencoder_model.initial_l2 = self.encoder_plugin.params.get('l2_reg', 1e-2)
         except Exception as e:
             print(f"[build_autoencoder] Exception occurred: {e}")
             raise
+
 
     def train_autoencoder(self, data, val_data, epochs=100, batch_size=128, config=None):
         """
@@ -233,7 +252,7 @@ class AutoencoderManager:
             
             lr_reducer = ReduceLROnPlateau(
                 monitor=early_monitor,
-                factor=0.5,
+                factor=0.316227766,
                 patience=int(early_patience / 3),
                 verbose=1,
                 min_lr=config.get('min_lr', 1e-8)

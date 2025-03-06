@@ -234,7 +234,7 @@ class AutoencoderManager:
             lr_reducer = ReduceLROnPlateau(
                 monitor=early_monitor,
                 factor=0.1,
-                patience=int(early_patience / 2),
+                patience=int(early_patience / 4),
                 verbose=1,
                 min_lr=config.get('min_lr', 1e-8)
             )

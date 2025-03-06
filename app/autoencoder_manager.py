@@ -55,7 +55,6 @@ class DebugLearningRateCallback(Callback):
         es_wait = getattr(self.early_stopping_cb, "wait", None)
         lr_wait = getattr(self.lr_reducer_cb, "wait", None)
         best_val = getattr(self.lr_reducer_cb, "best", None)
-        print(f"[DebugLR] Epoch {epoch+1}: Learning Rate = {current_lr:.6e}, EarlyStopping wait = {es_wait}, LRReducer wait = {lr_wait}, LRReducer best = {best_val}")
         # Update L2 regularization if initial values are stored on the model.
         if hasattr(self.model, 'initial_lr') and self.model.initial_lr is not None:
             scaling_factor = current_lr / self.model.initial_lr
@@ -66,8 +65,9 @@ class DebugLearningRateCallback(Callback):
                             old_l2 = layer.kernel_regularizer.l2
                             new_l2 = self.model.initial_l2 * scaling_factor
                             layer.kernel_regularizer.l2 = new_l2
-                            print(f"[DebugLR] Updated l2_reg in layer {layer.name} from {old_l2} to {new_l2}")
-
+                            if old_l2 != new_l2:
+                                print(f"[DebugLR] Updated l2_reg in layer {layer.name} from {old_l2} to {new_l2}")
+        print(f"\n[DebugLR] Epoch {epoch+1}: Learning Rate = {current_lr:.4e}, l2_reg ={new_l2:.4e} , EarlyStopping wait = {es_wait}, LRReducer wait = {lr_wait}, LRReducer best = {best_val}")
 
 
 class MemoryCleanupCallback(Callback):

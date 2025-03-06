@@ -184,7 +184,7 @@ class AutoencoderManager:
                 clipnorm=1.0,
                 clipvalue=0.5
             )
-            
+            from tensroflow.keras.losses import Huber
             def combined_loss(y_true, y_pred):
                 huber_loss = Huber(delta=1.0)(y_true, y_pred)
                 sigma = config.get('mmd_sigma', 1.0)

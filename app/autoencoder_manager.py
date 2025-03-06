@@ -225,7 +225,7 @@ class AutoencoderManager:
             self.calculate_dataset_information(data, config)
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
             
-            early_patience = config.get('early_patience', 10)
+            early_patience = config.get('early_patience', 32)
             early_monitor = config.get('early_monitor', 'val_loss')
             early_stopping = EarlyStopping(monitor=early_monitor, patience=early_patience, restore_best_weights=True)
             
@@ -233,7 +233,7 @@ class AutoencoderManager:
             
             lr_reducer = ReduceLROnPlateau(
                 monitor=early_monitor,
-                factor=0.1,
+                factor=10,
                 patience=int(early_patience / 3),
                 verbose=1,
                 min_lr=config.get('min_lr', 1e-8)

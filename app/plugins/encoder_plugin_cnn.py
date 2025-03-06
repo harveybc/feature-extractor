@@ -107,12 +107,6 @@ class Plugin:
 
         # Apply batch normalization and a dense transformation to refine features.
         x = BatchNormalization(name="batch_norm1")(x)
-        x = Dense(units=layers[-2],
-                  activation=self.params['activation'],
-                  kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(l2_reg),
-                  name="dense_final")(x)
-        x = BatchNormalization(name="batch_norm2")(x)
         self.pre_flatten_shape = x.shape[1:]
         print(f"[Encoder] Pre-flatten shape: {self.pre_flatten_shape}")
         x = Flatten(name="flatten")(x)

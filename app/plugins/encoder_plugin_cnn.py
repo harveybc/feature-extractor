@@ -89,6 +89,8 @@ class Plugin:
 
             x = tf.keras.layers.Lambda(add_pos_enc, name="encoder_positional_encoding")(x)
         # first  dense layer
+        
+        l2_reg = self.params.get('l2_reg', 1e-4)
         model_output = Dense(
             units=input_shape,
             activation='linear',
@@ -100,7 +102,6 @@ class Plugin:
         # Build convolutional blocks that downsample the input
         # Each block applies a Conv1D layer then downsampling via MaxPooling1D.
         self.skip_connections = []  # Reset skip connections (to be used by the decoder)
-        l2_reg = self.params.get('l2_reg', 1e-4)
         for idx, size in enumerate(layers[:-1]):  # Exclude the final interface_size
             x = Conv1D(filters=size,
                        kernel_size=3,

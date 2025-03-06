@@ -38,7 +38,7 @@ DEFAULT_VALUES = {
     'max_steps':20000, # max number of rows to read from input file
     'use_mmd':True,
     'mmd_sigma': 1.0,  # adjust as needed
-    'statistical_loss_weight': 1.0,  # adjust as needed
+    'statistical_loss_weight': 3.0,  # adjust as needed
     'use_pos_enc': False,
     'l2_reg': 1e-5,
     'early_monitor': 'val_loss',

@@ -94,12 +94,12 @@ class Plugin:
         self.skip_connections = []  # Reset skip connections (to be used by the decoder)
         for idx, size in enumerate(layers[:-1]):  # Exclude the final interface_size
             if idx==0:
-                    x = Conv1D(filters=size
-                    kernel_size=3,
-                    activation='linear',
-                    kernel_initializer=HeNormal(),
-                    padding='same',
-                    kernel_regularizer=l2(l2_reg))(x)
+                    x = Conv1D(filters=size,
+                        kernel_size=3,
+                        activation='linear',
+                        kernel_initializer=HeNormal(),
+                        padding='same',
+                        kernel_regularizer=l2(l2_reg))(x)
             else:
                 x = Conv1D(filters=size,
                         kernel_size=3,

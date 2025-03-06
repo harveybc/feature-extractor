@@ -91,7 +91,7 @@ class Plugin:
         # first  dense layer
         
         l2_reg = self.params.get('l2_reg', 1e-4)
-        model_output = Dense(
+        x = Dense(
             units=input_shape[0],
             activation='linear',
             kernel_initializer=GlorotUniform(),

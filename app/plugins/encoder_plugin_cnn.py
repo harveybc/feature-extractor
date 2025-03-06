@@ -115,7 +115,7 @@ class Plugin:
             x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
 
         # Apply batch normalization and a dense transformation to refine features.
-        x = BatchNormalization(name="batch_norm1")(x)
+        x = BatchNormalization()(x)
         self.pre_flatten_shape = x.shape[1:]
         print(f"[Encoder] Pre-flatten shape: {self.pre_flatten_shape}")
         x = Flatten(name="flatten")(x)

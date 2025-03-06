@@ -62,7 +62,7 @@ class Plugin:
                   kernel_initializer=GlorotUniform(),
                   kernel_regularizer=l2(self.params['l2_reg']))(latent_input)
         # Final Conv1D layer to ensure proper channel alignment
-        x = BatchNormalization(name="batch_norm1")(x)
+        x = BatchNormalization()(x)
         x = Reshape((T, F), name="reshape")(x)
 
         # If sliding windows are used, add positional encoding to the reshaped tensor.
@@ -110,7 +110,7 @@ class Plugin:
                        name=f"conv1d_mirror_{idx+1}")(x)
 
         # Final Conv1D layer to ensure proper channel alignment
-        x = BatchNormalization(name="batch_norm1")(x)
+        x = BatchNormalization()(x)
         self.pre_flatten_shape = x.shape[1:]
         print(f"[Encoder] Pre-flatten shape: {self.pre_flatten_shape}")
         x = Flatten(name="flatten")(x)

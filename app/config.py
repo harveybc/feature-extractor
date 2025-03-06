@@ -16,7 +16,7 @@ DEFAULT_VALUES = {
     'threshold_error': 0.5,
     'initial_size': 16,
     'initial_layer_size': 256,
-    'intermediate_layers': 5,
+    'intermediate_layers': 4,
     'layer_size_divisor': 2,
     'step_size': 1,
     'save_log': './phase_3_debug_out.json',

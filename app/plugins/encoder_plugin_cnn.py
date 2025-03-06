@@ -66,7 +66,7 @@ class Plugin:
             current = max(current // self.params['layer_size_divisor'], interface_size)
         layers.append(interface_size)
         print(f"[Encoder] Layer sizes: {layers}")
-
+        l2_reg = self.params.get('l2_reg', 1e-2)
         inputs = Input(shape=input_shape, name="model_input")
         x = inputs
 
@@ -88,21 +88,20 @@ class Plugin:
                 return x + pos_encoding
 
             x = tf.keras.layers.Lambda(add_pos_enc, name="encoder_positional_encoding")(x)
-        # first  dense layer
-        
-        l2_reg = self.params.get('l2_reg', 1e-4)
-        x = Dense(
-            units=input_shape[1],
-            activation='linear',
-            kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg),
-            name="linear_dense"
-        )(x)
+        x = Conv1D(filters=input_shape[0],
+                       kernel_size=3,
+                       activation='linear',
+                       kernel_initializer=HeNormal(),
+                       padding='same',
+                       kernel_regularizer=l2(l2_reg),
+                       name=f"conv1d_{idx+1}")(x)
+        x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)    
         x = BatchNormalization()(x)
+        
         # Build convolutional blocks that downsample the input
         # Each block applies a Conv1D layer then downsampling via MaxPooling1D.
         self.skip_connections = []  # Reset skip connections (to be used by the decoder)
-        for idx, size in enumerate(layers[:-1]):  # Exclude the final interface_size
+        for idx, size in enumerate(layers[1:-1]):  # Exclude the final interface_size
             x = Conv1D(filters=size,
                        kernel_size=3,
                        activation=self.params['activation'],
@@ -111,7 +110,7 @@ class Plugin:
                        kernel_regularizer=l2(l2_reg),
                        name=f"conv1d_{idx+1}")(x)
             # Store skip connection BEFORE pooling for later concatenation in the decoder.
-            self.skip_connections.append(x)
+            #self.skip_connections.append(x)
             x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
 
         # Apply batch normalization and a dense transformation to refine features.

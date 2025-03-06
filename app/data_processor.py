@@ -239,29 +239,26 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
 def load_and_evaluate_encoder(config):
     """
     Load and evaluate a pre-trained encoder with input data.
+    The returned encoded data will include a DATE_TIME column that corresponds
+    to the last timestamp in each sliding window.
     """
+    # Load the encoder model (with custom objects if needed)
     if config.get('encoder_plugin', '').lower() == 'transformer':
-        import tensorflow as tf
         from keras_multi_head import MultiHeadAttention as OriginalMultiHeadAttention
         from tensorflow.keras.layers import LayerNormalization
         from tensorflow.keras.activations import gelu
-        # Import positional_encoding from your plugin without modifying it.
         from app.plugins.encoder_plugin_transformer import positional_encoding
 
-        # Patched MultiHeadAttention to handle 'head_num' correctly.
         class PatchedMultiHeadAttention(OriginalMultiHeadAttention):
             @classmethod
             def from_config(cls, config):
-                head_num = config.pop("head_num", None)
-                if head_num is None:
-                    head_num = 8  # Default value; adjust if needed.
+                head_num = config.pop("head_num", 8)
                 return cls(head_num, **config)
 
         custom_objects = {
             'MultiHeadAttention': PatchedMultiHeadAttention,
             'LayerNormalization': LayerNormalization,
             'gelu': gelu,
-            # Supply the missing function so that the Lambda layer finds it.
             'positional_encoding': positional_encoding
         }
         model = load_model(config['load_encoder'], custom_objects=custom_objects)
@@ -269,71 +266,124 @@ def load_and_evaluate_encoder(config):
         model = load_model(config['load_encoder'])
     print(f"Encoder model loaded from {config['load_encoder']}")
 
-    # Load the input data.
+    # Load the input data
     data = load_csv(
         file_path=config['input_file'],
         headers=config.get('headers', False),
         force_date=config.get('force_date', False)
     )
     
-    # Extract the original date information.
-    original_dates = None
-    if config.get('force_date', False) and data.index.name is not None:
-        # Reset the index so that the date becomes a column.
-        original_dates = data.index.to_series().rename("DATE_TIME").reset_index(drop=True)
-    elif "DATE_TIME" in data.columns:
-        original_dates = data["DATE_TIME"].reset_index(drop=True)
-    
-    # Process data based on whether sliding windows are used.
+    # Extract original date information
+    # If sliding windows are used, we take dates from index[window_size-1:]
+    window_size = config.get('window_size', 1)
+    if config.get('force_date', False):
+        if data.index.name is not None:
+            original_dates = data.index.to_series().reset_index(drop=True)
+        elif "DATE_TIME" in data.columns:
+            original_dates = data["DATE_TIME"].reset_index(drop=True)
+        else:
+            original_dates = None
+    else:
+        original_dates = None
+
+    # Create sliding windows (if enabled)
     if config.get('use_sliding_windows', True):
-        window_size = config['window_size']
-        print(f"Creating sliding windows of size: {window_size}")
         processed_data = create_sliding_windows(data, window_size)
         print(f"Processed data shape for sliding windows: {processed_data.shape}")
+        # Adjust original dates to match the number of windows
+        if original_dates is not None:
+            original_dates = original_dates.iloc[window_size - 1:].reset_index(drop=True)
     else:
-        encoder_plugin_name = config.get('encoder_plugin', '').lower()
-        if encoder_plugin_name in ['lstm', 'transformer']:
-            print("[load_and_evaluate_encoder] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at axis 1.")
-            processed_data = np.expand_dims(data.to_numpy(), axis=1)
-        else:
-            print("Reshaping data to match encoder input shape.")
-            processed_data = np.expand_dims(data.to_numpy(), axis=-1)
+        processed_data = data.to_numpy()
         print(f"Processed data shape without sliding windows: {processed_data.shape}")
 
-    # Predict using the encoder.
+    # Encode data
     print(f"Encoding data with shape: {processed_data.shape}")
     encoded_data = model.predict(processed_data, verbose=1)
     print(f"Encoded data shape: {encoded_data.shape}")
 
-    # Flatten 3D encoded data to 2D for saving.
+    # Flatten encoded data if it is 3D (for saving as 2D)
     if len(encoded_data.shape) == 3:
         num_samples, dim1, dim2 = encoded_data.shape
-        encoded_data_reshaped = encoded_data.reshape(num_samples, dim1 * dim2)
-        print(f"Reshaped encoded data to 2D: {encoded_data_reshaped.shape}")
-    elif len(encoded_data.shape) == 2:
-        encoded_data_reshaped = encoded_data
-    else:
-        raise ValueError(f"Unexpected encoded_data shape: {encoded_data.shape}")
+        encoded_data = encoded_data.reshape(num_samples, dim1 * dim2)
+        print(f"Reshaped encoded data to 2D: {encoded_data.shape}")
 
+    # Save the encoded data with DATE_TIME column if available and lengths match.
     if config.get('evaluate_encoder'):
         print(f"Saving encoded data to {config['evaluate_encoder']}")
-        encoded_df = pd.DataFrame(encoded_data_reshaped)
-        # Prepend the DATE_TIME column if available and if row counts match.
+        import pandas as pd
+        encoded_df = pd.DataFrame(encoded_data)
         if original_dates is not None and len(original_dates) == encoded_df.shape[0]:
             encoded_df.insert(0, "DATE_TIME", original_dates)
         else:
             print("Warning: Original date information not available or row count mismatch.")
-        
-        # Rename the feature columns.
+        # Rename feature columns
         if "DATE_TIME" in encoded_df.columns:
             new_columns = ["DATE_TIME"] + [f"feature_{i}" for i in range(encoded_df.shape[1] - 1)]
         else:
             new_columns = [f"feature_{i}" for i in range(encoded_df.shape[1])]
         encoded_df.columns = new_columns
-        
         encoded_df.to_csv(config['evaluate_encoder'], index=False)
         print(f"Encoded data saved to {config['evaluate_encoder']}")
 
+
+def load_and_evaluate_decoder(config):
+    """
+    Load and evaluate a pre-trained decoder using sliding window input data.
+    The output decoded DataFrame will include a DATE_TIME column based on the last timestamp of each window.
+    """
+    import pandas as pd
+    model = load_model(config['load_decoder'])
+    print(f"Decoder model loaded from {config['load_decoder']}")
+
+    # Load the input data
+    data = load_csv(
+        file_path=config['input_file'],
+        headers=config.get('headers', False),
+        force_date=config.get('force_date', False)
+    )
+
+    # Apply sliding windows
+    window_size = config['window_size']
+    windowed_data = create_sliding_windows(data, window_size)
+    print(f"Windowed data shape: {windowed_data.shape}")
+
+    # Predict decoded output
+    print(f"Decoding data with shape: {windowed_data.shape}")
+    decoded_data = model.predict(windowed_data)
+    print(f"Decoded data shape: {decoded_data.shape}")
+
+    # Reshape decoded data if 3D to 2D
+    if len(decoded_data.shape) == 3:
+        samples, dim1, dim2 = decoded_data.shape
+        decoded_data = decoded_data.reshape(samples, dim1 * dim2)
+        print(f"Reshaped decoded data to: {decoded_data.shape}")
+    elif len(decoded_data.shape) != 2:
+        raise ValueError(f"Unexpected decoded_data shape: {decoded_data.shape}")
+
+    # Create DataFrame with DATE_TIME column if force_date is True.
+    if config.get('force_date', False):
+        # For sliding windows, the date corresponding to each window is the last tick.
+        dates = data.index[window_size - 1:]
+        decoded_df = pd.DataFrame(decoded_data, index=dates)
+        decoded_df.index.name = 'DATE_TIME'
+    else:
+        decoded_df = pd.DataFrame(decoded_data)
+    
+    # Rename decoded feature columns
+    feature_names = [f'decoded_feature_{i+1}' for i in range(decoded_df.shape[1])]
+    decoded_df.columns = feature_names
+
+    from app.data_handler import write_csv
+    evaluate_filename = config['evaluate_decoder']
+    write_csv(
+        file_path=evaluate_filename,
+        data=decoded_df,
+        include_date=config.get('force_date', False),
+        headers=True,
+        force_date=config.get('force_date', False)
+    )
+    print(f"Decoded data saved to {evaluate_filename}")
 
 
 # app/data_processor.py

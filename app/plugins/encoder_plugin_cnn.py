@@ -94,20 +94,26 @@ class Plugin:
                        kernel_initializer=HeNormal(),
                        padding='same',
                        kernel_regularizer=l2(l2_reg))(x)
-        x = MaxPooling1D(pool_size=2)(x)    
-        x = BatchNormalization()(x)
-        
+
         # Build convolutional blocks that downsample the input
         # Each block applies a Conv1D layer then downsampling via MaxPooling1D.
         self.skip_connections = []  # Reset skip connections (to be used by the decoder)
-        for idx, size in enumerate(layers[1:-1]):  # Exclude the final interface_size
-            x = Conv1D(filters=size,
+        for idx, size in enumerate(layers[:-1]):  # Exclude the final interface_size
+            if idx==0:
+                        x = Conv1D(filters=size
                        kernel_size=3,
-                       activation=self.params['activation'],
+                       activation='linear',
                        kernel_initializer=HeNormal(),
                        padding='same',
-                       kernel_regularizer=l2(l2_reg),
-                       name=f"conv1d_{idx+1}")(x)
+                       kernel_regularizer=l2(l2_reg))(x)
+            else:
+                x = Conv1D(filters=size,
+                        kernel_size=3,
+                        activation=self.params['activation'],
+                        kernel_initializer=HeNormal(),
+                        padding='same',
+                        kernel_regularizer=l2(l2_reg),
+                        name=f"conv1d_{idx+1}")(x)
             # Store skip connection BEFORE pooling for later concatenation in the decoder.
             #self.skip_connections.append(x)
             x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)

@@ -94,10 +94,6 @@ class Plugin:
 
         # Upsampling and mirroring the encoder structure with lightweight layers
         for idx in range(self.params['intermediate_layers']):
-            x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
-            if skip_tensors and idx < len(skip_tensors):
-                skip = skip_tensors[-(idx+1)]
-                x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
             filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
             x = Conv1D(filters=filt,
                        kernel_size=3,
@@ -106,7 +102,11 @@ class Plugin:
                        kernel_initializer=HeNormal(),
                        kernel_regularizer=l2(l2_reg),
                        name=f"conv1d_mirror_{idx+1}")(x)
-
+            x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
+            if skip_tensors and idx < len(skip_tensors):
+                skip = skip_tensors[-(idx+1)]
+                x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
+            
         # Final Conv1D layer to ensure proper channel alignment
         x = Conv1D(filters=orig_features, kernel_size=1, activation='linear',
                    kernel_initializer=GlorotUniform(),

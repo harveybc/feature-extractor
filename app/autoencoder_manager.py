@@ -203,9 +203,7 @@ class AutoencoderManager:
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss=loss_fn,
-                metrics=metrics,
-                run_eagerly=True
-                
+                metrics=metrics   
             )
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
             self.autoencoder_model.summary()

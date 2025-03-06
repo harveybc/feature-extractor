@@ -88,7 +88,15 @@ class Plugin:
                 return x + pos_encoding
 
             x = tf.keras.layers.Lambda(add_pos_enc, name="encoder_positional_encoding")(x)
-
+        # first  dense layer
+        model_output = Dense(
+            units=input_shape,
+            activation='linear',
+            kernel_initializer=GlorotUniform(),
+            kernel_regularizer=l2(l2_reg),
+            name="linear_dense"
+        )(x)
+        x = BatchNormalization()(x)
         # Build convolutional blocks that downsample the input
         # Each block applies a Conv1D layer then downsampling via MaxPooling1D.
         self.skip_connections = []  # Reset skip connections (to be used by the decoder)
@@ -112,7 +120,7 @@ class Plugin:
         x = Flatten(name="flatten")(x)
         # Final Dense layer to produce the latent vector.
         model_output = Dense(units=layers[-1],
-                             activation='linear',
+                             activation=self.params['activation'],
                              kernel_initializer=GlorotUniform(),
                              kernel_regularizer=l2(l2_reg),
                              name="model_output")(x)

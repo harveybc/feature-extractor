@@ -93,9 +93,8 @@ class Plugin:
                        activation='linear',
                        kernel_initializer=HeNormal(),
                        padding='same',
-                       kernel_regularizer=l2(l2_reg),
-                       name=f"conv1d_{idx+1}")(x)
-        x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)    
+                       kernel_regularizer=l2(l2_reg))(x)
+        x = MaxPooling1D(pool_size=2)(x)    
         x = BatchNormalization()(x)
         
         # Build convolutional blocks that downsample the input

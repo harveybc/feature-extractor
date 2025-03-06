@@ -91,7 +91,7 @@ class Plugin:
         
         # Mirror conv filter sizes with lightweight architecture
         mirror_filters = [max(f // 2, self.params['interface_size']) for f in enc_layers[:-1][::-1]]
-
+        x = UpSampling1D(size=2)(x)
         # Upsampling and mirroring the encoder structure with lightweight layers
         for idx in range(self.params['intermediate_layers']):
             filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]

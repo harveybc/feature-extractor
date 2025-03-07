@@ -28,12 +28,13 @@ class UpdateOverfitPenalty(Callback):
     """
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        train_mae = logs.get('mae')
-        val_mae = logs.get('val_mae')
-        if train_mae is None or val_mae is None:
+        loss = logs.get('loss')
+        val_loss = logs.get('val_loss')
+
+        if loss is None or val_loss is None:
             print("[UpdateOverfitPenalty] MAE metrics not available; overfit penalty not updated.")
             return
-        penalty = 0.03 * max(0, val_mae - train_mae)
+        penalty = 0.05 * max(0, val_loss - loss)
         tf.keras.backend.set_value(self.model.overfit_penalty, penalty)
         print(f"[UpdateOverfitPenalty] Epoch {epoch+1}: Updated overfit penalty to {penalty:.6f}")
 

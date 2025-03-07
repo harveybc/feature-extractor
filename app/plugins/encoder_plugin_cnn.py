@@ -100,22 +100,20 @@ class Plugin:
                         activation='linear',
                         kernel_initializer=HeNormal(),
                         padding='same',
-                        kernel_regularizer=l2(l2_reg),
-                        name=f"in_conv1d_linear")(x)
+                        kernel_regularizer=l2(l2_reg))(x)
             else:
                 x = Conv1D(filters=size,
                         kernel_size=3,
                         activation=self.params['activation'],
                         kernel_initializer=HeNormal(),
                         padding='same',
-                        kernel_regularizer=l2(l2_reg),
-                        name=f"conv1d_{idx+1}")(x)
+                        kernel_regularizer=l2(l2_reg))(x)
             # Store skip connection BEFORE pooling for later concatenation in the decoder.
             self.skip_connections.append(x)
             x = MaxPooling1D(pool_size=2, name=f"max_pool_{idx+1}")(x)
 
         # Apply batch normalization and a dense transformation to refine features.
-        x = BatchNormalization(name="batch_norm1")(x)
+        x = BatchNormalization()(x)
         self.pre_flatten_shape = x.shape[1:]
         print(f"[Encoder] Pre-flatten shape: {self.pre_flatten_shape}")
         x = Flatten(name="flatten")(x)

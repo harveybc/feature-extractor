@@ -14,7 +14,7 @@ DEFAULT_VALUES = {
     'use_sliding_windows': True,
     'window_size': 256, 
     'threshold_error': 0.5,
-    'initial_size': 64,
+    'initial_size': 64, 
     'initial_layer_size': 512,
     'intermediate_layers': 4,
     'layer_size_divisor': 2,

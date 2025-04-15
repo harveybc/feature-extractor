@@ -14,9 +14,9 @@ class Plugin:
     plugin_params = {
         # Training parameters (if training decoder standalone)
         # Architecture parameters (must mirror the encoder's design)
-        'intermediate_layers': 4,       # Number of dense layers before the final projection
-        'initial_layer_size': 128,       # Base number of hidden units (from encoder)
-        'layer_size_divisor': 2,        # Divisor to compute subsequent layer sizes
+        'intermediate_layers': 2,       # Number of dense layers before the final projection
+        'initial_layer_size': 144,       # Base number of hidden units (from encoder)
+        'layer_size_divisor': 3,        # Divisor to compute subsequent layer sizes
         'l2_reg': 1e-5,                 # L2 regularization factor
     }
 

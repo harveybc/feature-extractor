@@ -135,7 +135,7 @@ class AutoencoderManager:
 
             num_channels = data.shape[-1]
             input_shape = data.shape[1]
-            interface_size = self.encoder_plugin.params.get('interface_size', 4)
+            interface_size = config.get('interface_size', 48)
 
             # Build autoencoder with the correct num_channels
             if not self.autoencoder_model:

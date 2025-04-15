@@ -4,6 +4,9 @@ from keras.layers import Dense, Input, BatchNormalization, LeakyReLU
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
+from tensorflow.keras.layers import Input, Dense, Flatten, Concatenate, Lambda
+from tensorflow.keras.layers import Identity
+
 
 class Plugin:
     """
@@ -85,34 +88,40 @@ class Plugin:
                 final_output_units = input_shape
         else:
             final_output_units = input_shape  # For non-sliding windows, input_shape is an integer
+        window_size = self.params.get('window_size', 144)  # Default to 1 if not specified
+        num_intermediate_layers = self.params.get('intermediate_layers', 2)
+        branch_units = self.params.get('initial_layer_size', 144)  # Base number of hidden units
+        activation = self.params.get('activation', 'tanh')  # Default activation function
+
 
         # Build the decoder model.
         # The decoder input is the latent vector of size (interface_size,)
-        decoder_input = Input(shape=(interface_size,), name="decoder_input")
-        x = decoder_input
+        decoder_input = Input(shape=(window_size, num_channels), name="input_layer")
+        # --- Input Layer ---
+        inputs = decoder_input
 
-        # Add intermediate dense layers in the mirrored order.
-        layer_idx = 0
-        for size in decoder_intermediate_layers:
-            layer_idx += 1
-            x = Dense(
-                units=size,
-                activation="tanh",
-                kernel_initializer=HeNormal(),
-                #kernel_regularizer=l2(l2_reg),
-                name=f"decoder_dense_layer_{layer_idx}"
-            )(x)
-        #x = BatchNormalization(name=f"decoder_batch_norm_{layer_idx}")(x)
+        # --- Parallel Feature Processing Branches ---
+        feature_branch_outputs = []
+        for c in range(num_channels):
+            feature_input = Lambda(lambda x, channel=c: x[:, :, channel:channel+1],
+                                   name=f"feature_{c+1}_input")(inputs)
+            x = Flatten(name=f"feature_{c+1}_flatten")(feature_input)
+            for i in range(num_intermediate_layers):
+                x = Dense(branch_units, activation=activation, kernel_regularizer=l2(l2_reg),
+                          name=f"feature_{c+1}_dense_{i+1}")(x)
+            feature_branch_outputs.append(x)
 
-        # Final projection to reconstruct the original input.
-        x = Dense(
-            units=final_output_units,
-            activation='linear',
-            kernel_initializer=GlorotUniform(),
-            #kernel_regularizer=l2(l2_reg),
-            name="decoder_output"
-        )(x)
-        outputs = x
+        # --- Merging Feature Branches ONLY ---
+        if len(feature_branch_outputs) == 1:
+             # Use Keras Identity layer for naming and compatibility
+             merged = Identity(name="merged_features")(feature_branch_outputs[0]) # <<< CORRECTED LINE
+        elif len(feature_branch_outputs) > 1:
+             # Concatenate is already a Keras layer
+             merged = Concatenate(name="merged_features")(feature_branch_outputs)
+        else:
+             raise ValueError("Model must have at least one input feature channel.")
+        # print(f"Merged feature branches shape (symbolic): {merged.shape}") # Informative print
+        outputs = merged
         #outputs = BatchNormalization(name="decoder_last_batch_norm")(x)
 
         self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder")

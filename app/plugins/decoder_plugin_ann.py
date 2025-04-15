@@ -97,9 +97,9 @@ class Plugin:
             layer_idx += 1
             x = Dense(
                 units=size,
-                activation=LeakyReLU(alpha=0.1),
+                activation="tanh",
                 kernel_initializer=HeNormal(),
-                kernel_regularizer=l2(l2_reg),
+                #kernel_regularizer=l2(l2_reg),
                 name=f"decoder_dense_layer_{layer_idx}"
             )(x)
         #x = BatchNormalization(name=f"decoder_batch_norm_{layer_idx}")(x)
@@ -109,7 +109,7 @@ class Plugin:
             units=final_output_units,
             activation='linear',
             kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg),
+            #kernel_regularizer=l2(l2_reg),
             name="decoder_output"
         )(x)
         outputs = x

@@ -1,6 +1,6 @@
 DEFAULT_VALUES = {
-    'input_file': './examples/data/normalized_d1.csv',
-    'validation_file': './examples/data/normalized_d2.csv',
+    'input_file': './examples/data/phase_3/normalized_d1.csv',
+    'validation_file': './examples/data/phase_3/normalized_d2.csv',
     'output_file': './csv_output.csv',
     'save_encoder': './encoder_model.h5',
     'save_decoder': './decoder_model.h5',

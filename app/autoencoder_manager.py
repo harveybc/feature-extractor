@@ -55,8 +55,8 @@ class AutoencoderManager:
                 beta_2=0.999,  # Default value
                 epsilon=1e-7,  # Default value
                 amsgrad=False,  # Default value
-                clipnorm=1.0,  # Gradient clipping
-                clipvalue=0.5  # Gradient clipping
+                #clipnorm=1.0,  # Gradient clipping
+                #clipvalue=0.5  # Gradient clipping
             )
 
             # --- Begin Updated Loss Definition using MMD ---

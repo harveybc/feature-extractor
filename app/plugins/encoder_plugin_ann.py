@@ -17,7 +17,7 @@ class Plugin:
         # Architecture parameters
         'intermediate_layers': 2,       # Number of dense layers before the final projection
         'initial_layer_size': 144,       # Base number of hidden units in the first dense layer
-        'layer_size_divisor': 2,        # Divisor for subsequent layer sizes
+        'layer_size_divisor': 3,        # Divisor for subsequent layer sizes
         'l2_reg': 1e-5,                 # L2 regularization factor
     }
 

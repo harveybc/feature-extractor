@@ -88,17 +88,17 @@ class Plugin:
             layer_idx += 1
             x = Dense(
                 units=size,
-                activation=LeakyReLU(alpha=0.1),
+                activation='linear',
                 kernel_initializer=HeNormal(),
                 kernel_regularizer=l2(l2_reg),
                 name=f"dense_layer_{layer_idx}"
             )(x)
         x = BatchNormalization(name=f"batch_norm_{layer_idx}")(x)
-
+ 
         # Final Dense layer to project into the latent space with linear activation
         x = Dense(
             units=layers[-1],
-            activation='linear',
+            activation="tanh",
             kernel_initializer=GlorotUniform(),
             kernel_regularizer=l2(l2_reg),
             name="encoder_output"

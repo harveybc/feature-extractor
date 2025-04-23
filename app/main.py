@@ -73,7 +73,7 @@ def main():
         decoder_plugin.set_params(**config)
 
         print("Processing and running autoencoder pipeline...")
-        run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin)
+        run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin)
 
         if 'save_config' in config:
             if config['save_config'] != None:

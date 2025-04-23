@@ -173,10 +173,14 @@ class AutoencoderManager:
                 K_xx = gaussian_kernel_matrix(y_true, y_true, sigma)
                 K_yy = gaussian_kernel_matrix(y_pred, y_pred, sigma)
                 K_xy = gaussian_kernel_matrix(y_true, y_pred, sigma)
-                m = tf.cast(tf.shape(y_true)[0], tf.float32)
-                n = tf.cast(tf.shape(y_pred)[0], tf.float32)
+                # Use consistent dtype for statistical computations
+                dtype = K_xx.dtype
+                m = tf.cast(tf.shape(y_true)[0], dtype)
+                n = tf.cast(tf.shape(y_pred)[0], dtype)
                 # Compute the unbiased MMD statistic.
-                mmd = tf.reduce_sum(K_xx) / (m * m) + tf.reduce_sum(K_yy) / (n * n) - 2 * tf.reduce_sum(K_xy) / (m * n)
+                mmd = tf.reduce_sum(K_xx) / (m * m) \
+                      + tf.reduce_sum(K_yy) / (n * n) \
+                      - tf.constant(2.0, dtype=dtype) * tf.reduce_sum(K_xy) / (m * n)
                 return mmd
 
             # Combined loss: reconstruction (Huber) loss + weighted MMD loss.

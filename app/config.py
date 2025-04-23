@@ -37,6 +37,8 @@ DEFAULT_VALUES = {
     "initial_layer_size": 48,
     "layer_size_divisor": 2,
     "l2_reg": 5e-5,
-    "early_patience": 120
+    "early_patience": 120,
+    "min_delta": 1e-7,
+    "batch_size": 128
 }
 

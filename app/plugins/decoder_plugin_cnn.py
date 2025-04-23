@@ -86,7 +86,7 @@ class Plugin:
             padding='same',
             activation=activation,
             name="deconv_branch_units",
-            #kernel_regularizer=l2(l2_reg)
+            kernel_regularizer=l2(l2_reg)
         )(decoder_input)
 
         # invert 1st conv (encoder’s 1st conv mapped to branch_units)
@@ -98,7 +98,7 @@ class Plugin:
             padding='same',
             activation='linear',
             name="deconv_output_channels",
-            #kernel_regularizer=l2(l2_reg)
+            kernel_regularizer=l2(l2_reg)
         )(x)
 
         # if we overshot the exact window_size, crop back

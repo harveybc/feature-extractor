@@ -155,7 +155,7 @@ class AutoencoderManager:
                 x_expanded = tf.reshape(x, [x_size, 1, dim])
                 y_expanded = tf.reshape(y, [1, y_size, dim])
                 # Compute squared L2 distance between each pair.
-                squared_diff = tf.reduce_sum(tf.square(tf.subsrttract(x_expanded,y_expanded)), axis=2)
+                squared_diff = tf.reduce_sum(tf.square(tf.subtract(x_expanded,y_expanded)), axis=2)
                 return tf.exp(-squared_diff / (2.0 * sigma**2))
 
             # Compute the Maximum Mean Discrepancy (MMD) between two batches.

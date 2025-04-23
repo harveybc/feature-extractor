@@ -76,7 +76,7 @@ class Plugin:
         layers.append(interface_size)
         print(f"[DEBUG] Encoder Layer sizes: {layers}")
         
-        window_size, num_channels = input_shape
+        window_size = config.get("window_size", 288)
         merged_units = config.get("initial_layer_size", 128)
         branch_units = merged_units//config.get("layer_size_divisor", 2)
         activation = config.get("activation", self.params.get("activation", "relu"))

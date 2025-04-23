@@ -89,14 +89,27 @@ def process_data(config):
 
 
 
-def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin):
+def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin):
     import time
     import numpy as np
     start_time = time.time()
     
-    print("Running process_data...")
-    processed_data, validation_data = process_data(config)
-    print("Processed data received.")
+    #print("Running process_data...")
+    #processed_data, validation_data = process_data(config)
+    #print("Processed data received.")
+
+    
+    
+
+    # 1. Get datasets
+    print("Loading/processing datasets via Preprocessor..."); datasets = preprocessor_plugin.run_preprocessing(config); print("Preprocessor finished.")
+    processed_data=datasets["x_train"]; validation_data=datasets["x_val"]
+    
+    #y_train_list=datasets["y_train"]; y_val_list=datasets["y_val"]; y_test_list=datasets["y_test"]
+    #train_dates=datasets.get("y_train_dates"); val_dates=datasets.get("y_val_dates"); test_dates=datasets.get("y_test_dates")
+    #baseline_train=datasets.get("baseline_train"); baseline_val=datasets.get("baseline_val"); baseline_test=datasets.get("baseline_test")
+        
+
 
     # Truncate validation data to have at most as many rows as training data
     if validation_data.shape[0] > processed_data.shape[0]:

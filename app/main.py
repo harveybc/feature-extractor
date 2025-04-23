@@ -53,6 +53,18 @@ def main():
         encoder_plugin = encoder_plugin_class()
         decoder_plugin = decoder_plugin_class()
 
+        # Carga del Preprocessor Plugin (para process_data, ventanas deslizantes y STL)
+        plugin_name = config.get('preprocessor_plugin', 'stl_preprocessor')
+        print(f"Loading Plugin ..{plugin_name}")
+        try:
+            preprocessor_class, _ = load_plugin('preprocessor.plugins', plugin_name)
+            preprocessor_plugin = preprocessor_class()
+            preprocessor_plugin.set_params(**config)
+        except Exception as e:
+            print(f"Failed to load or initialize Preprocessor Plugin: {e}")
+            sys.exit(1)
+
+
         print("Merging configuration with CLI arguments and unknown args with plugin-specific parameters...")
         unknown_args_dict = process_unknown_args(unknown_args)
         config = merge_config(default_config, encoder_plugin.plugin_params, decoder_plugin.plugin_params, file_config, cli_args, unknown_args_dict)

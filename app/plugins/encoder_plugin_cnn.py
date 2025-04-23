@@ -22,7 +22,7 @@ class Plugin:
         "intermediate_layers": 2,
         "initial_layer_size": 48,
         "layer_size_divisor": 2,
-        "l2_reg": 5e-5,
+        "l2_reg": 5e-5
     }
 
     plugin_debug_vars = ['input_shape', 'intermediate_layers']

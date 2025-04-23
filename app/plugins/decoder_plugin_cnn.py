@@ -5,7 +5,7 @@ from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
-
+from keras.models import Model, load_model, save_model
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
 from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU,Input
@@ -64,7 +64,7 @@ class Plugin:
         layer_sizes = layers[::-1]
         print(f"[DEBUG] Calculated decoder layer sizes: {layer_sizes}")
 
-        window_size, num_channels = input_shape
+        window_size =config.get("window_size", 288)
         merged_units = config.get("initial_layer_size", 128)
         branch_units = merged_units//config.get("layer_size_divisor", 2)
         activation = config.get("activation", self.params.get("activation", "relu"))
@@ -73,14 +73,14 @@ class Plugin:
         # --- Decoder input (latent) ---
         # latent shape: window_size // 4  by merged_units
         decoder_input = Input(
-            shape=(window_size // (2**2), merged_units),
+            shape=(window_size // 4, merged_units),
             name="decoder_input"
         )
 
         # invert 2nd conv (encoder’s 2nd conv mapped to merged_units)
         # so first deconv should map back to branch_units
         x = Conv1DTranspose(
-            filters=branch_units,
+            filters=merged_units,
             kernel_size=3,
             strides=2,
             padding='same',
@@ -108,14 +108,13 @@ class Plugin:
 
         merged = x
 
-
         # Output batch normalization layer
         #outputs = BatchNormalization()(x)
         outputs = merged
         print(f"[DEBUG] Final Output shape: {outputs.shape}")
 
         # Build the encoder model
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
+        self.encoder_model = Model(inputs=decoder_input, outputs=outputs, name="encoder")
         adam_optimizer = Adam(
             learning_rate=self.params['learning_rate'],
             beta_1=0.9,

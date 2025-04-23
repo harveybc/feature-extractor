@@ -72,7 +72,7 @@ DEFAULT_VALUES = {
     "uncertainty_color_alpha": 0.01,
     "plot_points": 48,
     "min_delta": 1e-7,
-    "epochs": 200,
+    "epochs": 1000,
     "use_strategy": False,
     "stl_period":24,
     "predicted_horizons": [1,2,3,4,5,6],

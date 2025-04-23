@@ -79,7 +79,7 @@ class Plugin:
         window_size = config.get("window_size", 288)
         merged_units = config.get("initial_layer_size", 128)
         branch_units = merged_units//config.get("layer_size_divisor", 2)
-        activation = config.get("activation", self.params.get("activation", "relu"))
+        activation = config.get("activation", "tanh")
         l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
 
         # --- Input Layer ---

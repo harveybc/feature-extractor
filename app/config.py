@@ -31,11 +31,11 @@ DEFAULT_VALUES = {
     'epochs': 1000,  # Add epochs here
     'learning_rate': 1e-3,  # Add learning_rate here
     'dataset_periodicity': '1h',  # Add dataset_periodicity here, can be 1m, 5m, 15m, 30m, 1h, 4h, daily
-    "mmd_sigma": 1.0,
+    "mmd_sigma": 1e-4,
     "intermediate_layers": 2,
     "initial_layer_size": 48,
     "layer_size_divisor": 2,
-    "l2_reg": 5e-5,
+    "l2_reg": 1e-6,
     "early_patience": 120,
     "min_delta": 1e-7,
     "batch_size": 128

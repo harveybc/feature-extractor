@@ -11,7 +11,7 @@ DEFAULT_VALUES = {
     'encoder_plugin': 'ann',
     'decoder_plugin': 'ann',
     'use_sliding_windows': True,
-    'window_size': 144, 
+    'window_size': 288, 
     'threshold_error': 0.5,
     'initial_size': 144,
     "interface_size": 48,

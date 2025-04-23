@@ -73,14 +73,14 @@ class Plugin:
         # --- Decoder input (latent) ---
         # latent shape: window_size // 4  by merged_units
         decoder_input = Input(
-            shape=(window_size // 4, merged_units),
+            shape=(window_size // 4, branch_units),
             name="decoder_input"
         )
 
         # invert 2nd conv (encoder’s 2nd conv mapped to merged_units)
         # so first deconv should map back to branch_units
         x = Conv1DTranspose(
-            filters=merged_units,
+            filters=branch_units,
             kernel_size=3,
             strides=2,
             padding='same',
@@ -123,7 +123,7 @@ class Plugin:
             epsilon=1e-2,
             amsgrad=False
         )
-        
+
         self.model.compile(
             optimizer=adam_optimizer,
             loss=Huber(),

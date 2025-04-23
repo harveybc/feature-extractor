@@ -98,6 +98,7 @@ class AutoencoderManager:
         self.autoencoder_model = None
         self.encoder_model = None
         self.decoder_model = None
+        self.model = None
         print(f"[AutoencoderManager] Initialized with encoder plugin and decoder plugin")
 
     def build_autoencoder(self, input_shape, interface_size, config, num_channels):
@@ -130,6 +131,7 @@ class AutoencoderManager:
             # Build autoencoder model
             autoencoder_output = self.decoder_model(self.encoder_model.output)
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder")
+            self.model = self.autoencoder_model
 
             # Define optimizer
             adam_optimizer = Adam(

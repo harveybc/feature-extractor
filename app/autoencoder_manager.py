@@ -167,6 +167,9 @@ class AutoencoderManager:
 
             # Compute the Maximum Mean Discrepancy (MMD) between two batches.
             def mmd_loss_term(y_true, y_pred, sigma):
+                # Ensure consistent dtype for MMD computation
+                y_true = tf.cast(y_true, tf.float32)
+                y_pred = tf.cast(y_pred, tf.float32)
                 # Flatten inputs to ensure they are 2D.
                 y_true = tf.reshape(y_true, [tf.shape(y_true)[0], -1])
                 y_pred = tf.reshape(y_pred, [tf.shape(y_pred)[0], -1])

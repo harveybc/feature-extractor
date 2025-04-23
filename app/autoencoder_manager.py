@@ -14,6 +14,9 @@ from keras.layers import MaxPooling1D, UpSampling1D
 
 #set_global_policy('mixed_float16')
 
+#define tensorflow global variable mmd_total as a float
+mmd_total = tf.Variable(0.0, dtype=tf.float32, trainable=False)
+
 class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
     """Custom ReduceLROnPlateau callback that prints the patience counter."""
     def __init__(self, **kwargs):
@@ -192,12 +195,16 @@ class AutoencoderManager:
                 sigma = config.get('mmd_sigma', 1.0)  # Configure kernel width if needed.
                 stat_weight = config.get('mmd_weight', 1.0)
                 mmd = mmd_loss_term(y_true, y_pred, sigma)
-                return huber_loss + stat_weight * mmd
+                # save the mmd value as the mmd_total global tensorflow variable alreadyy derfined at the start of the program
+                total_mmd = stat_weight * mmd
+                mmd_total.assign(total_mmd) 
+                return huber_loss + total_mmd
 
             # Optional: Define a metric to monitor the MMD term during training.
             def mmd_metric(y_true, y_pred):
-                sigma = config.get('mmd_sigma', 1.0)
-                return mmd_loss_term(y_true, y_pred, sigma)
+                #sigma = config.get('mmd_sigma', 1.0)
+                #return mmd_loss_term(y_true, y_pred, sigma)
+                return mmd_total  # Return the MMD value scaled by the weight
             # --- End Updated Loss Definition using MMD ---
 
             # Compile autoencoder with the combined loss and additional metric.

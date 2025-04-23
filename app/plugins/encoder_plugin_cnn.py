@@ -15,7 +15,7 @@ class Plugin:
     """
 
     plugin_params = {
-
+        'activation': 'relu',
         'intermediate_layers': 3, 
         'learning_rate': 0.00002,
         'dropout_rate': 0.001,
@@ -38,7 +38,7 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, input_shape, interface_size, num_channels, use_sliding_windows):
+    def configure_size(self, input_shape, interface_size, num_channels, use_sliding_windows, config=None):
         """
         Configure the encoder based on input shape, interface size, and channel dimensions.
         
@@ -71,32 +71,38 @@ class Plugin:
         # Append the final layer which is the interface size
         layers.append(interface_size)
         print(f"[DEBUG] Encoder Layer sizes: {layers}")
-
-        # Input layer
-        inputs = Input(shape=(input_shape, adjusted_channels))
-        x = inputs
-        print(f"[DEBUG] Input shape: {x.shape}")
-
-        # Initial Conv1D layer
-        x = Conv1D(filters=layers[0], kernel_size=3, strides=1, activation='tanh',
-                kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
-        print(f"[DEBUG] After Conv1D (filters={layers[0]}) shape: {x.shape}")
         
-        # Add intermediate layers with stride=2
-        for i, size in enumerate(layers[1:-1]):
-            x = Conv1D(filters=size, kernel_size=3, strides=2, activation='tanh',
-                    kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
-            print(f"[DEBUG] After Conv1D (filters={size}, strides=2) shape: {x.shape}")
-            x = BatchNormalization()(x)
-            print(f"[DEBUG] After BatchNormalization shape: {x.shape}")
+        window_size, num_channels = input_shape
+        merged_units = config.get("initial_layer_size", 128)
+        branch_units = merged_units//config.get("layer_size_divisor", 2)
 
-        # Final Conv1D layer to match the interface size
-        x = Conv1D(filters=interface_size, kernel_size=1, strides=1, activation='tanh',
-                kernel_initializer=GlorotUniform(), kernel_regularizer=l2(0.001), padding='same')(x)
-        print(f"[DEBUG] After Final Conv1D (interface_size) shape: {x.shape}")
+        # --- Input Layer ---
+        inputs = Input(shape=(window_size, num_channels), name="input_layer")
+
+        merged = Conv1D(
+            filters=merged_units,
+            kernel_size=3,
+            strides=2, 
+            padding='same',
+            activation=activation,
+            name="conv_merged_features_1",
+            kernel_regularizer=l2(l2_reg)
+        )(inputs)
+
+        merged = Conv1D(
+            filters=branch_units,
+            kernel_size=3,
+            strides=2, 
+            padding='same',
+            activation=activation,
+            name="conv_merged_features_2",
+            kernel_regularizer=l2(l2_reg)
+        )(merged)
+
 
         # Output batch normalization layer
-        outputs = BatchNormalization()(x)
+        #outputs = BatchNormalization()(x)
+        outputs = merged
         print(f"[DEBUG] Final Output shape: {outputs.shape}")
 
         # Build the encoder model

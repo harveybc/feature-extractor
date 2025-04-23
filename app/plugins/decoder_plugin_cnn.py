@@ -114,7 +114,7 @@ class Plugin:
         print(f"[DEBUG] Final Output shape: {outputs.shape}")
 
         # Build the encoder model
-        self.model = Model(inputs=decoder_input, outputs=outputs, name="encoder")
+        self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder")
         
         adam_optimizer = Adam(
             learning_rate=self.params['learning_rate'],

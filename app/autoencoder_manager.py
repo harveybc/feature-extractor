@@ -17,6 +17,26 @@ from keras.layers import MaxPooling1D, UpSampling1D
 #define tensorflow global variable mmd_total as a float
 mmd_total = tf.Variable(0.0, dtype=tf.float32, trainable=False)
 
+# ============================================================================
+# Callback to dynamically adjust mmd_weight so Huber and MMD remain same order
+# ============================================================================
+class MMDWeightAdjustmentCallback(tf.keras.callbacks.Callback):
+    def __init__(self, cfg):
+        super().__init__()
+        self.cfg = cfg
+
+    def on_epoch_end(self, epoch, logs=None):
+        # compute current Huber and MMD contributions
+        huber_val = logs['loss'] - logs.get('mmd_metric', 0.0)
+        mmd_val   = logs.get('mmd_metric', 0.0)
+        ratio     = huber_val / (mmd_val + 1e-12)
+        # keep ratio roughly in [0.5, 2.0]
+        if ratio > 2.0:
+            self.cfg['mmd_weight'] *= 1.1
+        elif ratio < 0.5:
+            self.cfg['mmd_weight'] *= 0.9
+        print(f"[MMDWeightAdjust] Epoch {epoch+1}: ratio={ratio:.3f}, new mmd_weight={self.cfg['mmd_weight']:.5f}")
+
 class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
     """Custom ReduceLROnPlateau callback that prints the patience counter."""
     def __init__(self, **kwargs):
@@ -273,7 +293,8 @@ class AutoencoderManager:
                     monitor="val_loss", factor=0.5, patience=patience_reduce_lr, cooldown=5, min_delta=min_delta_early_stopping, verbose=1
                 ),
                 LambdaCallback(on_epoch_end=lambda epoch, logs:
-                            print(f"Epoch {epoch+1}: LR={K.get_value(self.model.optimizer.learning_rate):.6f}"))
+                            print(f"Epoch {epoch+1}: LR={K.get_value(self.model.optimizer.learning_rate):.6f}")),
+                MMDWeightAdjustmentCallback(config)
                 # Removed: ClearMemoryCallback(), # <<< REMOVED THIS LINE
             ]
             # Start training with early stopping

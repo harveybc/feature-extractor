@@ -148,6 +148,11 @@ class AutoencoderManager:
             # Gaussian RBF kernel function for two sets of samples.
             def gaussian_kernel_matrix(x, y, sigma):
                 # x and y are assumed to be 2D: (batch_size, features)
+                # preserve original dtype for output
+                orig_dtype = x.dtype
+                # cast to float32 under mixed precision
+                x = tf.cast(x, tf.float32)
+                y = tf.cast(y, tf.float32)
                 x_size = tf.shape(x)[0]
                 y_size = tf.shape(y)[0]
                 dim = tf.shape(x)[1]
@@ -155,8 +160,10 @@ class AutoencoderManager:
                 x_expanded = tf.reshape(x, [x_size, 1, dim])
                 y_expanded = tf.reshape(y, [1, y_size, dim])
                 # Compute squared L2 distance between each pair.
-                squared_diff = tf.reduce_sum(tf.square(tf.subtract(x_expanded,y_expanded)), axis=2)
-                return tf.exp(-squared_diff / (2.0 * sigma**2))
+                squared_diff = tf.reduce_sum(tf.square(x_expanded - y_expanded), axis=2)
+                # compute RBF kernel in float32 then cast back
+                kernel = tf.exp(-squared_diff / (2.0 * sigma**2))
+                return tf.cast(kernel, orig_dtype)
 
             # Compute the Maximum Mean Discrepancy (MMD) between two batches.
             def mmd_loss_term(y_true, y_pred, sigma):

@@ -235,8 +235,8 @@ class AutoencoderManager:
 
             # --- Setup Callbacks ---
             min_delta_early_stopping = config.get("min_delta", self.params.get("min_delta", 1e-4))
-            patience_early_stopping = self.params.get('early_patience', 10)
-            start_from_epoch_es = self.params.get('start_from_epoch', 10)
+            patience_early_stopping = config.get('early_patience', 10)
+            start_from_epoch_es = config.get('start_from_epoch', 10)
             patience_reduce_lr = config.get("reduce_lr_patience", max(1, int(patience_early_stopping / 4)))
 
             # Instantiate callbacks WITHOUT ClearMemoryCallback

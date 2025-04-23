@@ -47,12 +47,12 @@ DEFAULT_VALUES = {
     "mmd_sigma": 1.0,
     "mmd_weight": 1.0,
 
-    
+
     "use_daily": False,
     "max_steps_train": 25200,
     "max_steps_test": 6300,
     "intermediate_layers": 2,
-    "initial_layer_size": 48,
+    "initial_layer_size": 128,
     "layer_size_divisor": 2,
     "learning_rate": 1e-3,
     "activation": "tanh",
@@ -63,7 +63,7 @@ DEFAULT_VALUES = {
     "mc_samples":20,
     "plotted_horizon": 6,
     "mmd_lambda": 1e-2,
-    "window_size": 144,
+    "window_size": 288,
     "batch_size": 128,
     "plot_color_predicted": "red",
     "plot_color_true": "blue",

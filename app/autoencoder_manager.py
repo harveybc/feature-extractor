@@ -5,8 +5,91 @@ import tensorflow as tf
 from keras.optimizers import Adam
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.mixed_precision import set_global_policy
+from tensorflow.keras import backend as K
+from keras.callbacks import LambdaCallback, ReduceLROnPlateau
+from keras.layers import Input, Dense, Flatten, Reshape, Dropout
+from keras.regularizers import l2
+from keras.layers import BatchNormalization, LeakyReLU
+from keras.layers import MaxPooling1D, UpSampling1D
 
 #set_global_policy('mixed_float16')
+
+class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
+    """Custom ReduceLROnPlateau callback that prints the patience counter."""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.patience_counter = 0
+
+    def on_epoch_end(self, epoch, logs=None):
+        super().on_epoch_end(epoch, logs)
+        self.patience_counter = self.wait if self.wait > 0 else 0
+        print(f"DEBUG: ReduceLROnPlateau patience counter: {self.patience_counter}")
+
+class EarlyStoppingWithPatienceCounter(EarlyStopping):
+    """Custom EarlyStopping callback that prints the patience counter."""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.patience_counter = 0
+
+    def on_epoch_end(self, epoch, logs=None):
+        super().on_epoch_end(epoch, logs)
+        self.patience_counter = self.wait if self.wait > 0 else 0
+        print(f"DEBUG: EarlyStopping patience counter: {self.patience_counter}")
+
+
+# ---------------------------
+# Custom Metrics and Loss Functions
+# ---------------------------
+def get_angles(pos, i, d_model):
+    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+    return pos * angle_rates
+
+def positional_encoding(position, d_model):
+    angle_rads = get_angles(np.arange(position)[:, np.newaxis],
+                            np.arange(d_model)[np.newaxis, :],
+                            d_model)
+    # Apply sin to even indices; cos to odd indices
+    sines = np.sin(angle_rads[:, 0::2])
+    cosines = np.cos(angle_rads[:, 1::2])
+    pos_encoding = np.concatenate([sines, cosines], axis=-1)
+    pos_encoding = pos_encoding[np.newaxis, ...]  # Shape: (1, position, d_model)
+    return tf.cast(pos_encoding, dtype=tf.float32)
+
+def mae_magnitude(y_true, y_pred):
+    """Compute MAE on the first column (magnitude)."""
+    if len(y_true.shape) == 1 or (len(y_true.shape) == 2 and y_true.shape[1] == 1):
+        y_true = tf.reshape(y_true, [-1, 1])
+        y_true = tf.concat([y_true, tf.zeros_like(y_true)], axis=1)
+    mag_true = y_true[:, 0:1]
+    mag_pred = y_pred[:, 0:1]
+    return tf.reduce_mean(tf.abs(mag_true - mag_pred))
+
+def r2_metric(y_true, y_pred):
+    """Compute R² metric on the first column (magnitude)."""
+    if len(y_true.shape) == 1 or (len(y_true.shape) == 2 and y_true.shape[1] == 1):
+        y_true = tf.reshape(y_true, [-1, 1])
+        y_true = tf.concat([y_true, tf.zeros_like(y_true)], axis=1)
+    mag_true = y_true[:, 0:1]
+    mag_pred = y_pred[:, 0:1]
+    SS_res = tf.reduce_sum(tf.square(mag_true - mag_pred))
+    SS_tot = tf.reduce_sum(tf.square(mag_true - tf.reduce_mean(mag_true)))
+    return 1 - SS_res/(SS_tot + tf.keras.backend.epsilon())
+
+def compute_mmd(x, y, sigma=1.0, sample_size=32):
+    """Compute the Maximum Mean Discrepancy (MMD) between two samples."""
+    idx = tf.random.shuffle(tf.range(tf.shape(x)[0]))[:sample_size]
+    x_sample = tf.gather(x, idx)
+    y_sample = tf.gather(y, idx)
+    def gaussian_kernel(x, y, sigma):
+        x = tf.expand_dims(x, 1)
+        y = tf.expand_dims(y, 0)
+        dist = tf.reduce_sum(tf.square(x - y), axis=-1)
+        return tf.exp(-dist / (2.0 * sigma ** 2))
+    K_xx = gaussian_kernel(x_sample, x_sample, sigma)
+    K_yy = gaussian_kernel(y_sample, y_sample, sigma)
+    K_xy = gaussian_kernel(x_sample, y_sample, sigma)
+    return tf.reduce_mean(K_xx) + tf.reduce_mean(K_yy) - 2 * tf.reduce_mean(K_xy)
+
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
@@ -150,9 +233,26 @@ class AutoencoderManager:
 
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
 
-            # Implement Early Stopping
-            early_stopping = EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True)
+            # --- Setup Callbacks ---
+            min_delta_early_stopping = config.get("min_delta", self.params.get("min_delta", 1e-4))
+            patience_early_stopping = self.params.get('early_patience', 10)
+            start_from_epoch_es = self.params.get('start_from_epoch', 10)
+            patience_reduce_lr = config.get("reduce_lr_patience", max(1, int(patience_early_stopping / 4)))
 
+            # Instantiate callbacks WITHOUT ClearMemoryCallback
+            # Assumes relevant Callback classes are imported/defined
+            callbacks = [
+                EarlyStoppingWithPatienceCounter(
+                    monitor='val_loss', patience=patience_early_stopping, restore_best_weights=True,
+                    verbose=1, start_from_epoch=start_from_epoch_es, min_delta=min_delta_early_stopping
+                ),
+                ReduceLROnPlateauWithCounter(
+                    monitor="val_loss", factor=0.5, patience=patience_reduce_lr, cooldown=5, min_delta=min_delta_early_stopping, verbose=1
+                ),
+                LambdaCallback(on_epoch_end=lambda epoch, logs:
+                            print(f"Epoch {epoch+1}: LR={K.get_value(self.model.optimizer.learning_rate):.6f}"))
+                # Removed: ClearMemoryCallback(), # <<< REMOVED THIS LINE
+            ]
             # Start training with early stopping
             history = self.autoencoder_model.fit(
                 data,
@@ -160,7 +260,7 @@ class AutoencoderManager:
                 epochs=epochs,
                 batch_size=batch_size,
                 verbose=1,
-                callbacks=[early_stopping],
+                callbacks=callbacks,
                 validation_split = 0.2
             )
 

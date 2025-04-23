@@ -13,8 +13,9 @@ DEFAULT_VALUES = {
     'use_sliding_windows': True,
     'window_size': 288, 
     'threshold_error': 0.5,
-    'initial_size': 48,
-    "interface_size": 48,
+    'initial_size': 48, #initial interface size for incremental/decremmental search (NOT USED)
+    "interface_size": 48, # not used
+    "initial_layer_size": 48,# size of the first encoder and last decoder layers
     'step_size': 2,
     'save_log': './debug_out.json',
     'remote_log': None,
@@ -33,7 +34,7 @@ DEFAULT_VALUES = {
     'dataset_periodicity': '1h',  # Add dataset_periodicity here, can be 1m, 5m, 15m, 30m, 1h, 4h, daily
     "mmd_sigma": 1.0,
     "intermediate_layers": 2,
-    "initial_layer_size": 48,
+
     "layer_size_divisor": 2,
     "l2_reg": 5e-5,
     "early_patience": 40,

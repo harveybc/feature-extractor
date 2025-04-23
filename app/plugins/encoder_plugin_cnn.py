@@ -15,10 +15,14 @@ class Plugin:
     """
 
     plugin_params = {
-        'activation': 'relu',
+        "activation": "tanh",
         'intermediate_layers': 3, 
         'learning_rate': 0.00002,
         'dropout_rate': 0.001,
+        "intermediate_layers": 2,
+        "initial_layer_size": 48,
+        "layer_size_divisor": 2,
+        "l2_reg": 5e-5,
     }
 
     plugin_debug_vars = ['input_shape', 'intermediate_layers']
@@ -75,6 +79,8 @@ class Plugin:
         window_size, num_channels = input_shape
         merged_units = config.get("initial_layer_size", 128)
         branch_units = merged_units//config.get("layer_size_divisor", 2)
+        activation = config.get("activation", self.params.get("activation", "relu"))
+        l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
 
         # --- Input Layer ---
         inputs = Input(shape=(window_size, num_channels), name="input_layer")

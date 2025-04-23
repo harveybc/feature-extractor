@@ -190,7 +190,7 @@ class AutoencoderManager:
             def combined_loss(y_true, y_pred):
                 huber_loss = tf.keras.losses.Huber(delta=1.0)(y_true, y_pred)
                 sigma = config.get('mmd_sigma', 1.0)  # Configure kernel width if needed.
-                stat_weight = config.get('statistical_loss_weight', 1.0)
+                stat_weight = config.get('mmd_weight', 1.0)
                 mmd = mmd_loss_term(y_true, y_pred, sigma)
                 return huber_loss + stat_weight * mmd
 

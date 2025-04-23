@@ -38,6 +38,7 @@ DEFAULT_VALUES = {
     "l2_reg": 1e-6,
     "early_patience": 120,
     "min_delta": 1e-7,
-    "batch_size": 128
+    "batch_size": 128,
+    "mmd_weight": 1.0
 }
 

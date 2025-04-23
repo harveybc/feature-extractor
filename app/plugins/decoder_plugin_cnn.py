@@ -37,7 +37,7 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows):
+    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, config=None):
         print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
         
         self.params['interface_size'] = interface_size
@@ -64,59 +64,58 @@ class Plugin:
         layer_sizes = layers[::-1]
         print(f"[DEBUG] Calculated decoder layer sizes: {layer_sizes}")
 
-        self.model = Sequential(name="decoder")
+        window_size, num_channels = input_shape
+        merged_units = config.get("initial_layer_size", 128)
+        branch_units = merged_units//config.get("layer_size_divisor", 2)
+        activation = config.get("activation", self.params.get("activation", "relu"))
+        l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
 
-        print(f"[DEBUG] Adding first Conv1DTranspose layer with input_shape=(sequence_length={sequence_length}, num_filters={num_filters})")
-        self.model.add(Conv1DTranspose(
-            filters=layer_sizes[0],
+        # --- Decoder input (latent) ---
+        # latent shape: window_size // 4  by merged_units
+        decoder_input = Input(
+            shape=(window_size // (2**2), merged_units),
+            name="decoder_input"
+        )
+
+        # invert 2nd conv (encoder’s 2nd conv mapped to merged_units)
+        # so first deconv should map back to branch_units
+        x = Conv1DTranspose(
+            filters=branch_units,
             kernel_size=3,
-            strides=1,
-            activation='tanh',
-            kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg),
+            strides=2,
             padding='same',
-            input_shape=(sequence_length, num_filters)
-        ))
-        #self.model.add(BatchNormalization())
+            activation=activation,
+            name="deconv_branch_units",
+            kernel_regularizer=l2(l2_reg)
+        )(decoder_input)
 
-        for idx, size in enumerate(layer_sizes[1:], start=1):
-            strides = 2 if idx < len(layer_sizes) - 1 else 1
-            self.model.add(Conv1DTranspose(
-                filters=size,
-                kernel_size=3,
-                strides=strides,
-                padding='same',
-                activation='tanh',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg)
-            ))
-            #self.model.add(BatchNormalization())
+        # invert 1st conv (encoder’s 1st conv mapped to branch_units)
+        # so next deconv maps back to num_channels
+        x = Conv1DTranspose(
+            filters=num_channels,
+            kernel_size=3,
+            strides=2,
+            padding='same',
+            activation='linear',
+            name="deconv_output_channels",
+            kernel_regularizer=l2(l2_reg)
+        )(x)
 
-        if use_sliding_windows:
-            # For sliding windows, retain the temporal dimension
-            self.model.add(Conv1DTranspose(
-                filters=num_channels,
-                kernel_size=3,
-                padding='same',
-                activation='tanh',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg),
-                name="decoder_output"
-            ))
-        else:
-            # For row-by-row data, flatten the output
-            self.model.add(Flatten(name="decoder_flatten"))
-            self.model.add(Dense(
-                units=output_shape,
-                activation='linear',
-                kernel_initializer=GlorotUniform(),
-                kernel_regularizer=l2(l2_reg),
-                name="decoder_dense_output"
-            ))
+        # if we overshot the exact window_size, crop back
+        if x.shape[1] != window_size:
+            crop = x.shape[1] - window_size
+            x = Cropping1D((0, crop))(x)
 
-        final_output_shape = self.model.output_shape
-        print(f"[DEBUG] Final Output Shape: {final_output_shape}")
+        merged = x
 
+
+        # Output batch normalization layer
+        #outputs = BatchNormalization()(x)
+        outputs = merged
+        print(f"[DEBUG] Final Output shape: {outputs.shape}")
+
+        # Build the encoder model
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
         adam_optimizer = Adam(
             learning_rate=self.params['learning_rate'],
             beta_1=0.9,

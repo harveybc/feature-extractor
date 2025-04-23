@@ -12,7 +12,7 @@ from keras.regularizers import l2
 from keras.layers import BatchNormalization, LeakyReLU
 from keras.layers import MaxPooling1D, UpSampling1D
 
-#set_global_policy('mixed_float16')
+set_global_policy('mixed_float16')
 
 class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
     """Custom ReduceLROnPlateau callback that prints the patience counter."""

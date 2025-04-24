@@ -90,7 +90,7 @@ class Plugin:
             padding='same',
             activation=activation,
             name="deconv_branch_units",
-            kernel_regularizer=l2(l2_reg)
+            #kernel_regularizer=l2(l2_reg)
         )(x)
 
         # invert 1st conv (encoder’s 1st conv mapped to branch_units)

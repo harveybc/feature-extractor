@@ -76,6 +76,10 @@ class Plugin:
             shape=(window_size // 4, branch_units),
             name="decoder_input"
         )
+        x= decoder_input
+
+        x = BatchNormalization()(x)
+        
 
         # invert 2nd conv (encoder’s 2nd conv mapped to merged_units)
         # so first deconv should map back to branch_units
@@ -86,8 +90,8 @@ class Plugin:
             padding='same',
             activation=activation,
             name="deconv_branch_units",
-            #kernel_regularizer=l2(l2_reg)
-        )(decoder_input)
+            kernel_regularizer=l2(l2_reg)
+        )(x)
 
         # invert 1st conv (encoder’s 1st conv mapped to branch_units)
         # so next deconv maps back to num_channels

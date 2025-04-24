@@ -91,7 +91,7 @@ class Plugin:
             strides=2, 
             padding='same',
             activation='linear',
-            name="conv_merged_features_1",
+            #name="conv_merged_features_1",
             kernel_regularizer=l2(l2_reg)
         )(inputs)
 
@@ -102,7 +102,7 @@ class Plugin:
             padding='same',
             activation=activation,
             name="conv_merged_features_2",
-            kernel_regularizer=l2(l2_reg)
+            #kernel_regularizer=l2(l2_reg)
         )(merged)
 
 

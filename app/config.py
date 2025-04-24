@@ -49,7 +49,6 @@ DEFAULT_VALUES = {
     "use_returns": True,
     "mc_samples":100,
     "plotted_horizon": 6,
-    "min_delta": 1e-4,
     "start_from_epoch": 10,
     "plot_color_predicted": "orange",
     "plot_color_true": "blue",

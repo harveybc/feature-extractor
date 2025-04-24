@@ -67,7 +67,8 @@ def main():
 
         encoder_plugin = encoder_plugin_class()
         decoder_plugin = decoder_plugin_class()
-
+        encoder_plugin.set_params(**config)
+        decoder_plugin.set_params(**config)
         # Carga del Preprocessor Plugin (para process_data, ventanas deslizantes y STL)
         plugin_name = config.get('preprocessor_plugin', 'stl_preprocessor')
         print(f"Loading Plugin ..{plugin_name}")

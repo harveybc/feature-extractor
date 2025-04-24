@@ -293,8 +293,8 @@ class AutoencoderManager:
                     monitor="val_loss", factor=0.5, patience=patience_reduce_lr, cooldown=5, min_delta=min_delta_early_stopping, verbose=1
                 ),
                 LambdaCallback(on_epoch_end=lambda epoch, logs:
-                            print(f"Epoch {epoch+1}: LR={K.get_value(self.model.optimizer.learning_rate):.6f}")),
-                MMDWeightAdjustmentCallback(config)
+                            print(f"Epoch {epoch+1}: LR={K.get_value(self.model.optimizer.learning_rate):.6f}"))
+                #MMDWeightAdjustmentCallback(config)
                 # Removed: ClearMemoryCallback(), # <<< REMOVED THIS LINE
             ]
             # Start training with early stopping

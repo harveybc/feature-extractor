@@ -106,8 +106,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     processed_data=datasets["x_train"]; validation_data=datasets["x_val"]
     # Swap time and feature axes so that each original column becomes its own
     # channel for the Conv1D autoencoder (shape →: samples, features, window).
-    processed_data = processed_data.transpose(0, 2, 1)
-    validation_data = validation_data.transpose(0, 2, 1)
+    #processed_data = processed_data.transpose(0, 2, 1)
+    #validation_data = validation_data.transpose(0, 2, 1)
     #y_train_list=datasets["y_train"]; y_val_list=datasets["y_val"]; y_test_list=datasets["y_test"]
     #train_dates=datasets.get("y_train_dates"); val_dates=datasets.get("y_val_dates"); test_dates=datasets.get("y_test_dates")
     #baseline_train=datasets.get("baseline_train"); baseline_val=datasets.get("baseline_val"); baseline_test=datasets.get("baseline_test")

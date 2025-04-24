@@ -78,7 +78,6 @@ class Plugin:
         )
         x= decoder_input
 
-        x = BatchNormalization()(x)
         
 
         # invert 2nd conv (encoder’s 2nd conv mapped to merged_units)

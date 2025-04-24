@@ -47,12 +47,6 @@ def main():
     print("Merging configuration with CLI arguments and unknown args (first pass, no plugin params)...")
     unknown_args_dict = process_unknown_args(unknown_args)
     config = merge_config(config, {}, {}, file_config, cli_args, unknown_args_dict)
-
-    # Selección del plugins
-    if not cli_args.get('predictor_plugin'):
-        cli_args['predictor_plugin'] = config.get('predictor_plugin', 'default_predictor')
-    plugin_name = config.get('predictor_plugin', 'default_predictor')
-    
     
     # --- CARGA DE PLUGINS ---
     print("Merging configuration with CLI arguments and unknown args without plugin-specific parameters...")

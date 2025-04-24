@@ -107,7 +107,7 @@ class Plugin:
 
 
         # Output batch normalization layer
-        outputs = BatchNormalization()(merged)
+        #outputs = BatchNormalization()(merged)
         outputs = merged
         print(f"[DEBUG] Final Output shape: {outputs.shape}")
 

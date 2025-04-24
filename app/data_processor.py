@@ -182,9 +182,13 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         'execution_time': execution_time,
         'encoder': encoder_plugin.get_debug_info(),
         'decoder': decoder_plugin.get_debug_info(),
-        'mse': validation_mse,
-        'mae': validation_mae
+        'val_mae': validation_mae,
+        'train_mae': training_mae
+
     }
+
+    from tensorflow.keras.utils import plot_model
+
 
     from app.config_handler import save_debug_info, remote_log
     if 'save_log' in config and config['save_log']:
@@ -195,6 +199,12 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         remote_log(config, debug_info, config['remote_log'], config['username'], config['password'])
         print(f"Debug info saved to {config['remote_log']}.")
     
+    if 'model_plot_file' in config and config['model_plot_file']:
+        try: model_plot_file=config.get('model_plot_file','model_plot.png'); plot_model(autoencoder_manager.model,to_file=model_plot_file,show_shapes=True,show_layer_names=True,dpi=300); print(f"Model plot saved: {model_plot_file}")
+        except Exception as e: print(f"WARN: Failed model plot: {e}")
+        
+
+
     print(f"Execution time: {execution_time} seconds")
 
 

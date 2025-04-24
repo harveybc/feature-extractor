@@ -57,7 +57,7 @@ class Plugin:
         self.params['input_shape'] = input_shape
 
         # Determine the input shape for the first Conv1D layer
-        adjusted_channels = num_channels if use_sliding_windows else 1
+        adjusted_channels = num_channels 
 
         # Initialize layers array with input_shape
         layers = [adjusted_channels]  # First layer matches the number of input channels

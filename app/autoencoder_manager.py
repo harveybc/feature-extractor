@@ -277,7 +277,7 @@ class AutoencoderManager:
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
 
             # --- Setup Callbacks ---
-            min_delta_early_stopping = config.get("min_delta", config.get("min_delta", 1e-4))
+            min_delta_early_stopping = config.get("min_delta", config.get("min_delta", 1e-7))
             patience_early_stopping = config.get('early_patience', 10)
             start_from_epoch_es = config.get('start_from_epoch', 10)
             patience_reduce_lr = config.get("reduce_lr_patience", max(1, int(patience_early_stopping / 4)))

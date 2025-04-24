@@ -51,8 +51,8 @@
     "incremental_search": true, 
     "headers": true,
     "dataset_periodicity": "1h",  
-    "mmd_sigma": 2.0,
-    "mmd_weight": 0.1,
+    "mmd_sigma": 1.0,
+    "mmd_weight": 10.0,
 
     "use_daily": false,
     "max_steps_train": 25200,

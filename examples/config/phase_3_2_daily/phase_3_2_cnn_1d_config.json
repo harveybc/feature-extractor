@@ -62,7 +62,7 @@
     "layer_size_divisor": 2,
     "learning_rate": 1e-3,
     "activation": "tanh",
-    "l2_reg": 1e-4,
+    "l2_reg": 5e-5,
     "early_patience": 40,
     "start_from_epoch": 15,
     "use_returns": true,

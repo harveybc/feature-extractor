@@ -56,10 +56,6 @@ def main():
     
     # --- CARGA DE PLUGINS ---
     print("Merging configuration with CLI arguments and unknown args without plugin-specific parameters...")
-    unknown_args_dict = process_unknown_args(unknown_args)
-    config = merge_config(default_config, {}, {}, file_config, cli_args, unknown_args_dict)
-        
-
     if config['load_encoder']:
         print("Loading and evaluating encoder...")
         load_and_evaluate_encoder(config)
@@ -99,8 +95,9 @@ def main():
         config = merge_config(config, preprocessor_plugin.plugin_params, {}, file_config, cli_args, unknown_args_dict)
         
 
-        #encoder_plugin.set_params(**config)
-        #decoder_plugin.set_params(**config)
+        encoder_plugin.set_params(**config)
+        decoder_plugin.set_params(**config)
+        preprocessor_plugin.set_params(**config)
 
         print("Processing and running autoencoder pipeline...")
         run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin)

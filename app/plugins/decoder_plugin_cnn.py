@@ -99,7 +99,7 @@ class Plugin:
             kernel_size=3,
             strides=2,
             padding='same',
-            activation='linear',
+            activation=activation,
             name="deconv_output_channels",
             #kernel_regularizer=l2(l2_reg)
         )(x)

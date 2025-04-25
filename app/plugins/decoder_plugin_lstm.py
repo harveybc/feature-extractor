@@ -99,12 +99,12 @@ class Plugin:
         # We want the output dimension to match the input dim of the *next* LSTM (decoder_lstm_2)
         # which corresponds to the output of the *first* encoder LSTM.
         # For symmetry, we often keep the dimensions consistent through the LSTMs.
-        x = Bidirectional(LSTM(lstm_units, return_sequences=True, kernel_regularizer=l2(l2_reg)),
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True,
                         name="decoder_lstm_1")(x)
 
         # --- Inverse of feature_lstm_1 ---
         # Input dim = 2 * lstm_units. Output dim = 2 * lstm_units (keeping consistent for attention input)
-        x = Bidirectional(LSTM(lstm_units, return_sequences=True, kernel_regularizer=l2(l2_reg)),
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True,
                         name="decoder_lstm_2")(x)
 
         # --- Inverse of AveragePooling1D_1 ---
@@ -133,7 +133,7 @@ class Plugin:
         attention_output = MultiHeadAttention(
             num_heads=num_attention_heads,
             key_dim=attention_key_dim,
-            kernel_regularizer=l2(l2_reg),
+            #kernel_regularizer=l2(l2_reg),
             name="decoder_multihead_attention_1"
         )(query=x, value=x, key=x) # Self-attention
         x_res = Add()([x, attention_output]) # Residual connection

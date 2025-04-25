@@ -11,6 +11,11 @@ from keras.callbacks import EarlyStopping
 from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU,Input
 import math
 from tensorflow.keras.layers import ZeroPadding1D
+import math
+import tensorflow as tf
+import tensorflow.keras.backend as K
+from tensorflow.keras.layers import Input, Dense, Reshape, Flatten, Lambda, Concatenate
+# Add any other necessary imports (like l2 if uncommenting regularizers)
 
 class Plugin:
     plugin_params = {
@@ -71,49 +76,81 @@ class Plugin:
         l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
 
         # --- Decoder input (latent) ---
-        # latent shape: window_size // 4  by merged_units
+        # Assume the following variables are defined in the outer scope:
+        # window_size, num_channels, feature_units (== merged_units from encoder),
+        # num_intermediate_layers, activation, l2_reg (if used)
+        feature_units = merged_units
+
+
+        # --- Calculate Encoder Output Shape ---
+        latent_seq_len = feature_units # Time dimension corresponds to feature_units
+        latent_feature_dim = num_channels # Channel dimension corresponds to original channels
+        encoder_output_shape = (latent_seq_len, latent_feature_dim)
+        print(f"[DEBUG] Calculated Encoder Output Shape (Decoder Input): {encoder_output_shape}")
+
+        # --- Decoder input (latent) ---
         decoder_input = Input(
-            shape=(window_size // 4, branch_units),
+            shape=encoder_output_shape,
             name="decoder_input"
         )
-        x= decoder_input
 
-        
+        # --- Feature Decoder: Parallel Isolated Processing Branches ---
+        reconstructed_feature_branches = []
 
-        # invert 2nd conv (encoder’s 2nd conv mapped to merged_units)
-        # so first deconv should map back to branch_units
-        x = Conv1DTranspose(
-            filters=branch_units,
-            kernel_size=3,
-            strides=2,
-            padding='same',
-            activation=activation,
-            name="deconv_branch_units",
-            #kernel_regularizer=l2(l2_reg)
-        )(x)
+        # Split the latent input back into individual channel representations
+        # Input shape: (batch, feature_units, num_channels)
+        split_inputs = []
+        for c in range(num_channels):
+            # Lambda layer to slice along the channel axis (axis=2)
+            channel_slice = Lambda(
+                lambda x, channel=c: x[:, :, channel:channel+1],
+                name=f"decoder_split_channel_{c+1}"
+            )(decoder_input) # Output shape: (batch, feature_units, 1)
+            split_inputs.append(channel_slice)
 
-        # invert 1st conv (encoder’s 1st conv mapped to branch_units)
-        # so next deconv maps back to num_channels
-        x = Conv1DTranspose(
-            filters=num_channels,
-            kernel_size=3,
-            strides=2,
-            padding='same',
-            activation='linear',
-            name="deconv_output_channels",
-            #kernel_regularizer=l2(l2_reg)
-        )(x)
+        # Process each branch to reconstruct the original time series for that channel
+        for c in range(num_channels):
+            # Current branch input shape: (batch, feature_units, 1)
+            x = split_inputs[c]
 
-        # if we overshot the exact window_size, crop back
-        if x.shape[1] != window_size:
-            crop = x.shape[1] - window_size
-            x = Cropping1D((0, crop))(x)
+            # Inverse of Reshape: Flatten the feature_units dimension
+            # Input: (batch, feature_units, 1) -> Output: (batch, feature_units)
+            x = Flatten(name=f"decoder_feature_{c+1}_flatten")(x)
 
-        merged = x
+            # Inverse of Dense Layers
+            # Apply Dense layers in reverse order conceptually
+            # The final layer must output window_size features
+            for i in range(num_intermediate_layers -1): # Apply intermediate layers first
+                x = Dense(feature_units, activation=activation, # kernel_regularizer=l2(l2_reg), # Uncomment if used
+                        name=f"decoder_feature_{c+1}_dense_{i+1}")(x)
+                print(f"[DEBUG] Decoder Branch {c+1} shape after Dense_{i+1}: {K.int_shape(x)}")
+
+            # The last dense layer maps back to the original flattened window size
+            x = Dense(window_size, activation='linear', # Use linear activation for reconstruction output
+                    # kernel_regularizer=l2(l2_reg), # Uncomment if used
+                    name=f"decoder_feature_{c+1}_dense_final_towindow")(x) # Output shape: (batch, window_size)
+            print(f"[DEBUG] Decoder Branch {c+1} shape after Dense_final: {K.int_shape(x)}")
+
+
+            # Inverse of Flatten: Reshape back to (window_size, 1)
+            # Input: (batch, window_size) -> Output: (batch, window_size, 1)
+            x = Reshape((window_size, 1), name=f"decoder_feature_{c+1}_reshape")(x)
+            print(f"[DEBUG] Decoder Branch {c+1} shape after Reshape: {K.int_shape(x)}")
+
+            reconstructed_feature_branches.append(x)
+
+        # --- Concatenate reconstructed branches ---
+        # Merge the reconstructed channels (each shape: (batch, window_size, 1))
+        # back into a single tensor (batch, window_size, num_channels)
+        merged_reconstruction = Concatenate(axis=2, name="decoder_merged_reconstruction")(reconstructed_feature_branches)
+
+        # --- Final Output ---
+        decoder_output = merged_reconstruction
+        print(f"[DEBUG] Final Decoder Output shape: {K.int_shape(decoder_output)}") # Target: (batch, window_size, num_channels)
 
         # Output batch normalization layer
         #outputs = BatchNormalization()(x)
-        outputs = merged
+        outputs = merged_reconstruction
         print(f"[DEBUG] Final Output shape: {outputs.shape}")
 
         # Build the encoder model

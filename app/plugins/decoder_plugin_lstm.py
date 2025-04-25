@@ -99,12 +99,12 @@ class Plugin:
         # We want the output dimension to match the input dim of the *next* LSTM (decoder_lstm_2)
         # which corresponds to the output of the *first* encoder LSTM.
         # For symmetry, we often keep the dimensions consistent through the LSTMs.
-        x = Bidirectional(LSTM(lstm_units, return_sequences=True,
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True),
                         name="decoder_lstm_1")(x)
 
         # --- Inverse of feature_lstm_1 ---
         # Input dim = 2 * lstm_units. Output dim = 2 * lstm_units (keeping consistent for attention input)
-        x = Bidirectional(LSTM(lstm_units, return_sequences=True,
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True),
                         name="decoder_lstm_2")(x)
 
         # --- Inverse of AveragePooling1D_1 ---

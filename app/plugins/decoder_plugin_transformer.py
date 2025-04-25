@@ -1,41 +1,54 @@
 import numpy as np
-import tensorflow as tf
-from keras.models import Model
-from keras.layers import Input, Dense, Flatten, LayerNormalization, Add, RepeatVector, Lambda, Reshape
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten, Conv1DTranspose,Dropout
 from keras.optimizers import Adam
-from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from tensorflow.keras.losses import Huber
+from tensorflow.keras.regularizers import l2
+from keras.models import Model, load_model, save_model
+from keras.regularizers import l2
+from keras.callbacks import EarlyStopping
+from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU,Input
+import math
+from tensorflow.keras.layers import ZeroPadding1D
+from keras.layers import Add, LayerNormalization, AveragePooling1D, Bidirectional, LSTM
+from tensorflow.keras.layers import MultiHeadAttention
+from tensorflow.keras import backend as K
 
-tf.keras.mixed_precision.set_global_policy('float32')
+from keras.layers import Input
+import tensorflow as tf
+from tensorflow.keras.losses import Huber
+# TimeDistributed
+from keras.layers import TimeDistributed
+import math
+import tensorflow as tf
+import tensorflow.keras.backend as K
+from tensorflow.keras.layers import Input, LSTM, Bidirectional, Add, LayerNormalization
+from tensorflow.keras.layers import UpSampling1D, MultiHeadAttention, Conv1D, Cropping1D
+    
 
-def positional_encoding(seq_len, d_model):
-    d_model_float = tf.cast(d_model, tf.float32)
-    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]
-    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]
-    angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model_float))
-    angle_rads = pos * angle_rates
-    even_mask = tf.cast(tf.equal(tf.math.floormod(tf.range(d_model), 2), 0), tf.float32)
-    even_mask = tf.reshape(even_mask, [1, d_model])
-    pos_encoding = even_mask * tf.sin(angle_rads) + (1 - even_mask) * tf.cos(angle_rads)
-    return pos_encoding
+def get_angles(pos, i, d_model):
+    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+    return pos * angle_rates
 
-def add_positional_encoding(x):
-    seq_len = tf.shape(x)[1]
-    d_model = tf.shape(x)[2]
-    pos_enc = positional_encoding(seq_len, d_model)
-    pos_enc = tf.cast(pos_enc, tf.float32)
-    return x + pos_enc
+def positional_encoding(position, d_model):
+    angle_rads = get_angles(np.arange(position)[:, np.newaxis],
+                            np.arange(d_model)[np.newaxis, :],
+                            d_model)
+    # Apply sin to even indices; cos to odd indices
+    sines = np.sin(angle_rads[:, 0::2])
+    cosines = np.cos(angle_rads[:, 1::2])
+    pos_encoding = np.concatenate([sines, cosines], axis=-1)
+    pos_encoding = pos_encoding[np.newaxis, ...]  # Shape: (1, position, d_model)
+    return tf.cast(pos_encoding, dtype=tf.float32)
 
 class Plugin:
-    # Interface: configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False)
     plugin_params = {
-        'intermediate_layers': 1,
-        'layer_size_divisor': 2,
-        'ff_dim_divisor': 2,
-        'learning_rate': 1e-5,
-        'dropout_rate': 0.0,
-        'initial_layer_size': 128,
+        'intermediate_layers': 3, 
+        'learning_rate': 0.00002,
+        'dropout_rate': 0.001,
     }
+
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
 
     def __init__(self):
@@ -43,73 +56,257 @@ class Plugin:
         self.model = None
 
     def set_params(self, **kwargs):
-        self.params.update(kwargs)
+        for key, value in kwargs.items():
+            if key in self.params:
+                self.params[key] = value 
 
     def get_debug_info(self):
-        return {k: self.params.get(k) for k in self.plugin_debug_vars}
+        return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
-        debug_info.update(self.get_debug_info())
+        plugin_debug_info = self.get_debug_info()
+        debug_info.update(plugin_debug_info)
 
-    def configure_size(self, interface_size, output_time_steps, num_channels=None, encoder_output_shape=None, use_sliding_windows=False):
+    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, config=None):
+        print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
+        
         self.params['interface_size'] = interface_size
-        # If using sliding windows, output_time_steps is as given; otherwise, assume 1 timestep.
-        time_steps = output_time_steps if use_sliding_windows else 1
-        self.params['output_shape'] = time_steps
-        if num_channels is None:
-            num_channels = 1
-        self.params['num_channels'] = num_channels
-        self.params['encoder_output_shape'] = encoder_output_shape
-        self.params['use_sliding_windows'] = use_sliding_windows
+        self.params['output_shape'] = output_shape
 
-        init_size = self.params.get('initial_layer_size', 128)
-        layer_div = self.params.get('layer_size_divisor', 2)
-        inter_layers = self.params.get('intermediate_layers', 1)
-        ff_div = self.params.get('ff_dim_divisor', 2)
-        lr = self.params.get('learning_rate', 1e-5)
+        sequence_length, num_filters = encoder_output_shape
+        print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
 
-        # Compute layer sizes (mirroring the encoder).
-        sizes = []
-        current = init_size
-        for _ in range(inter_layers):
-            sizes.append(current)
-            current = max(current // layer_div, interface_size)
-        sizes.append(interface_size)
-        sizes.reverse()
-        print(f"[configure_size] Transformer decoder layer sizes (mirrored): {sizes}")
+        num_intermediate_layers = self.params['intermediate_layers']
+        print(f"[DEBUG] Number of intermediate layers={num_intermediate_layers}")
+        
+        layers = [output_shape*2]
+        current_size = output_shape*2
+        l2_reg = 1e-2
+        for i in range(num_intermediate_layers-1):
+            next_size = current_size // 2
+            if next_size < interface_size:
+                next_size = interface_size
+            layers.append(next_size)
+            current_size = next_size
 
-        inp = Input(shape=(interface_size,), dtype=tf.float32)
-        repeated = RepeatVector(time_steps)(inp)
-        x = Dense(init_size, activation='tanh')(repeated)
-        x = Lambda(add_positional_encoding)(x)
+        layers.append(interface_size)
 
-        for size in sizes:
-            ff_dim = max(size // ff_div, 1)
-            num_heads = 2 if size < 64 else (4 if size < 128 else 8)
-            x = Dense(size)(x)
-            x = MultiHeadAttention(head_num=num_heads)(x)
-            x = LayerNormalization(epsilon=1e-6)(x)
-            res = x
-            ffn = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal())(x)
-            ffn = Dense(size)(ffn)
-            x = Add()([res, ffn])
-            x = LayerNormalization(epsilon=1e-6)(x)
+        layer_sizes = layers[::-1]
+        print(f"[DEBUG] Calculated decoder layer sizes: {layer_sizes}")
 
-        x = Flatten()(x)
-        # To reconstruct the original input shape, we need output_units = time_steps * num_channels
-        out_units = time_steps * num_channels
-        x = Dense(out_units, activation='linear', kernel_initializer=GlorotUniform())(x)
-        # Reshape back to (time_steps, num_channels)
-        out = Reshape((time_steps, num_channels))(x)
+        window_size =config.get("window_size", 288)
+        merged_units = config.get("initial_layer_size", 128)
+        branch_units = merged_units//config.get("layer_size_divisor", 2)
+        lstm_units = branch_units//config.get("layer_size_divisor", 2)
+        activation = config.get("activation", "tanh")
+        l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
+        num_attention_heads = 2
 
-        self.model = Model(inputs=inp, outputs=out)
-        optimizer = Adam(learning_rate=lr, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
-        self.model.compile(optimizer=optimizer, loss='mean_squared_error')
-        print("[configure_size] Transformer Decoder Model Summary:")
-        self.model.summary()
+        # Assume the following variables are defined in the outer scope:
+        # window_size, lstm_units, num_attention_heads, l2_reg (if used), num_channels
+        # Also assume the function positional_encoding(seq_length, feature_dim) is defined.
 
+        # --- Calculate Encoder Output Shape ---
+        # Note: Using padding='same'
+        latent_seq_len = math.ceil(window_size / 2) # After pool 1
+        latent_seq_len = math.ceil(latent_seq_len / 2) # After pool 2 (Encoder output seq len)
+        # Encoder output feature dimension is 2 * lstm_units due to the last Bidirectional LSTM
+        latent_feature_dim = 2 * lstm_units
+        encoder_output_shape = (latent_seq_len, latent_feature_dim)
+        print(f"[DEBUG] Calculated Encoder Output Shape (Decoder Input): {encoder_output_shape}")
+
+        # Assume the following variables are defined in the outer scope:
+        # window_size, lstm_units, num_attention_heads, l2_reg (if used), num_channels
+        # Also assume the function positional_encoding(seq_length, feature_dim) is defined.
+
+        # Add any other necessary imports (like l2 if uncommenting regularizers)
+
+        # --- Calculate Encoder Output Shape ---
+        latent_seq_len = math.ceil(window_size / 2)
+        latent_seq_len = math.ceil(latent_seq_len / 2)
+        latent_feature_dim = 2 * lstm_units # From last BiLSTM in encoder
+        encoder_output_shape = (latent_seq_len, latent_feature_dim)
+        print(f"[DEBUG] Calculated Encoder Output Shape (Decoder Input): {encoder_output_shape}")
+
+        # Assume the following variables are defined in the outer scope:
+        # window_size, num_channels, merged_units, branch_units, num_attention_heads,
+        # activation (used in encoder Conv1D), l2_reg (if used)
+        # Also assume the function positional_encoding(seq_length, feature_dim) is defined.
+
+
+        # --- Calculate Encoder Output Shape ---
+        # Note: Using padding='same' in encoder Conv1D layers
+        latent_seq_len = math.ceil(window_size / 2) # After conv1
+        latent_seq_len = math.ceil(latent_seq_len / 2) # After conv2 (Encoder output seq len)
+        latent_feature_dim = branch_units # From last Conv1D in encoder
+        encoder_output_shape = (latent_seq_len, latent_feature_dim)
+        print(f"[DEBUG] Calculated Encoder Output Shape (Decoder Input): {encoder_output_shape}")
+
+        # --- Decoder input (latent) ---
+        decoder_input = Input(
+            shape=encoder_output_shape,
+            name="decoder_input"
+        )
+        x = decoder_input
+
+        # --- Inverse of Convolutional Layer 2 ---
+        # Use Conv1DTranspose to upsample sequence length and adjust filters
+        # kernel_regularizer=l2(l2_reg) # Uncomment if using L2 regularization
+        x = Conv1DTranspose(
+            filters=merged_units, # Target filters of the layer we are inverting
+            kernel_size=3,        # Match kernel size
+            strides=2,
+            padding='same',       # Crucial for reversing Conv1D padding='same'
+            activation=activation, # Match activation
+            name="decoder_conv_transpose_1",
+            #kernel_regularizer=l2(l2_reg) # Uncomment if using L2
+        )(x)
+        print(f"[DEBUG] Decoder shape after ConvTranspose_1: {K.int_shape(x)}") # Target: (ceil(window_size/2), merged_units)
+
+        # --- Inverse of Convolutional Layer 1 ---
+        # Second Conv1DTranspose layer
+        # kernel_regularizer=l2(l2_reg) # Uncomment if using L2 regularization
+        x = Conv1DTranspose(
+            filters=num_channels, # Target original number of channels
+            kernel_size=3,
+            strides=2,
+            padding='same',
+            activation=activation, # Match activation
+            name="decoder_conv_transpose_2",
+            #kernel_regularizer=l2(l2_reg) # Uncomment if using L2
+        )(x)
+        print(f"[DEBUG] Decoder shape after ConvTranspose_2: {K.int_shape(x)}") # Target: (window_size, num_channels)
+
+        # --- Calculate actual sequence length and potential cropping ---
+        # Conv1DTranspose with padding='same', stride=2 should ideally recover the exact length
+        # but let's check just in case of minor framework differences or edge cases.
+        final_seq_len_calculated = K.int_shape(x)[1]
+        cropping_needed = 0
+        if final_seq_len_calculated is not None and final_seq_len_calculated > window_size:
+            cropping_needed = final_seq_len_calculated - window_size
+            print(f"[DEBUG] Decoder: Seq length after ConvTranspose {final_seq_len_calculated} > {window_size}. Will crop {cropping_needed} elements later.")
+        elif final_seq_len_calculated is not None and final_seq_len_calculated < window_size:
+            print(f"[WARN] Decoder: Seq length after ConvTranspose {final_seq_len_calculated} < {window_size}. Reconstruction might be shorter.")
+        else:
+            print(f"[DEBUG] Decoder: Seq length after ConvTranspose {final_seq_len_calculated} matches window_size {window_size}.")
+
+        # --- Inverse of Self-Attention Block 1 ---
+        # Apply this *after* restoring spatial dimensions and channel count
+        last_layer_shape = K.int_shape(x)
+        feature_dim_attn = last_layer_shape[-1] # Should be num_channels now
+        seq_length_attn = last_layer_shape[1]   # Should be ~= window_size
+
+        # --- Add Positional Encoding ---
+        try:
+            if callable(positional_encoding) and seq_length_attn is not None and feature_dim_attn is not None:
+                # Use the sequence length *before* potential cropping for PE calculation
+                pos_enc = positional_encoding(seq_length_attn, feature_dim_attn)
+                print(f"[DEBUG] Decoder: Adding positional encoding for seq_len={seq_length_attn}, dim={feature_dim_attn}")
+                x = Add(name="decoder_add_pos_enc")([x, pos_enc])
+            else:
+                print(f"[WARN] Decoder: Positional encoding function not callable or dimensions are None. Skipping.")
+        except NameError:
+            print(f"[WARN] Decoder: positional_encoding function not defined. Skipping.")
+
+        # --- Attention Mechanism ---
+        if feature_dim_attn is not None and feature_dim_attn > 0 and num_attention_heads > 0:
+            # Key dimension should be based on num_channels now
+            attention_key_dim = feature_dim_attn // num_attention_heads
+            print(f"[DEBUG] Decoder Attention Key Dim: {attention_key_dim} (based on {feature_dim_attn} features)")
+
+            # Apply MultiHeadAttention
+            # kernel_regularizer=l2(l2_reg) # Uncomment if using L2 regularization
+            attention_output = MultiHeadAttention(
+                num_heads=num_attention_heads,
+                key_dim=attention_key_dim,
+                #kernel_regularizer=l2(l2_reg), # Uncomment if using L2
+                name="decoder_multihead_attention_1"
+            )(query=x, value=x, key=x)
+            x_res = Add(name="decoder_add_attention_residual")([x, attention_output])
+            x = LayerNormalization(name="decoder_layernorm_attention")(x_res)
+            print(f"[DEBUG] Decoder shape after Attention block: {K.int_shape(x)}")
+        else:
+            print(f"[WARN] Decoder: Skipping Attention Block due to invalid dimensions or zero heads.")
+
+
+        # --- Final Cropping (if needed) ---
+        # Apply cropping if ConvTranspose output was slightly longer than window_size
+        if cropping_needed > 0:
+            crop_start = cropping_needed // 2
+            crop_end = cropping_needed - crop_start
+            x = Cropping1D(cropping=(crop_start, crop_end), name="decoder_final_cropping")(x)
+            print(f"[DEBUG] Decoder shape after Cropping: {K.int_shape(x)}") # Shape: (batch, window_size, num_channels)
+
+        # --- Final Output ---
+        # The output 'x' should now have the target shape (batch_size, window_size, num_channels)
+        # A final linear activation might be needed if the attention block doesn't guarantee it,
+        # or if the target data isn't scaled s.t. the attention output range matches.
+        # Often, the reconstruction loss (like MSE) handles this.
+        # If activation='linear' was used in Conv1DTranspose and no other activations interfere,
+        # the output might be fine. Add explicit activation if needed:
+        # x = tf.keras.layers.Activation('linear', name='decoder_final_activation')(x)
+        decoder_output = x
+        print(f"[DEBUG] Final Decoder Output shape: {K.int_shape(decoder_output)}")
+        # --- Final Output ---
+        outputs = decoder_output
+        print(f"[DEBUG] Final Decoder Output shape: {K.int_shape(decoder_output)}")
+
+        # Build the encoder model
+        self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder")
+        
+        adam_optimizer = Adam(
+            learning_rate=self.params['learning_rate'],
+            beta_1=0.9,
+            beta_2=0.999,
+            epsilon=1e-2,
+            amsgrad=False
+        )
+
+        self.model.compile(
+            optimizer=adam_optimizer,
+            loss=Huber(),
+            metrics=['mse', 'mae'],
+            run_eagerly=False
+        )
+        print(f"[DEBUG] Model compiled successfully.")
+
+
+
+
+    def train(self, encoded_data, original_data,config):
+        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
+        original_data = original_data.reshape((original_data.shape[0], -1))
+        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True, verbose=1)
+        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=config.get("batch_size"), verbose=1, callbacks=[early_stopping],validation_split = 0.2)
+
+    def decode(self, encoded_data, use_sliding_windows, original_feature_size):
+        print(f"[decode] Decoding data with shape: {encoded_data.shape}")
+        decoded_data = self.model.predict(encoded_data)
+
+        if not use_sliding_windows:
+            # Reshape to match the original feature size if not using sliding windows
+            decoded_data = decoded_data.reshape((decoded_data.shape[0], original_feature_size))
+            print(f"[decode] Reshaped decoded data to match original feature size: {decoded_data.shape}")
+        else:
+            print(f"[decode] Decoded data shape: {decoded_data.shape}")
+
+        return decoded_data
+
+    def save(self, file_path):
+        self.model.save(file_path)
+
+    def load(self, file_path):
+        self.model = load_model(file_path)
+
+    def calculate_mse(self, original_data, reconstructed_data):
+        original_data = original_data.reshape((original_data.shape[0], -1))
+        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))
+        mse = np.mean(np.square(original_data - reconstructed_data))
+        return mse
+
+# Debugging usage example
 if __name__ == "__main__":
-    # Example: interface size=4, output timesteps=256, 8 channels, sliding windows enabled.
     plugin = Plugin()
-    plugin.configure_size(interface_size=4, output_time_steps=256, num_channels=8, encoder_output_shape=None, use_sliding_windows=True)
-    print("Debug Info:", plugin.get_debug_info())
+    plugin.configure_size(interface_size=4, output_shape=128)
+    debug_info = plugin.get_debug_info()
+    print(f"Debug Info: {debug_info}")

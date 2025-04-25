@@ -20,7 +20,11 @@ import tensorflow as tf
 from tensorflow.keras.losses import Huber
 # TimeDistributed
 from keras.layers import TimeDistributed
-
+import math
+import tensorflow as tf
+import tensorflow.keras.backend as K
+from tensorflow.keras.layers import Input, LSTM, Bidirectional, Add, LayerNormalization
+from tensorflow.keras.layers import UpSampling1D, MultiHeadAttention, Conv1D, Cropping1D
 
 def get_angles(pos, i, d_model):
     angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
@@ -110,6 +114,19 @@ class Plugin:
         encoder_output_shape = (latent_seq_len, latent_feature_dim)
         print(f"[DEBUG] Calculated Encoder Output Shape (Decoder Input): {encoder_output_shape}")
 
+        # Assume the following variables are defined in the outer scope:
+        # window_size, lstm_units, num_attention_heads, l2_reg (if used), num_channels
+        # Also assume the function positional_encoding(seq_length, feature_dim) is defined.
+
+        # Add any other necessary imports (like l2 if uncommenting regularizers)
+
+        # --- Calculate Encoder Output Shape ---
+        latent_seq_len = math.ceil(window_size / 2)
+        latent_seq_len = math.ceil(latent_seq_len / 2)
+        latent_feature_dim = 2 * lstm_units # From last BiLSTM in encoder
+        encoder_output_shape = (latent_seq_len, latent_feature_dim)
+        print(f"[DEBUG] Calculated Encoder Output Shape (Decoder Input): {encoder_output_shape}")
+
         # --- Decoder input (latent) ---
         decoder_input = Input(
             shape=encoder_output_shape,
@@ -118,34 +135,19 @@ class Plugin:
         x = decoder_input
 
         # --- Inverse of AveragePooling1D_2 ---
-        # Upsample the sequence length
         x = UpSampling1D(size=2, name="decoder_upsampling_1")(x)
-        print(f"[DEBUG] Decoder shape after UpSampling_1: {K.int_shape(x)}")
 
         # --- Inverse of feature_lstm_2 ---
-        # Reverses the second LSTM layer of the encoder
         # kernel_regularizer=l2(l2_reg) # Uncomment if using L2 regularization
-        x = Bidirectional(LSTM(lstm_units, return_sequences=True),
-                                        #kernel_regularizer=l2(l2_reg)), # Uncomment if using L2
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True), #kernel_regularizer=l2(l2_reg)),
                         name="decoder_lstm_1")(x)
-        print(f"[DEBUG] Decoder shape after LSTM_1: {K.int_shape(x)}")
 
         # --- Inverse of feature_lstm_1 ---
-        # Reverses the first LSTM layer of the encoder
-        # The output features here should match the features *before* the first LSTM in the encoder,
-        # which was 'num_channels' after the first pooling layer.
-        # However, the subsequent attention layer expects a certain dimension. Let's keep
-        # the BiLSTM output dimension (2*lstm_units) for the attention layer for symmetry,
-        # and project to num_channels *after* attention using Conv1D.
         # kernel_regularizer=l2(l2_reg) # Uncomment if using L2 regularization
-        x = Bidirectional(LSTM(lstm_units, return_sequences=True),
-                                        #kernel_regularizer=l2(l2_reg)), # Uncomment if using L2
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True), #kernel_regularizer=l2(l2_reg)),
                         name="decoder_lstm_2")(x)
-        print(f"[DEBUG] Decoder shape after LSTM_2: {K.int_shape(x)}")
-
 
         # --- Inverse of AveragePooling1D_1 ---
-        # Upsample the sequence length again
         x = UpSampling1D(size=2, name="decoder_upsampling_2")(x)
         print(f"[DEBUG] Decoder shape after UpSampling_2: {K.int_shape(x)}")
 
@@ -156,76 +158,74 @@ class Plugin:
             cropping_needed = final_seq_len_calculated - window_size
             print(f"[DEBUG] Decoder: Final sequence length {final_seq_len_calculated} > {window_size}. Will crop {cropping_needed} elements.")
         elif final_seq_len_calculated is not None and final_seq_len_calculated < window_size:
-            print(f"[WARN] Decoder: Final sequence length {final_seq_len_calculated} < {window_size}. Reconstruction might be shorter. Consider encoder/decoder padding.")
+            print(f"[WARN] Decoder: Final sequence length {final_seq_len_calculated} < {window_size}. Reconstruction might be shorter.")
         else:
             print(f"[DEBUG] Decoder: Final sequence length {final_seq_len_calculated} matches window_size {window_size}.")
 
-
         # --- Inverse of Self-Attention Block 1 ---
-        # Add positional encoding before attention, mirroring the encoder
         last_layer_shape = K.int_shape(x)
         feature_dim_attn = last_layer_shape[-1] # Should be 2 * lstm_units
-        seq_length_attn = last_layer_shape[1]   # Current sequence length (potentially > window_size)
+        seq_length_attn = last_layer_shape[1]   # Current sequence length
 
         # --- Add Positional Encoding ---
-        # Ensure the positional_encoding function is defined and accessible
         try:
-            # Check if positional_encoding function is available and dimensions are valid
             if callable(positional_encoding) and seq_length_attn is not None and feature_dim_attn is not None:
                 pos_enc = positional_encoding(seq_length_attn, feature_dim_attn)
                 print(f"[DEBUG] Decoder: Adding positional encoding for seq_len={seq_length_attn}, dim={feature_dim_attn}")
                 x = Add(name="decoder_add_pos_enc")([x, pos_enc])
             else:
-                print(f"[WARN] Decoder: Positional encoding function not callable or dimensions are None. Skipping. seq_len={seq_length_attn}, feat_dim={feature_dim_attn}")
+                print(f"[WARN] Decoder: Positional encoding function not callable or dimensions are None. Skipping.")
         except NameError:
             print(f"[WARN] Decoder: positional_encoding function not defined. Skipping.")
 
-
         # --- Attention Mechanism ---
-        # Define key dimension for attention based on current feature dimension
         if feature_dim_attn is not None and num_attention_heads > 0:
             attention_key_dim = feature_dim_attn // num_attention_heads
-            print(f"[DEBUG] Decoder Attention Key Dim: {attention_key_dim}")
-
-            # Apply MultiHeadAttention (self-attention on the decoder sequence)
             # kernel_regularizer=l2(l2_reg) # Uncomment if using L2 regularization
             attention_output = MultiHeadAttention(
                 num_heads=num_attention_heads,
                 key_dim=attention_key_dim,
                 #kernel_regularizer=l2(l2_reg), # Uncomment if using L2
                 name="decoder_multihead_attention_1"
-            )(query=x, value=x, key=x) # Self-attention
-            x_res = Add(name="decoder_add_attention_residual")([x, attention_output]) # Residual connection
+            )(query=x, value=x, key=x)
+            x_res = Add(name="decoder_add_attention_residual")([x, attention_output])
             x = LayerNormalization(name="decoder_layernorm_attention")(x_res)
             print(f"[DEBUG] Decoder shape after Attention block: {K.int_shape(x)}")
         else:
-            print(f"[WARN] Decoder: Skipping Attention Block due to invalid feature_dim_attn ({feature_dim_attn}) or num_attention_heads ({num_attention_heads}).")
+            print(f"[WARN] Decoder: Skipping Attention Block due to invalid dimensions.")
+            # If attention is skipped, x remains the output of UpSampling2/PositionalEncoding
 
+        # --- NEW: Final Transformation Layers ---
 
-        # --- Output Layer (Using Conv1D instead of TimeDistributed) ---
-        # Project back to the original number of channels for each time step.
-        # Conv1D with kernel_size=1 applies a dense layer independently to each time step.
-        # Use 'linear' activation for reconstruction, unless input was scaled differently.
+        # Add another BiLSTM layer to process the sequence after attention
+        # Keep return_sequences=True as we need a sequence output
+        # kernel_regularizer=l2(l2_reg) # Uncomment if using L2 regularization
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True), # Using lstm_units again for capacity
+                                        #kernel_regularizer=l2(l2_reg)), # Uncomment if using L2
+                        name="decoder_lstm_final")(x)
+        print(f"[DEBUG] Decoder shape after final LSTM: {K.int_shape(x)}") # Shape: (batch, final_seq_len, 2 * lstm_units)
+
+        # Now, project to the desired number of channels using Conv1D (kernel_size=1)
+        # This acts like a Dense layer applied to each time step without using TimeDistributed
         outputs = Conv1D(
             filters=num_channels,
             kernel_size=1,
-            padding='same', # Keep sequence length the same during this projection
-            activation='linear',
+            padding='same', # Keep sequence length the same
+            activation='linear', # Use 'linear' for reconstruction unless data scaled to specific range (e.g. [0,1] -> 'sigmoid')
             name="decoder_output_projection_conv1d"
         )(x)
-        print(f"[DEBUG] Decoder shape after Conv1D projection: {K.int_shape(outputs)}")
+        print(f"[DEBUG] Decoder shape after Conv1D projection: {K.int_shape(outputs)}") # Shape: (batch, final_seq_len, num_channels)
+
 
         # --- Final Cropping (if needed) ---
         # Crop the sequence if UpSampling resulted in a length > window_size
         if cropping_needed > 0:
-            # Crop equally from the beginning and end if possible, otherwise adjust
             crop_start = cropping_needed // 2
             crop_end = cropping_needed - crop_start
             outputs = Cropping1D(cropping=(crop_start, crop_end), name="decoder_final_cropping")(outputs)
-            print(f"[DEBUG] Decoder shape after Cropping: {K.int_shape(outputs)}")
+            print(f"[DEBUG] Decoder shape after Cropping: {K.int_shape(outputs)}") # Shape: (batch, window_size, num_channels)
 
         # --- Final Output ---
-        # The 'outputs' tensor should now have the shape (batch_size, window_size, num_channels)
         decoder_output = outputs
         print(f"[DEBUG] Final Decoder Output shape: {K.int_shape(decoder_output)}")
 

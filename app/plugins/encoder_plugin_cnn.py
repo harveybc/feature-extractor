@@ -92,7 +92,7 @@ class Plugin:
             padding='same',
             activation='linear',
             #name="conv_merged_features_1",
-            kernel_regularizer=l2(l2_reg)
+            #kernel_regularizer=l2(l2_reg)
         )(inputs)
 
         merged = Conv1D(

@@ -11,7 +11,7 @@ from tensorflow.keras.losses import Huber
 from keras.layers import Add, LayerNormalization, AveragePooling1D, Bidirectional, LSTM
 from tensorflow.keras.layers import MultiHeadAttention
 from tensorflow.keras.losses import Huber
-import tensorflow.keras.backend as K
+from tensorflow.keras import backend as K
 from keras.layers import Input
 import tensorflow as tf
 
@@ -119,6 +119,7 @@ class Plugin:
         pos_enc = positional_encoding(seq_length, feature_dim)
         x = x + pos_enc
 
+        
         # --- Self-Attention Block 1 ---
         num_attention_heads = 2
         # get the last layer shape from the merged tensor

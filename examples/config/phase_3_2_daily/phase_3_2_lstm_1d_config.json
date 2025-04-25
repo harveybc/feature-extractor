@@ -42,7 +42,7 @@
     "optimizer_output_file": "optimizer_output.json",
     "penalty_close_lambda":0.0001, 
     "penalty_far_lambda":0.0001,
-    "threshold_error": 0.5,
+    "threshold_error": 1e3,
     "step_size": 2,
     "save_log": "examples/results/phase_3_2_daily/phase_3_2_lstm_25200_1d_debug_out.json",
     "save_config": "examples/results/phase_3_2_daily/phase_3_2_lstm_25200_1d_config_out.json",

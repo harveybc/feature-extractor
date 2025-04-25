@@ -11,6 +11,15 @@ from keras.callbacks import EarlyStopping
 from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU,Input
 import math
 from tensorflow.keras.layers import ZeroPadding1D
+from keras.layers import Add, LayerNormalization, AveragePooling1D, Bidirectional, LSTM
+from tensorflow.keras.layers import MultiHeadAttention
+import keras.backend as K
+from keras.layers import Input
+import tensorflow as tf
+from tensorflow.keras.losses import Huber
+# TimeDistributed
+from keras.layers import TimeDistributed
+
 
 class Plugin:
     plugin_params = {
@@ -67,8 +76,10 @@ class Plugin:
         window_size =config.get("window_size", 288)
         merged_units = config.get("initial_layer_size", 128)
         branch_units = merged_units//config.get("layer_size_divisor", 2)
+        lstm_units = branch_units//config.get("layer_size_divisor", 2)
         activation = config.get("activation", "tanh")
         l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
+        num_attention_heads = 2
 
         # --- Decoder input (latent) ---
         # latent shape: window_size // 4  by merged_units
@@ -78,42 +89,61 @@ class Plugin:
         )
         x= decoder_input
 
-        
+        # --- Inverse of AveragePooling1D_2 ---
+        # Upsample the sequence length
+        x = UpSampling1D(size=2, name="decoder_upsampling_1")(x)
 
-        # invert 2nd conv (encoder’s 2nd conv mapped to merged_units)
-        # so first deconv should map back to branch_units
-        x = Conv1DTranspose(
-            filters=branch_units,
-            kernel_size=3,
-            strides=2,
-            padding='same',
-            activation=activation,
-            name="deconv_branch_units",
-            #kernel_regularizer=l2(l2_reg)
-        )(x)
+        # --- Inverse of feature_lstm_2 ---
+        # The feature dimension entering this LSTM is encoded_shape[-1]
+        # We want the output dimension to match the input dim of the *next* LSTM (decoder_lstm_2)
+        # which corresponds to the output of the *first* encoder LSTM.
+        # For symmetry, we often keep the dimensions consistent through the LSTMs.
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True, kernel_regularizer=l2(l2_reg)),
+                        name="decoder_lstm_1")(x)
 
-        # invert 1st conv (encoder’s 1st conv mapped to branch_units)
-        # so next deconv maps back to num_channels
-        x = Conv1DTranspose(
-            filters=num_channels,
-            kernel_size=3,
-            strides=2,
-            padding='same',
-            activation='linear',
-            name="deconv_output_channels",
-            #kernel_regularizer=l2(l2_reg)
-        )(x)
+        # --- Inverse of feature_lstm_1 ---
+        # Input dim = 2 * lstm_units. Output dim = 2 * lstm_units (keeping consistent for attention input)
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True, kernel_regularizer=l2(l2_reg)),
+                        name="decoder_lstm_2")(x)
 
-        # if we overshot the exact window_size, crop back
-        if x.shape[1] != window_size:
-            crop = x.shape[1] - window_size
-            x = Cropping1D((0, crop))(x)
+        # --- Inverse of AveragePooling1D_1 ---
+        # Upsample the sequence length again
+        x = UpSampling1D(size=2, name="decoder_upsampling_2")(x)
+        # Note: The sequence length here might not perfectly match window_size
+        # due to 'valid' padding in encoder pooling. Consider using Conv1DTranspose
+        # or adding a Cropping/Padding layer before the output if exact length matching is critical.
 
-        merged = x
+        # --- Inverse of Self-Attention Block 1 ---
+        # Add positional encoding before attention, mirroring the encoder
+        last_layer_shape = K.int_shape(x)
+        feature_dim_attn = last_layer_shape[-1] # Should be 2 * lstm_units
+        seq_length_attn = last_layer_shape[1]   # Current sequence length after upsampling
 
-        # Output batch normalization layer
-        #outputs = BatchNormalization()(x)
-        outputs = merged
+        # If positional_encoding function is available:
+        # pos_enc = positional_encoding(seq_length_attn, feature_dim_attn)
+        # x = x + pos_enc
+        # Placeholder if positional_encoding isn't defined here:
+        print(f"Decoder: Adding positional encoding placeholder for seq_len={seq_length_attn}, dim={feature_dim_attn}")
+        # Assuming positional_encoding is handled elsewhere or skipped in decoder if not needed
+
+        # Define key dimension for attention based on current feature dimension
+        attention_key_dim = feature_dim_attn // num_attention_heads
+        # Apply MultiHeadAttention (self-attention on the decoder sequence)
+        attention_output = MultiHeadAttention(
+            num_heads=num_attention_heads,
+            key_dim=attention_key_dim,
+            kernel_regularizer=l2(l2_reg),
+            name="decoder_multihead_attention_1"
+        )(query=x, value=x, key=x) # Self-attention
+        x_res = Add()([x, attention_output]) # Residual connection
+        x = LayerNormalization()(x_res)
+
+        # --- Output Layer ---
+        # Project back to the original number of channels for each time step
+        # Use 'linear' activation for reconstruction, unless input was scaled differently
+        # This layer ensures the output has the shape (batch, sequence_length_after_upsampling, num_channels)
+        outputs = TimeDistributed(Dense(num_channels, activation='linear', name="output_dense"),
+                                name="decoder_output_projection")(x)
         print(f"[DEBUG] Final Output shape: {outputs.shape}")
 
         # Build the encoder model

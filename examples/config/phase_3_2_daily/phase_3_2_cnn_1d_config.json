@@ -11,7 +11,7 @@
     "loss_plot_file": "examples/results/phase_3_2_daily/phase_3_2_cnn_25200_1d_loss_plot.png",
     "model_plot_file": "examples/results/phase_3_2_daily/phase_3_2_cnn_1d_model_plot.png",
     "uncertainties_file": "examples/results/phase_3_2_daily/phase_3_2_cnn_25200_1d_uncertanties.csv",
-    "predictions_plot_file": "cpredictions_plot.png",
+    "predictions_plot_file": "examples/results/phase_3_2_daily/phase_3_2_cnn_25200_1d_predictions_plot.png",
     "stl_plot_file": "examples/results/phase_3_2_daily/phase_3_2_25200_1d_stl_decomposition_plot.png",
     "wavelet_plot_file": "examples/results/phase_3_2_daily/phase_3_2_25200_1d_wavelet_decomposition_plot.png",
     "tapper_plot_file": "examples/results/phase_3_2_daily/phase_3_2_25200_1d_multi_tapper_decomposition_plot.png",

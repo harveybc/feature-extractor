@@ -13,7 +13,8 @@ import math
 from tensorflow.keras.layers import ZeroPadding1D
 from keras.layers import Add, LayerNormalization, AveragePooling1D, Bidirectional, LSTM
 from tensorflow.keras.layers import MultiHeadAttention
-import keras.backend as K
+from tensorflow.keras import backend as K
+
 from keras.layers import Input
 import tensorflow as tf
 from tensorflow.keras.losses import Huber

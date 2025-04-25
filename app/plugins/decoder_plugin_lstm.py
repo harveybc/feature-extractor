@@ -85,7 +85,7 @@ class Plugin:
         # --- Decoder input (latent) ---
         # latent shape: window_size // 4  by merged_units
         decoder_input = Input(
-            shape=((window_size // 4) -1, branch_units),
+            shape=((window_size // 4) , branch_units),
             name="decoder_input"
         )
         x= decoder_input

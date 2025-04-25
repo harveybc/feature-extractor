@@ -132,7 +132,7 @@ class Plugin:
         attention_output = MultiHeadAttention(
             num_heads=num_attention_heads, # Assumed to be defined
             key_dim=attention_key_dim,     # Assumed to be defined
-            kernel_regularizer=l2(l2_reg),
+            #kernel_regularizer=l2(l2_reg),
             name=f"multihead_attention_1"
         )(query=x, value=x, key=x)
         x = Add()([x, attention_output])
@@ -141,11 +141,11 @@ class Plugin:
         x = AveragePooling1D(pool_size=3, strides=2, padding='same', name=f"average_pooling_1")(x)
 
         # --- End Self-Attention Block ---
-        x = Bidirectional(LSTM(lstm_units, return_sequences=True, kernel_regularizer=l2(l2_reg),
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True, 
                     name=f"feature_lstm_1"))(x)
 
         # --- End Self-Attention Block ---
-        x = Bidirectional(LSTM(lstm_units, return_sequences=True, kernel_regularizer=l2(l2_reg),
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True, 
                     name=f"feature_lstm_2"))(x)
         
         x = AveragePooling1D(pool_size=3, strides=2, padding='same', name=f"average_pooling_2")(x)

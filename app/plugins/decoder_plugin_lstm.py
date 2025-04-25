@@ -22,6 +22,21 @@ from tensorflow.keras.losses import Huber
 from keras.layers import TimeDistributed
 
 
+def get_angles(pos, i, d_model):
+    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+    return pos * angle_rates
+
+def positional_encoding(position, d_model):
+    angle_rads = get_angles(np.arange(position)[:, np.newaxis],
+                            np.arange(d_model)[np.newaxis, :],
+                            d_model)
+    # Apply sin to even indices; cos to odd indices
+    sines = np.sin(angle_rads[:, 0::2])
+    cosines = np.cos(angle_rads[:, 1::2])
+    pos_encoding = np.concatenate([sines, cosines], axis=-1)
+    pos_encoding = pos_encoding[np.newaxis, ...]  # Shape: (1, position, d_model)
+    return tf.cast(pos_encoding, dtype=tf.float32)
+
 class Plugin:
     plugin_params = {
         'intermediate_layers': 3, 
@@ -82,62 +97,88 @@ class Plugin:
         l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
         num_attention_heads = 2
 
+        # Assume the following variables are defined in the outer scope:
+        # window_size, branch_units (should typically be 2*lstm_units if encoder ends with BiLSTM), 
+        # lstm_units, num_attention_heads, l2_reg, num_channels
+        # Also assume the function positional_encoding(seq_length, feature_dim) is defined.
+
         # --- Decoder input (latent) ---
-        # latent shape: window_size // 4  by merged_units
+        # IMPORTANT: Verify that shape=((window_size // 4), branch_units) EXACTLY matches 
+        # the actual output shape (excluding batch dim) of your encoder model. 
+        # The sequence length (window_size // 4) is only accurate if encoder pooling used 
+        # padding='same' or if 'valid' padding resulted in exactly this length.
+        # 'branch_units' must match the feature dimension of the encoder's output.
         decoder_input = Input(
-            shape=((window_size // 4) , branch_units),
+            shape=((window_size // 4) , branch_units), # VERIFY THIS SHAPE!
             name="decoder_input"
         )
-        x= decoder_input
+        x = decoder_input
 
         # --- Inverse of AveragePooling1D_2 ---
         # Upsample the sequence length
         x = UpSampling1D(size=2, name="decoder_upsampling_1")(x)
 
         # --- Inverse of feature_lstm_2 ---
-        # The feature dimension entering this LSTM is encoded_shape[-1]
-        # We want the output dimension to match the input dim of the *next* LSTM (decoder_lstm_2)
-        # which corresponds to the output of the *first* encoder LSTM.
-        # For symmetry, we often keep the dimensions consistent through the LSTMs.
-        x = Bidirectional(LSTM(lstm_units, return_sequences=True),
+        # Added kernel_regularizer back for consistency with typical encoder setup
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True, kernel_regularizer=l2(l2_reg)), # Added regularizer
                         name="decoder_lstm_1")(x)
 
         # --- Inverse of feature_lstm_1 ---
-        # Input dim = 2 * lstm_units. Output dim = 2 * lstm_units (keeping consistent for attention input)
-        x = Bidirectional(LSTM(lstm_units, return_sequences=True),
+        # Added kernel_regularizer back for consistency with typical encoder setup
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True, kernel_regularizer=l2(l2_reg)), # Added regularizer
                         name="decoder_lstm_2")(x)
 
         # --- Inverse of AveragePooling1D_1 ---
         # Upsample the sequence length again
         x = UpSampling1D(size=2, name="decoder_upsampling_2")(x)
-        # Note: The sequence length here might not perfectly match window_size
-        # due to 'valid' padding in encoder pooling. Consider using Conv1DTranspose
-        # or adding a Cropping/Padding layer before the output if exact length matching is critical.
+        # Note: Sequence length after this layer might not be exactly window_size if 
+        # encoder used padding='valid'. If convergence fails, consider using padding='same' 
+        # in encoder's pooling layers or adding a Cropping1D/ZeroPadding1D layer here.
+        current_seq_len = K.int_shape(x)[1]
+        print(f"[DEBUG] Decoder sequence length after UpSampling_2: {current_seq_len}") # Debug print
 
         # --- Inverse of Self-Attention Block 1 ---
         # Add positional encoding before attention, mirroring the encoder
         last_layer_shape = K.int_shape(x)
-        feature_dim_attn = last_layer_shape[-1] # Should be 2 * lstm_units
-        seq_length_attn = last_layer_shape[1]   # Current sequence length after upsampling
+        feature_dim_attn = last_layer_shape[-1] # Should be 2 * lstm_units from BiLSTM output
+        seq_length_attn = last_layer_shape[1]   # Current sequence length
 
-        # If positional_encoding function is available:
-        # pos_enc = positional_encoding(seq_length_attn, feature_dim_attn)
-        # x = x + pos_enc
-        # Placeholder if positional_encoding isn't defined here:
-        print(f"Decoder: Adding positional encoding placeholder for seq_len={seq_length_attn}, dim={feature_dim_attn}")
-        # Assuming positional_encoding is handled elsewhere or skipped in decoder if not needed
+        # --- Add Positional Encoding ---
+        # Ensure the positional_encoding function is defined and accessible
+        # This mirrors the encoder structure where positional encoding is added before Attention
+        try:
+            # Check if positional_encoding function is available and seq_length_attn is not None
+            if callable(positional_encoding) and seq_length_attn is not None:
+                pos_enc = positional_encoding(seq_length_attn, feature_dim_attn)
+                print(f"[DEBUG] Decoder: Adding positional encoding for seq_len={seq_length_attn}, dim={feature_dim_attn}")
+                x = Add(name="decoder_add_pos_enc")([x, pos_enc])
+            else:
+                print(f"[WARN] Decoder: Positional encoding function not callable or seq_length_attn is None. Skipping.")
+        except NameError:
+            print(f"[WARN] Decoder: positional_encoding function not defined. Skipping.")
 
+
+        # --- Attention Mechanism ---
         # Define key dimension for attention based on current feature dimension
-        attention_key_dim = feature_dim_attn // num_attention_heads
-        # Apply MultiHeadAttention (self-attention on the decoder sequence)
-        attention_output = MultiHeadAttention(
-            num_heads=num_attention_heads,
-            key_dim=attention_key_dim,
-            #kernel_regularizer=l2(l2_reg),
-            name="decoder_multihead_attention_1"
-        )(query=x, value=x, key=x) # Self-attention
-        x_res = Add()([x, attention_output]) # Residual connection
-        x = LayerNormalization()(x_res)
+        # Check if feature_dim_attn is not None before division
+        if feature_dim_attn is not None and num_attention_heads > 0:
+            attention_key_dim = feature_dim_attn // num_attention_heads
+            print(f"[DEBUG] Decoder Attention Key Dim: {attention_key_dim}") # Debug print
+
+            # Apply MultiHeadAttention (self-attention on the decoder sequence)
+            # Added kernel_regularizer back for consistency
+            attention_output = MultiHeadAttention(
+                num_heads=num_attention_heads,
+                key_dim=attention_key_dim,
+                kernel_regularizer=l2(l2_reg), # Added regularizer
+                name="decoder_multihead_attention_1"
+            )(query=x, value=x, key=x) # Self-attention
+            x_res = Add(name="decoder_add_attention_residual")([x, attention_output]) # Residual connection
+            x = LayerNormalization(name="decoder_layernorm_attention")(x_res)
+        else:
+            print(f"[WARN] Decoder: Skipping Attention Block due to invalid feature_dim_attn ({feature_dim_attn}) or num_attention_heads ({num_attention_heads}).")
+            # If attention is skipped, x remains the output of UpSampling1D/PositionalEncoding
+
 
         # --- Output Layer ---
         # Project back to the original number of channels for each time step
@@ -145,7 +186,11 @@ class Plugin:
         # This layer ensures the output has the shape (batch, sequence_length_after_upsampling, num_channels)
         outputs = TimeDistributed(Dense(num_channels, activation='linear', name="output_dense"),
                                 name="decoder_output_projection")(x)
-        print(f"[DEBUG] Final Output shape: {outputs.shape}")
+
+        # Final check on the output shape AFTER the model is built might be more reliable
+        print(f"[DEBUG] Decoder: Defined final output layer targeting num_channels={num_channels}.")
+        # Note: The actual output shape depends on the input shape and layer operations. 
+        # Verify model.summary() for the final output shape. E.g., decoder_model.summary()
 
         # Build the encoder model
         self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder")

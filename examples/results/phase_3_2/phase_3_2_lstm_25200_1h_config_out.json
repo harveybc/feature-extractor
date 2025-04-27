@@ -1,5 +1,4 @@
 {
-    "max_steps_train": 6300,
     "window_size": 144,
     "normalize_features": true,
     "stl_window": null,
@@ -41,7 +40,6 @@
     "save_decoder": "examples/results/phase_3_2/phase_3_2_lstm_25200_1h_decoder_model.h5",
     "encoder_plugin": "lstm",
     "decoder_plugin": "lstm",
-    "epochs": 15,
     "strategy_1h_prediction": "examples/results/phase_1/phase_1_lstm_25200_1h_prediction.csv",
     "strategy_1h_uncertainty": "examples/results/phase_1/phase_1_lstm_25200_1h_uncertanties.csv",
     "threshold_error": 1000.0,

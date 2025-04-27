@@ -1,5 +1,5 @@
 {
-    "execution_time": 31266.039895772934,
+    "execution_time": 5017.303230047226,
     "encoder": {
         "input_shape": 144,
         "intermediate_layers": 2
@@ -9,6 +9,6 @@
         "output_shape": 144,
         "intermediate_layers": 2
     },
-    "val_mae": 0.03354611620306969,
-    "train_mae": 0.029435135424137115
+    "val_mae": 0.017829937860369682,
+    "train_mae": 0.016827821731567383
 }

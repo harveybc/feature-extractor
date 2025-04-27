@@ -1,0 +1,60 @@
+{
+    "predicted_horizons": [
+        24,
+        48,
+        72,
+        96,
+        120,
+        144
+    ],
+    "normalize_features": true,
+    "stl_window": null,
+    "stl_trend": null,
+    "stl_plot_file": "examples/results/phase_3_2_daily/phase_3_2_25200_1d_stl_decomposition_plot.png",
+    "wavelet_name": "db4",
+    "wavelet_levels": 2,
+    "wavelet_mode": "symmetric",
+    "wavelet_plot_file": "examples/results/phase_3_2_daily/phase_3_2_25200_1d_wavelet_decomposition_plot.png",
+    "mtm_window_len": 168,
+    "mtm_step": 1,
+    "mtm_time_bandwidth": 5.0,
+    "mtm_num_tapers": null,
+    "mtm_freq_bands": [
+        [
+            0,
+            0.01
+        ],
+        [
+            0.01,
+            0.06
+        ],
+        [
+            0.06,
+            0.2
+        ],
+        [
+            0.2,
+            0.5
+        ]
+    ],
+    "tapper_plot_file": "examples/results/phase_3_2_daily/phase_3_2_25200_1d_multi_tapper_decomposition_plot.png",
+    "tapper_plot_points": 480,
+    "l2_reg": 0.0001,
+    "output_file": "examples/results/phase_3_2_daily/phase_3_2_transformer_25200_1d_prediction.csv",
+    "results_file": "examples/results/phase_3_2_daily/phase_3_2_transformer_25200_1d_results.csv",
+    "loss_plot_file": "examples/results/phase_3_2_daily/phase_3_2_transformer_25200_1d_loss_plot.png",
+    "model_plot_file": "examples/results/phase_3_2_daily/phase_3_2_transformer_1d_model_plot.png",
+    "uncertainties_file": "examples/results/phase_3_2_daily/phase_3_2_transformer_25200_1d_uncertanties.csv",
+    "predictions_plot_file": "examples/results/phase_3_2_daily/phase_3_2_transformer_25200_1d_predictions_plot.png",
+    "save_encoder": "examples/results/phase_3_2_daily/phase_3_2_transformer_25200_1d_encoder_model.h5",
+    "save_decoder": "examples/results/phase_3_2_daily/phase_3_2_transformer_25200_1d_decoder_model.h5",
+    "encoder_plugin": "transformer",
+    "decoder_plugin": "transformer",
+    "threshold_error": 1000.0,
+    "save_log": "examples/results/phase_3_2_daily/phase_3_2_transformer_25200_1d_debug_out.json",
+    "load_config": "examples/config/phase_3_2_daily/phase_3_2_transformer_1d_config.json",
+    "save_config": "examples/results/phase_3_2_daily/phase_3_2_transformer_25200_1d_config_out.json",
+    "mmd_weight": 0.01,
+    "strategy_1d_prediction": "examples/results/phase_1/phase_1_transformer_25200_1d_prediction.csv",
+    "strategy_1d_uncertainty": "examples/results/phase_1/phase_1_transformer_25200_1d_uncertanties.csv"
+}

@@ -104,11 +104,17 @@ class Plugin:
             activation='linear',
             name="deconv_output_channels"
         )(x)
+        # print pre cropping shape
+        print(f"[DEBUG] Pre-cropping shape: {x.shape}")
 
         # If we overshot the exact window_size, crop back
         if x.shape[1] != window_size:
             crop = x.shape[1] - window_size
-            x = Cropping1D((0, crop))(x)
+            if crop > 0:
+                x = Cropping1D((0, crop))(x)
+            else:
+                print(f"[DEBUG] Skipping cropping as crop={crop} is negative.")
+
 
         merged = x
 

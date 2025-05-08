@@ -61,7 +61,7 @@
     "initial_layer_size": 64,
     "layer_size_divisor": 2,
     "learning_rate": 1e-3,
-    "activation": "relu",
+    "activation": "tanh",
     "l2_reg": 1e-4,
     "early_patience": 40,
     "start_from_epoch": 15,

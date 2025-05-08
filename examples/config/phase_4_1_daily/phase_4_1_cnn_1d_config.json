@@ -28,7 +28,7 @@
     "max_steps_val": 6300,
     "iterations": 3,
     "uncertainty_file": "prediction_uncertainties.csv",
-    "use_sliding_window" : false,
+    "use_sliding_window" : true,
     "kl_weight": 1e-6,
     "kl_anneal_epochs": 100,        
     "overfitting_penalty": 0.1,

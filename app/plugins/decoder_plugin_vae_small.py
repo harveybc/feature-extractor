@@ -63,8 +63,6 @@ class Plugin:
         x = decoder_input
 
         # --- Reverse LSTM ---
-        x = Dense(lstm_units, activation=activation, name="dense_lstm_reverse")(x)
-        x = RepeatVector(sequence_length, name="repeat_lstm")(x)  # Reverse the LSTM output to match the time steps
         x = Bidirectional(LSTM(lstm_units, return_sequences=True), name="bidir_lstm_reverse")(x)
 
         # --- Reverse Conv1D Layers ---
@@ -74,26 +72,16 @@ class Plugin:
             strides=2,
             padding='same',
             activation=activation,
-            name="deconv1d_2"
-        )(x)
-
-        x = Conv1DTranspose(
-            filters=branch_units,
-            kernel_size=3,
-            strides=2,
-            padding='same',
-            activation=activation,
             name="deconv1d_1"
         )(x)
 
-        # --- Reverse Original Conv1D Layers ---
         x = Conv1DTranspose(
             filters=merged_units,
             kernel_size=3,
             strides=2,
             padding='same',
             activation=activation,
-            name="deconv_branch_units"
+            name="deconv1d_2"
         )(x)
 
         x = Conv1DTranspose(
@@ -102,7 +90,7 @@ class Plugin:
             strides=2,
             padding='same',
             activation='linear',
-            name="deconv_output_channels"
+            name="deconv1d_3"
         )(x)
         # print pre cropping shape
         print(f"[DEBUG] Pre-cropping shape: {x.shape}")

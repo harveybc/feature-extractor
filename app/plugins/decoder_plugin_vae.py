@@ -44,7 +44,10 @@ class Plugin:
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
-        
+        num_filters = encoder_output_shape[1]
+        sequence_length = 1  
+        print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
+
         window_size = config.get("window_size", 288)
         merged_units = config.get("initial_layer_size", 128)
         branch_units = merged_units // config.get("layer_size_divisor", 2)
@@ -52,13 +55,9 @@ class Plugin:
         activation = config.get("activation", "tanh")
         l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
 
-        sequence_length, num_filters = 1, branch_units
-        print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
-
-
         # --- Decoder input (latent) ---
         decoder_input = Input(
-            shape=(num_filters,),  # Match the bottleneck layer size
+            shape=encoder_output_shape,
             name="decoder_input"
         )
         x = decoder_input

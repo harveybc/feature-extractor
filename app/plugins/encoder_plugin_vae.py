@@ -129,7 +129,7 @@ class Plugin:
 
         # Output batch normalization layer
         #outputs = BatchNormalization()(merged)
-        outputs = merged
+        outputs = lstm_output
         print(f"[DEBUG] Final Output shape: {outputs.shape}")
 
         # Build the encoder model

@@ -56,7 +56,7 @@ class Plugin:
 
         # --- Decoder input (latent) ---
         decoder_input = Input(
-            shape=(interface_size,),  # Match the bottleneck layer size
+            shape=(lstm_units,),  # Match the bottleneck layer size
             name="decoder_input"
         )
         x = decoder_input

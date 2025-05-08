@@ -45,7 +45,7 @@ class Plugin:
         self.params['output_shape'] = output_shape
 
         num_filters = encoder_output_shape[0]
-        sequence_length = 1  
+        sequence_length = 17  
         print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
 
         window_size = config.get("window_size", 288)

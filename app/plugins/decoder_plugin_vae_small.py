@@ -67,6 +67,16 @@ class Plugin:
 
         # --- Reverse Conv1D Layers ---
         x = Conv1DTranspose(
+            filters=lstm_units,
+            kernel_size=3,
+            strides=2,
+            padding='same',
+            activation=activation,
+            name="deconv1d_0"
+        )(x)
+
+        # --- Reverse Conv1D Layers ---
+        x = Conv1DTranspose(
             filters=branch_units,
             kernel_size=3,
             strides=2,

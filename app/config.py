@@ -26,7 +26,7 @@ DEFAULT_VALUES = {
     "preprocessor_plugin": "stl_preprocessor",
     'encoder_plugin': 'cnn',
     'decoder_plugin': 'cnn',
-    'use_sliding_windows': True,
+    'use_sliding_windows': False,
     'quiet_mode': False,
     'force_date': False,
     'headers': True,

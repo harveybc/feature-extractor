@@ -115,7 +115,7 @@ class Plugin:
             strides=2, 
             padding='same',
             activation=activation,
-            name="conv_merged_features_2",
+            name="conv_merged_features_3",
             #kernel_regularizer=l2(l2_reg)
         )(merged)
 

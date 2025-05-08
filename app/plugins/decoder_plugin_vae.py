@@ -77,7 +77,7 @@ class Plugin:
         )(x)
 
         x = Conv1DTranspose(
-            filters=merged_units,
+            filters=branch_units,
             kernel_size=3,
             strides=2,
             padding='same',
@@ -87,7 +87,7 @@ class Plugin:
 
         # --- Reverse Original Conv1D Layers ---
         x = Conv1DTranspose(
-            filters=branch_units,
+            filters=merged_units,
             kernel_size=3,
             strides=2,
             padding='same',

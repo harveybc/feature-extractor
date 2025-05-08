@@ -97,15 +97,6 @@ class Plugin:
         )(x)
 
         x = Conv1DTranspose(
-            filters=merged_units,
-            kernel_size=3,
-            strides=2,
-            padding='same',
-            activation=activation,
-            name="deconv1d_3"
-        )(x)
-
-        x = Conv1DTranspose(
             filters=num_channels,
             kernel_size=3,
             strides=2,

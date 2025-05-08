@@ -93,7 +93,6 @@ class Plugin:
             kernel_size=3,
             strides=2, 
             activation='linear',
-            activation=activation,
             name="conv_merged_features_1",
             #kernel_regularizer=l2(l2_reg)
         )(inputs)

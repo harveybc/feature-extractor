@@ -63,8 +63,19 @@ class Plugin:
         x = decoder_input
 
         # --- Reverse LSTM ---
-        x = Bidirectional(LSTM(lstm_units, return_sequences=True), name="bidir_lstm_reverse")(x)
+        #x = Bidirectional(LSTM(lstm_units, return_sequences=True), name="bidir_lstm_reverse")(x)
 
+        # --- Reverse Conv1D Layers ---
+        x = Conv1DTranspose(
+            filters=lstm_units//2,
+            kernel_size=3,
+            strides=2,
+            padding='same',
+            activation=activation,
+            name="deconv1d_0",
+            #kernel_regularizer=l2(l2_reg)
+        )(x)
+        
         # --- Reverse Conv1D Layers ---
         x = Conv1DTranspose(
             filters=lstm_units,
@@ -72,7 +83,7 @@ class Plugin:
             strides=2,
             padding='same',
             activation=activation,
-            name="deconv1d_0"
+            name="deconv1d_1"
         )(x)
 
         # --- Reverse Conv1D Layers ---
@@ -82,7 +93,7 @@ class Plugin:
             strides=2,
             padding='same',
             activation=activation,
-            name="deconv1d_1"
+            name="deconv1d_2"
         )(x)
 
         x = Conv1DTranspose(
@@ -91,7 +102,7 @@ class Plugin:
             strides=2,
             padding='same',
             activation=activation,
-            name="deconv1d_2"
+            name="deconv1d_3"
         )(x)
 
         x = Conv1DTranspose(
@@ -100,7 +111,7 @@ class Plugin:
             strides=2,
             padding='same',
             activation='linear',
-            name="deconv1d_3"
+            name="deconv1d_4"
         )(x)
         # print pre cropping shape
         print(f"[DEBUG] Pre-cropping shape: {x.shape}")

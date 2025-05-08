@@ -92,10 +92,10 @@ class Plugin:
             filters=merged_units,
             kernel_size=3,
             strides=2, 
-            padding='same',
+            activation='linear',
             activation=activation,
             name="conv_merged_features_1",
-            kernel_regularizer=l2(l2_reg)
+            #kernel_regularizer=l2(l2_reg)
         )(inputs)
         # SHAPE: (batch, window_size, merged_units)
 
@@ -106,25 +106,37 @@ class Plugin:
             padding='same',
             activation=activation,
             name="conv_merged_features_2",
-            kernel_regularizer=l2(l2_reg)
+            #kernel_regularizer=l2(l2_reg)
+        )(merged)
+        
+        merged = Conv1D(
+            filters=lstm_units,
+            kernel_size=3,
+            strides=2, 
+            padding='same',
+            activation=activation,
+            name="conv_merged_features_2",
+            #kernel_regularizer=l2(l2_reg)
         )(merged)
 
         reshaped_for_lstm = Conv1D(
-            filters=lstm_units, 
+            filters=lstm_units//2, 
             kernel_size=3, 
             strides=2, 
-            padding='valid', 
-            kernel_regularizer=l2(l2_reg), 
-            name=f"conv_merged_features_3"
+            padding='same', 
+            #kernel_regularizer=l2(l2_reg), 
+            name=f"conv_merged_features_4"
             )(merged)        # Apply Bidirectional LSTM
+        
         # return_sequences=False gives output shape (batch, 2 * lstm_units)
-        lstm_output = Bidirectional(
-            LSTM(lstm_units, return_sequences=True), name=f"bidir_lstm"
-        )(reshaped_for_lstm)
+        #lstm_output = Bidirectional(
+        #    LSTM(lstm_units, return_sequences=True), name=f"bidir_lstm"
+        #)(reshaped_for_lstm)
+        
 
         # Output batch normalization layer
         #outputs = BatchNormalization()(merged)
-        outputs = lstm_output
+        outputs = reshaped_for_lstm
         print(f"[DEBUG] Final Output shape: {outputs.shape}")
 
         # Build the encoder model

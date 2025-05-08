@@ -44,7 +44,7 @@ class Plugin:
         self.params['interface_size'] = interface_size
         self.params['output_shape'] = output_shape
 
-        sequence_length, num_filters = encoder_output_shape
+        sequence_length, num_filters = 1, encoder_output_shape
         print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
 
         window_size = config.get("window_size", 288)

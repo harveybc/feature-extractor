@@ -17,6 +17,7 @@ setup(
             'cnn=app.plugins.encoder_plugin_cnn:Plugin',
             'cnn_signed=app.plugins.encoder_plugin_cnn_signed:Plugin',  
             'vae=app.plugins.encoder_plugin_vae:Plugin',
+            'vae_small=app.plugins.encoder_plugin_vae_small:Plugin',
         ],
         'feature_extractor.decoders': [
             'default=app.plugins.decoder_plugin_ann:Plugin',
@@ -27,6 +28,7 @@ setup(
             'cnn=app.plugins.decoder_plugin_cnn:Plugin',
             'cnn_signed=app.plugins.decoder_plugin_cnn_signed:Plugin',
             'vae=app.plugins.decoder_plugin_vae:Plugin',
+            'vae_small=app.plugins.decoder_plugin_vae_small:Plugin',
         ]
     },
     install_requires=[

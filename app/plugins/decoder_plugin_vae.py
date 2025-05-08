@@ -11,6 +11,7 @@ from keras.callbacks import EarlyStopping
 from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU,Input
 import math
 from tensorflow.keras.layers import ZeroPadding1D
+from keras.layers import RepeatVector, Bidirectional, LSTM
 
 class Plugin:
     plugin_params = {
@@ -46,65 +47,64 @@ class Plugin:
         sequence_length, num_filters = encoder_output_shape
         print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
 
-        num_intermediate_layers = self.params['intermediate_layers']
-        print(f"[DEBUG] Number of intermediate layers={num_intermediate_layers}")
-        
-        layers = [output_shape*2]
-        current_size = output_shape*2
-        l2_reg = 1e-2
-        for i in range(num_intermediate_layers-1):
-            next_size = current_size // 2
-            if next_size < interface_size:
-                next_size = interface_size
-            layers.append(next_size)
-            current_size = next_size
-
-        layers.append(interface_size)
-
-        layer_sizes = layers[::-1]
-        print(f"[DEBUG] Calculated decoder layer sizes: {layer_sizes}")
-
-        window_size =config.get("window_size", 288)
+        window_size = config.get("window_size", 288)
         merged_units = config.get("initial_layer_size", 128)
-        branch_units = merged_units//config.get("layer_size_divisor", 2)
+        branch_units = merged_units // config.get("layer_size_divisor", 2)
+        lstm_units = branch_units // config.get("layer_size_divisor", 2)  # Match LSTM size in encoder
         activation = config.get("activation", "tanh")
         l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
 
         # --- Decoder input (latent) ---
-        # latent shape: window_size // 4  by merged_units
         decoder_input = Input(
-            shape=(window_size // 4, branch_units),
+            shape=(interface_size,),  # Match the bottleneck layer size
             name="decoder_input"
         )
-        x= decoder_input
+        x = decoder_input
 
-        
+        # --- Reverse LSTM ---
+        x = Dense(lstm_units, activation=activation, name="dense_lstm_reverse")(x)
+        x = RepeatVector(sequence_length, name="repeat_lstm")(x)  # Reverse the LSTM output to match the time steps
+        x = Bidirectional(LSTM(lstm_units, return_sequences=True), name="bidir_lstm_reverse")(x)
 
-        # invert 2nd conv (encoder’s 2nd conv mapped to merged_units)
-        # so first deconv should map back to branch_units
+        # --- Reverse Conv1D Layers ---
         x = Conv1DTranspose(
             filters=branch_units,
             kernel_size=3,
             strides=2,
             padding='same',
             activation=activation,
-            name="deconv_branch_units",
-            #kernel_regularizer=l2(l2_reg)
+            name="deconv1d_2"
         )(x)
 
-        # invert 1st conv (encoder’s 1st conv mapped to branch_units)
-        # so next deconv maps back to num_channels
+        x = Conv1DTranspose(
+            filters=merged_units,
+            kernel_size=3,
+            strides=2,
+            padding='same',
+            activation=activation,
+            name="deconv1d_1"
+        )(x)
+
+        # --- Reverse Original Conv1D Layers ---
+        x = Conv1DTranspose(
+            filters=branch_units,
+            kernel_size=3,
+            strides=2,
+            padding='same',
+            activation=activation,
+            name="deconv_branch_units"
+        )(x)
+
         x = Conv1DTranspose(
             filters=num_channels,
             kernel_size=3,
             strides=2,
             padding='same',
             activation='linear',
-            name="deconv_output_channels",
-            #kernel_regularizer=l2(l2_reg)
+            name="deconv_output_channels"
         )(x)
 
-        # if we overshot the exact window_size, crop back
+        # If we overshot the exact window_size, crop back
         if x.shape[1] != window_size:
             crop = x.shape[1] - window_size
             x = Cropping1D((0, crop))(x)
@@ -112,11 +112,10 @@ class Plugin:
         merged = x
 
         # Output batch normalization layer
-        #outputs = BatchNormalization()(x)
         outputs = merged
         print(f"[DEBUG] Final Output shape: {outputs.shape}")
 
-        # Build the encoder model
+        # Build the decoder model
         self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder")
         
         adam_optimizer = Adam(
@@ -134,9 +133,6 @@ class Plugin:
             run_eagerly=False
         )
         print(f"[DEBUG] Model compiled successfully.")
-
-
-
 
     def train(self, encoded_data, original_data,config):
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))

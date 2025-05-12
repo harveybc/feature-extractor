@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten, Conv1DTranspose,Dropout
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten, Conv1DTranspose,Dropout, Input
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
@@ -15,16 +15,19 @@ from keras.layers import RepeatVector, Bidirectional, LSTM
 
 class Plugin:
     plugin_params = {
-        'intermediate_layers': 3, 
         'learning_rate': 0.00002,
         'dropout_rate': 0.001,
     }
 
-    plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
+    plugin_debug_vars = ['interface_size_config', 'output_shape_config', 'num_channels_config', 'initial_dense_target_shape']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
         self.model = None
+        self.params['interface_size_config'] = None
+        self.params['output_shape_config'] = None
+        self.params['num_channels_config'] = None
+        self.params['initial_dense_target_shape'] = None
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
@@ -38,108 +41,71 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, config=None):
-        print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
+    def configure_size(self, interface_size, output_shape, num_channels, encoder_shape_before_flatten, use_sliding_windows, config=None):
+        print(f"[DEBUG VAE Decoder] Starting decoder configuration with interface_size(latent_dim)={interface_size}, output_shape(window_size)={output_shape}, num_channels={num_channels}, encoder_shape_before_flatten={encoder_shape_before_flatten}")
         
-        self.params['interface_size'] = interface_size
-        self.params['output_shape'] = output_shape
+        self.params['interface_size_config'] = interface_size
+        self.params['output_shape_config'] = output_shape
+        self.params['num_channels_config'] = num_channels
+        self.params['initial_dense_target_shape'] = encoder_shape_before_flatten
 
-        num_filters = encoder_output_shape[0]
-        sequence_length = 18  
-        print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
-
-        window_size = config.get("window_size", 288)
-        merged_units = config.get("initial_layer_size", 128)
+        window_size = output_shape
+        
+        merged_units = config.get("initial_layer_size", 64)
         branch_units = merged_units // config.get("layer_size_divisor", 2)
-        lstm_units = branch_units // config.get("layer_size_divisor", 2)  # Match LSTM size in encoder
-        activation = config.get("activation", "tanh")
-        l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
-
-        # --- Decoder input (latent) ---
-        decoder_input = Input(
-            shape=encoder_output_shape,
-            name="decoder_input"
-        )
-        x = decoder_input
-
-        # --- Reverse LSTM ---
-        #x = Bidirectional(LSTM(lstm_units, return_sequences=True), name="bidir_lstm_reverse")(x)
-
-        # --- Reverse Conv1D Layers ---
-        x = Conv1DTranspose(
-            filters=lstm_units//2,
-            kernel_size=3,
-            strides=2,
-            padding='same',
-            activation=activation,
-            name="deconv1d_0",
-            #kernel_regularizer=l2(l2_reg)
-        )(x)
+        lstm_units = branch_units // config.get("layer_size_divisor", 2) 
         
-        # --- Reverse Conv1D Layers ---
+        activation = config.get("activation", "tanh")
+
+        decoder_z_input = Input(shape=(interface_size,), name="decoder_z_input_vae")
+        
+        dense_units_target = np.prod(encoder_shape_before_flatten)
+        
+        x = Dense(dense_units_target, activation=activation, name="decoder_initial_dense_vae")(decoder_z_input)
+        x = Reshape(encoder_shape_before_flatten, name="decoder_initial_reshape_vae")(x)
+        print(f"[DEBUG VAE Decoder] Shape after initial Dense and Reshape: {x.shape}")
+
         x = Conv1DTranspose(
             filters=lstm_units,
-            kernel_size=3,
-            strides=2,
-            padding='same',
-            activation=activation,
-            name="deconv1d_1"
+            kernel_size=3, strides=2, padding='same', activation=activation, name="deconv1d_0_vae"
         )(x)
-
-        # --- Reverse Conv1D Layers ---
+        print(f"[DEBUG VAE Decoder] Shape after deconv1d_0: {x.shape}")
+        
         x = Conv1DTranspose(
             filters=branch_units,
-            kernel_size=3,
-            strides=2,
-            padding='same',
-            activation=activation,
-            name="deconv1d_2"
+            kernel_size=3, strides=2, padding='same', activation=activation, name="deconv1d_1_vae"
         )(x)
+        print(f"[DEBUG VAE Decoder] Shape after deconv1d_1: {x.shape}")
+
+        x = Conv1DTranspose(
+            filters=merged_units,
+            kernel_size=3, strides=2, padding='same', activation=activation, name="deconv1d_2_vae"
+        )(x)
+        print(f"[DEBUG VAE Decoder] Shape after deconv1d_2: {x.shape}")
 
         x = Conv1DTranspose(
             filters=num_channels,
-            kernel_size=3,
-            strides=2,
-            padding='same',
-            activation='linear',
-            name="deconv1d_4"
+            kernel_size=3, strides=2, padding='same', activation='linear', name="deconv1d_final_vae"
         )(x)
-        # print pre cropping shape
-        print(f"[DEBUG] Pre-cropping shape: {x.shape}")
+        print(f"[DEBUG VAE Decoder] Pre-cropping/padding shape: {x.shape}")
 
-        # If we overshot the exact window_size, crop back
-        if x.shape[1] != window_size:
-            crop = x.shape[1] - window_size
-            if crop > 0:
-                x = Cropping1D((0, crop))(x)
-            else:
-                print(f"[DEBUG] Skipping cropping as crop={crop} is negative.")
-
-
-        merged = x
-
-        # Output batch normalization layer
-        outputs = merged
-        print(f"[DEBUG] Final Output shape: {outputs.shape}")
-
-        # Build the decoder model
-        self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder")
+        current_seq_len = x.shape[1]
+        if current_seq_len is not None and current_seq_len != window_size:
+            if current_seq_len > window_size:
+                crop_amount = current_seq_len - window_size
+                x = Cropping1D((0, crop_amount), name="decoder_cropping_vae")(x)
+                print(f"[DEBUG VAE Decoder] Cropped to: {x.shape}")
+            elif current_seq_len < window_size:
+                padding_amount = window_size - current_seq_len
+                x = ZeroPadding1D(padding=(0, padding_amount), name="decoder_padding_vae")(x)
+                print(f"[DEBUG VAE Decoder] Padded to: {x.shape}")
         
-        adam_optimizer = Adam(
-            learning_rate=self.params['learning_rate'],
-            beta_1=0.9,
-            beta_2=0.999,
-            epsilon=1e-2,
-            amsgrad=False
-        )
+        outputs = x
+        print(f"[DEBUG VAE Decoder] Final Output shape: {outputs.shape}")
 
-        self.model.compile(
-            optimizer=adam_optimizer,
-            loss=Huber(),
-            metrics=['mse', 'mae'],
-            run_eagerly=False
-        )
-        print(f"[DEBUG] Model compiled successfully.")
+        self.model = Model(inputs=decoder_z_input, outputs=outputs, name="vae_decoder")
+        
+        print(f"[DEBUG VAE Decoder] VAE Decoder model built. Not compiled standalone.")
 
     def train(self, encoded_data, original_data,config):
         encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
@@ -147,24 +113,31 @@ class Plugin:
         early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True, verbose=1)
         self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=config.get("batch_size"), verbose=1, callbacks=[early_stopping],validation_split = 0.2)
 
-    def decode(self, encoded_data, use_sliding_windows, original_feature_size):
-        print(f"[decode] Decoding data with shape: {encoded_data.shape}")
-        decoded_data = self.model.predict(encoded_data)
-
-        if not use_sliding_windows:
-            # Reshape to match the original feature size if not using sliding windows
-            decoded_data = decoded_data.reshape((decoded_data.shape[0], original_feature_size))
-            print(f"[decode] Reshaped decoded data to match original feature size: {decoded_data.shape}")
-        else:
-            print(f"[decode] Decoded data shape: {decoded_data.shape}")
-
+    def decode(self, encoded_z_data, use_sliding_windows=None, original_feature_size=None):
+        if not self.model:
+            raise ValueError("Decoder model is not configured or loaded.")
+        print(f"[VAE Decoder decode] Decoding data (z) with shape: {encoded_z_data.shape}")
+        decoded_data = self.model.predict(encoded_z_data)
+        print(f"[VAE Decoder decode] Decoded data raw shape: {decoded_data.shape}")
         return decoded_data
 
     def save(self, file_path):
-        self.model.save(file_path)
+        if self.model:
+            self.model.save(file_path)
+            print(f"VAE Decoder model saved to {file_path}")
+        else:
+            print("VAE Decoder model not available to save.")
 
     def load(self, file_path):
-        self.model = load_model(file_path)
+        self.model = load_model(file_path, compile=False)
+        print(f"VAE Decoder model loaded from {file_path}")
+        try:
+            self.params['interface_size_config'] = self.model.input_shape[-1]
+            self.params['output_shape_config'] = self.model.output_shape[1]
+            self.params['num_channels_config'] = self.model.output_shape[-1]
+            print(f"[DEBUG VAE Decoder Load] Reconstructed interface_size: {self.params['interface_size_config']}, output_shape: {self.params['output_shape_config']}, num_channels: {self.params['num_channels_config']}")
+        except Exception as e:
+            print(f"[WARNING VAE Decoder Load] Could not fully reconstruct config params from loaded model. Error: {e}")
 
     def calculate_mse(self, original_data, reconstructed_data):
         original_data = original_data.reshape((original_data.shape[0], -1))

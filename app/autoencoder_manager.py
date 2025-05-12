@@ -292,6 +292,8 @@ class AutoencoderManager:
                 y_true_f32 = tf.cast(y_true, tf.float32)
                 y_pred_f32 = tf.cast(y_pred, tf.float32)
 
+                # 1. Huber Loss
+                huber_loss_val = Huber(delta=1.0)(y_true_f32, y_pred_f32)
                 # 1. Reconstruction Loss (Huber)
                 huber_loss_tracker.assign(huber_loss_val) # Track for metrics
 

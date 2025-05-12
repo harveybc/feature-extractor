@@ -19,6 +19,11 @@ from keras.layers import Lambda
 
 #define tensorflow global variable mmd_total as a float
 mmd_total = tf.Variable(0.0, dtype=tf.float32, trainable=False)
+# Define new global tf.Variables for additional loss components
+huber_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False) # To track Huber loss component
+skew_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False)
+kurtosis_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False)
+covariance_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False)
 
 # ============================================================================
 # Callback to dynamically adjust mmd_weight so Huber and MMD remain same order
@@ -30,7 +35,9 @@ class MMDWeightAdjustmentCallback(tf.keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         # compute current Huber and MMD contributions
-        huber_val = logs['loss'] - logs.get('mmd_metric', 0.0)
+        # Note: With new losses, 'huber_val' will implicitly include them if not using a separate huber_metric.
+        # If 'huber_metric' is available in logs, it's better to use it.
+        huber_val = logs.get('huber_metric', logs['loss'] - logs.get('mmd_metric', 0.0) - logs.get('skew_metric', 0.0) - logs.get('kurtosis_metric', 0.0) - logs.get('covariance_metric', 0.0))
         mmd_val   = logs.get('mmd_metric', 0.0)
         ratio     = huber_val / (mmd_val + 1e-12)
         # keep ratio roughly in [0.5, 2.0]
@@ -38,7 +45,7 @@ class MMDWeightAdjustmentCallback(tf.keras.callbacks.Callback):
             self.cfg['mmd_weight'] *= 1.1
         elif ratio < 0.5:
             self.cfg['mmd_weight'] *= 0.9
-        print(f"[MMDWeightAdjust] Epoch {epoch+1}: ratio={ratio:.3f}, new mmd_weight={self.cfg['mmd_weight']:.5f}")
+        print(f"[MMDWeightAdjust] Epoch {epoch+1}: huber_val_approx={huber_val:.3f}, mmd_val={mmd_val:.3f}, ratio={ratio:.3f}, new mmd_weight={self.cfg['mmd_weight']:.5f}")
 
 class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
     """Custom ReduceLROnPlateau callback that prints the patience counter."""
@@ -217,48 +224,152 @@ class AutoencoderManager:
             # Compute the Maximum Mean Discrepancy (MMD) between two batches.
             def mmd_loss_term(y_true, y_pred, sigma):
                 # Ensure consistent dtype for MMD computation
-                y_true = tf.cast(y_true, tf.float32)
-                y_pred = tf.cast(y_pred, tf.float32)
+                y_true_casted = tf.cast(y_true, tf.float32) # Use different var names to avoid conflict
+                y_pred_casted = tf.cast(y_pred, tf.float32)
                 # Flatten inputs to ensure they are 2D.
-                y_true = tf.reshape(y_true, [tf.shape(y_true)[0], -1])
-                y_pred = tf.reshape(y_pred, [tf.shape(y_pred)[0], -1])
-                K_xx = gaussian_kernel_matrix(y_true, y_true, sigma)
-                K_yy = gaussian_kernel_matrix(y_pred, y_pred, sigma)
-                K_xy = gaussian_kernel_matrix(y_true, y_pred, sigma)
+                y_true_flat = tf.reshape(y_true_casted, [tf.shape(y_true_casted)[0], -1])
+                y_pred_flat = tf.reshape(y_pred_casted, [tf.shape(y_pred_casted)[0], -1])
+                K_xx = gaussian_kernel_matrix(y_true_flat, y_true_flat, sigma)
+                K_yy = gaussian_kernel_matrix(y_pred_flat, y_pred_flat, sigma)
+                K_xy = gaussian_kernel_matrix(y_true_flat, y_pred_flat, sigma)
                 # Use consistent dtype for statistical computations
                 dtype = K_xx.dtype
-                m = tf.cast(tf.shape(y_true)[0], dtype)
-                n = tf.cast(tf.shape(y_pred)[0], dtype)
+                m = tf.cast(tf.shape(y_true_flat)[0], dtype)
+                n = tf.cast(tf.shape(y_pred_flat)[0], dtype)
                 # Compute the unbiased MMD statistic.
                 mmd = tf.reduce_sum(K_xx) / (m * m) \
                       + tf.reduce_sum(K_yy) / (n * n) \
                       - tf.constant(2.0, dtype=dtype) * tf.reduce_sum(K_xy) / (m * n)
                 return mmd
 
-            # Combined loss: reconstruction (Huber) loss + weighted MMD loss.
+            # Helper function to calculate standardized moment (skewness, kurtosis)
+            def calculate_standardized_moment(data_flat, order):
+                # data_flat is [batch_size, total_dims], float32
+                mu = tf.reduce_mean(data_flat)
+                variance = tf.math.reduce_variance(data_flat)
+                sigma = tf.sqrt(variance + 1e-6) # Add epsilon for stability
+                
+                # Handle cases where sigma is very small (data is nearly constant)
+                # For constant data, standardized moments (order > 2) are often considered 0.
+                if sigma < 1e-5: # Threshold for near-zero sigma
+                    return tf.constant(0.0, dtype=data_flat.dtype)
+                
+                standardized_data = (data_flat - mu) / sigma
+                moment_val = tf.reduce_mean(tf.pow(standardized_data, order))
+                return moment_val
+
+            # Helper function to calculate covariance matrix and its loss
+            def covariance_loss_calc(y_true_flat, y_pred_flat):
+                # y_true_flat, y_pred_flat are [batch_size, D], float32
+                def calculate_cov_mat(tensor): # tensor is [batch_size, D]
+                    num_samples = tf.cast(tf.shape(tensor)[0], tensor.dtype)
+                    # Ensure there's more than one sample to calculate covariance
+                    if num_samples <= 1:
+                        # Return a zero matrix of appropriate shape if not enough samples
+                        return tf.zeros((tf.shape(tensor)[1], tf.shape(tensor)[1]), dtype=tensor.dtype)
+                    
+                    mean_vec = tf.reduce_mean(tensor, axis=0, keepdims=True) # [1, D]
+                    centered_tensor = tensor - mean_vec # [batch_size, D]
+                    # Covariance = (X_c^T * X_c) / (N-1)
+                    cov_matrix = tf.matmul(centered_tensor, centered_tensor, transpose_a=True) / (num_samples - 1.0)
+                    return cov_matrix
+
+                cov_true = calculate_cov_mat(y_true_flat)
+                cov_pred = calculate_cov_mat(y_pred_flat)
+                
+                # Frobenius norm of the difference
+                cov_loss = tf.norm(cov_true - cov_pred, ord='fro', axis=(-2,-1))
+                return cov_loss
+
+            # Combined loss: reconstruction (Huber) loss + weighted MMD loss + new statistical losses.
             def combined_loss(y_true, y_pred):
-                huber_loss = tf.keras.losses.Huber(delta=1.0)(y_true, y_pred)
-                sigma = config.get('mmd_sigma', 1.0)  # Configure kernel width if needed.
-                stat_weight = config.get('mmd_weight', 1.0)
-                mmd = mmd_loss_term(y_true, y_pred, sigma)
-                # save the mmd value as the mmd_total global tensorflow variable alreadyy derfined at the start of the program
-                total_mmd = stat_weight * mmd
-                mmd_total.assign(total_mmd) 
-                return huber_loss + total_mmd
+                # Ensure inputs are float32 for calculations
+                y_true_f32 = tf.cast(y_true, tf.float32)
+                y_pred_f32 = tf.cast(y_pred, tf.float32)
 
-            # Optional: Define a metric to monitor the MMD term during training.
+                # 1. Reconstruction Loss (Huber)
+                huber_loss_val = tf.keras.losses.Huber(delta=1.0)(y_true_f32, y_pred_f32)
+                huber_loss_tracker.assign(huber_loss_val) # Track for metrics
+
+                # Prepare flattened versions for MMD, moments, and covariance
+                y_true_flat_f32 = tf.reshape(y_true_f32, [tf.shape(y_true_f32)[0], -1])
+                y_pred_flat_f32 = tf.reshape(y_pred_f32, [tf.shape(y_pred_f32)[0], -1])
+
+                # 2. MMD Loss
+                sigma_mmd = config.get('mmd_sigma', 1.0)
+                mmd_weight = config.get('mmd_weight', 1.0)
+                mmd_val = mmd_loss_term(y_true_flat_f32, y_pred_flat_f32, sigma_mmd) # mmd_loss_term uses its own casting
+                weighted_mmd_loss = mmd_weight * mmd_val
+                mmd_total.assign(weighted_mmd_loss) # mmd_total tracks the weighted MMD
+
+                total_loss = huber_loss_val + weighted_mmd_loss
+                
+                # 3. Skewness Loss
+                skew_loss_weight = config.get('skew_loss_weight', 0.0) # Default to 0 if not set
+                if skew_loss_weight > 0:
+                    skew_true = calculate_standardized_moment(y_true_flat_f32, 3)
+                    skew_pred = calculate_standardized_moment(y_pred_flat_f32, 3)
+                    skew_loss_unweighted = tf.abs(skew_true - skew_pred)
+                    weighted_skew_loss = skew_loss_weight * skew_loss_unweighted
+                    skew_loss_tracker.assign(weighted_skew_loss)
+                    total_loss += weighted_skew_loss
+                else:
+                    skew_loss_tracker.assign(0.0)
+
+                # 4. Kurtosis Loss
+                kurtosis_loss_weight = config.get('kurtosis_loss_weight', 0.0) # Default to 0
+                if kurtosis_loss_weight > 0:
+                    # We want to match the 4th standardized moment, not Fisher's kurtosis (which is moment4 - 3)
+                    kurt_true = calculate_standardized_moment(y_true_flat_f32, 4)
+                    kurt_pred = calculate_standardized_moment(y_pred_flat_f32, 4)
+                    kurtosis_loss_unweighted = tf.abs(kurt_true - kurt_pred)
+                    weighted_kurtosis_loss = kurtosis_loss_weight * kurtosis_loss_unweighted
+                    kurtosis_loss_tracker.assign(weighted_kurtosis_loss)
+                    total_loss += weighted_kurtosis_loss
+                else:
+                    kurtosis_loss_tracker.assign(0.0)
+
+                # 5. Covariance Matrix Loss
+                covariance_loss_weight = config.get('covariance_loss_weight', 0.0) # Default to 0
+                if covariance_loss_weight > 0:
+                    # Ensure there are enough samples and features for covariance calculation
+                    if tf.shape(y_true_flat_f32)[0] > 1 and tf.shape(y_true_flat_f32)[1] > 0:
+                        cov_loss_unweighted = covariance_loss_calc(y_true_flat_f32, y_pred_flat_f32)
+                        weighted_covariance_loss = covariance_loss_weight * cov_loss_unweighted
+                        covariance_loss_tracker.assign(weighted_covariance_loss)
+                        total_loss += weighted_covariance_loss
+                    else:
+                        covariance_loss_tracker.assign(0.0) # Not enough data for cov calc
+                else:
+                    covariance_loss_tracker.assign(0.0)
+                
+                return total_loss
+
+            # Optional: Define metrics to monitor individual loss components during training.
             def mmd_metric(y_true, y_pred):
-                #sigma = config.get('mmd_sigma', 1.0)
-                #return mmd_loss_term(y_true, y_pred, sigma)
-                return mmd_total  # Return the MMD value scaled by the weight
-            # --- End Updated Loss Definition using MMD ---
+                return mmd_total # Returns the weighted MMD value tracked globally
+            
+            def huber_metric(y_true, y_pred):
+                return huber_loss_tracker
 
-            # Compile autoencoder with the combined loss and additional metric.
+            def skew_metric(y_true, y_pred):
+                return skew_loss_tracker
+
+            def kurtosis_metric(y_true, y_pred):
+                return kurtosis_loss_tracker
+
+            def covariance_metric(y_true, y_pred):
+                return covariance_loss_tracker
+            # --- End Updated Loss Definition ---
+
+            # Compile autoencoder with the combined loss and additional metrics.
+            metrics_list = ['mae', mmd_metric, huber_metric, skew_metric, kurtosis_metric, covariance_metric]
+            
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss=combined_loss,
-                metrics=['mae', mmd_metric],
-                run_eagerly=True
+                metrics=metrics_list,
+                run_eagerly=True # Useful for debugging complex losses
             )
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
             self.autoencoder_model.summary()
@@ -320,9 +431,13 @@ class AutoencoderManager:
                 ),
                 LambdaCallback(on_epoch_end=lambda epoch, logs:
                             print(f"Epoch {epoch+1}: LR={K.get_value(self.model.optimizer.learning_rate):.6f}"))
-                #MMDWeightAdjustmentCallback(config)
+                #MMDWeightAdjustmentCallback(config) # You might want to re-enable and test this.
                 # Removed: ClearMemoryCallback(), # <<< REMOVED THIS LINE
             ]
+            if config.get('use_mmd_weight_adjustment', False): # Add a config to control this callback
+                callbacks.append(MMDWeightAdjustmentCallback(config))
+
+
             # Start training with early stopping
             history = self.autoencoder_model.fit(
                 data,
@@ -353,13 +468,13 @@ class AutoencoderManager:
                 for col in range(data.shape[-1]):
                     column_data = data[:, :, col].flatten()  # Flatten the column data
                     min_val, max_val = column_data.min(), column_data.max()
-                    normalized_column = (column_data - min_val) / (max_val - min_val)  # Min-max normalization
+                    normalized_column = (column_data - min_val) / (max_val - min_val + 1e-7)  # Min-max normalization, add epsilon
                     normalized_columns.append(normalized_column)
             elif len(data.shape) == 2:  # Row-by-row data
                 for col in range(data.shape[1]):
                     column_data = data[:, col]  # No need to flatten, already 1D
                     min_val, max_val = column_data.min(), column_data.max()
-                    normalized_column = (column_data - min_val) / (max_val - min_val)  # Min-max normalization
+                    normalized_column = (column_data - min_val) / (max_val - min_val + 1e-7)  # Min-max normalization, add epsilon
                     normalized_columns.append(normalized_column)
             else:
                 raise ValueError("[calculate_dataset_information] Unsupported data shape for processing.")
@@ -374,7 +489,7 @@ class AutoencoderManager:
             mean_val = tf.reduce_mean(concatenated_data_tf)
             std_val = tf.math.reduce_std(concatenated_data_tf)
             snr = tf.cond(
-                tf.greater(std_val, 0),
+                tf.greater(std_val, 1e-7), # Check against epsilon
                 lambda: (mean_val / std_val) ** 2,
                 lambda: tf.constant(0.0, dtype=tf.float32)
             )
@@ -394,28 +509,28 @@ class AutoencoderManager:
             if sampling_period_seconds:
                 sampling_frequency = tf.constant(1 / sampling_period_seconds, dtype=tf.float32)
             else:
-                sampling_frequency = tf.constant(0.0, dtype=tf.float32)
+                sampling_frequency = tf.constant(0.0, dtype=tf.float32) # Or handle as error/default
 
             # Calculate Shannon-Hartley channel capacity and total useful information
             channel_capacity = tf.cond(
                 tf.math.logical_and(tf.greater(snr, 0), tf.greater(sampling_frequency, 0)),
-                lambda: sampling_frequency * tf.math.log(1 + snr) / tf.math.log(2.0),
+                lambda: sampling_frequency * tf.math.log(1 + snr) / tf.math.log(2.0), # log base 2
                 lambda: tf.constant(0.0, dtype=tf.float32)
             )
-            total_information_bits = channel_capacity * num_samples * sampling_period_seconds
+            total_information_bits = channel_capacity * num_samples * sampling_period_seconds # This seems off, num_samples is total points, not duration
 
             # Calculate entropy using TensorFlow histogram binning
             bins = 1000  # Increased bin count for better precision
-            histogram = tf.histogram_fixed_width(concatenated_data_tf, [0.0, 1.0], nbins=bins)
+            histogram = tf.histogram_fixed_width(concatenated_data_tf, [0.0, 1.0], nbins=bins) # Assumes data is normalized [0,1]
             histogram = tf.cast(histogram, tf.float32)
-            probabilities = histogram / tf.reduce_sum(histogram)
-            entropy = -tf.reduce_sum(probabilities * tf.math.log(probabilities + 1e-10) / tf.math.log(2.0))  # Avoid log(0)
+            probabilities = histogram / (tf.reduce_sum(histogram) + 1e-7) # Add epsilon
+            entropy = -tf.reduce_sum(probabilities * tf.math.log(probabilities + 1e-10) / tf.math.log(2.0))  # Avoid log(0), log base 2
 
             # Log calculated information
             print(f"[calculate_dataset_information] Calculated SNR: {snr.numpy()}")
             print(f"[calculate_dataset_information] Sampling frequency: {sampling_frequency.numpy()} Hz")
             print(f"[calculate_dataset_information] Channel capacity: {channel_capacity.numpy()} bits/second")
-            print(f"[calculate_dataset_information] Total useful information: {total_information_bits.numpy()} bits")
+            #print(f"[calculate_dataset_information] Total useful information: {total_information_bits.numpy()} bits") # Re-evaluate this metric's formula if needed
             print(f"[calculate_dataset_information] Entropy: {entropy.numpy()} bits")
         except Exception as e:
             print(f"[calculate_dataset_information] Exception occurred: {e}")
@@ -439,15 +554,29 @@ class AutoencoderManager:
 
         # Reshape data for Conv1D compatibility if sliding windows are not used
         if not config.get('use_sliding_windows', True) and len(data.shape) == 2:
-            data = np.expand_dims(data, axis=-1)
-            print(f"[evaluate] Reshaped {dataset_name} data for Conv1D compatibility: {data.shape}")
+            data_eval = np.expand_dims(data, axis=-1)
+            print(f"[evaluate] Reshaped {dataset_name} data for Conv1D compatibility: {data_eval.shape}")
+        else:
+            data_eval = data
 
         # Evaluate the autoencoder
-        results = self.autoencoder_model.evaluate(data, data, verbose=1)
-        mse, mae = results[0], results[1]  # Retrieve MSE (loss) and MAE
+        # The order of results depends on model.compile(metrics=...)
+        # loss is always first. Then metrics in the order provided.
+        # metrics_list = ['mae', mmd_metric, huber_metric, skew_metric, kurtosis_metric, covariance_metric]
+        results = self.autoencoder_model.evaluate(data_eval, data_eval, verbose=1)
+        
+        loss_val = results[0]
+        mae_val = results[1] # Assuming 'mae' is the first in metrics_list
+        # You can extract other metrics based on their order in metrics_list if needed
+        # mmd_metric_val = results[2] 
+        # huber_metric_val = results[3]
+        # ... and so on.
 
-        print(f"[evaluate] {dataset_name} Evaluation results - MSE: {mse}, MAE: {mae}")
-        return mse, mae
+        print(f"[evaluate] {dataset_name} Evaluation results - Loss: {loss_val}, MAE: {mae_val}")
+        # For consistency with previous return, if MSE was expected as loss:
+        # If Huber is the main reconstruction loss, loss_val is effectively a weighted sum.
+        # The 'huber_metric' would give the unweighted Huber component.
+        return loss_val, mae_val # Returning total loss and MAE.
 
 
 
@@ -459,29 +588,41 @@ class AutoencoderManager:
 
         # Determine if sliding windows are used
         use_sliding_windows = config.get('use_sliding_windows', True)
+        data_to_encode = data # Use a new variable to avoid modifying input `data` if it's passed around
 
         # Reshape data for sliding windows or row-by-row processing
         if use_sliding_windows:
-            if config['window_size'] > data.shape[1]:
-                raise ValueError("[encode_data] window_size cannot be greater than the number of features in the data.")
-            num_channels = data.shape[1] // config['window_size']
-            if num_channels <= 0:
+            if 'window_size' not in config:
+                 raise ValueError("[encode_data] 'window_size' must be in config if use_sliding_windows is True.")
+            window_size = config['window_size']
+            if window_size > data_to_encode.shape[1]: # Assuming data_to_encode is (samples, features_flat)
+                raise ValueError(f"[encode_data] window_size ({window_size}) cannot be greater than the number of features ({data_to_encode.shape[1]}) in the data.")
+            
+            # This part assumes data is already (samples, total_features) and needs to be reshaped into (samples, window_size, num_channels)
+            # This logic might need adjustment based on how data is fed initially.
+            # If data is (samples, features) and features = window_size * num_channels
+            if data_to_encode.shape[1] % window_size != 0:
+                raise ValueError(f"[encode_data] data.shape[1] ({data_to_encode.shape[1]}) must be divisible by window_size ({window_size}) for sliding windows.")
+            num_channels_calculated = data_to_encode.shape[1] // window_size
+            if num_channels_calculated <= 0:
                 raise ValueError("[encode_data] Invalid num_channels calculated for sliding window data.")
-            if data.shape[1] % config['window_size'] != 0:
-                raise ValueError("[encode_data] data.shape[1] must be divisible by window_size for sliding windows.")
-            data = data.reshape((data.shape[0], config['window_size'], num_channels))
+            
+            data_to_encode = data_to_encode.reshape((data_to_encode.shape[0], window_size, num_channels_calculated))
         else:
-            # For row-by-row data, add a channel dimension
-            num_channels = 1
-            data = np.expand_dims(data, axis=-1)
+            # For row-by-row data, add a channel dimension if it's 2D
+            if len(data_to_encode.shape) == 2:
+                data_to_encode = np.expand_dims(data_to_encode, axis=-1)
+            # num_channels = 1 (implicitly, or data_to_encode.shape[-1])
 
-        print(f"[encode_data] Reshaped data shape for encoding: {data.shape}")
+        print(f"[encode_data] Reshaped data shape for encoding: {data_to_encode.shape}")
 
         # Perform encoding
         try:
-            encoded_data = self.encoder_model.predict(data)
-            print(f"[encode_data] Encoded data shape: {encoded_data.shape}")
-            return encoded_data
+            # Encoder model expects input that matches its Input layer shape
+            encoded_data_parts = self.encoder_model.predict(data_to_encode)
+            # For VAE, encoder_model outputs [z_mean, z_log_var]
+            print(f"[encode_data] Encoded data parts (z_mean, z_log_var). z_mean shape: {encoded_data_parts[0].shape}, z_log_var shape: {encoded_data_parts[1].shape}")
+            return encoded_data_parts # Return both parts
         except Exception as e:
             print(f"[encode_data] Exception occurred during encoding: {e}")
             raise ValueError("[encode_data] Failed to encode data. Please check model compatibility and data shape.")
@@ -491,15 +632,34 @@ class AutoencoderManager:
 
    
     def decode_data(self, encoded_data, config):
-        print(f"[decode_data] Decoding data with shape: {encoded_data.shape}")
+        # For VAE, encoded_data is typically z_mean or sampled z.
+        # The decoder_model expects the sampled z.
+        print(f"[decode_data] Decoding data with shape: {encoded_data.shape}") # encoded_data here is z
         decoded_data = self.decoder_model.predict(encoded_data)
 
-        if not config['use_sliding_windows']:
-            # Reshape decoded data for row-by-row processing
-            decoded_data = decoded_data.reshape((decoded_data.shape[0], config['original_feature_size']))
-            print(f"[decode_data] Reshaped decoded data to match original feature size: {decoded_data.shape}")
-        else:
-            print(f"[decode_data] Decoded data shape: {decoded_data.shape}")
+        # Reshaping output if not using sliding windows (to match original flat feature vector)
+        # This part depends on how the original data was structured and how the decoder output is shaped.
+        # The decoder is configured to output (batch, window_size, num_channels).
+        if not config.get('use_sliding_windows', True):
+            # If original was (batch, features_flat), and decoder outputs (batch, features_flat, 1)
+            # or (batch, some_seq_len, some_channels) that needs to be reshaped back.
+            # This requires knowing the 'original_feature_size' if it was initially flat.
+            # The decoder output shape is (batch, output_shape_from_config, num_channels_from_config)
+            # If original was (batch, N_features) and decoder outputs (batch, N_features, 1), then reshape.
+            if 'original_feature_size' in config and decoded_data.shape[1] * decoded_data.shape[2] == config['original_feature_size']:
+                 decoded_data = decoded_data.reshape((decoded_data.shape[0], config['original_feature_size']))
+                 print(f"[decode_data] Reshaped decoded data to match original feature size: {decoded_data.shape}")
+            elif decoded_data.shape[-1] == 1 and len(decoded_data.shape) ==3 : # (batch, features, 1) -> (batch, features)
+                 decoded_data = np.squeeze(decoded_data, axis=-1)
+                 print(f"[decode_data] Squeezed decoded data: {decoded_data.shape}")
+            # else, the shape might be as intended or requires more specific handling.
+        else: # Using sliding windows
+            # The output is (batch, window_size, num_channels).
+            # If it needs to be flattened back to (batch, window_size * num_channels) for comparison:
+            # decoded_data = decoded_data.reshape((decoded_data.shape[0], -1))
+            # print(f"[decode_data] Flattened decoded data for sliding window output: {decoded_data.shape}")
+            print(f"[decode_data] Decoded data shape (sliding window): {decoded_data.shape}")
+
 
         return decoded_data
 
@@ -509,42 +669,64 @@ class AutoencoderManager:
 
 
     def save_encoder(self, file_path):
-        self.encoder_model.save(file_path)
-        print(f"[save_encoder] Encoder model saved to {file_path}")
+        if self.encoder_model:
+            self.encoder_model.save(file_path)
+            print(f"[save_encoder] Encoder model saved to {file_path}")
+        else:
+            print("[save_encoder] Encoder model not available to save.")
+
 
     def save_decoder(self, file_path):
-        self.decoder_model.save(file_path)
-        print(f"[save_decoder] Decoder model saved to {file_path}")
+        if self.decoder_model:
+            self.decoder_model.save(file_path)
+            print(f"[save_decoder] Decoder model saved to {file_path}")
+        else:
+            print("[save_decoder] Decoder model not available to save.")
+
 
     def load_encoder(self, file_path):
-        self.encoder_model = load_model(file_path)
+        # For VAE encoder, compile=False is usually fine as it's part of the larger model or used for predict.
+        self.encoder_model = load_model(file_path, compile=False)
         print(f"[load_encoder] Encoder model loaded from {file_path}")
+        # Attempt to reconstruct shape_before_flatten_for_decoder if possible (already in plugin)
+        if hasattr(self.encoder_plugin, 'load'): # if encoder plugin has its own load method
+            self.encoder_plugin.load(file_path) # let plugin handle its internal state
+        else: # Fallback for generic load
+            try:
+                # This assumes specific layer names, which might not be robust.
+                # The encoder plugin should ideally handle restoring its state.
+                conv_layer = self.encoder_model.get_layer("conv_output_before_flatten") # Example name
+                self.encoder_plugin.shape_before_flatten_for_decoder = conv_layer.output_shape[1:]
+            except ValueError:
+                print("[load_encoder] Warning: Could not auto-detect 'shape_before_flatten_for_decoder' from loaded encoder. Ensure it's set if decoder configuration depends on it.")
+
 
     def load_decoder(self, file_path):
-        self.decoder_model = load_model(file_path)
+        self.decoder_model = load_model(file_path, compile=False)
         print(f"[load_decoder] Decoder model loaded from {file_path}")
+        if hasattr(self.decoder_plugin, 'load'):
+            self.decoder_plugin.load(file_path)
 
-    def calculate_mse(self, original_data, reconstructed_data, config):
+
+    def calculate_mse(self, original_data, reconstructed_data, config=None): # Added config for consistency
         print(f"[calculate_mse] Original data shape: {original_data.shape}")
         print(f"[calculate_mse] Reconstructed data shape: {reconstructed_data.shape}")
 
-        use_sliding_windows = config.get('use_sliding_windows', True)
-
-        # Handle sliding windows: Aggregate reconstructed data if necessary
-        if use_sliding_windows:
-            window_size = config['window_size']
-            num_channels = original_data.shape[1] // window_size
-
-            # Reshape reconstructed data to match original sliding window format
-            if reconstructed_data.shape != original_data.shape:
-                print("[calculate_mse] Adjusting reconstructed data shape for sliding window comparison...")
-                reconstructed_data = reconstructed_data.reshape(
-                    (original_data.shape[0], original_data.shape[1])
-                )
-
-        # Ensure the data shapes match after adjustments
+        # Ensure the data shapes match. This might require reshaping reconstructed_data
+        # similar to how it's handled in decode_data or based on use_sliding_windows.
+        # For a generic MSE, they must be broadcastable or identical.
+        # Assuming original_data is the ground truth shape.
         if original_data.shape != reconstructed_data.shape:
-            raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}")
+            try:
+                # Attempt a simple reshape if total elements match
+                if np.prod(original_data.shape) == np.prod(reconstructed_data.shape):
+                    reconstructed_data = reconstructed_data.reshape(original_data.shape)
+                    print(f"[calculate_mse] Reshaped reconstructed data to: {reconstructed_data.shape}")
+                else:
+                    raise ValueError(f"Shape mismatch and element count mismatch: original {original_data.shape} vs reconstructed {reconstructed_data.shape}")
+            except Exception as e:
+                 raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}. Error: {e}")
+
 
         # Calculate MSE
         mse = np.mean(np.square(original_data - reconstructed_data))
@@ -552,7 +734,7 @@ class AutoencoderManager:
         return mse
 
 
-    def calculate_mae(self, original_data, reconstructed_data, config):
+    def calculate_mae(self, original_data, reconstructed_data, config=None): # Added config
         """
         Calculate the Mean Absolute Error (MAE) between original and reconstructed data.
         """
@@ -561,29 +743,22 @@ class AutoencoderManager:
 
         # Ensure the data shapes match
         if original_data.shape != reconstructed_data.shape:
-            raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}")
+            try:
+                if np.prod(original_data.shape) == np.prod(reconstructed_data.shape):
+                    reconstructed_data = reconstructed_data.reshape(original_data.shape)
+                    print(f"[calculate_mae] Reshaped reconstructed data to: {reconstructed_data.shape}")
+                else:
+                    raise ValueError(f"Shape mismatch and element count mismatch: original {original_data.shape} vs reconstructed {reconstructed_data.shape}")
+            except Exception as e:
+                raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}. Error: {e}")
 
         # Calculate MAE consistently
-        mae = tf.reduce_mean(tf.abs(original_data - reconstructed_data)).numpy()
+        mae = tf.reduce_mean(tf.abs(tf.cast(original_data, tf.float32) - tf.cast(reconstructed_data, tf.float32))).numpy()
         print(f"[calculate_mae] Calculated MAE: {mae}")
         return mae
 
 
-    def calculate_mse(self, original_data, reconstructed_data, config):
-        """
-        Calculate the Mean Squared Error (MSE) between original and reconstructed data.
-        """
-        print(f"[calculate_mse] Original data shape: {original_data.shape}")
-        print(f"[calculate_mse] Reconstructed data shape: {reconstructed_data.shape}")
-
-        # Ensure the data shapes match
-        if original_data.shape != reconstructed_data.shape:
-            raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}")
-
-        # Calculate MSE consistently
-        mse = tf.reduce_mean(tf.square(original_data - reconstructed_data)).numpy()
-        print(f"[calculate_mse] Calculated MSE: {mse}")
-        return mse
+    # Removed duplicate calculate_mse method. The one above is kept.
 
 
 

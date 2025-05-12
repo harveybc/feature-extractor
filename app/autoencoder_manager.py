@@ -117,13 +117,13 @@ def compute_mmd(x, y, sigma=1.0, sample_size=32):
     return tf.reduce_mean(K_xx) + tf.reduce_mean(K_yy) - 2 * tf.reduce_mean(K_xy)
 
 
-class Sampling(keras.layers.Layer): # Changed to keras.layers.Layer
+class Sampling(keras.layers.Layer): # Ensure this is tf.keras.layers.Layer
     """Uses (z_mean, z_log_var) to sample z, the vector encoding a digit."""
     def call(self, inputs):
         z_mean, z_log_var = inputs
         batch = tf.shape(z_mean)[0]
         dim = tf.shape(z_mean)[1]
-        epsilon = K.random_normal(shape=(batch, dim))
+        epsilon = K.random_normal(shape=(batch, dim)) # K should be tf.keras.backend
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
     
     def get_config(self):
@@ -131,12 +131,13 @@ class Sampling(keras.layers.Layer): # Changed to keras.layers.Layer
         return config
 
 # Custom VAE Model
-class VAE(keras.Model):
+class VAE(keras.Model): # Ensure this is tf.keras.Model
     def __init__(self, encoder, decoder, kl_weight=1.0, **kwargs):
         super().__init__(**kwargs)
         self.encoder = encoder
         self.decoder = decoder
         self.kl_weight = kl_weight
+        self.sampling_layer = Sampling() # Instantiate Sampling layer here
         self.total_loss_tracker = keras.metrics.Mean(name="total_loss")
         self.reconstruction_loss_tracker = keras.metrics.Mean(name="reconstruction_loss")
         self.kl_loss_tracker = keras.metrics.Mean(name="kl_loss")
@@ -151,32 +152,26 @@ class VAE(keras.Model):
 
     def call(self, inputs): # Defines the forward pass for inference
         z_mean, z_log_var = self.encoder(inputs)
-        _z_mean, _z_log_var = self.encoder(inputs)
-        _z = Sampling()([_z_mean, _z_log_var]) # Apply sampling
-        reconstruction = self.decoder(_z)
+        # Use the instance of Sampling layer
+        z_sampled = self.sampling_layer([z_mean, z_log_var]) 
+        reconstruction = self.decoder(z_sampled)
         return reconstruction
-
 
     def train_step(self, data):
         if isinstance(data, tuple):
-            x = data[0] # Assuming data is (x, y) or just x
+            x = data[0] 
         else:
             x = data
 
         with tf.GradientTape() as tape:
             z_mean, z_log_var = self.encoder(x)
-            batch = tf.shape(z_mean)[0]
-            dim = tf.shape(z_mean)[1]
-            epsilon = K.random_normal(shape=(batch, dim))
-            z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
+            # Use the instance of Sampling layer for consistency
+            z = self.sampling_layer([z_mean, z_log_var])
             
-            reconstruction = self.decoder(z) # Decoder takes the sampled z
+            reconstruction = self.decoder(z)
 
-            # Reconstruction loss (e.g., Huber)
-            # self.compiled_loss is the one provided in compile() method (e.g. Huber)
             reconstruction_loss = self.compiled_loss(x, reconstruction, regularization_losses=self.losses)
             
-            # KL divergence
             kl_loss = -0.5 * tf.reduce_sum(
                 1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=-1
             )
@@ -195,10 +190,8 @@ class VAE(keras.Model):
             "loss": self.total_loss_tracker.result(),
             "reconstruction_loss": self.reconstruction_loss_tracker.result(),
             "kl_loss": self.kl_loss_tracker.result(),
-            # Include other metrics from self.compiled_metrics
             **{m.name: m.result() for m in self.metrics if m.name not in ["total_loss", "reconstruction_loss", "kl_loss"]}
         }
-
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):

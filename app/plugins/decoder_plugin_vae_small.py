@@ -69,7 +69,7 @@ class Plugin:
         x = Conv1DTranspose(
             filters=lstm_units,
             kernel_size=3, strides=2, padding='same', activation=activation, name="deconv1d_0_vae",
-            kernel_regularizer=l2(l2_reg)
+            #kernel_regularizer=l2(l2_reg)
         
         )(x)
         print(f"[DEBUG VAE Decoder] Shape after deconv1d_0: {x.shape}")
@@ -77,7 +77,7 @@ class Plugin:
         x = Conv1DTranspose(
             filters=branch_units,
             kernel_size=3, strides=2, padding='same', activation=activation, name="deconv1d_1_vae",
-            kernel_regularizer=l2(l2_reg)
+        #    kernel_regularizer=l2(l2_reg)
         
         )(x)
         print(f"[DEBUG VAE Decoder] Shape after deconv1d_1: {x.shape}")
@@ -85,7 +85,7 @@ class Plugin:
         x = Conv1DTranspose(
             filters=merged_units,
             kernel_size=3, strides=2, padding='same', activation=activation, name="deconv1d_2_vae",
-            kernel_regularizer=l2(l2_reg)
+        #    kernel_regularizer=l2(l2_reg)
         
         )(x)
         print(f"[DEBUG VAE Decoder] Shape after deconv1d_2: {x.shape}")
@@ -93,7 +93,7 @@ class Plugin:
         x = Conv1DTranspose(
             filters=num_channels,
             kernel_size=3, strides=2, padding='same', activation='linear', name="deconv1d_final_vae",
-            kernel_regularizer=l2(l2_reg)
+        #    kernel_regularizer=l2(l2_reg)
         
         )(x)
         print(f"[DEBUG VAE Decoder] Pre-cropping/padding shape: {x.shape}")

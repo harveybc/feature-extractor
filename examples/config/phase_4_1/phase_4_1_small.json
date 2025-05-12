@@ -56,7 +56,7 @@
     "skew_loss_weight": 0.05,
     "kurtosis_loss_weight": 0.05,
     "covariance_loss_weight": 0.05,
-    "use_mmd_weight_adjustment": false,
+    "use_mmd_weight_adjustment": true,
     "use_daily": false,
     "max_steps_train": 25200,
     "max_steps_test": 6300,

@@ -7,13 +7,10 @@ from tensorflow.keras.losses import Huber
 from tensorflow.keras.mixed_precision import set_global_policy
 from tensorflow.keras import backend as K
 from keras.callbacks import LambdaCallback, ReduceLROnPlateau
-from keras.layers import Input, Dense, Flatten, Reshape, Dropout, Lambda
+from keras.layers import Input, Dense, Flatten, Reshape, Dropout
 from keras.regularizers import l2
 from keras.layers import BatchNormalization, LeakyReLU
 from keras.layers import MaxPooling1D, UpSampling1D
-from keras.layers import Conv1D, Cropping1D
-import keras
-
 
 #set_global_policy('mixed_float16')
 
@@ -117,260 +114,222 @@ def compute_mmd(x, y, sigma=1.0, sample_size=32):
     return tf.reduce_mean(K_xx) + tf.reduce_mean(K_yy) - 2 * tf.reduce_mean(K_xy)
 
 
-class Sampling(keras.layers.Layer): # Ensure this is tf.keras.layers.Layer
-    """Uses (z_mean, z_log_var) to sample z, the vector encoding a digit."""
-    def call(self, inputs):
-        z_mean, z_log_var = inputs
-        batch = tf.shape(z_mean)[0]
-        dim = tf.shape(z_mean)[1]
-        epsilon = K.random_normal(shape=(batch, dim)) # K should be tf.keras.backend
-        return z_mean + tf.exp(0.5 * z_log_var) * epsilon
-    
-    def get_config(self):
-        config = super().get_config()
-        return config
-
-# Custom VAE Model
-class VAE(keras.Model): # Ensure this is tf.keras.Model
-    def __init__(self, encoder, decoder, kl_weight=1.0, **kwargs):
-        super().__init__(**kwargs)
-        self.encoder = encoder
-        self.decoder = decoder
-        self.kl_weight = kl_weight
-        self.sampling_layer = Sampling() # Instantiate Sampling layer here
-        self.total_loss_tracker = keras.metrics.Mean(name="total_loss")
-        self.reconstruction_loss_tracker = keras.metrics.Mean(name="reconstruction_loss")
-        self.kl_loss_tracker = keras.metrics.Mean(name="kl_loss")
-
-    @property
-    def metrics(self):
-        return [
-            self.total_loss_tracker,
-            self.reconstruction_loss_tracker,
-            self.kl_loss_tracker,
-        ]
-
-    def call(self, inputs): # Defines the forward pass for inference
-        z_mean, z_log_var = self.encoder(inputs)
-        # Use the instance of Sampling layer
-        z_sampled = self.sampling_layer([z_mean, z_log_var]) 
-        reconstruction = self.decoder(z_sampled)
-        return reconstruction
-
-    def train_step(self, data):
-        if isinstance(data, tuple):
-            x = data[0] 
-        else:
-            x = data
-
-        with tf.GradientTape() as tape:
-            z_mean, z_log_var = self.encoder(x)
-            # Use the instance of Sampling layer for consistency
-            z = self.sampling_layer([z_mean, z_log_var])
-            
-            reconstruction = self.decoder(z)
-
-            reconstruction_loss = self.compiled_loss(x, reconstruction, regularization_losses=self.losses)
-            
-            kl_loss = -0.5 * tf.reduce_sum(
-                1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=-1
-            )
-            kl_loss = tf.reduce_mean(kl_loss)
-            
-            total_loss = reconstruction_loss + self.kl_weight * kl_loss
-            
-        grads = tape.gradient(total_loss, self.trainable_weights)
-        self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
-        
-        self.total_loss_tracker.update_state(total_loss)
-        self.reconstruction_loss_tracker.update_state(reconstruction_loss)
-        self.kl_loss_tracker.update_state(kl_loss)
-        
-        return {
-            "loss": self.total_loss_tracker.result(),
-            "reconstruction_loss": self.reconstruction_loss_tracker.result(),
-            "kl_loss": self.kl_loss_tracker.result(),
-            **{m.name: m.result() for m in self.metrics if m.name not in ["total_loss", "reconstruction_loss", "kl_loss"]}
-        }
-
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
         self.encoder_plugin = encoder_plugin
         self.decoder_plugin = decoder_plugin
-        self.autoencoder_model = None # This will be the VAE model (instance of VAE class)
-        self.encoder_model = None     # Keras Model for encoder part
-        self.decoder_model = None     # Keras Model for decoder part
-        # self.kl_loss_tracker and self.reconstruction_loss_tracker are now part of the VAE class
-        print(f"[AutoencoderManager VAE] Initialized with encoder plugin and decoder plugin")
+        self.autoencoder_model = None
+        self.encoder_model = None
+        self.decoder_model = None
+        self.model = None
+        print(f"[AutoencoderManager] Initialized with encoder plugin and decoder plugin")
 
     def build_autoencoder(self, input_shape, interface_size, config, num_channels):
         try:
-            print("[build_autoencoder VAE] Starting to build VAE...")
+            print("[build_autoencoder] Starting to build autoencoder...")
+
+            # Determine if sliding windows are used
             use_sliding_windows = config.get('use_sliding_windows', True)
 
-            # 1. Configure and get the Encoder Model (outputs z_mean, z_log_var)
+            # Configure encoder size
             self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows, config)
-            self.encoder_model = self.encoder_plugin.encoder_model # This is a Keras Model
-            if not self.encoder_model:
-                raise ValueError("VAE Encoder model not built by plugin.")
-            print("[build_autoencoder VAE] VAE Encoder part (outputs [z_mean, z_log_var]) built.")
 
-            # 2. Configure and get the Decoder Model (takes sampled z as input)
-            encoder_shape_before_flatten = self.encoder_plugin.shape_before_flatten_for_decoder
-            if encoder_shape_before_flatten is None or None in encoder_shape_before_flatten:
-                raise ValueError("encoder_plugin.shape_before_flatten_for_decoder is not set correctly or contains None.")
-            
-            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_shape_before_flatten, use_sliding_windows, config)
-            self.decoder_model = self.decoder_plugin.model # This is a Keras Model
-            if not self.decoder_model:
-                raise ValueError("VAE Decoder model not built by plugin.")
-            print("[build_autoencoder VAE] VAE Decoder part (takes sampled z) built.")
+            # Get the encoder model
+            self.encoder_model = self.encoder_plugin.encoder_model
+            print("[build_autoencoder] Encoder model built and compiled successfully")
+            self.encoder_model.summary()
 
-            # 3. Instantiate the custom VAE model
-            self.autoencoder_model = VAE(
-                encoder=self.encoder_model, 
-                decoder=self.decoder_model,
-                kl_weight=config.get('kl_weight', 1.0),
-                name="vae_custom_model"
+            # Get the encoder's output shape
+            encoder_output_shape = self.encoder_model.output_shape[1:]  # Exclude batch size
+            print(f"Encoder output shape: {encoder_output_shape}")
+
+            # Configure the decoder size, passing the encoder's output shape
+            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_output_shape, use_sliding_windows, config)
+
+            # Get the decoder model
+            self.decoder_model = self.decoder_plugin.model
+            print("[build_autoencoder] Decoder model built and compiled successfully")
+            self.decoder_model.summary()
+
+            # VAE reparameterization: encoder_model now outputs two tensors [z_mean, z_log_var]
+            z_mean, z_log_var = self.encoder_model.output
+            # sampling layer (reparam trick)
+            z = Lambda(
+                lambda inputs: inputs[0]
+                               + K.random_normal(K.shape(inputs[0]))
+                                 * K.exp(0.5 * inputs[1]),
+                name="vae_sampling"
+            )([z_mean, z_log_var])
+            # feed sampled z to decoder
+            autoencoder_output = self.decoder_model(z)
+
+            self.autoencoder_model = Model(
+                inputs=self.encoder_model.input,
+                outputs=autoencoder_output,
+                name="autoencoder"
             )
+            self.model = self.autoencoder_model
 
-            # 4. Compile the VAE model
+            # Define optimizer
             adam_optimizer = Adam(
-                learning_rate=config.get('learning_rate', 0.001),
-                beta_1=0.9, beta_2=0.999, epsilon=1e-7, amsgrad=False
+                learning_rate=config['learning_rate'],  # Set the learning rate
+                beta_1=0.9,  # Default value
+                beta_2=0.999,  # Default value
+                epsilon=1e-7,  # Default value
+                amsgrad=False,  # Default value
+                #clipnorm=1.0,  # Gradient clipping
+                #clipvalue=0.5  # Gradient clipping
             )
-            reconstruction_loss_fn = Huber(delta=config.get('huber_delta', 1.0))
-            
+
+            # --- Begin Updated Loss Definition using MMD ---
+            # Gaussian RBF kernel function for two sets of samples.
+            def gaussian_kernel_matrix(x, y, sigma):
+                # x and y are assumed to be 2D: (batch_size, features)
+                # preserve original dtype for output
+                orig_dtype = x.dtype
+                # cast to float32 under mixed precision
+                x = tf.cast(x, tf.float32)
+                y = tf.cast(y, tf.float32)
+                x_size = tf.shape(x)[0]
+                y_size = tf.shape(y)[0]
+                dim = tf.shape(x)[1]
+                # Expand dimensions for pairwise distance computation.
+                x_expanded = tf.reshape(x, [x_size, 1, dim])
+                y_expanded = tf.reshape(y, [1, y_size, dim])
+                # Compute squared L2 distance between each pair.
+                squared_diff = tf.reduce_sum(tf.square(x_expanded - y_expanded), axis=2)
+                # compute RBF kernel in float32 then cast back
+                kernel = tf.exp(-squared_diff / (2.0 * sigma**2))
+                return tf.cast(kernel, orig_dtype)
+
+            # Compute the Maximum Mean Discrepancy (MMD) between two batches.
+            def mmd_loss_term(y_true, y_pred, sigma):
+                # Ensure consistent dtype for MMD computation
+                y_true = tf.cast(y_true, tf.float32)
+                y_pred = tf.cast(y_pred, tf.float32)
+                # Flatten inputs to ensure they are 2D.
+                y_true = tf.reshape(y_true, [tf.shape(y_true)[0], -1])
+                y_pred = tf.reshape(y_pred, [tf.shape(y_pred)[0], -1])
+                K_xx = gaussian_kernel_matrix(y_true, y_true, sigma)
+                K_yy = gaussian_kernel_matrix(y_pred, y_pred, sigma)
+                K_xy = gaussian_kernel_matrix(y_true, y_pred, sigma)
+                # Use consistent dtype for statistical computations
+                dtype = K_xx.dtype
+                m = tf.cast(tf.shape(y_true)[0], dtype)
+                n = tf.cast(tf.shape(y_pred)[0], dtype)
+                # Compute the unbiased MMD statistic.
+                mmd = tf.reduce_sum(K_xx) / (m * m) \
+                      + tf.reduce_sum(K_yy) / (n * n) \
+                      - tf.constant(2.0, dtype=dtype) * tf.reduce_sum(K_xy) / (m * n)
+                return mmd
+
+            # Combined loss: reconstruction (Huber) loss + weighted MMD loss.
+            def combined_loss(y_true, y_pred):
+                huber_loss = tf.keras.losses.Huber(delta=1.0)(y_true, y_pred)
+                sigma = config.get('mmd_sigma', 1.0)  # Configure kernel width if needed.
+                stat_weight = config.get('mmd_weight', 1.0)
+                mmd = mmd_loss_term(y_true, y_pred, sigma)
+                # save the mmd value as the mmd_total global tensorflow variable alreadyy derfined at the start of the program
+                total_mmd = stat_weight * mmd
+                mmd_total.assign(total_mmd) 
+                return huber_loss + total_mmd
+
+            # Optional: Define a metric to monitor the MMD term during training.
+            def mmd_metric(y_true, y_pred):
+                #sigma = config.get('mmd_sigma', 1.0)
+                #return mmd_loss_term(y_true, y_pred, sigma)
+                return mmd_total  # Return the MMD value scaled by the weight
+            # --- End Updated Loss Definition using MMD ---
+
+            # Compile autoencoder with the combined loss and additional metric.
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
-                loss=reconstruction_loss_fn, # This is for y_true vs y_pred (reconstruction)
-                metrics=['mae'] # Add other reconstruction metrics if needed
+                loss=combined_loss,
+                metrics=['mae', mmd_metric],
+                run_eagerly=True
             )
-
-            print("[build_autoencoder VAE] Custom VAE model built and compiled successfully.")
-            # To see the structure, you might need to call build on the VAE model first
-            # self.autoencoder_model.build(input_shape=(None, input_shape, num_channels)) # Or appropriate input spec
-            # self.autoencoder_model.summary() # Then summary
+            print("[build_autoencoder] Autoencoder model built and compiled successfully")
+            self.autoencoder_model.summary()
         except Exception as e:
-            print(f"[build_autoencoder VAE] Exception occurred: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"[build_autoencoder] Exception occurred: {e}")
             raise
-    # ... rest of AutoencoderManager, ensure train_autoencoder calls self.autoencoder_model.fit ...
-    # encode_data should use self.encoder_model.predict()
-    # decode_data should use self.decoder_model.predict(sampled_z)
-    # save/load_full_vae will save/load self.autoencoder_model (the VAE instance)
-    # save/load_encoder will save/load self.encoder_model (the Keras Model part)
-    # save/load_decoder will save/load self.decoder_model (the Keras Model part)
 
-    def save_full_vae(self, file_path):
-        if self.autoencoder_model:
-            # Saving a custom model might require custom object handling if it contains
-            # layers not automatically recognized, but VAE itself is a Model subclass.
-            # The internal encoder/decoder are standard Keras models.
-            self.autoencoder_model.save(file_path) # Keras 3 should handle this better
-            print(f"[save_full_vae] Full VAE model saved to {file_path}")
-        else:
-            print("Full VAE model not available to save.")
 
-    def load_full_vae(self, file_path):
-        # When loading, provide custom objects if VAE class or Sampling is not registered
-        custom_objects = {'VAE': VAE, 'Sampling': Sampling}
-        self.autoencoder_model = keras.models.load_model(file_path, custom_objects=custom_objects)
-        print(f"[load_full_vae] Full VAE model loaded from {file_path}")
-        # Re-link internal encoder/decoder if necessary for other methods
-        self.encoder_model = self.autoencoder_model.encoder
-        self.decoder_model = self.autoencoder_model.decoder
-        self.encoder_plugin.encoder_model = self.encoder_model
-        self.decoder_plugin.model = self.decoder_model
-        # Potentially re-init plugin params from loaded models
-        # self.encoder_plugin.load(None) # This might need adjustment
-        print("[load_full_vae] References to VAE encoder and decoder parts updated.")
+
+
+
+
 
     def train_autoencoder(self, data, epochs=100, batch_size=128, config=None):
         try:
-            print(f"[train_autoencoder VAE] Received data with shape: {data.shape}")
+            print(f"[train_autoencoder] Received data with shape: {data.shape}")
+
+            # Determine if sliding windows are used
             use_sliding_windows = config.get('use_sliding_windows', True)
 
-            if not use_sliding_windows and len(data.shape) == 2:
-                data = np.expand_dims(data, axis=-1)
-            
+            # Check and reshape data for compatibility with Conv1D layers
+            if not use_sliding_windows and len(data.shape) == 2:  # Row-by-row data (2D)
+                print("[train_autoencoder] Reshaping data to add channel dimension for Conv1D compatibility...")
+                data = np.expand_dims(data, axis=-1)  # Add channel dimension (num_samples, num_features, 1)
+                print(f"[train_autoencoder] Reshaped data shape: {data.shape}")
+
             num_channels = data.shape[-1]
-            # input_shape for configure_size is sequence length (e.g., window_size)
-            input_seq_len = data.shape[1] 
-            interface_size = config.get('interface_size', 16) # Latent dimension
+            input_shape = data.shape[1]
+            interface_size = config.get('interface_size', 48)
 
-            if not self.autoencoder_model: # Build VAE if not already built
-                self.build_autoencoder(input_seq_len, interface_size, config, num_channels)
+            # Build autoencoder with the correct num_channels
+            if not self.autoencoder_model:
+                self.build_autoencoder(input_shape, interface_size, config, num_channels)
 
+            # Validate data for NaN values before training
             if np.isnan(data).any():
-                raise ValueError("[train_autoencoder VAE] Training data contains NaN values.")
+                raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
 
-            # ... (keep calculate_dataset_information if still relevant) ...
-            print(f"[train_autoencoder VAE] Training VAE with data shape: {data.shape}")
-            
-            # --- Setup Callbacks (can reuse your existing ones) ---
-            # ... (your EarlyStopping, ReduceLROnPlateau, LambdaCallback setup) ...
+            # Calculate entropy and useful information using Shannon-Hartley theorem
+            self.calculate_dataset_information(data, config)
+
+            print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
+
+            # --- Setup Callbacks ---
+            min_delta_early_stopping = config.get("min_delta", config.get("min_delta", 1e-7))
+            patience_early_stopping = config.get('early_patience', 10)
+            start_from_epoch_es = config.get('start_from_epoch', 10)
+            patience_reduce_lr = config.get("reduce_lr_patience", max(1, int(patience_early_stopping / 4)))
+
+            # Instantiate callbacks WITHOUT ClearMemoryCallback
+            # Assumes relevant Callback classes are imported/defined
             callbacks = [
-                # Your existing callbacks
+                EarlyStoppingWithPatienceCounter(
+                    monitor='val_loss', patience=patience_early_stopping, restore_best_weights=True,
+                    verbose=1, start_from_epoch=start_from_epoch_es, min_delta=min_delta_early_stopping
+                ),
+                ReduceLROnPlateauWithCounter(
+                    monitor="val_loss", factor=0.5, patience=patience_reduce_lr, cooldown=5, min_delta=min_delta_early_stopping, verbose=1
+                ),
+                LambdaCallback(on_epoch_end=lambda epoch, logs:
+                            print(f"Epoch {epoch+1}: LR={K.get_value(self.model.optimizer.learning_rate):.6f}"))
+                #MMDWeightAdjustmentCallback(config)
+                # Removed: ClearMemoryCallback(), # <<< REMOVED THIS LINE
             ]
-
-            # For VAE, y is the same as x for reconstruction loss
+            # Start training with early stopping
             history = self.autoencoder_model.fit(
-                data, # x
-                data, # y (for reconstruction loss)
+                data,
+                data,
                 epochs=epochs,
                 batch_size=batch_size,
                 verbose=1,
                 callbacks=callbacks,
-                validation_split=config.get('validation_split', 0.2)
+                validation_split = 0.2
             )
-            print(f"[train_autoencoder VAE] Training loss values: {history.history['loss']}")
-            if 'val_loss' in history.history:
-                 print(f"[train_autoencoder VAE] Validation loss values: {history.history['val_loss']}")
-            print("[train_autoencoder VAE] Training completed.")
+
+            # Log training loss
+            print(f"[train_autoencoder] Training loss values: {history.history['loss']}")
+            print("[train_autoencoder] Training completed.")
         except Exception as e:
-            print(f"[train_autoencoder VAE] Exception occurred during training: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"[train_autoencoder] Exception occurred during training: {e}")
             raise
-            
-    def encode_data(self, data, config=None): # config might not be needed if model is built
-        if not self.encoder_model:
-            raise ValueError("VAE Encoder model not available. Build or load first.")
-        print(f"[encode_data VAE] Encoding data with shape: {data.shape}")
-        # ... (data reshaping logic if needed, similar to your existing encode_data) ...
-        # The VAE encoder model directly outputs [z_mean, z_log_var]
-        encoded_outputs = self.encoder_model.predict(data)
-        # encoded_outputs is a list: [z_mean_array, z_log_var_array]
-        print(f"[encode_data VAE] Encoded data: z_mean shape {encoded_outputs[0].shape}, z_log_var shape {encoded_outputs[1].shape}")
-        return encoded_outputs # Return the list
 
-    def decode_data(self, encoded_z_sample, config=None): # Takes sampled z
-        if not self.decoder_model:
-            raise ValueError("VAE Decoder model not available. Build or load first.")
-        # encoded_z_sample is the actual sampled latent vector 'z'
-        print(f"[decode_data VAE] Decoding data (sampled z) with shape: {encoded_z_sample.shape}")
-        decoded_data = self.decoder_model.predict(encoded_z_sample)
-        # ... (reshaping logic for decoded_data if needed, similar to your existing decode_data) ...
-        print(f"[decode_data VAE] Decoded data shape: {decoded_data.shape}")
-        return decoded_data
 
-    def save_encoder(self, file_path):
-        self.encoder_model.save(file_path)
-        print(f"[save_encoder] Encoder model saved to {file_path}")
-
-    def save_decoder(self, file_path):
-        self.decoder_model.save(file_path)
-        print(f"[save_decoder] Decoder model saved to {file_path}")
-
-    def load_encoder(self, file_path):
-        self.encoder_model = load_model(file_path)
-        print(f"[load_encoder] Encoder model loaded from {file_path}")
-
-    def load_decoder(self, file_path):
-        self.decoder_model = load_model(file_path)
-        print(f"[load_decoder] Decoder model loaded from {file_path}")
 
     def calculate_dataset_information(self, data, config):
         try:

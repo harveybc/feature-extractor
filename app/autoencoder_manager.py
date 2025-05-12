@@ -369,7 +369,7 @@ class AutoencoderManager:
                 optimizer=adam_optimizer,
                 loss=combined_loss,
                 metrics=metrics_list,
-                run_eagerly=True # Useful for debugging complex losses
+                run_eagerly=False # Useful for debugging complex losses, False for performance
             )
             print("[build_autoencoder] Autoencoder model built and compiled successfully")
             self.autoencoder_model.summary()

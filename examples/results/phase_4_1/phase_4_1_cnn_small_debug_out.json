@@ -1,0 +1,18 @@
+{
+    "execution_time": 2490.909497499466,
+    "encoder": {
+        "input_shape": 288,
+        "interface_size_config": 48
+    },
+    "decoder": {
+        "interface_size_config": 48,
+        "output_shape_config": 288,
+        "num_channels_config": 54,
+        "initial_dense_target_shape": [
+            18,
+            8
+        ]
+    },
+    "val_mae": 0.09201763570308685,
+    "train_mae": 0.07916730642318726
+}

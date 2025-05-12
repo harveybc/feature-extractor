@@ -11,6 +11,9 @@ from keras.layers import Input, Dense, Flatten, Reshape, Dropout, Lambda
 from keras.regularizers import l2
 from keras.layers import BatchNormalization, LeakyReLU
 from keras.layers import MaxPooling1D, UpSampling1D
+from keras.layers import Conv1D, Cropping1D
+import keras
+
 
 #set_global_policy('mixed_float16')
 

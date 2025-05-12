@@ -24,7 +24,7 @@ class Plugin:
         "l2_reg": 5e-5
     }
 
-    plugin_debug_vars = ['input_shape', 'interface_size_config', 'shape_before_flatten_for_decoder']
+    plugin_debug_vars = ['input_shape', 'interface_size_config']
 
     def __init__(self):
         self.params = self.plugin_params.copy()

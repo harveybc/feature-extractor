@@ -331,9 +331,14 @@ class AutoencoderManager:
 
                 # 5. Covariance Matrix Loss
                 covariance_loss_weight = config.get('covariance_loss_weight', 0.0) # Default to 0
-                if covariance_loss_weight > 0:
+                # Max dimension for full covariance matrix calculation to prevent OOM
+                # Add "max_dim_for_cov_loss" to your config JSON, e.g., 2048 or 4096
+                max_dim_for_cov_loss = config.get('max_dim_for_cov_loss', 2048) 
+                current_feature_dim = tf.shape(y_true_flat_f32)[1]
+
+                if covariance_loss_weight > 0 and current_feature_dim <= max_dim_for_cov_loss:
                     # Ensure there are enough samples and features for covariance calculation
-                    if tf.shape(y_true_flat_f32)[0] > 1 and tf.shape(y_true_flat_f32)[1] > 0:
+                    if tf.shape(y_true_flat_f32)[0] > 1 and current_feature_dim > 0:
                         cov_loss_unweighted = covariance_loss_calc(y_true_flat_f32, y_pred_flat_f32)
                         weighted_covariance_loss = covariance_loss_weight * cov_loss_unweighted
                         covariance_loss_tracker.assign(weighted_covariance_loss)
@@ -341,6 +346,9 @@ class AutoencoderManager:
                     else:
                         covariance_loss_tracker.assign(0.0) # Not enough data for cov calc
                 else:
+                    if covariance_loss_weight > 0 and current_feature_dim > max_dim_for_cov_loss:
+                        # tf.print is better for graph mode debugging than python print
+                        tf.print(f"Note: Covariance loss skipped due to large feature dimension ({current_feature_dim} > {max_dim_for_cov_loss}). To enable, increase 'max_dim_for_cov_loss' in config.")
                     covariance_loss_tracker.assign(0.0)
                 
                 return total_loss

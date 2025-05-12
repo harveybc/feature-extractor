@@ -139,12 +139,21 @@ class AutoencoderManager:
             print("[build_autoencoder] Encoder model built and compiled successfully")
             self.encoder_model.summary()
 
-            # Get the encoder's output shape
-            encoder_output_shape = self.encoder_model.output_shape[1:]  # Exclude batch size
-            print(f"Encoder output shape: {encoder_output_shape}")
+            # Use encoder plugin's stored shape_before_flatten_for_decoder (must be concrete)
+            encoder_shape_before_flatten = self.encoder_plugin.shape_before_flatten_for_decoder
+            if encoder_shape_before_flatten is None or None in encoder_shape_before_flatten:
+                raise ValueError(f"Invalid encoder_shape_before_flatten_for_decoder: {encoder_shape_before_flatten}")
+            print(f"Encoder shape_before_flatten_for_decoder: {encoder_shape_before_flatten}")
 
-            # Configure the decoder size, passing the encoder's output shape
-            self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_output_shape, use_sliding_windows, config)
+            # Configure the decoder size using that pre-flatten shape
+            self.decoder_plugin.configure_size(
+                interface_size,
+                input_shape,
+                num_channels,
+                encoder_shape_before_flatten,
+                use_sliding_windows,
+                config
+            )
 
             # Get the decoder model
             self.decoder_model = self.decoder_plugin.model

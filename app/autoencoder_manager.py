@@ -144,83 +144,74 @@ class AutoencoderManager:
             print("[build_autoencoder VAE] Starting to build VAE...")
             use_sliding_windows = config.get('use_sliding_windows', True)
 
-            # 1. Configure and get the VAE Encoder (outputs z_mean, z_log_var)
             self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows, config)
-            self.encoder_model = self.encoder_plugin.encoder_model # This model outputs [z_mean, z_log_var]
+            self.encoder_model = self.encoder_plugin.encoder_model
             if not self.encoder_model:
                 raise ValueError("VAE Encoder model not built by plugin.")
             print("[build_autoencoder VAE] VAE Encoder model (outputs [z_mean, z_log_var]) built.")
-            self.encoder_model.summary()
+            # self.encoder_model.summary() # Optional: can be verbose
 
-            # Get z_mean and z_log_var from the encoder's output list
-            # The encoder_model.output is already a list [z_mean_tensor, z_log_var_tensor]
             z_mean_tensor, z_log_var_tensor = self.encoder_model.output 
 
-            # 2. Create the Sampling layer
-            # This layer takes [z_mean, z_log_var] and outputs sampled z
             z_sampling_layer = Sampling(name="vae_sampling_layer")([z_mean_tensor, z_log_var_tensor])
 
-            # 3. Configure and get the VAE Decoder (takes sampled z as input)
-            # We need `encoder_shape_before_flatten` from the encoder plugin
             encoder_shape_before_flatten = self.encoder_plugin.shape_before_flatten_for_decoder
-            if encoder_shape_before_flatten is None:
-                raise ValueError("encoder_plugin.shape_before_flatten_for_decoder is not set. Ensure encoder configures this.")
+            if encoder_shape_before_flatten is None or None in encoder_shape_before_flatten:
+                raise ValueError("encoder_plugin.shape_before_flatten_for_decoder is not set correctly or contains None. Ensure encoder configures this with concrete dimensions.")
             
             self.decoder_plugin.configure_size(interface_size, input_shape, num_channels, encoder_shape_before_flatten, use_sliding_windows, config)
-            self.decoder_model = self.decoder_plugin.model # This model takes sampled z
+            self.decoder_model = self.decoder_plugin.model
             if not self.decoder_model:
                 raise ValueError("VAE Decoder model not built by plugin.")
             print("[build_autoencoder VAE] VAE Decoder model (takes sampled z) built.")
-            self.decoder_model.summary()
+            # self.decoder_model.summary() # Optional: can be verbose
 
-            # 4. Connect components to form the VAE
-            # The VAE output is the decoder's output when fed the sampled z
             vae_output = self.decoder_model(z_sampling_layer)
             
-            # The VAE model takes the original encoder input and outputs the reconstruction
             self.autoencoder_model = Model(inputs=self.encoder_model.input, outputs=vae_output, name="vae_full")
 
-            # Define optimizer (can reuse your existing Adam setup)
             adam_optimizer = Adam(
                 learning_rate=config.get('learning_rate', 0.001),
                 beta_1=0.9, beta_2=0.999, epsilon=1e-7, amsgrad=False
             )
 
-            # --- VAE Loss Function ---
-            # Reconstruction loss (e.g., Huber, MSE, or your MMD on reconstruction)
             reconstruction_loss_fn = tf.keras.losses.Huber(delta=config.get('huber_delta', 1.0))
-            # Or, if you want to keep your MMD for reconstruction:
-            # def mmd_reconstruction_loss(y_true_recon, y_pred_recon):
-            #     sigma = config.get('mmd_sigma_recon', 1.0) # Use a different sigma if needed
-            #     return mmd_loss_term(y_true_recon, y_pred_recon, sigma) # Your existing mmd_loss_term
-            # reconstruction_loss_fn = mmd_reconstruction_loss
 
-            # KL divergence loss
-            # z_mean_tensor and z_log_var_tensor are available from encoder_model.output
-            kl_loss = -0.5 * tf.reduce_sum(
-                1 + z_log_var_tensor - tf.square(z_mean_tensor) - tf.exp(z_log_var_tensor), axis=-1
-            )
-            kl_loss = tf.reduce_mean(kl_loss) # Average over batch
-
-            # Add KL loss to the VAE model's losses
-            # This is a common way to add unconditional losses that depend on intermediate layers
-            self.autoencoder_model.add_loss(config.get('kl_weight', 1.0) * kl_loss)
+            # --- VAE Loss Function ---
+            # KL divergence calculation needs to be wrapped in a Keras layer (Lambda)
+            # when using KerasTensors from the Functional API.
             
-            # Compile VAE model
-            # The 'loss' argument here will be the reconstruction loss.
-            # The KL loss is added via `add_loss`.
+            # Define a function for the KL divergence calculation
+            def kl_divergence_loss_fn(inputs):
+                z_mean, z_log_var = inputs
+                kl_loss = -0.5 * K.sum( # Use K.sum for Keras backend compatibility
+                    1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1
+                )
+                return K.mean(kl_loss) # Average over batch
+
+            # Create a Lambda layer for the KL loss
+            # This layer doesn't produce an output that's part of the main data flow,
+            # but its value will be added to the total loss.
+            kl_loss_layer_output = Lambda(kl_divergence_loss_fn, name='kl_divergence_lambda')([z_mean_tensor, z_log_var_tensor])
+            
+            # Add KL loss to the VAE model's losses using the output of the Lambda layer
+            self.autoencoder_model.add_loss(config.get('kl_weight', 1.0) * kl_loss_layer_output)
+            
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
-                loss=reconstruction_loss_fn, # This is for y_true vs y_pred (reconstruction)
-                metrics=['mae'] # Add other reconstruction metrics if needed
-                # run_eagerly=True # For debugging, then set to False
+                loss=reconstruction_loss_fn, 
+                metrics=['mae'] 
             )
-            # To track KL loss as a metric (optional, as it's part of total loss)
-            # self.autoencoder_model.add_metric(kl_loss, name='kl_divergence_metric')
+            # To track KL loss as a separate metric (optional, as it's part of total loss)
+            # You can add the Lambda layer's output as a metric if desired,
+            # or track it via the total loss and reconstruction loss.
+            # For simplicity, we'll rely on the total loss reflecting it.
+            # If you want to see it explicitly during training logs:
+            # self.autoencoder_model.add_metric(kl_loss_layer_output, name='kl_divergence_metric_val')
 
 
             print("[build_autoencoder VAE] VAE model built and compiled successfully.")
-            self.autoencoder_model.summary()
+            # self.autoencoder_model.summary() # Optional: can be verbose
         except Exception as e:
             print(f"[build_autoencoder VAE] Exception occurred: {e}")
             import traceback

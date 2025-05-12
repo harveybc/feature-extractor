@@ -249,30 +249,35 @@ class AutoencoderManager:
                 variance = tf.math.reduce_variance(data_flat)
                 sigma = tf.sqrt(variance + 1e-6) # Add epsilon for stability
                 
-                # Handle cases where sigma is very small (data is nearly constant)
-                # For constant data, standardized moments (order > 2) are often considered 0.
-                if sigma < 1e-5: # Threshold for near-zero sigma
+                # Use tf.cond for conditional logic in graph mode
+                def true_fn(): # Executed if sigma < 1e-5
                     return tf.constant(0.0, dtype=data_flat.dtype)
                 
-                standardized_data = (data_flat - mu) / sigma
-                moment_val = tf.reduce_mean(tf.pow(standardized_data, order))
-                return moment_val
+                def false_fn(): # Executed if sigma >= 1e-5
+                    standardized_data = (data_flat - mu) / sigma
+                    moment_val = tf.reduce_mean(tf.pow(standardized_data, order))
+                    return moment_val
+                
+                return tf.cond(sigma < 1e-5, true_fn, false_fn)
 
             # Helper function to calculate covariance matrix and its loss
             def covariance_loss_calc(y_true_flat, y_pred_flat):
                 # y_true_flat, y_pred_flat are [batch_size, D], float32
                 def calculate_cov_mat(tensor): # tensor is [batch_size, D]
-                    num_samples = tf.cast(tf.shape(tensor)[0], tensor.dtype)
-                    # Ensure there's more than one sample to calculate covariance
-                    if num_samples <= 1:
-                        # Return a zero matrix of appropriate shape if not enough samples
-                        return tf.zeros((tf.shape(tensor)[1], tf.shape(tensor)[1]), dtype=tensor.dtype)
+                    num_samples_tf = tf.cast(tf.shape(tensor)[0], tensor.dtype)
                     
-                    mean_vec = tf.reduce_mean(tensor, axis=0, keepdims=True) # [1, D]
-                    centered_tensor = tensor - mean_vec # [batch_size, D]
-                    # Covariance = (X_c^T * X_c) / (N-1)
-                    cov_matrix = tf.matmul(centered_tensor, centered_tensor, transpose_a=True) / (num_samples - 1.0)
-                    return cov_matrix
+                    # Use tf.cond for conditional logic
+                    def if_not_enough_samples():
+                        return tf.zeros((tf.shape(tensor)[1], tf.shape(tensor)[1]), dtype=tensor.dtype)
+
+                    def if_enough_samples():
+                        mean_vec = tf.reduce_mean(tensor, axis=0, keepdims=True) # [1, D]
+                        centered_tensor = tensor - mean_vec # [batch_size, D]
+                        # Covariance = (X_c^T * X_c) / (N-1)
+                        cov_matrix = tf.matmul(centered_tensor, centered_tensor, transpose_a=True) / (num_samples_tf - 1.0)
+                        return cov_matrix
+
+                    return tf.cond(num_samples_tf <= 1, if_not_enough_samples, if_enough_samples)
 
                 cov_true = calculate_cov_mat(y_true_flat)
                 cov_pred = calculate_cov_mat(y_pred_flat)
@@ -306,50 +311,91 @@ class AutoencoderManager:
                 
                 # 3. Skewness Loss
                 skew_loss_weight = config.get('skew_loss_weight', 0.0) # Default to 0 if not set
-                if skew_loss_weight > 0:
-                    skew_true = calculate_standardized_moment(y_true_flat_f32, 3)
-                    skew_pred = calculate_standardized_moment(y_pred_flat_f32, 3)
-                    skew_loss_unweighted = tf.abs(skew_true - skew_pred)
+                
+                def calculate_skew_loss():
+                    skew_true_val = calculate_standardized_moment(y_true_flat_f32, 3)
+                    skew_pred_val = calculate_standardized_moment(y_pred_flat_f32, 3)
+                    skew_loss_unweighted = tf.abs(skew_true_val - skew_pred_val)
                     weighted_skew_loss = skew_loss_weight * skew_loss_unweighted
                     skew_loss_tracker.assign(weighted_skew_loss)
-                    total_loss += weighted_skew_loss
-                else:
+                    return weighted_skew_loss
+                
+                def no_skew_loss():
                     skew_loss_tracker.assign(0.0)
+                    return tf.constant(0.0, dtype=total_loss.dtype)
+
+                total_loss += tf.cond(tf.cast(skew_loss_weight, tf.float32) > 0.0, calculate_skew_loss, no_skew_loss)
+
 
                 # 4. Kurtosis Loss
                 kurtosis_loss_weight = config.get('kurtosis_loss_weight', 0.0) # Default to 0
-                if kurtosis_loss_weight > 0:
-                    # We want to match the 4th standardized moment, not Fisher's kurtosis (which is moment4 - 3)
-                    kurt_true = calculate_standardized_moment(y_true_flat_f32, 4)
-                    kurt_pred = calculate_standardized_moment(y_pred_flat_f32, 4)
-                    kurtosis_loss_unweighted = tf.abs(kurt_true - kurt_pred)
+                
+                def calculate_kurtosis_loss():
+                    kurt_true_val = calculate_standardized_moment(y_true_flat_f32, 4)
+                    kurt_pred_val = calculate_standardized_moment(y_pred_flat_f32, 4)
+                    kurtosis_loss_unweighted = tf.abs(kurt_true_val - kurt_pred_val)
                     weighted_kurtosis_loss = kurtosis_loss_weight * kurtosis_loss_unweighted
                     kurtosis_loss_tracker.assign(weighted_kurtosis_loss)
-                    total_loss += weighted_kurtosis_loss
-                else:
+                    return weighted_kurtosis_loss
+
+                def no_kurtosis_loss():
                     kurtosis_loss_tracker.assign(0.0)
+                    return tf.constant(0.0, dtype=total_loss.dtype)
+                
+                total_loss += tf.cond(tf.cast(kurtosis_loss_weight, tf.float32) > 0.0, calculate_kurtosis_loss, no_kurtosis_loss)
+
 
                 # 5. Covariance Matrix Loss
                 covariance_loss_weight = config.get('covariance_loss_weight', 0.0) # Default to 0
-                # Max dimension for full covariance matrix calculation to prevent OOM
-                # Add "max_dim_for_cov_loss" to your config JSON, e.g., 2048 or 4096
-                max_dim_for_cov_loss = config.get('max_dim_for_cov_loss', 2048) 
+                max_dim_for_cov_loss = tf.cast(config.get('max_dim_for_cov_loss', 2048), tf.int32)
                 current_feature_dim = tf.shape(y_true_flat_f32)[1]
+                num_samples_for_cov = tf.shape(y_true_flat_f32)[0]
 
-                if covariance_loss_weight > 0 and current_feature_dim <= max_dim_for_cov_loss:
-                    # Ensure there are enough samples and features for covariance calculation
-                    if tf.shape(y_true_flat_f32)[0] > 1 and current_feature_dim > 0:
-                        cov_loss_unweighted = covariance_loss_calc(y_true_flat_f32, y_pred_flat_f32)
-                        weighted_covariance_loss = covariance_loss_weight * cov_loss_unweighted
-                        covariance_loss_tracker.assign(weighted_covariance_loss)
-                        total_loss += weighted_covariance_loss
-                    else:
-                        covariance_loss_tracker.assign(0.0) # Not enough data for cov calc
-                else:
-                    if covariance_loss_weight > 0 and current_feature_dim > max_dim_for_cov_loss:
-                        # tf.print is better for graph mode debugging than python print
-                        tf.print(f"Note: Covariance loss skipped due to large feature dimension ({current_feature_dim} > {max_dim_for_cov_loss}). To enable, increase 'max_dim_for_cov_loss' in config.")
+                def calculate_covariance_loss():
+                    cov_loss_unweighted = covariance_loss_calc(y_true_flat_f32, y_pred_flat_f32)
+                    weighted_covariance_loss = tf.cast(covariance_loss_weight, y_true_flat_f32.dtype) * cov_loss_unweighted
+                    covariance_loss_tracker.assign(weighted_covariance_loss)
+                    return weighted_covariance_loss
+
+                def no_covariance_loss():
                     covariance_loss_tracker.assign(0.0)
+                    return tf.constant(0.0, dtype=total_loss.dtype)
+                
+                def print_skip_message_and_return_zero():
+                    tf.print(f"Note: Covariance loss skipped due to large feature dimension ({current_feature_dim} > {max_dim_for_cov_loss}). To enable, increase 'max_dim_for_cov_loss' in config.")
+                    covariance_loss_tracker.assign(0.0)
+                    return tf.constant(0.0, dtype=total_loss.dtype)
+
+                # Condition for applying covariance loss
+                condition_apply_cov_loss = tf.logical_and(
+                    tf.cast(covariance_loss_weight, tf.float32) > 0.0,
+                    tf.logical_and(
+                        current_feature_dim <= max_dim_for_cov_loss,
+                        tf.logical_and(num_samples_for_cov > 1, current_feature_dim > 0)
+                    )
+                )
+                
+                # Condition for printing skip message (if weight > 0 but other conditions fail)
+                condition_print_skip = tf.logical_and(
+                    tf.cast(covariance_loss_weight, tf.float32) > 0.0,
+                    tf.logical_not(
+                        tf.logical_and(
+                            current_feature_dim <= max_dim_for_cov_loss,
+                            tf.logical_and(num_samples_for_cov > 1, current_feature_dim > 0)
+                        )
+                    )
+                )
+                
+                cov_loss_to_add = tf.cond(
+                    condition_apply_cov_loss,
+                    calculate_covariance_loss,
+                    lambda: tf.cond( # Nested cond to handle the print message or just return zero
+                        condition_print_skip,
+                        print_skip_message_and_return_zero,
+                        no_covariance_loss # This handles case where weight is 0
+                    )
+                )
+                total_loss += cov_loss_to_add
                 
                 return total_loss
 

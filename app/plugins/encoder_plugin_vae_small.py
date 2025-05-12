@@ -69,18 +69,25 @@ class Plugin:
         inputs = Input(shape=(window_size, num_channels), name="encoder_input_vae")
 
         merged = Conv1D(
-            filters=merged_units, kernel_size=3, strides=2, activation='linear', name="conv_merged_features_1"
+            filters=merged_units, kernel_size=3, strides=2, activation='linear', name="conv_merged_features_1",
+            kernel_regularizer=l2(l2_reg)
         )(inputs)
         merged = Conv1D(
-            filters=branch_units, kernel_size=3, strides=2, padding='same', activation=activation, name="conv_merged_features_2"
+            filters=branch_units, kernel_size=3, strides=2, padding='same', activation=activation, name="conv_merged_features_2",
+            kernel_regularizer=l2(l2_reg)
+        
         )(merged)
         merged = Conv1D(
-            filters=lstm_units, kernel_size=3, strides=2, padding='same', activation=activation, name="conv_merged_features_3"
+            filters=lstm_units, kernel_size=3, strides=2, padding='same', activation=activation, name="conv_merged_features_3",
+            kernel_regularizer=l2(l2_reg)
+        
         )(merged)
         
         conv_output_before_flatten = Conv1D(
             filters=lstm_units//2, kernel_size=3, strides=2, padding='same', activation=activation,
-            name="conv_output_before_flatten"
+            name="conv_output_before_flatten",
+            kernel_regularizer=l2(l2_reg)
+        
         )(merged)
         
         self.shape_before_flatten_for_decoder = conv_output_before_flatten.shape[1:]

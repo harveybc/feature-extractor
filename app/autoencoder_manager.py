@@ -293,7 +293,6 @@ class AutoencoderManager:
                 y_pred_f32 = tf.cast(y_pred, tf.float32)
 
                 # 1. Reconstruction Loss (Huber)
-                huber_loss_val = tf.keras.losses.Huber(delta=1.0)(y_true_f32, y_pred_f32)
                 huber_loss_tracker.assign(huber_loss_val) # Track for metrics
 
                 # Prepare flattened versions for MMD, moments, and covariance
@@ -362,7 +361,7 @@ class AutoencoderManager:
                     return tf.constant(0.0, dtype=total_loss.dtype)
                 
                 def print_skip_message_and_return_zero():
-                    tf.print(f"Note: Covariance loss skipped due to large feature dimension ({current_feature_dim} > {max_dim_for_cov_loss}). To enable, increase 'max_dim_for_cov_loss' in config.")
+                   # tf.print(f"Note: Covariance loss skipped due to large feature dimension ({current_feature_dim} > {max_dim_for_cov_loss}). To enable, increase 'max_dim_for_cov_loss' in config.")
                     covariance_loss_tracker.assign(0.0)
                     return tf.constant(0.0, dtype=total_loss.dtype)
 

@@ -298,7 +298,7 @@ class AutoencoderManager:
                 raise ValueError("[train_autoencoder] Training data contains NaN values. Please check your data preprocessing pipeline.")
 
             # Calculate entropy and useful information using Shannon-Hartley theorem
-            self.calculate_dataset_information(data, config)
+            #self.calculate_dataset_information(data, config)
 
             print(f"[train_autoencoder] Training autoencoder with data shape: {data.shape}")
 

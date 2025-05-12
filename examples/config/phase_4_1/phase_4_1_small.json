@@ -53,7 +53,10 @@
     "dataset_periodicity": "1h",  
     "mmd_sigma": 1.0,
     "mmd_weight": 0.1,
-
+    "skew_loss_weight": 0.05,
+    "kurtosis_loss_weight": 0.05,
+    "covariance_loss_weight": 0.05,
+    "use_mmd_weight_adjustment": false,
     "use_daily": false,
     "max_steps_train": 25200,
     "max_steps_test": 6300,

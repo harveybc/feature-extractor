@@ -54,6 +54,7 @@ class Plugin:
         merged_units = config.get("initial_layer_size", 64)
         branch_units = merged_units // config.get("layer_size_divisor", 2)
         lstm_units = branch_units // config.get("layer_size_divisor", 2) 
+        l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
         
         activation = config.get("activation", "tanh")
 

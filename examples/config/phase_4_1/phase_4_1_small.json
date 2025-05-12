@@ -52,7 +52,7 @@
     "headers": true,
     "dataset_periodicity": "1h",  
     "mmd_sigma": 1.0,
-    "mmd_weight": 0.01,
+    "mmd_weight": 0.1,
 
     "use_daily": false,
     "max_steps_train": 25200,
@@ -63,7 +63,7 @@
     "learning_rate": 2e-3,
     "activation": "tanh",
     "l2_reg": 1e-5,
-    "early_patience": 40,
+    "early_patience": 80,
     "start_from_epoch": 15,
     "use_returns": true,
     "mc_samples":20,

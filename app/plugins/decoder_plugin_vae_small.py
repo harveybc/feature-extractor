@@ -1,8 +1,7 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Concatenate, BatchNormalization, LeakyReLU, Activation, Dropout
-from keras.optimizers import Adam # Optimizer is usually for the main model
-from tensorflow.keras.initializers import GlorotUniform, HeNormal # Keras uses these by default if not specified
+from keras.layers import Dense, Input, Concatenate, Reshape, Conv1DTranspose, Flatten # Removed BatchNormalization, LeakyReLU, Activation, Dropout
+from keras.optimizers import Adam 
 from keras.regularizers import l2
 
 class Plugin:
@@ -11,45 +10,38 @@ class Plugin:
     for a sequential, conditional generative model (e.g., CVAE for time series).
     This network takes the current latent variable z_t, RNN hidden state h_t (or h_{t-1}),
     and other conditions for step t, then outputs the generated data x'_t for the current step.
-    The output dimension will be configured to 6 for OHLC + 2 derived features.
+    Uses Conv1DTranspose layers. Output dimension is fixed to 6.
     """
 
     plugin_params = {
-        "dense_activation": "relu",  # Common for intermediate dense layers
-        'learning_rate': 0.0001, # Example, part of the larger model's optimizer
+        "conv_activation": "relu",  # Activation for Dense layer before reshape and Conv1DTranspose layers
+        'learning_rate': 0.0001, 
         "l2_reg": 1e-5,
-        "dense_layer_sizes": [128, 64], # Example intermediate layer sizes
-        "use_batch_norm_dense": True, # Option to use Batch Norm in dense layers
-        "dropout_rate_dense": 0.1, # Option for Dropout in dense layers
-        "output_activation": "linear", # 'linear' for regression, 'sigmoid'/'tanh' if data is bounded
+        "initial_conv_filters": 128, # Should match the encoder's initial_conv_filters for filter progression
+        "conv_kernel_size": 5,      # Kernel size for Conv1DTranspose, should match encoder's
+        "decoder_initial_seq_len": 4, # Initial sequence length after reshape, before Conv1DTranspose
+        "output_activation": "linear", # For the final Dense output layer
         # Parameters to be configured by AutoencoderManager:
         "latent_dim": None,         # Dimensionality of z_t
         "rnn_hidden_dim": None,     # Dimensionality of h_t (or h_{t-1})
-        "conditioning_dim": None,   # Dimensionality of other conditions (e.g., previous 6 target features)
-        "output_feature_dim": 6,    # Fixed to 6 for OHLC + 2 derived features
+        "conditioning_dim": None,   # Dimensionality of other conditions
+        "output_feature_dim": 6,    # Fixed to 6
     }
 
     plugin_debug_vars = [
         'latent_dim', 'rnn_hidden_dim', 'conditioning_dim', 'output_feature_dim',
-        'dense_layer_sizes', 'dense_activation', 'l2_reg', 'output_activation',
-        'use_batch_norm_dense', 'dropout_rate_dense'
+        'initial_conv_filters', 'conv_kernel_size', 'decoder_initial_seq_len',
+        'conv_activation', 'l2_reg', 'output_activation'
     ]
 
     def __init__(self):
         self.params = self.plugin_params.copy()
-        # Ensure mutable defaults are copied correctly if any were complex
-        if "dense_layer_sizes" in self.plugin_params: # Example for list
-            self.params["dense_layer_sizes"] = list(self.plugin_params["dense_layer_sizes"])
         self.generative_network_model = None
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
-            if key in self.params: # Only update known params
+            if key in self.params: 
                 self.params[key] = value
-            # Deep copy for mutable types if they are directly set
-            if key == "dense_layer_sizes" and isinstance(value, list):
-                self.params[key] = list(value)
-
 
     def get_debug_info(self):
         return {var: self.params.get(var) for var in self.plugin_debug_vars}
@@ -62,14 +54,7 @@ class Plugin:
                                      conditioning_dim: int, output_feature_dim: int, 
                                      config: dict = None):
         """
-        Configures the per-step generative network. output_feature_dim will be forced to 6.
-
-        Args:
-            latent_dim (int): Dimensionality of the input latent variable z_t.
-            rnn_hidden_dim (int): Dimensionality of the RNN's hidden state h_t (or h_{t-1}) input.
-            conditioning_dim (int): Dimensionality of other concatenated conditioning variables for step t.
-            output_feature_dim (int): Expected to be 6 for this decoder. Will be overridden if different.
-            config (dict, optional): External configuration dictionary to override plugin_params.
+        Configures the per-step generative network with Conv1DTranspose. output_feature_dim will be forced to 6.
         """
         if config is None:
             config = {}
@@ -82,20 +67,37 @@ class Plugin:
         if output_feature_dim != 6:
             print(f"WARNING: Decoder output_feature_dim passed as {output_feature_dim}, but overridden to 6.")
 
-
         # Get parameters, prioritizing external config, then self.params
-        dense_activation_name = config.get("dense_activation", self.params.get("dense_activation", "relu"))
+        conv_activation_name = config.get("conv_activation", self.params.get("conv_activation", "relu"))
         l2_reg_val = config.get("l2_reg", self.params.get("l2_reg", 1e-5))
-        dense_layer_sizes = config.get("dense_layer_sizes", self.params.get("dense_layer_sizes", [128, 64]))
-        use_batch_norm_dense = config.get("use_batch_norm_dense", self.params.get("use_batch_norm_dense", True))
-        dropout_rate_dense = config.get("dropout_rate_dense", self.params.get("dropout_rate_dense", 0.1))
+        
+        # initial_conv_filters refers to the encoder's starting point, used to derive decoder filter progression
+        # e.g., if encoder is 128->64->32->16, decoder ConvT is 16->32->64->128
+        encoder_initial_conv_filters = config.get("initial_conv_filters", self.params.get("initial_conv_filters", 128))
+        conv_kernel_size_val = config.get("conv_kernel_size", self.params.get("conv_kernel_size", 5))
+        decoder_initial_seq_len_val = config.get("decoder_initial_seq_len", self.params.get("decoder_initial_seq_len", 4))
         output_activation_name = config.get("output_activation", self.params.get("output_activation", "linear"))
         
         final_output_dim = self.params['output_feature_dim'] # Should be 6
 
+        # Define filter progression for Conv1DTranspose (mirrors encoder's reduction)
+        # Encoder: F, F/2, F/4, F/8. Decoder ConvT: F/8, F/4, F/2, F.
+        decoder_conv_filters_progression = [
+            encoder_initial_conv_filters // 8,
+            encoder_initial_conv_filters // 4,
+            encoder_initial_conv_filters // 2,
+            encoder_initial_conv_filters
+        ]
+        # Ensure filters are at least 1
+        decoder_conv_filters_progression = [max(1, f) for f in decoder_conv_filters_progression]
+        
+        dense_upsample_units = decoder_initial_seq_len_val * decoder_conv_filters_progression[0]
+
         print(f"[DEBUG DecoderPlugin] Configuring with: z_dim={latent_dim}, h_dim={rnn_hidden_dim}, cond_dim={conditioning_dim}, out_dim={final_output_dim}")
-        print(f"[DEBUG DecoderPlugin] Dense layers: {dense_layer_sizes}, Activation: {dense_activation_name}, L2: {l2_reg_val}, Output Activation: {output_activation_name}")
-        print(f"[DEBUG DecoderPlugin] Use BN Dense: {use_batch_norm_dense}, Dropout Dense: {dropout_rate_dense}")
+        print(f"[DEBUG DecoderPlugin] ConvT Params: initial_seq_len={decoder_initial_seq_len_val}, base_filters_for_dense={decoder_conv_filters_progression[0]}, "
+              f"dense_upsample_units={dense_upsample_units}, kernel_size={conv_kernel_size_val}, activation={conv_activation_name}")
+        print(f"[DEBUG DecoderPlugin] ConvT Filter Progression: {decoder_conv_filters_progression}")
+        print(f"[DEBUG DecoderPlugin] L2: {l2_reg_val}, Output Activation: {output_activation_name}")
 
         # Define inputs for a single time step
         input_z_t = Input(shape=(latent_dim,), name="decoder_input_z_t")
@@ -105,37 +107,55 @@ class Plugin:
         # Concatenate all inputs
         concatenated_inputs = Concatenate(name="decoder_concat_inputs")([input_z_t, input_h_t, input_conditions_t])
 
-        # Intermediate Dense layers
-        x = concatenated_inputs
-        for i, units in enumerate(dense_layer_sizes):
-            x = Dense(
-                units,
+        # Dense layer to prepare for reshaping
+        x = Dense(
+            units=dense_upsample_units,
+            activation=conv_activation_name,
+            kernel_regularizer=l2(l2_reg_val),
+            name="decoder_dense_upsample_prep"
+        )(concatenated_inputs)
+
+        # Reshape for Conv1DTranspose
+        x = Reshape(
+            (decoder_initial_seq_len_val, decoder_conv_filters_progression[0]),
+            name="decoder_reshape_for_conv"
+        )(x)
+
+        # Conv1DTranspose layers
+        for i, num_filters in enumerate(decoder_conv_filters_progression):
+            # The first layer uses decoder_conv_filters_progression[0] which is already set by Reshape
+            # So, Conv1DTranspose layers will effectively use filters from index 0 to 3 for their output channels
+            # The actual number of filters for Conv1DTranspose[i] is decoder_conv_filters_progression[i]
+            x = Conv1DTranspose(
+                filters=num_filters, # This is the output filter count for this layer
+                kernel_size=conv_kernel_size_val,
+                strides=2,
+                padding='same',
+                activation=conv_activation_name,
                 kernel_regularizer=l2(l2_reg_val),
-                # kernel_initializer=HeNormal() if dense_activation_name in ['relu', 'leakyrelu'] else GlorotUniform(), # Example explicit initializer
-                name=f"decoder_dense_layer_{i+1}"
+                name=f"decoder_conv_transpose_{i+1}"
             )(x)
-            if use_batch_norm_dense:
-                x = BatchNormalization(name=f"decoder_bn_dense_{i+1}")(x)
-            
-            if dense_activation_name.lower() == 'leakyrelu':
-                x = LeakyReLU(name=f"decoder_leakyrelu_dense_{i+1}")(x)
-            else:
-                x = Activation(dense_activation_name, name=f"decoder_activation_dense_{i+1}")(x)
-            
-            if dropout_rate_dense > 0:
-                x = Dropout(dropout_rate_dense, name=f"decoder_dropout_dense_{i+1}")(x)
+            # After this layer, num_filters is num_filters, seq_len is doubled.
+
+        # Flatten the output of Conv1DTranspose layers
+        x = Flatten(name="decoder_flatten_upsampled")(x)
 
         # Output layer for x'_t (6 features)
-        output_x_prime_t = Dense(final_output_dim, activation=output_activation_name, name='decoder_output_x_prime_t', kernel_regularizer=l2(l2_reg_val))(x)
+        output_x_prime_t = Dense(
+            final_output_dim, 
+            activation=output_activation_name, 
+            name='decoder_output_x_prime_t', 
+            kernel_regularizer=l2(l2_reg_val)
+        )(x)
 
         self.generative_network_model = Model(
             inputs=[input_z_t, input_h_t, input_conditions_t],
             outputs=output_x_prime_t,
-            name="cvae_decoder_network"
+            name="conv_transpose_cvae_decoder"
         )
         
         print(f"[DEBUG DecoderPlugin] Model built.")
-        self.generative_network_model.summary()
+        self.generative_network_model.summary(line_length=120)
 
     def train(self, *args, **kwargs):
         print("WARNING: DecoderPlugin.train() called. This component is trained as part of the larger CVAE model.")
@@ -199,18 +219,19 @@ if __name__ == "__main__":
     
     # Example config override for testing
     test_config = {
-        "dense_layer_sizes": [100, 50], 
-        "dense_activation": "elu", 
-        "output_activation": "linear", # Assuming unscaled output for prices
-        "use_batch_norm_dense": True,
-        "dropout_rate_dense": 0.05
+        "initial_conv_filters": 128, # Matches encoder's initial for filter progression (128 -> 16 for encoder, 16 -> 128 for decoder ConvT)
+        "conv_kernel_size": 5,
+        "decoder_initial_seq_len": 4, # Example starting sequence length for upsampling
+        "conv_activation": "relu", 
+        "output_activation": "linear",
+        "l2_reg": 1e-5
     }
 
     plugin.configure_model_architecture(
         latent_dim=_latent_dim,
         rnn_hidden_dim=_h_dim,
         conditioning_dim=_cond_dim,
-        output_feature_dim=_output_dim_expected, # This will be forced to 6 internally
+        output_feature_dim=_output_dim_expected, 
         config=test_config
     )
     

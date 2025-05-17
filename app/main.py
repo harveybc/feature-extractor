@@ -5,7 +5,7 @@ import json
 import pandas as pd
 from app.config_handler import load_config, save_config, remote_load_config, remote_save_config, remote_log
 from app.cli import parse_args
-from app.data_processor import process_data, run_autoencoder_pipeline, load_and_evaluate_encoder, load_and_evaluate_decoder
+from app.data_processor import run_autoencoder_pipeline, load_and_evaluate_encoder, load_and_evaluate_decoder
 from app.config import DEFAULT_VALUES
 from app.plugin_loader import load_plugin
 from config_merger import merge_config, process_unknown_args

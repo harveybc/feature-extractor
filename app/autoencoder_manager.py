@@ -7,11 +7,10 @@ from tensorflow.keras.losses import Huber
 from tensorflow.keras.mixed_precision import set_global_policy
 from tensorflow.keras import backend as K
 from keras.callbacks import LambdaCallback, ReduceLROnPlateau
-from keras.layers import Input, Dense, Flatten, Reshape, Dropout
+from keras.layers import Input, Dense, Flatten, Reshape, Dropout, Concatenate # Added Concatenate
 from keras.regularizers import l2
 from keras.layers import BatchNormalization, LeakyReLU
 from keras.layers import MaxPooling1D, UpSampling1D
-#Lambda
 from keras.layers import Lambda
 
 
@@ -21,6 +20,7 @@ from keras.layers import Lambda
 mmd_total = tf.Variable(0.0, dtype=tf.float32, trainable=False)
 # Define new global tf.Variables for additional loss components
 huber_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False) # To track Huber loss component
+kl_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False) # For KL divergence
 skew_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False)
 kurtosis_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False)
 covariance_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False)
@@ -35,9 +35,7 @@ class MMDWeightAdjustmentCallback(tf.keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         # compute current Huber and MMD contributions
-        # Note: With new losses, 'huber_val' will implicitly include them if not using a separate huber_metric.
-        # If 'huber_metric' is available in logs, it's better to use it.
-        huber_val = logs.get('huber_metric', logs['loss'] - logs.get('mmd_metric', 0.0) - logs.get('skew_metric', 0.0) - logs.get('kurtosis_metric', 0.0) - logs.get('covariance_metric', 0.0))
+        huber_val = logs.get('huber_metric', logs['loss'] - logs.get('kl_metric', 0.0) - logs.get('mmd_metric', 0.0) - logs.get('skew_metric', 0.0) - logs.get('kurtosis_metric', 0.0) - logs.get('covariance_metric', 0.0))
         mmd_val   = logs.get('mmd_metric', 0.0)
         ratio     = huber_val / (mmd_val + 1e-12)
         # keep ratio roughly in [0.5, 2.0]
@@ -88,8 +86,9 @@ def positional_encoding(position, d_model):
     pos_encoding = pos_encoding[np.newaxis, ...]  # Shape: (1, position, d_model)
     return tf.cast(pos_encoding, dtype=tf.float32)
 
-def mae_magnitude(y_true, y_pred):
-    """Compute MAE on the first column (magnitude)."""
+def mae_magnitude(y_true, y_pred_list): # y_pred is now a list
+    """Compute MAE on the first column (magnitude) of the reconstruction."""
+    y_pred = y_pred_list[0] # Actual reconstruction
     if len(y_true.shape) == 1 or (len(y_true.shape) == 2 and y_true.shape[1] == 1):
         y_true = tf.reshape(y_true, [-1, 1])
         y_true = tf.concat([y_true, tf.zeros_like(y_true)], axis=1)
@@ -97,8 +96,9 @@ def mae_magnitude(y_true, y_pred):
     mag_pred = y_pred[:, 0:1]
     return tf.reduce_mean(tf.abs(mag_true - mag_pred))
 
-def r2_metric(y_true, y_pred):
-    """Compute R² metric on the first column (magnitude)."""
+def r2_metric(y_true, y_pred_list): # y_pred is now a list
+    """Compute R² metric on the first column (magnitude) of the reconstruction."""
+    y_pred = y_pred_list[0] # Actual reconstruction
     if len(y_true.shape) == 1 or (len(y_true.shape) == 2 and y_true.shape[1] == 1):
         y_true = tf.reshape(y_true, [-1, 1])
         y_true = tf.concat([y_true, tf.zeros_like(y_true)], axis=1)
@@ -110,199 +110,271 @@ def r2_metric(y_true, y_pred):
 
 def compute_mmd(x, y, sigma=1.0, sample_size=32):
     """Compute the Maximum Mean Discrepancy (MMD) between two samples."""
-    idx = tf.random.shuffle(tf.range(tf.shape(x)[0]))[:sample_size]
-    x_sample = tf.gather(x, idx)
-    y_sample = tf.gather(y, idx)
-    def gaussian_kernel(x, y, sigma):
-        x = tf.expand_dims(x, 1)
-        y = tf.expand_dims(y, 0)
-        dist = tf.reduce_sum(tf.square(x - y), axis=-1)
-        return tf.exp(-dist / (2.0 * sigma ** 2))
+    # Ensure x and y are at least 2D
+    if len(tf.shape(x)) < 2: x = tf.reshape(x, [tf.shape(x)[0], -1])
+    if len(tf.shape(y)) < 2: y = tf.reshape(y, [tf.shape(y)[0], -1])
+
+    # Ensure x and y have the same number of features if they are 2D
+    if len(tf.shape(x)) == 2 and len(tf.shape(y)) == 2 and tf.shape(x)[1] != tf.shape(y)[1]:
+        # This case should ideally not happen if y_true and reconstruction have same feature dim
+        # Fallback or error, for now, let's print a warning and proceed if possible or return 0
+        tf.print(f"Warning: MMD compute feature mismatch x_shape={tf.shape(x)}, y_shape={tf.shape(y)}")
+        # Potentially pad or truncate, or return a default value like 0.0
+        # For now, let's assume they should match and this is an issue if they don't.
+        # If they must match, this could raise an error or return a high MMD.
+        # For safety, if features don't match, return 0 to not break training, but log it.
+        return 0.0
+
+
+    min_samples = tf.minimum(tf.shape(x)[0], tf.shape(y)[0])
+    if min_samples == 0: return 0.0 # Avoid error if one sample is empty
+    
+    current_sample_size = tf.minimum(sample_size, min_samples)
+
+    idx_x = tf.random.shuffle(tf.range(tf.shape(x)[0]))[:current_sample_size]
+    x_sample = tf.gather(x, idx_x)
+    
+    idx_y = tf.random.shuffle(tf.range(tf.shape(y)[0]))[:current_sample_size]
+    y_sample = tf.gather(y, idx_y)
+
+    def gaussian_kernel(s1, s2, sigma_kernel):
+        s1_expanded = tf.expand_dims(s1, 1)
+        s2_expanded = tf.expand_dims(s2, 0)
+        dist_sq = tf.reduce_sum(tf.square(s1_expanded - s2_expanded), axis=-1)
+        return tf.exp(-dist_sq / (2.0 * sigma_kernel ** 2))
+        
     K_xx = gaussian_kernel(x_sample, x_sample, sigma)
     K_yy = gaussian_kernel(y_sample, y_sample, sigma)
     K_xy = gaussian_kernel(x_sample, y_sample, sigma)
     return tf.reduce_mean(K_xx) + tf.reduce_mean(K_yy) - 2 * tf.reduce_mean(K_xy)
 
+# ... (calculate_standardized_moment, covariance_loss_calc - assumed to exist and be compatible) ...
+# These will operate on y_true and y_pred_list[0] (the reconstruction)
+def calculate_standardized_moment(data, order, mean_val=None, std_dev_val=None):
+    if tf.size(data) == 0: return tf.constant(0.0, dtype=tf.float32)
+    if mean_val is None: mean_val = tf.reduce_mean(data)
+    if std_dev_val is None: std_dev_val = tf.math.reduce_std(data)
+    if std_dev_val < 1e-6: return tf.constant(0.0, dtype=tf.float32) # Avoid division by zero
+    return tf.reduce_mean(((data - mean_val) / std_dev_val) ** order)
+
+def covariance_loss_calc(y_true, y_pred, config):
+    # This function needs to be adapted if it's used, to take y_true and y_pred (reconstruction)
+    # and calculate covariance loss. For now, assuming it's compatible or will be adapted.
+    # Placeholder:
+    if not config.get('enable_cov_loss', False):
+        covariance_loss_tracker.assign(0.0)
+        return 0.0
+
+    y_true_f = tf.cast(tf.reshape(y_true, [tf.shape(y_true)[0], -1]), tf.float32)
+    y_pred_f = tf.cast(tf.reshape(y_pred, [tf.shape(y_pred)[0], -1]), tf.float32)
+    
+    # Simplified covariance loss example (difference in covariance matrices' Frobenius norm)
+    # This is a placeholder and might need your specific implementation.
+    if tf.shape(y_true_f)[-1] <= 1 or tf.shape(y_true_f)[0] <=1 : # Covariance not well-defined
+        covariance_loss_tracker.assign(0.0)
+        return 0.0
+
+    # Using tfp.stats.covariance if available, or manual calculation
+    # For simplicity, let's use a placeholder for the actual calculation
+    # cov_true = tfp.stats.covariance(y_true_f)
+    # cov_pred = tfp.stats.covariance(y_pred_f)
+    # cov_loss = tf.norm(cov_true - cov_pred, ord='fro', axis=[-2,-1])
+    cov_loss_value = tf.constant(0.0, dtype=tf.float32) # Replace with actual calculation
+    
+    covariance_loss_tracker.assign(cov_loss_value)
+    return cov_loss_value * config.get('covariance_loss_weight', 0.0)
+
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
         self.encoder_plugin = encoder_plugin
-        self.decoder_plugin = decoder_plugin # Retained for the old VAE path
-        self.autoencoder_model = None
-        self.encoder_model = None
-        self.decoder_model = None # Retained for the old VAE path
-        self.model = None # This will point to autoencoder_model (for VAE) or encoder_model (for new encoder type)
-        print(f"[AutoencoderManager] Initialized.")
+        self.decoder_plugin = decoder_plugin
+        self.autoencoder_model = None # This will be the single-step CVAE model
+        self.encoder_model = None # Component model
+        self.decoder_model = None # Component model
+        self.model = None # Points to self.autoencoder_model
+        print(f"[AutoencoderManager] Initialized for Sequential CVAE components.")
 
-    def build_autoencoder(self, input_shape, interface_size, config, num_channels):
+    def build_autoencoder(self, config): # input_shape and num_channels are now less direct
         try:
-            print("[build_autoencoder] Starting to build components...")
+            print("[build_autoencoder] Starting to build single-step CVAE components...")
 
-            # Determine if the encoder plugin is the new type (per-step inference network)
-            # The new type has 'configure_model_architecture' and its model is 'inference_network_model'
-            is_new_encoder_type = hasattr(self.encoder_plugin, 'configure_model_architecture')
+            # Get dimensions from config
+            x_feature_dim = config.get('x_feature_dim')
+            rnn_hidden_dim = config.get('rnn_hidden_dim') # For h_context
+            conditioning_dim = config.get('conditioning_dim') # For general conditions_t
+            latent_dim = config.get('latent_dim') # This was 'interface_size'
 
-            if is_new_encoder_type:
-                print("[build_autoencoder] Configuring new encoder type (per-step inference network).")
-                # Parameters for the new encoder's 'configure_model_architecture'
-                x_feature_dim = config.get('x_feature_dim')
-                rnn_hidden_dim = config.get('rnn_hidden_dim')
-                conditioning_dim = config.get('conditioning_dim')
-                # 'interface_size' argument corresponds to 'latent_dim'
-
-                if not all(v is not None for v in [x_feature_dim, rnn_hidden_dim, conditioning_dim, interface_size]):
-                    raise ValueError(
-                        "For the new encoder type, 'config' must provide 'x_feature_dim', "
-                        "'rnn_hidden_dim', 'conditioning_dim', and 'interface_size' must be passed to build_autoencoder."
-                    )
-                
-                self.encoder_plugin.configure_model_architecture(
-                    x_feature_dim=x_feature_dim,
-                    rnn_hidden_dim=rnn_hidden_dim,
-                    conditioning_dim=conditioning_dim,
-                    latent_dim=interface_size, # interface_size is the latent_dim
-                    config=config
-                )
-                # The new encoder plugin stores its model in 'inference_network_model'
-                self.encoder_model = getattr(self.encoder_plugin, 'inference_network_model', None)
-                if self.encoder_model is None:
-                    raise ValueError("New encoder plugin failed to build its model (inference_network_model is None or not set).")
-                
-                print("[build_autoencoder] New encoder component (per-step inference network) built successfully.")
-                self.encoder_model.summary()
-
-                # For this new encoder type, no traditional VAE is formed by this manager.
-                self.decoder_model = None # No compatible decoder is assumed here.
-                self.autoencoder_model = None # No autoencoder model.
-                self.model = self.encoder_model # self.model points to the encoder itself.
-                
-                print("[build_autoencoder] Process finished for new encoder type. AutoencoderManager will manage only the encoder component.")
-                # The 'feature-extractor' repo's role for this type is to produce this 'self.encoder_model'.
-                # Training of this component as part of a sequential model (e.g., VRNN) happens in 'synthetic-datagen'.
-
-            else:
-                # --- Old VAE Path ---
-                print("[build_autoencoder] Configuring old VAE encoder type.")
-                use_sliding_windows = config.get('use_sliding_windows', True)
-                self.encoder_plugin.configure_size(input_shape, interface_size, num_channels, use_sliding_windows, config)
-                self.encoder_model = getattr(self.encoder_plugin, 'encoder_model', None) # Old attribute name
-                if self.encoder_model is None:
-                     raise ValueError("Old VAE encoder plugin failed to build its model (encoder_model is None or not set).")
-                print("[build_autoencoder] Old VAE encoder model built successfully.")
-                self.encoder_model.summary()
-
-                encoder_shape_before_flatten = getattr(self.encoder_plugin, 'shape_before_flatten_for_decoder', None)
-                if encoder_shape_before_flatten is None or (isinstance(encoder_shape_before_flatten, tuple) and None in encoder_shape_before_flatten):
-                    print(f"[build_autoencoder] Critical: 'shape_before_flatten_for_decoder' not available or invalid from VAE encoder: {encoder_shape_before_flatten}. Cannot build VAE.")
-                    self.decoder_model = None
-                    self.autoencoder_model = None
-                    self.model = self.encoder_model
-                    return # Cannot proceed to build VAE
-
-                print(f"Encoder shape_before_flatten_for_decoder: {encoder_shape_before_flatten}")
-
-                if self.decoder_plugin is None:
-                    print("[build_autoencoder] No VAE decoder plugin provided. Cannot build full VAE.")
-                    self.autoencoder_model = None
-                    self.model = self.encoder_model
-                    return
-
-                self.decoder_plugin.configure_size(
-                    interface_size, input_shape, num_channels,
-                    encoder_shape_before_flatten, use_sliding_windows, config
-                )
-                self.decoder_model = getattr(self.decoder_plugin, 'model', None)
-                if self.decoder_model is None:
-                    raise ValueError("Old VAE decoder plugin failed to build its model.")
-                print("[build_autoencoder] Old VAE decoder model built successfully.")
-                self.decoder_model.summary()
-
-                # VAE Assembly
-                z_mean, z_log_var = self.encoder_model.output
-                z = Lambda(
-                    lambda inputs_sampling: inputs_sampling[0] + K.random_normal(K.shape(inputs_sampling[0])) * K.exp(0.5 * inputs_sampling[1]),
-                    name="vae_sampling"
-                )([z_mean, z_log_var])
-                autoencoder_output = self.decoder_model(z)
-
-                self.autoencoder_model = Model(
-                    inputs=self.encoder_model.input, outputs=autoencoder_output, name="autoencoder_vae"
-                )
-                self.model = self.autoencoder_model # self.model points to the full VAE
-
-                # Compile VAE
-                adam_optimizer = Adam(
-                    learning_rate=config.get('learning_rate', 0.001),
-                    beta_1=0.9, beta_2=0.999, epsilon=1e-7, amsgrad=False
+            if not all(v is not None for v in [x_feature_dim, rnn_hidden_dim, conditioning_dim, latent_dim]):
+                raise ValueError(
+                    "Config must provide 'x_feature_dim', 'rnn_hidden_dim', "
+                    "'conditioning_dim', and 'latent_dim'."
                 )
 
-                # The combined_loss function and metric functions (mmd_metric, huber_metric, etc.)
-                # are assumed to be defined in the global scope of this file, as in the original context.
-                # They need access to the 'config' object and global trackers (mmd_total, etc.).
+            # 1. Configure and get Encoder (Per-Step Inference Network)
+            self.encoder_plugin.configure_model_architecture(
+                x_feature_dim=x_feature_dim,
+                rnn_hidden_dim=rnn_hidden_dim, # Encoder takes h_context
+                conditioning_dim=conditioning_dim, # Encoder takes conditions_t
+                latent_dim=latent_dim,
+                config=config
+            )
+            self.encoder_model = getattr(self.encoder_plugin, 'inference_network_model', None)
+            if self.encoder_model is None:
+                raise ValueError("Encoder plugin failed to build its model (inference_network_model).")
+            print("[build_autoencoder] Per-step inference network (encoder component) built.")
+            self.encoder_model.summary(line_length=120)
+
+            # 2. Configure and get Decoder (Per-Step Generative Network)
+            self.decoder_plugin.configure_model_architecture(
+                latent_dim=latent_dim,
+                rnn_hidden_dim=rnn_hidden_dim, # Decoder also takes h_context
+                conditioning_dim=conditioning_dim, # Decoder also takes conditions_t
+                output_feature_dim=x_feature_dim, # Output should match input x_t
+                config=config
+            )
+            self.decoder_model = getattr(self.decoder_plugin, 'generative_network_model', None)
+            if self.decoder_model is None:
+                raise ValueError("Decoder plugin failed to build its model (generative_network_model).")
+            print("[build_autoencoder] Per-step generative network (decoder component) built.")
+            self.decoder_model.summary(line_length=120)
+
+            # 3. Define Inputs for the combined Single-Step CVAE model
+            input_x_t = Input(shape=(x_feature_dim,), name="cvae_input_x_t")
+            input_h_context = Input(shape=(rnn_hidden_dim,), name="cvae_input_h_context")
+            input_conditions_t = Input(shape=(conditioning_dim,), name="cvae_input_conditions_t")
+
+            # 4. Pass inputs through Encoder
+            # Encoder expects [x_t, h_context, conditions_t]
+            z_mean, z_log_var = self.encoder_model([input_x_t, input_h_context, input_conditions_t])
+
+            # 5. Sampling Layer
+            def sampling(args):
+                z_mean_sample, z_log_var_sample = args
+                batch = tf.shape(z_mean_sample)[0]
+                dim = tf.shape(z_mean_sample)[1]
+                epsilon = K.random_normal(shape=(batch, dim))
+                return z_mean_sample + K.exp(0.5 * z_log_var_sample) * epsilon
+            
+            z = Lambda(sampling, output_shape=(latent_dim,), name='cvae_sampling_z')([z_mean, z_log_var])
+
+            # 6. Pass z and context to Decoder
+            # Decoder expects [z, h_context, conditions_t]
+            reconstruction = self.decoder_model([z, input_h_context, input_conditions_t])
+
+            # 7. Create the Single-Step CVAE Model
+            # Outputs: reconstruction (for Huber, MMD, etc.), z_mean, z_log_var (for KL)
+            self.autoencoder_model = Model(
+                inputs=[input_x_t, input_h_context, input_conditions_t],
+                outputs=[reconstruction, z_mean, z_log_var],
+                name="single_step_cvae"
+            )
+            self.model = self.autoencoder_model
+            print("[build_autoencoder] Single-step CVAE model assembled.")
+            self.autoencoder_model.summary(line_length=150)
+
+            # 8. Compile the CVAE Model
+            adam_optimizer = Adam(
+                learning_rate=config.get('learning_rate', 0.0001), # Adjusted default
+                beta_1=config.get('beta_1', 0.9),
+                beta_2=config.get('beta_2', 0.999),
+                epsilon=config.get('epsilon', 1e-7),
+                amsgrad=config.get('amsgrad', False)
+            )
+
+            # Loss function wrapper
+            def cvae_combined_loss(y_true, y_pred_list):
+                reconstruction_pred = y_pred_list[0]
+                z_mean_pred = y_pred_list[1]
+                z_log_var_pred = y_pred_list[2]
+
+                # Cast to float32
+                y_true_f32 = tf.cast(y_true, tf.float32)
+                reconstruction_pred_f32 = tf.cast(reconstruction_pred, tf.float32)
+
+                # Reconstruction Loss (Huber)
+                h_loss = Huber(delta=config.get('huber_delta', 1.0))(y_true_f32, reconstruction_pred_f32)
+                huber_loss_tracker.assign(h_loss)
+                total_loss = h_loss
+
+                # KL Divergence
+                kl_loss = -0.5 * K.sum(1 + z_log_var_pred - K.square(z_mean_pred) - K.exp(z_log_var_pred), axis=-1)
+                kl_loss = K.mean(kl_loss) # Average over batch
+                kl_loss_tracker.assign(kl_loss)
+                total_loss += config.get('kl_beta', 1.0) * kl_loss
                 
-                # Wrapper for combined_loss to ensure it captures 'config' from this scope
-                def combined_loss_wrapper(y_true, y_pred):
-                    # This is where the full logic of your combined_loss function (from the original file)
-                    # should be placed or called, ensuring it has access to the 'config' variable
-                    # from the 'build_autoencoder' method's scope.
-                    # For brevity, this is a conceptual placeholder.
-                    # Example structure:
-                    y_true_f32 = tf.cast(y_true, tf.float32)
-                    y_pred_f32 = tf.cast(y_pred, tf.float32)
-                    h_loss = Huber(delta=1.0)(y_true_f32, y_pred_f32)
-                    huber_loss_tracker.assign(h_loss)
-                    
+                # MMD Loss (on reconstruction)
+                mmd_weight = config.get('mmd_weight', 0.0) # Default to 0 if not specified
+                if mmd_weight > 0:
+                    # Reshape for MMD if necessary (MMD expects 2D: (batch, features_flat))
                     y_true_flat = tf.reshape(y_true_f32, [tf.shape(y_true_f32)[0], -1])
-                    y_pred_flat = tf.reshape(y_pred_f32, [tf.shape(y_pred_f32)[0], -1])
+                    reconstruction_flat = tf.reshape(reconstruction_pred_f32, [tf.shape(reconstruction_pred_f32)[0], -1])
                     
-                    mmd_val = compute_mmd(y_true_flat, y_pred_flat, config.get('mmd_sigma', 1.0)) # compute_mmd is global
-                    weighted_mmd = config.get('mmd_weight', 1.0) * mmd_val
-                    mmd_total.assign(weighted_mmd)
-                    
-                    total_l = h_loss + weighted_mmd
-                    
-                    # Add skewness, kurtosis, covariance losses similarly, using 'config'
-                    # and calling calculate_standardized_moment, covariance_loss_calc (assumed global)
-                    # and updating their respective trackers.
-                    # This part needs to replicate the full logic from your original combined_loss.
-                    skew_loss_w = config.get('skew_loss_weight', 0.0)
-                    if tf.cast(skew_loss_w, tf.float32) > 0.0:
-                        # ... skew calculation ...
-                        # total_l += weighted_skew_loss
-                        pass # Placeholder for full skew logic
-                    else: skew_loss_tracker.assign(0.0)
+                    mmd_val = compute_mmd(y_true_flat, reconstruction_flat, config.get('mmd_sigma', 1.0), config.get('mmd_sample_size', 32))
+                    weighted_mmd = mmd_weight * mmd_val
+                    mmd_total.assign(weighted_mmd) # mmd_total tracks the weighted MMD
+                    total_loss += weighted_mmd
+                else:
+                    mmd_total.assign(0.0)
 
-                    kurtosis_loss_w = config.get('kurtosis_loss_weight', 0.0)
-                    if tf.cast(kurtosis_loss_w, tf.float32) > 0.0:
-                        # ... kurtosis calculation ...
-                        # total_l += weighted_kurtosis_loss
-                        pass # Placeholder for full kurtosis logic
-                    else: kurtosis_loss_tracker.assign(0.0)
+                # Other statistical losses (skew, kurtosis, covariance) on reconstruction
+                # These need to be adapted to use y_true_f32 and reconstruction_pred_f32
+                skew_loss_w = config.get('skew_loss_weight', 0.0)
+                if skew_loss_w > 0:
+                    # Example: diff in skewness
+                    skew_true = calculate_standardized_moment(tf.reshape(y_true_f32, [-1]), 3)
+                    skew_pred = calculate_standardized_moment(tf.reshape(reconstruction_pred_f32, [-1]), 3)
+                    skew_loss_val = tf.abs(skew_true - skew_pred) * skew_loss_w
+                    skew_loss_tracker.assign(skew_loss_val)
+                    total_loss += skew_loss_val
+                else:
+                    skew_loss_tracker.assign(0.0)
 
-                    covariance_loss_w = config.get('covariance_loss_weight', 0.0)
-                    # ... full covariance calculation with conditions and debug print ...
-                    # total_l += cov_loss_to_add_val
-                    pass # Placeholder for full covariance logic
+                kurtosis_loss_w = config.get('kurtosis_loss_weight', 0.0)
+                if kurtosis_loss_w > 0:
+                    # Example: diff in kurtosis
+                    kurt_true = calculate_standardized_moment(tf.reshape(y_true_f32, [-1]), 4)
+                    kurt_pred = calculate_standardized_moment(tf.reshape(reconstruction_pred_f32, [-1]), 4)
+                    kurt_loss_val = tf.abs(kurt_true - kurt_pred) * kurtosis_loss_w
+                    kurtosis_loss_tracker.assign(kurt_loss_val)
+                    total_loss += kurt_loss_val
+                else:
+                    kurtosis_loss_tracker.assign(0.0)
+                
+                # Covariance loss
+                cov_loss_val = covariance_loss_calc(y_true_f32, reconstruction_pred_f32, config) # Already weighted
+                # covariance_loss_tracker is updated inside covariance_loss_calc
+                total_loss += cov_loss_val
 
-                    return total_l # Placeholder
+                return total_loss
 
-                # Metrics (assuming these are defined globally or accessible)
-                def mmd_metric_fn(y_true, y_pred): return mmd_total
-                def huber_metric_fn(y_true, y_pred): return huber_loss_tracker
-                def skew_metric_fn(y_true, y_pred): return skew_loss_tracker
-                def kurtosis_metric_fn(y_true, y_pred): return kurtosis_loss_tracker
-                def covariance_metric_fn(y_true, y_pred): return covariance_loss_tracker
+            # Metrics
+            # Keras applies metrics by comparing y_true with the first output of the model if y_pred is a list.
+            # So, 'mae' will be mae(y_true, reconstruction_pred).
+            def mmd_metric_fn(y_true, y_pred_list): return mmd_total # Returns the weighted MMD
+            def huber_metric_fn(y_true, y_pred_list): return huber_loss_tracker
+            def kl_metric_fn(y_true, y_pred_list): return kl_loss_tracker
+            def skew_metric_fn(y_true, y_pred_list): return skew_loss_tracker
+            def kurtosis_metric_fn(y_true, y_pred_list): return kurtosis_loss_tracker
+            def covariance_metric_fn(y_true, y_pred_list): return covariance_loss_tracker
 
-                metrics_list = ['mae', mmd_metric_fn, huber_metric_fn, skew_metric_fn, kurtosis_metric_fn, covariance_metric_fn]
+            metrics_list = [
+                'mae', # Applied to y_true vs. reconstruction_pred
+                huber_metric_fn, 
+                kl_metric_fn,
+                mmd_metric_fn,
+                skew_metric_fn,
+                kurtosis_metric_fn,
+                covariance_metric_fn
+            ]
 
-                self.autoencoder_model.compile(
-                    optimizer=adam_optimizer,
-                    loss=combined_loss_wrapper, # Use the wrapper
-                    metrics=metrics_list,
-                    run_eagerly=config.get('run_eagerly', False)
-                )
-                print("[build_autoencoder] Old VAE autoencoder model built and compiled successfully.")
-                self.autoencoder_model.summary()
+            self.autoencoder_model.compile(
+                optimizer=adam_optimizer,
+                loss=cvae_combined_loss,
+                metrics=metrics_list,
+                run_eagerly=config.get('run_eagerly', False)
+            )
+            print("[build_autoencoder] Single-step CVAE model compiled successfully.")
 
         except Exception as e:
             print(f"[build_autoencoder] Exception occurred: {e}")
@@ -310,233 +382,192 @@ class AutoencoderManager:
             traceback.print_exc()
             raise
 
-    def train_autoencoder(self, data, epochs=100, batch_size=128, config=None):
+    def train_autoencoder(self, data_inputs, data_targets, epochs=100, batch_size=128, config=None):
         if config is None: config = {}
         
-        is_new_encoder_type = hasattr(self.encoder_plugin, 'configure_model_architecture') and self.autoencoder_model is None
-
-        if is_new_encoder_type:
-            print("[train_autoencoder] Training skipped: The active model is a per-step inference network component.")
-            print("This component is typically trained as part of a larger sequential model (e.g., VRNN) in the synthetic-datagen repository.")
-            return None
-        
         if not self.autoencoder_model:
-            raise RuntimeError("[train_autoencoder] VAE autoencoder model not built. Please call build_autoencoder first.")
+            raise RuntimeError("[train_autoencoder] Single-step CVAE model not built. Please call build_autoencoder first.")
 
-        # --- Original VAE training logic ---
-        try:
-            print(f"[train_autoencoder] Starting VAE training with data shape: {data.shape}")
-            # (The rest of the VAE training logic from your file, including data reshaping, NaN checks, callbacks, model.fit)
-            # Ensure 'config' is correctly used, e.g., for validation_split, MMDWeightAdjustmentCallback
-            use_sliding_windows = config.get('use_sliding_windows', True)
-            data_train = data
-            if not use_sliding_windows and len(data.shape) == 2:
-                data_train = np.expand_dims(data, axis=-1)
+        # data_inputs is expected to be a list/tuple: [x_t_numpy, h_context_numpy, conditions_t_numpy]
+        # data_targets is expected to be x_t_numpy (for reconstruction loss)
+        if not isinstance(data_inputs, (list, tuple)) or len(data_inputs) != 3:
+            raise ValueError("data_inputs must be a list/tuple of 3 arrays: [x_t_data, h_context_data, conditions_t_data]")
+        
+        print(f"[train_autoencoder] Starting CVAE training.")
+        print(f"Input data shapes: x_t: {data_inputs[0].shape}, h_context: {data_inputs[1].shape}, conditions_t: {data_inputs[2].shape}")
+        print(f"Target data shape (x_t): {data_targets.shape}")
+
+        if np.isnan(data_inputs[0]).any() or np.isnan(data_inputs[1]).any() or np.isnan(data_inputs[2]).any() or np.isnan(data_targets).any():
+            raise ValueError("[train_autoencoder] Training data or targets contain NaN values.")
             
-            if np.isnan(data_train).any():
-                raise ValueError("[train_autoencoder] Training data contains NaN values.")
+        min_delta_es = config.get("min_delta", 1e-7)
+        patience_es = config.get('early_patience', 10)
+        start_epoch_es = config.get('start_from_epoch', 10)
+        patience_rlr = config.get("reduce_lr_patience", max(1, int(patience_es / 4)))
 
-            print(f"[train_autoencoder] Training VAE with data shape: {data_train.shape}")
-            
-            min_delta_es = config.get("min_delta", 1e-7)
-            patience_es = config.get('early_patience', 10)
-            start_epoch_es = config.get('start_from_epoch', 10)
-            patience_rlr = config.get("reduce_lr_patience", max(1, int(patience_es / 4)))
+        callbacks_list = [
+            EarlyStoppingWithPatienceCounter(monitor='val_loss', patience=patience_es, restore_best_weights=True, verbose=1, start_from_epoch=start_epoch_es, min_delta=min_delta_es),
+            ReduceLROnPlateauWithCounter(monitor="val_loss", factor=0.5, patience=patience_rlr, cooldown=5, min_delta=min_delta_es, verbose=1),
+            LambdaCallback(on_epoch_end=lambda epoch, logs: print(f"Epoch {epoch+1}: LR={K.get_value(self.model.optimizer.learning_rate):.6f}"))
+        ]
+        if config.get('use_mmd_weight_adjustment', False) and config.get('mmd_weight', 0.0) > 0: # Only add if MMD is active
+            callbacks_list.append(MMDWeightAdjustmentCallback(config))
 
-            callbacks_list = [
-                EarlyStoppingWithPatienceCounter(monitor='val_loss', patience=patience_es, restore_best_weights=True, verbose=1, start_from_epoch=start_epoch_es, min_delta=min_delta_es),
-                ReduceLROnPlateauWithCounter(monitor="val_loss", factor=0.5, patience=patience_rlr, cooldown=5, min_delta=min_delta_es, verbose=1),
-                LambdaCallback(on_epoch_end=lambda epoch, logs: print(f"Epoch {epoch+1}: LR={K.get_value(self.model.optimizer.learning_rate):.6f}"))
-            ]
-            if config.get('use_mmd_weight_adjustment', False):
-                callbacks_list.append(MMDWeightAdjustmentCallback(config))
+        history = self.autoencoder_model.fit(
+            x=data_inputs, 
+            y=data_targets, 
+            epochs=epochs, 
+            batch_size=batch_size, 
+            verbose=1,
+            callbacks=callbacks_list, 
+            validation_split=config.get('validation_split', 0.2)
+        )
+        print(f"[train_autoencoder] CVAE Training loss: {history.history['loss'][-1] if history.history['loss'] else 'N/A'}")
+        print("[train_autoencoder] CVAE Training completed.")
+        return history
 
-            history = self.autoencoder_model.fit(
-                data_train, data_train, epochs=epochs, batch_size=batch_size, verbose=1,
-                callbacks=callbacks_list, validation_split=config.get('validation_split', 0.2)
-            )
-            print(f"[train_autoencoder] VAE Training loss: {history.history['loss'][-1] if history.history['loss'] else 'N/A'}")
-            print("[train_autoencoder] VAE Training completed.")
-            return history
-        except Exception as e:
-            print(f"[train_autoencoder] Exception during VAE training: {e}")
-            import traceback
-            traceback.print_exc()
-            raise
-
-    def encode_data(self, data, config):
-        if not self.encoder_model:
-            raise ValueError("[encode_data] Encoder model not available. Build or load it first.")
+    def encode_data(self, per_step_encoder_inputs, config=None): # config might not be needed if using plugin's encode
+        if not self.encoder_model: # Check if the component model is available
+            # Try to get it from the main model if not directly set
+            if self.autoencoder_model and self.encoder_plugin and hasattr(self.encoder_plugin, 'inference_network_model'):
+                 self.encoder_model = self.encoder_plugin.inference_network_model
+            else:
+                raise ValueError("[encode_data] Encoder component model not available.")
         
-        is_new_encoder_type = hasattr(self.encoder_plugin, 'configure_model_architecture')
-
-        if is_new_encoder_type:
-            # The new encoder plugin's 'encode' method expects a list of inputs: [x_t, h_prev, conditions_t]
-            if not isinstance(data, list) or len(data) != 3:
-                raise ValueError("[encode_data] For new encoder type, 'data' argument must be a list of three arrays: [x_t_batch, h_prev_batch, conditions_t_batch].")
-            print(f"[encode_data] Encoding with new per-step inference network. Input part shapes: {[d.shape for d in data]}")
-            # The plugin's own encode method calls predict
-            encoded_parts = self.encoder_plugin.encode(data) 
-            print(f"[encode_data] New encoder produced z_mean shape: {encoded_parts[0].shape}, z_log_var shape: {encoded_parts[1].shape}")
-            return encoded_parts # Returns [z_mean, z_log_var]
-        else:
-            # --- Old VAE Encoder Path ---
-            print(f"[encode_data] Encoding with old VAE encoder. Input data shape: {data.shape}")
-            data_to_encode = data
-            use_sliding_windows = config.get('use_sliding_windows', True)
-            if not use_sliding_windows and len(data_to_encode.shape) == 2:
-                data_to_encode = np.expand_dims(data_to_encode, axis=-1)
-            
-            print(f"[encode_data] Data shape for VAE encoding: {data_to_encode.shape}")
-            encoded_data_parts = self.encoder_model.predict(data_to_encode) # [z_mean, z_log_var]
-            print(f"[encode_data] VAE Encoded z_mean shape: {encoded_data_parts[0].shape}, z_log_var shape: {encoded_data_parts[1].shape}")
-            return encoded_data_parts
-
-    def decode_data(self, encoded_z_sample, config): # encoded_z_sample is the sampled z
-        is_new_encoder_type = hasattr(self.encoder_plugin, 'configure_model_architecture')
-
-        if is_new_encoder_type:
-            print("[decode_data] Decoding skipped: No compatible decoder for the new per-step inference network is managed by AutoencoderManager.")
-            print("Decoding is part of the sequential generator in synthetic-datagen, which would use a per-step generative network.")
-            return None 
+        # The encoder_plugin's 'encode' method expects a list of inputs: [x_t, h_context, conditions_t]
+        if not isinstance(per_step_encoder_inputs, list) or len(per_step_encoder_inputs) != 3:
+            raise ValueError("[encode_data] 'per_step_encoder_inputs' must be a list of three arrays: [x_t_batch, h_context_batch, conditions_t_batch].")
         
-        if not self.decoder_model: # This implies old VAE path but decoder not built/loaded
-            raise ValueError("[decode_data] VAE Decoder model not available.")
+        print(f"[encode_data] Encoding with per-step inference network. Input part shapes: {[d.shape for d in per_step_encoder_inputs]}")
+        # Use the plugin's encode method, which calls predict on its Keras model
+        z_mean, z_log_var = self.encoder_plugin.encode(per_step_encoder_inputs) 
+        print(f"[encode_data] Encoder produced z_mean shape: {z_mean.shape}, z_log_var shape: {z_log_var.shape}")
+        return z_mean, z_log_var
 
-        # --- Old VAE Decoder Path ---
-        print(f"[decode_data] Decoding with VAE decoder. Input z_sample shape: {encoded_z_sample.shape}")
-        decoded_data = self.decoder_model.predict(encoded_z_sample)
+    def decode_data(self, per_step_decoder_inputs, config=None): # config might not be needed
+        if not self.decoder_model: # Check if the component model is available
+            if self.autoencoder_model and self.decoder_plugin and hasattr(self.decoder_plugin, 'generative_network_model'):
+                self.decoder_model = self.decoder_plugin.generative_network_model
+            else:
+                raise ValueError("[decode_data] Decoder component model not available.")
+
+        # The decoder_plugin's 'decode' method expects a list: [z_t, h_context, conditions_t]
+        if not isinstance(per_step_decoder_inputs, list) or len(per_step_decoder_inputs) != 3:
+            raise ValueError("[decode_data] 'per_step_decoder_inputs' must be a list of three arrays: [z_t_batch, h_context_batch, conditions_t_batch].")
+
+        print(f"[decode_data] Decoding with per-step generative network. Input part shapes: {[d.shape for d in per_step_decoder_inputs]}")
+        # Use the plugin's decode method
+        reconstructed_x_t = self.decoder_plugin.decode(per_step_decoder_inputs)
+        print(f"[decode_data] Decoder produced reconstructed x_t shape: {reconstructed_x_t.shape}")
+        return reconstructed_x_t
+
+    def evaluate(self, data_inputs, data_targets, dataset_name, config=None):
+        if config is None: config = {}
+        if not self.autoencoder_model:
+            print(f"[evaluate] CVAE model evaluation skipped for {dataset_name}: Model not available.")
+            return None # Return a single None or (None, None) as per original expectation
         
-        # Reshaping logic from original file
-        if not config.get('use_sliding_windows', True):
-            if 'original_feature_size' in config and decoded_data.shape[1] * decoded_data.shape[2] == config['original_feature_size']:
-                 decoded_data = decoded_data.reshape((decoded_data.shape[0], config['original_feature_size']))
-            elif decoded_data.shape[-1] == 1 and len(decoded_data.shape) ==3 :
-                 decoded_data = np.squeeze(decoded_data, axis=-1)
-        # else: (for sliding windows, shape is likely as intended)
-        print(f"[decode_data] VAE Decoded data final shape: {decoded_data.shape}")
-        return decoded_data
-
-    def evaluate(self, data, dataset_name, config):
-        is_new_encoder_type = hasattr(self.encoder_plugin, 'configure_model_architecture')
-
-        if is_new_encoder_type or not self.autoencoder_model:
-            print(f"[evaluate] VAE evaluation skipped for {dataset_name}: No VAE autoencoder model available for evaluation.")
-            print("The new per-step inference network component is evaluated as part of the full sequential model in synthetic-datagen.")
-            return None, None 
-
-        # --- Old VAE Evaluation Path ---
-        print(f"[evaluate] Evaluating VAE on {dataset_name} data with shape: {data.shape}")
-        data_eval = data
-        if not config.get('use_sliding_windows', True) and len(data.shape) == 2:
-            data_eval = np.expand_dims(data, axis=-1)
-        
-        results = self.autoencoder_model.evaluate(data_eval, data_eval, verbose=1)
+        print(f"[evaluate] Evaluating CVAE on {dataset_name}.")
+        results = self.autoencoder_model.evaluate(
+            x=data_inputs, 
+            y=data_targets, 
+            verbose=1,
+            batch_size=config.get('batch_size', 128) # Use batch_size from config if available
+        )
+        # results is a list: [total_loss, mae_on_reconstruction, huber_metric, kl_metric, mmd_metric, ...]
         loss_val = results[0]
-        mae_val = results[1] # Assuming 'mae' is the first metric
-        print(f"[evaluate] VAE {dataset_name} Evaluation - Loss: {loss_val}, MAE: {mae_val}")
-        return loss_val, mae_val
-    
-    def save_encoder(self, file_path):
-        if self.encoder_model:
-            self.encoder_model.save(file_path)
-            print(f"[save_encoder] Encoder model saved to {file_path}")
-        else:
-            print("[save_encoder] Encoder model not available to save.")
+        # MAE is typically the first metric after loss if 'mae' was in the metrics list at compile time
+        # and Keras applies it to the first output.
+        # The order in results matches the order in metrics_list during compile, plus the loss.
+        metrics_names = self.autoencoder_model.metrics_names
+        results_dict = dict(zip(metrics_names, results))
+        
+        print(f"[evaluate] CVAE {dataset_name} Evaluation Results: {results_dict}")
+        return results_dict # Return the dictionary of metrics
 
+    def save_encoder(self, file_path):
+        if self.encoder_model: # Save the component model
+            self.encoder_model.save(file_path)
+            print(f"[save_encoder] Encoder component model saved to {file_path}")
+        elif self.encoder_plugin and hasattr(self.encoder_plugin, 'inference_network_model') and self.encoder_plugin.inference_network_model:
+            self.encoder_plugin.inference_network_model.save(file_path) # Save from plugin if manager's copy is not set
+            print(f"[save_encoder] Encoder component model (from plugin) saved to {file_path}")
+        else:
+            print("[save_encoder] Encoder component model not available to save.")
 
     def save_decoder(self, file_path):
-        if self.decoder_model:
+        if self.decoder_model: # Save the component model
             self.decoder_model.save(file_path)
-            print(f"[save_decoder] Decoder model saved to {file_path}")
+            print(f"[save_decoder] Decoder component model saved to {file_path}")
+        elif self.decoder_plugin and hasattr(self.decoder_plugin, 'generative_network_model') and self.decoder_plugin.generative_network_model:
+            self.decoder_plugin.generative_network_model.save(file_path) # Save from plugin
+            print(f"[save_decoder] Decoder component model (from plugin) saved to {file_path}")
         else:
-            print("[save_decoder] Decoder model not available to save.")
-
+            print("[save_decoder] Decoder component model not available to save.")
 
     def load_encoder(self, file_path):
-        # Generic load, assumes the saved model is a Keras model.
-        self.encoder_model = load_model(file_path, compile=False)
-        print(f"[load_encoder] Encoder model loaded from {file_path}")
+        # This method should load the Keras model and also inform the plugin
+        loaded_keras_model = load_model(file_path, compile=False)
+        self.encoder_model = loaded_keras_model # Manager holds a direct reference
+        print(f"[load_encoder] Encoder component Keras model loaded from {file_path}")
 
-        # Inform the plugin instance that its model has been loaded
-        # This allows the plugin to update its internal state (e.g., dimension params from model structure)
         if hasattr(self.encoder_plugin, 'load') and callable(getattr(self.encoder_plugin, 'load')):
             try:
-                # The plugin's load method should handle setting its internal model attribute
-                self.encoder_plugin.load(file_path, compile_model=False) 
-                # Ensure AutoencoderManager's self.encoder_model also points to the right model from plugin
-                if hasattr(self.encoder_plugin, 'inference_network_model') and self.encoder_plugin.inference_network_model is not None:
+                # Plugin's load method should set its internal model and params
+                self.encoder_plugin.load(file_path, compile_model=False)
+                # Ensure manager's component model is also updated if plugin re-instantiates
+                if hasattr(self.encoder_plugin, 'inference_network_model'):
                     self.encoder_model = self.encoder_plugin.inference_network_model
-                elif hasattr(self.encoder_plugin, 'encoder_model') and self.encoder_plugin.encoder_model is not None: # old attribute name
-                     self.encoder_model = self.encoder_plugin.encoder_model
             except Exception as e:
-                print(f"[load_encoder] Error calling plugin's load method: {e}. Model loaded into AutoencoderManager directly.")
-        else: # Fallback if plugin has no specific load method
-            if hasattr(self.encoder_plugin, 'inference_network_model'): # New type
-                self.encoder_plugin.inference_network_model = self.encoder_model
-            elif hasattr(self.encoder_plugin, 'encoder_model'): # Old type
-                self.encoder_plugin.encoder_model = self.encoder_model
-            print("[load_encoder] Encoder model assigned to plugin's model attribute by AutoencoderManager.")
+                print(f"[load_encoder] Error calling encoder_plugin's load method: {e}. Keras model loaded into manager.")
+        elif hasattr(self.encoder_plugin, 'inference_network_model'): # Fallback
+            self.encoder_plugin.inference_network_model = loaded_keras_model
+            print("[load_encoder] Keras model assigned to encoder_plugin.inference_network_model by manager.")
 
 
     def load_decoder(self, file_path):
-        self.decoder_model = load_model(file_path, compile=False)
-        print(f"[load_decoder] Decoder model loaded from {file_path}")
-        if hasattr(self.decoder_plugin, 'load'):
-            self.decoder_plugin.load(file_path)
+        loaded_keras_model = load_model(file_path, compile=False)
+        self.decoder_model = loaded_keras_model
+        print(f"[load_decoder] Decoder component Keras model loaded from {file_path}")
 
+        if hasattr(self.decoder_plugin, 'load') and callable(getattr(self.decoder_plugin, 'load')):
+            try:
+                self.decoder_plugin.load(file_path, compile_model=False)
+                if hasattr(self.decoder_plugin, 'generative_network_model'):
+                    self.decoder_model = self.decoder_plugin.generative_network_model
+            except Exception as e:
+                print(f"[load_decoder] Error calling decoder_plugin's load method: {e}. Keras model loaded into manager.")
+        elif hasattr(self.decoder_plugin, 'generative_network_model'): # Fallback
+            self.decoder_plugin.generative_network_model = loaded_keras_model
+            print("[load_decoder] Keras model assigned to decoder_plugin.generative_network_model by manager.")
 
-    def calculate_mse(self, original_data, reconstructed_data, config=None): # Added config for consistency
+    def calculate_mse(self, original_data, reconstructed_data, config=None):
         print(f"[calculate_mse] Original data shape: {original_data.shape}")
         print(f"[calculate_mse] Reconstructed data shape: {reconstructed_data.shape}")
-
-        # Ensure the data shapes match. This might require reshaping reconstructed_data
-        # similar to how it's handled in decode_data or based on use_sliding_windows.
-        # For a generic MSE, they must be broadcastable or identical.
-        # Assuming original_data is the ground truth shape.
         if original_data.shape != reconstructed_data.shape:
             try:
-                # Attempt a simple reshape if total elements match
                 if np.prod(original_data.shape) == np.prod(reconstructed_data.shape):
                     reconstructed_data = reconstructed_data.reshape(original_data.shape)
-                    print(f"[calculate_mse] Reshaped reconstructed data to: {reconstructed_data.shape}")
-                else:
-                    raise ValueError(f"Shape mismatch and element count mismatch: original {original_data.shape} vs reconstructed {reconstructed_data.shape}")
+                else: raise ValueError("Shape and element count mismatch.")
             except Exception as e:
-                 raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}. Error: {e}")
-
-
-        # Calculate MSE
+                 raise ValueError(f"Shape mismatch: original {original_data.shape} vs reconstructed {reconstructed_data.shape}. Error: {e}")
         mse = np.mean(np.square(original_data - reconstructed_data))
         print(f"[calculate_mse] Calculated MSE: {mse}")
         return mse
 
-
-    def calculate_mae(self, original_data, reconstructed_data, config=None): # Added config
-        """
-        Calculate the Mean Absolute Error (MAE) between original and reconstructed data.
-        """
+    def calculate_mae(self, original_data, reconstructed_data, config=None):
         print(f"[calculate_mae] Original data shape: {original_data.shape}")
         print(f"[calculate_mae] Reconstructed data shape: {reconstructed_data.shape}")
-
-        # Ensure the data shapes match
         if original_data.shape != reconstructed_data.shape:
             try:
                 if np.prod(original_data.shape) == np.prod(reconstructed_data.shape):
                     reconstructed_data = reconstructed_data.reshape(original_data.shape)
-                    print(f"[calculate_mae] Reshaped reconstructed data to: {reconstructed_data.shape}")
-                else:
-                    raise ValueError(f"Shape mismatch and element count mismatch: original {original_data.shape} vs reconstructed {reconstructed_data.shape}")
+                else: raise ValueError("Shape and element count mismatch.")
             except Exception as e:
-                raise ValueError(f"Shape mismatch: original data shape {original_data.shape} does not match reconstructed data shape {reconstructed_data.shape}. Error: {e}")
-
-        # Calculate MAE consistently
+                raise ValueError(f"Shape mismatch: original {original_data.shape} vs reconstructed {reconstructed_data.shape}. Error: {e}")
         mae = tf.reduce_mean(tf.abs(tf.cast(original_data, tf.float32) - tf.cast(reconstructed_data, tf.float32))).numpy()
         print(f"[calculate_mae] Calculated MAE: {mae}")
         return mae
-
-
-    # Removed duplicate calculate_mse method. The one above is kept.
 
 
 

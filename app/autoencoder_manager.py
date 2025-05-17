@@ -287,17 +287,27 @@ class AutoencoderManager:
             reconstruction = self.decoder_model([z, input_h_context, input_conditions_t]) # Output shape (batch, 6)
 
             # 7. Create the Single-Step CVAE Model
+            # Define model with named outputs
             self.autoencoder_model = Model(
                 inputs=[input_x_window, input_h_context, input_conditions_t], # CVAE takes the window as x_input
                 outputs={
-                    'reconstruction_output': reconstruction,
-                    'z_mean_output': z_mean,
-                    'z_log_var_output': z_log_var
+                    'reconstruction_output': reconstruction, # This will be y_pred in the reconstruction_loss_fn
+                    'z_mean_output': z_mean,                 # For KL metric
+                    'z_log_var_output': z_log_var            # For KL metric
                 },
                 name="windowed_input_cvae_6_features_out"
             )
-            self.model = self.autoencoder_model # Keep self.model for compatibility if used elsewhere
-            print("[build_autoencoder] Single-step CVAE model assembled.")
+            self.model = self.autoencoder_model 
+            
+            # Add KL divergence as a model loss here
+            # This will be automatically included by Keras in the total loss
+            kl_loss_value = -0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+            kl_loss_value_mean = K.mean(kl_loss_value) # Mean over batch
+            weighted_kl_loss_for_model = config.get('kl_beta', 1.0) * kl_loss_value_mean
+            self.autoencoder_model.add_loss(weighted_kl_loss_for_model)
+            # kl_loss_tracker will be updated by the metric function for monitoring
+
+            print("[build_autoencoder] Single-step CVAE model assembled with KL term added via add_loss.")
             self.autoencoder_model.summary(line_length=150)
 
             # 8. Compile the CVAE Model
@@ -311,25 +321,21 @@ class AutoencoderManager:
 
             # Loss function wrapper
             # y_true will be the 6 target features (batch_size, 6)
-            # y_pred_list[0] (reconstruction_pred) will also be (batch_size, 6)
-            def cvae_combined_loss(y_true, y_pred):
-                reconstruction_pred = y_pred['reconstruction_output'] # Shape (batch, 6)
-                z_mean_pred = y_pred['z_mean_output']
-                z_log_var_pred = y_pred['z_log_var_output']
-
+            # y_pred is now ONLY the reconstruction_pred tensor (batch_size, 6)
+            # because we associated this loss with 'reconstruction_output'
+            def reconstruction_and_stats_loss_fn(y_true, y_pred_reconstruction):
+                # y_pred_reconstruction is already the output tensor for 'reconstruction_output'
+                
                 y_true_f32 = tf.cast(y_true, tf.float32) # Shape (batch, 6)
-                reconstruction_pred_f32 = tf.cast(reconstruction_pred, tf.float32) # Shape (batch, 6)
+                reconstruction_pred_f32 = tf.cast(y_pred_reconstruction, tf.float32) # Shape (batch, 6)
 
                 # Reconstruction Loss (Huber) - operates on the 6 features
                 h_loss = Huber(delta=config.get('huber_delta', 1.0))(y_true_f32, reconstruction_pred_f32)
                 huber_loss_tracker.assign(h_loss)
                 total_loss = h_loss
 
-                # KL Divergence
-                kl_loss = -0.5 * K.sum(1 + z_log_var_pred - K.square(z_mean_pred) - K.exp(z_log_var_pred), axis=-1)
-                kl_loss = K.mean(kl_loss)
-                kl_loss_tracker.assign(kl_loss)
-                total_loss += config.get('kl_beta', 1.0) * kl_loss
+                # KL Divergence is now handled by model.add_loss(), so it's not calculated here.
+                # The kl_loss_tracker will be updated by its dedicated metric function.
                 
                 # MMD Loss (on the 6-feature reconstruction)
                 mmd_weight = config.get('mmd_weight', 0.0)
@@ -372,20 +378,41 @@ class AutoencoderManager:
 
                 return total_loss
 
-            # Metrics
-            def mmd_metric_fn(y_true, y_pred): return mmd_total
-            def huber_metric_fn(y_true, y_pred): return huber_loss_tracker
-            def kl_metric_fn(y_true, y_pred): return kl_loss_tracker
+            # Metrics: y_pred will be a dict of model outputs {'reconstruction_output':..., 'z_mean_output':..., 'z_log_var_output':...}
+            def mmd_metric_fn(y_true, y_pred): # y_true is the target for reconstruction_output
+                return mmd_total # mmd_total is updated in reconstruction_and_stats_loss_fn
+            def huber_metric_fn(y_true, y_pred): # y_true is the target for reconstruction_output
+                return huber_loss_tracker # huber_loss_tracker is updated in reconstruction_and_stats_loss_fn
+            
+            def kl_metric_fn(y_true, y_pred): # y_pred is the dict of all model outputs
+                z_mean_m = y_pred['z_mean_output']
+                z_log_var_m = y_pred['z_log_var_output']
+                kl = K.mean(-0.5 * K.sum(1 + z_log_var_m - K.square(z_mean_m) - K.exp(z_log_var_m), axis=-1))
+                kl_loss_tracker.assign(kl) # Track raw KL for monitoring
+                return kl # This is the value shown in logs for this metric
+
             def skew_metric_fn(y_true, y_pred): return skew_loss_tracker
             def kurtosis_metric_fn(y_true, y_pred): return kurtosis_loss_tracker
             def covariance_metric_fn(y_true, y_pred): return covariance_loss_tracker
 
+            # Adapters for mae_magnitude and r2_metric
+            # y_true will be the dict {'reconstruction_output': tensor}
+            # y_pred will be the dict {'reconstruction_output': tensor, 'z_mean_output': ..., 'z_log_var_output': ...}
+            def mae_magnitude_metric_adapter(y_true_dict, y_pred_dict):
+                return mae_magnitude(y_true_dict['reconstruction_output'], y_pred_dict['reconstruction_output'])
+
+            def r2_metric_adapter(y_true_dict, y_pred_dict):
+                return r2_metric(y_true_dict['reconstruction_output'], y_pred_dict['reconstruction_output'])
+
+
             metrics_list = [
-                'mae', # Keras default MAE on y_true vs reconstruction_pred (both are 6 features)
-                mae_magnitude, # Custom MAE on the first feature
-                r2_metric,     # Custom R2 on the first feature
+                # Keras 'mae' will be applied to 'reconstruction_output' by default when loss is a dict
+                # However, to be explicit or if it causes issues, we can define it like other metrics.
+                # For now, let's rely on our custom mae_magnitude_metric_adapter.
+                mae_magnitude_metric_adapter, 
+                r2_metric_adapter,     
                 huber_metric_fn, 
-                kl_metric_fn,
+                kl_metric_fn, # This will show the raw KL value
                 mmd_metric_fn,
                 skew_metric_fn,
                 kurtosis_metric_fn,
@@ -394,7 +421,7 @@ class AutoencoderManager:
 
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
-                loss={'reconstruction_output': cvae_combined_loss},
+                loss={'reconstruction_output': reconstruction_and_stats_loss_fn}, # Loss only for reconstruction
                 metrics=metrics_list,
                 run_eagerly=config.get('run_eagerly', False)
             )

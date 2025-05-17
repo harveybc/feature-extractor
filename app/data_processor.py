@@ -46,21 +46,55 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     datasets = preprocessor_plugin.run_preprocessing(config)
     print("PreprocessorPlugin finished.")
 
-    x_train_data = datasets.get("x_train")
+    x_train_data = datasets.get("x_train") # This is the raw x_t data, potentially 2D or 3D
     x_val_data = datasets.get("x_val")
 
     if x_train_data is None or x_val_data is None:
         raise ValueError("PreprocessorPlugin did not return 'x_train' or 'x_val' data.")
 
     # --- Populate necessary dimensions in config ---
-    # These should ideally be set by the preprocessor or in the main config loading.
-    if 'x_feature_dim' not in config or not isinstance(config['x_feature_dim'], int):
-        if 'x_train' in datasets and datasets['x_train'] is not None:
-            config['x_feature_dim'] = datasets['x_train'].shape[1]
-            print(f"Derived 'x_feature_dim' from training data: {config['x_feature_dim']}")
-        else:
-            raise ValueError("'x_feature_dim' could not be derived and is not a valid integer in config.")
     
+    # 1. window_size: Must be provided in the main configuration.
+    if 'window_size' not in config or not isinstance(config.get('window_size'), int) or config.get('window_size') <= 0:
+        # If x_train_data is already 3D from preprocessor, we can try to infer window_size
+        if x_train_data is not None and len(x_train_data.shape) == 3:
+            config['window_size'] = x_train_data.shape[1]
+            print(f"Derived 'window_size' from 3D preprocessed training data: {config['window_size']}")
+        else:
+            raise ValueError(
+                "'window_size' not found in config or is not a valid positive integer. "
+                "It's required for the Conv1D encoder. Please add it to your main configuration file."
+            )
+    
+    # 2. input_features_per_step: Number of features at each time step within the input window.
+    if 'input_features_per_step' not in config or not isinstance(config.get('input_features_per_step'), int) or config.get('input_features_per_step') <= 0:
+        if 'x_feature_dim' in config and isinstance(config['x_feature_dim'], int) and config['x_feature_dim'] > 0:
+            # If old 'x_feature_dim' exists and likely means features per step
+            config['input_features_per_step'] = config['x_feature_dim']
+            print(f"Used existing 'x_feature_dim' for 'input_features_per_step': {config['input_features_per_step']}")
+        elif x_train_data is not None:
+            if len(x_train_data.shape) == 3: # Shape: (num_samples, window_size, features_per_step)
+                # Ensure derived window_size matches if data is 3D
+                if x_train_data.shape[1] != config['window_size']:
+                    print(f"Warning: Mismatch between config 'window_size' ({config['window_size']}) and "
+                          f"3D x_train_data.shape[1] ({x_train_data.shape[1]}). Using config 'window_size'.")
+                config['input_features_per_step'] = x_train_data.shape[2]
+                print(f"Derived 'input_features_per_step' from 3D training data: {config['input_features_per_step']}")
+            elif len(x_train_data.shape) == 2: # Shape: (num_samples, features_per_step)
+                config['input_features_per_step'] = x_train_data.shape[1]
+                print(f"Derived 'input_features_per_step' from 2D training data: {config['input_features_per_step']}")
+            else:
+                raise ValueError(f"Cannot derive 'input_features_per_step' from x_train_data with shape {x_train_data.shape}")
+        else:
+            raise ValueError(
+                "'input_features_per_step' could not be derived and is not set in config (nor as 'x_feature_dim'). "
+                "It's required."
+            )
+    
+    # The old 'x_feature_dim' specific check (lines 57-63 of your original snippet) can be removed
+    # as 'input_features_per_step' now serves this purpose for the encoder.
+    # If 'x_feature_dim' is used elsewhere, ensure it's consistent.
+
     # IMPORTANT: 'rnn_hidden_dim', 'conditioning_dim', and 'latent_dim' must be set in the config
     # and must be integers.
     

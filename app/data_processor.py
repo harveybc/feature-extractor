@@ -62,10 +62,10 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     # These are specific to your CVAE architecture.
     if 'rnn_hidden_dim' not in config:
         # config['rnn_hidden_dim'] = 64 # Example: Set a default or raise error
-        raise ValueError("'rnn_hidden_dim' not found in config. It's required for CVAE components.")
+        raise ValueError("'rnn_hidden_dim' not found in config. It's required for CVAE components.") # THIS LINE IS COMMENTED OUT IN YOUR ACTUAL CODE
     if 'conditioning_dim' not in config:
         # config['conditioning_dim'] = 10 # Example: Set a default or raise error
-        raise ValueError("'conditioning_dim' not found in config. It's required for CVAE components.")
+        raise ValueError("'conditioning_dim' not found in config. It's required for CVAE components.") # THIS LINE IS COMMENTED OUT
     if 'latent_dim' not in config: # This replaces 'interface_size' or 'initial_size' for the main loop
         config['latent_dim'] = config.get('initial_latent_dim', 32) # Example default
         print(f"Using initial 'latent_dim': {config['latent_dim']}")
@@ -80,7 +80,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     h_context_train = datasets.get("h_train")
     if h_context_train is None:
         print(f"Warning: 'h_train' not found in datasets. Generating zeros for h_context_train (shape: ({num_train_samples}, {config['rnn_hidden_dim']})).")
-        h_context_train = np.zeros((num_train_samples, config['rnn_hidden_dim']), dtype=np.float32)
+        h_context_train = np.zeros((num_train_samples, config['rnn_hidden_dim']), dtype=np.float32) # ERROR HERE
     elif h_context_train.shape != (num_train_samples, config['rnn_hidden_dim']):
         raise ValueError(f"Shape mismatch for h_context_train. Expected ({num_train_samples}, {config['rnn_hidden_dim']}), got {h_context_train.shape}")
 

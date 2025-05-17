@@ -60,7 +60,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     # Define the 6 target feature names for the CVAE
     # IMPORTANT: Ensure these names EXACTLY match the names in 'feature_names_all'
     # Assuming 'BH-BL' from preprocessor output corresponds to your 'BHIGH-BLOW' target
-    target_feature_names = ['OPEN', 'LOW', 'HIGH', 'CLOSE', 'BC-BO', 'BH-BL'] 
+    target_feature_names = ['OPEN', 'LOW', 'HIGH', 'vix_close', 'BC-BO', 'BH-BL'] # Ensure 'vix_close' is used
     
     # Find indices of these target features
     try:

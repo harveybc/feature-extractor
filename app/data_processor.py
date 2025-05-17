@@ -5,13 +5,15 @@ import os
 import time
 from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import load_csv, write_csv
-from app.reconstruction import unwindow_data
+# from app.reconstruction import unwindow_data # May not be relevant for per-step CVAE output
 from app.config_handler import save_debug_info, remote_log
-from keras.models import Sequential, Model, load_model
+from keras.models import load_model # Removed Sequential, Model as they are not directly used here
 
+# This utility function might still be useful for a preprocessor plugin,
+# but not directly for creating the CVAE's per-step inputs in this file.
 def create_sliding_windows(data, window_size):
     """
-    Create sliding windows for the entire dataset, returning a 3D array suitable for Conv1D.
+    Create sliding windows for the entire dataset, returning a 3D array.
     
     Args:
         data (pd.DataFrame): Dataframe containing the time series features.
@@ -20,177 +22,211 @@ def create_sliding_windows(data, window_size):
     Returns:
         np.ndarray: Array with shape (num_samples, window_size, num_features).
     """
-    data_array = data.to_numpy()  # Convert dataframe to numpy array
-    num_features = data_array.shape[1]  # Number of columns/features
-    num_samples = data_array.shape[0] - window_size + 1  # Calculate the number of sliding windows
+    data_array = data.to_numpy()
+    num_features = data_array.shape[1]
+    num_samples = data_array.shape[0] - window_size + 1
     
-    # Create a 3D array to store the windows
     windows = np.zeros((num_samples, window_size, num_features))
     
-    # Slide the window over the data and create the 3D array
     for i in range(num_samples):
-        windows[i] = data_array[i:i+window_size]  # Slice window_size rows across all columns
+        windows[i] = data_array[i:i+window_size]
     
     return windows
 
 
-# app/data_processor.py
-
-def process_data(config):
-    """
-    Process the data based on the configuration.
-    
-    Args:
-        config (dict): Configuration dictionary with parameters for processing.
-    
-    Returns:
-        tuple: Processed training and validation datasets.
-    """
-    print(f"Loading data from CSV file: {config['input_file']}")
-    data = load_csv(
-        file_path=config['input_file'],
-        headers=config.get('headers', False),
-        force_date=config.get('force_date', False)
-    )
-    print(f"Data loaded with shape: {data.shape}")
-
-    if config['use_sliding_windows']:
-        window_size = config['window_size']
-        print(f"Applying sliding window of size: {window_size}")
-
-        # Apply sliding windows to the entire dataset (multi-column)
-        processed_data = create_sliding_windows(data, window_size)
-        print(f"Windowed data shape: {processed_data.shape}")  # Should be (num_samples, window_size, num_features)
-    else:
-        print("Skipping sliding windows. Data will be fed row-by-row.")
-        # Use data row-by-row as a NumPy array
-        processed_data = data.to_numpy()
-        print(f"Processed data shape: {processed_data.shape}")  # Should be (num_samples, num_features)
-
-    print(f"Loading validation data from CSV file: {config['validation_file']}")
-    validation_data = load_csv(
-        file_path=config['validation_file'],
-        headers=config.get('headers', False),
-        force_date=config.get('force_date', False)
-    )
-    print(f"Validation data loaded with shape: {validation_data.shape}")
-
-    if config['use_sliding_windows']:
-        # Apply sliding windows to the validation dataset
-        windowed_validation_data = create_sliding_windows(validation_data, config['window_size'])
-        print(f"Windowed validation data shape: {windowed_validation_data.shape}")
-    else:
-        print("Skipping sliding windows for validation data. Data will be fed row-by-row.")
-        # Use validation data row-by-row as a NumPy array
-        windowed_validation_data = validation_data.to_numpy()
-        print(f"Validation processed shape: {windowed_validation_data.shape}")
-
-    return processed_data, windowed_validation_data
-
-
-
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin):
-    import time
-    import numpy as np
     start_time = time.time()
     
-    #print("Running process_data...")
-    #processed_data, validation_data = process_data(config)
-    #print("Processed data received.")
+    print("Loading/processing datasets via PreprocessorPlugin...")
+    # IMPORTANT: Assume preprocessor_plugin.run_preprocessing(config) returns a dictionary
+    # where 'x_train' and 'x_val' are the primary data sequences (x_t values).
+    # Shape for x_train/x_val should be (num_samples, x_feature_dim)
+    # It might also return 'h_train', 'h_val' (for h_context) and 'cond_train', 'cond_val' (for conditions_t)
+    # or these need to be generated/derived.
+    datasets = preprocessor_plugin.run_preprocessing(config)
+    print("PreprocessorPlugin finished.")
 
-    
-    
+    x_train_data = datasets.get("x_train")
+    x_val_data = datasets.get("x_val")
 
-    # 1. Get datasets
-    print("Loading/processing datasets via Preprocessor..."); datasets = preprocessor_plugin.run_preprocessing(config); print("Preprocessor finished.")
-    processed_data=datasets["x_train"]; validation_data=datasets["x_val"]
-    # Swap time and feature axes so that each original column becomes its own
-    # channel for the Conv1D autoencoder (shape →: samples, features, window).
-    #processed_data = processed_data.transpose(0, 2, 1)
-    #validation_data = validation_data.transpose(0, 2, 1)
-    #y_train_list=datasets["y_train"]; y_val_list=datasets["y_val"]; y_test_list=datasets["y_test"]
-    #train_dates=datasets.get("y_train_dates"); val_dates=datasets.get("y_val_dates"); test_dates=datasets.get("y_test_dates")
-    #baseline_train=datasets.get("baseline_train"); baseline_val=datasets.get("baseline_val"); baseline_test=datasets.get("baseline_test")
-        
+    if x_train_data is None or x_val_data is None:
+        raise ValueError("PreprocessorPlugin did not return 'x_train' or 'x_val' data.")
+
+    # --- Populate necessary dimensions in config ---
+    # These should ideally be set by the preprocessor or in the main config loading.
+    if 'x_feature_dim' not in config:
+        config['x_feature_dim'] = x_train_data.shape[1]
+        print(f"Derived 'x_feature_dim' from training data: {config['x_feature_dim']}")
+    
+    # IMPORTANT: 'rnn_hidden_dim' and 'conditioning_dim' must be set in the config.
+    # These are specific to your CVAE architecture.
+    if 'rnn_hidden_dim' not in config:
+        # config['rnn_hidden_dim'] = 64 # Example: Set a default or raise error
+        raise ValueError("'rnn_hidden_dim' not found in config. It's required for CVAE components.")
+    if 'conditioning_dim' not in config:
+        # config['conditioning_dim'] = 10 # Example: Set a default or raise error
+        raise ValueError("'conditioning_dim' not found in config. It's required for CVAE components.")
+    if 'latent_dim' not in config: # This replaces 'interface_size' or 'initial_size' for the main loop
+        config['latent_dim'] = config.get('initial_latent_dim', 32) # Example default
+        print(f"Using initial 'latent_dim': {config['latent_dim']}")
 
 
-    # Truncate validation data to have at most as many rows as training data
-    if validation_data.shape[0] > processed_data.shape[0]:
-        print(f"[run_autoencoder_pipeline] Truncating validation data from {validation_data.shape[0]} rows to match training data rows: {processed_data.shape[0]}")
-        validation_data = validation_data[:processed_data.shape[0]]
+    # --- Prepare h_context and conditions_t for training and validation ---
+    # TODO: Replace this placeholder logic with your actual h_context and conditions_t generation.
+    # These could come from datasets returned by preprocessor_plugin or be generated here.
+    # Their dimensions must match config['rnn_hidden_dim'] and config['conditioning_dim'].
     
-    # Get the encoder plugin name (lowercase)
-    encoder_plugin_name = config.get('encoder_plugin', '').lower()
-    
+    num_train_samples = x_train_data.shape[0]
+    h_context_train = datasets.get("h_train")
+    if h_context_train is None:
+        print(f"Warning: 'h_train' not found in datasets. Generating zeros for h_context_train (shape: ({num_train_samples}, {config['rnn_hidden_dim']})).")
+        h_context_train = np.zeros((num_train_samples, config['rnn_hidden_dim']), dtype=np.float32)
+    elif h_context_train.shape != (num_train_samples, config['rnn_hidden_dim']):
+        raise ValueError(f"Shape mismatch for h_context_train. Expected ({num_train_samples}, {config['rnn_hidden_dim']}), got {h_context_train.shape}")
 
-    # Determine input_size:
-    # - If sliding windows are used, input_size equals window_size.
-    # - For sequential plugins (LSTM/Transformer) without sliding windows, input_size should be the number of features.
+    conditions_t_train = datasets.get("cond_train")
+    if conditions_t_train is None:
+        print(f"Warning: 'cond_train' not found in datasets. Generating zeros for conditions_t_train (shape: ({num_train_samples}, {config['conditioning_dim']})).")
+        conditions_t_train = np.zeros((num_train_samples, config['conditioning_dim']), dtype=np.float32)
+    elif conditions_t_train.shape != (num_train_samples, config['conditioning_dim']):
+        raise ValueError(f"Shape mismatch for conditions_t_train. Expected ({num_train_samples}, {config['conditioning_dim']}), got {conditions_t_train.shape}")
 
-    input_size = processed_data.shape[1]
-    
-    initial_size = config['initial_size']
-    step_size = config['step_size']
-    threshold_error = config['threshold_error']
-    training_batch_size = config['batch_size']
-    epochs = config['epochs']
-    incremental_search = config['incremental_search']
-    
-    current_size = initial_size
-    
+    num_val_samples = x_val_data.shape[0]
+    h_context_val = datasets.get("h_val")
+    if h_context_val is None:
+        print(f"Warning: 'h_val' not found in datasets. Generating zeros for h_context_val (shape: ({num_val_samples}, {config['rnn_hidden_dim']})).")
+        h_context_val = np.zeros((num_val_samples, config['rnn_hidden_dim']), dtype=np.float32)
+    elif h_context_val.shape != (num_val_samples, config['rnn_hidden_dim']):
+        raise ValueError(f"Shape mismatch for h_context_val. Expected ({num_val_samples}, {config['rnn_hidden_dim']}), got {h_context_val.shape}")
+
+    conditions_t_val = datasets.get("cond_val")
+    if conditions_t_val is None:
+        print(f"Warning: 'cond_val' not found in datasets. Generating zeros for conditions_t_val (shape: ({num_val_samples}, {config['conditioning_dim']})).")
+        conditions_t_val = np.zeros((num_val_samples, config['conditioning_dim']), dtype=np.float32)
+    elif conditions_t_val.shape != (num_val_samples, config['conditioning_dim']):
+        raise ValueError(f"Shape mismatch for conditions_t_val. Expected ({num_val_samples}, {config['conditioning_dim']}), got {conditions_t_val.shape}")
+
+
+    cvae_train_inputs = [x_train_data, h_context_train, conditions_t_train]
+    cvae_train_targets = x_train_data # Target for reconstruction is x_t
+
+    cvae_val_inputs = [x_val_data, h_context_val, conditions_t_val]
+    cvae_val_targets = x_val_data
+
+    # Truncate validation inputs/targets if necessary (already handled for x_val_data by preprocessor or earlier logic)
+    # This should be ensured by the preprocessor plugin or initial data loading.
+    if cvae_val_inputs[0].shape[0] > cvae_train_inputs[0].shape[0]:
+        print(f"[run_autoencoder_pipeline] Truncating validation CVAE inputs/targets to match training samples: {cvae_train_inputs[0].shape[0]}")
+        for i in range(len(cvae_val_inputs)):
+            cvae_val_inputs[i] = cvae_val_inputs[i][:cvae_train_inputs[0].shape[0]]
+        cvae_val_targets = cvae_val_targets[:cvae_train_inputs[0].shape[0]]
+
+    initial_latent_dim = config.get('initial_latent_dim', config['latent_dim']) # Use 'latent_dim' if 'initial_latent_dim' not set
+    step_size_latent = config.get('step_size_latent', 8) # Step for adjusting latent_dim
+    threshold_error = config.get('threshold_error', 0.1)
+    epochs = config.get('epochs', 50)
+    batch_size = config.get('batch_size', 128)
+    incremental_search = config.get('incremental_search', False) # Search for optimal latent_dim
+
+    current_latent_dim = initial_latent_dim
+    best_val_mae = float('inf')
+    best_latent_dim = current_latent_dim
+    best_autoencoder_manager = None
+
+    # Loop for incremental search of latent_dim (optional)
+    # If not using incremental_search, this loop will run once with config['latent_dim']
     while True:
-        print(f"Training with interface size: {current_size}")
+        config['latent_dim'] = current_latent_dim # Set current latent_dim in config
+        print(f"Training CVAE with latent_dim: {current_latent_dim}")
         
-        # num_channels is taken from the last dimension of processed_data.
-        num_channels = processed_data.shape[-1]
-        
-        from app.autoencoder_manager import AutoencoderManager
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
-        autoencoder_manager.build_autoencoder(input_size, current_size, config, num_channels)
-        autoencoder_manager.train_autoencoder(processed_data, epochs=epochs, batch_size=training_batch_size, config=config)
         
-        training_mse, training_mae = autoencoder_manager.evaluate(processed_data, "Training", config)
-        print(f"Training Mean Squared Error with interface size {current_size}: {training_mse}")
-        print(f"Training Mean Absolute Error with interface size {current_size}: {training_mae}")
+        # build_autoencoder now only takes config
+        autoencoder_manager.build_autoencoder(config) 
         
-        validation_mse, validation_mae = autoencoder_manager.evaluate(validation_data, "Validation", config)
-        print(f"Validation Mean Squared Error with interface size {current_size}: {validation_mse}")
-        print(f"Validation Mean Absolute Error with interface size {current_size}: {validation_mae}")
+        autoencoder_manager.train_autoencoder(
+            data_inputs=cvae_train_inputs,
+            data_targets=cvae_train_targets,
+            epochs=epochs,
+            batch_size=batch_size,
+            config=config
+        )
         
-        if (incremental_search and validation_mae <= threshold_error) or (not incremental_search and validation_mae >= threshold_error):
-            print(f"Optimal interface size found: {current_size} with Validation MSE: {validation_mse} and Validation MAE: {validation_mae}")
+        # Evaluate
+        # evaluate now returns a dictionary of metrics
+        train_eval_results = autoencoder_manager.evaluate(cvae_train_inputs, cvae_train_targets, "Training", config)
+        training_mae = train_eval_results.get('mae', float('nan')) # Get MAE from results
+        print(f"Training MAE with latent_dim {current_latent_dim}: {training_mae}")
+        print(f"Full Training Evaluation Results: {train_eval_results}")
+
+        val_eval_results = autoencoder_manager.evaluate(cvae_val_inputs, cvae_val_targets, "Validation", config)
+        validation_mae = val_eval_results.get('mae', float('nan'))
+        print(f"Validation MAE with latent_dim {current_latent_dim}: {validation_mae}")
+        print(f"Full Validation Evaluation Results: {val_eval_results}")
+        
+        if validation_mae < best_val_mae:
+            best_val_mae = validation_mae
+            best_latent_dim = current_latent_dim
+            best_autoencoder_manager = autoencoder_manager # Save the manager with best model
+            print(f"New best Validation MAE: {best_val_mae} with latent_dim: {best_latent_dim}")
+
+        if not incremental_search:
+            print("Incremental search disabled. Completing after one iteration.")
+            break 
+        
+        # Incremental search logic (simplified from original)
+        if validation_mae <= threshold_error:
+            print(f"Threshold MAE ({threshold_error}) met or exceeded. Optimal latent_dim likely found: {current_latent_dim}")
             break
         else:
-            if incremental_search:
-                current_size += step_size
-            else:
-                current_size -= step_size
-            if current_size > processed_data.shape[1] or current_size <= 0:
-                print("Cannot adjust interface size beyond data dimensions. Stopping.")
+            if current_latent_dim >= config.get('max_latent_dim', 256): # Prevent excessive growth
+                 print(f"Reached max_latent_dim ({config.get('max_latent_dim', 256)}). Stopping search.")
+                 break
+            current_latent_dim += step_size_latent
+            if current_latent_dim <= 0: # Should not happen with positive step_size
+                print("Latent dimension became non-positive. Stopping.")
                 break
+    
+    if best_autoencoder_manager is None: # Should only happen if loop never ran or error
+        if autoencoder_manager: # Fallback to last trained manager if search didn't improve
+            best_autoencoder_manager = autoencoder_manager
+            best_latent_dim = config['latent_dim'] # last used latent_dim
+            print(f"Warning: Using last trained model as best. Latent_dim: {best_latent_dim}, Val MAE: {validation_mae}")
+        else:
+            raise RuntimeError("Autoencoder training failed or incremental search did not yield a model.")
 
-    encoder_model_filename = f"{config['save_encoder']}.keras"
-    decoder_model_filename = f"{config['save_decoder']}.keras"
-    autoencoder_manager.save_encoder(encoder_model_filename)
-    autoencoder_manager.save_decoder(decoder_model_filename)
-    print(f"Saved encoder model to {encoder_model_filename}")
-    print(f"Saved decoder model to {decoder_model_filename}")
+    print(f"Final selected latent_dim: {best_latent_dim} with Validation MAE: {best_val_mae}")
+    
+    # Use the best manager for saving models
+    encoder_model_filename = f"{config['save_encoder']}_ld{best_latent_dim}.keras"
+    decoder_model_filename = f"{config['save_decoder']}_ld{best_latent_dim}.keras"
+    best_autoencoder_manager.save_encoder(encoder_model_filename)
+    best_autoencoder_manager.save_decoder(decoder_model_filename)
+    print(f"Saved best encoder model to {encoder_model_filename}")
+    print(f"Saved best decoder model to {decoder_model_filename}")
 
     end_time = time.time()
     execution_time = end_time - start_time
-    debug_info = {
-        'execution_time': execution_time,
-        'encoder': encoder_plugin.get_debug_info(),
-        'decoder': decoder_plugin.get_debug_info(),
-        'val_mae': validation_mae,
-        'train_mae': training_mae
+    
+    # Fetch final MAE values from the best model's evaluation if possible, or last evaluation
+    final_train_eval_results = best_autoencoder_manager.evaluate(cvae_train_inputs, cvae_train_targets, "Final Training", config)
+    final_training_mae = final_train_eval_results.get('mae', float('nan'))
+    final_val_eval_results = best_autoencoder_manager.evaluate(cvae_val_inputs, cvae_val_targets, "Final Validation", config)
+    final_validation_mae = final_val_eval_results.get('mae', float('nan'))
 
+    debug_info = {
+        'execution_time_seconds': execution_time,
+        'best_latent_dim': best_latent_dim,
+        'encoder_plugin_params': encoder_plugin.get_debug_info(),
+        'decoder_plugin_params': decoder_plugin.get_debug_info(),
+        'final_validation_mae': final_validation_mae,
+        'final_training_mae': final_training_mae,
+        'final_validation_metrics': final_val_eval_results,
+        'final_training_metrics': final_train_eval_results,
+        'config_used': config # Save a snapshot of the config
     }
 
     from tensorflow.keras.utils import plot_model
-
-
-    from app.config_handler import save_debug_info, remote_log
     if 'save_log' in config and config['save_log']:
         save_debug_info(debug_info, config['save_log'])
         print(f"Debug info saved to {config['save_log']}.")
@@ -199,170 +235,156 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         remote_log(config, debug_info, config['remote_log'], config['username'], config['password'])
         print(f"Debug info saved to {config['remote_log']}.")
     
-    if 'model_plot_file' in config and config['model_plot_file']:
-        try: model_plot_file=config.get('model_plot_file','model_plot.png'); plot_model(autoencoder_manager.model,to_file=model_plot_file,show_shapes=True,show_layer_names=True,dpi=300); print(f"Model plot saved: {model_plot_file}")
-        except Exception as e: print(f"WARN: Failed model plot: {e}")
+    if 'model_plot_file' in config and config['model_plot_file'] and best_autoencoder_manager.model:
+        try: 
+            plot_filename = f"{config.get('model_plot_file', 'model_plot')}_ld{best_latent_dim}.png"
+            plot_model(best_autoencoder_manager.model, to_file=plot_filename, show_shapes=True, show_layer_names=True, dpi=300)
+            print(f"Model plot saved: {plot_filename}")
+        except Exception as e: 
+            print(f"WARN: Failed model plot: {e}")
         
-
-
-    print(f"Execution time: {execution_time} seconds")
-
-
+    print(f"Pipeline execution time: {execution_time:.2f} seconds")
 
 
 def load_and_evaluate_encoder(config):
     """
-    Load and evaluate a pre-trained encoder with input data.
+    Load and evaluate a pre-trained CVAE encoder component.
     """
-    if config.get('encoder_plugin', '').lower() == 'transformer':
-        import tensorflow as tf
-        from keras_multi_head import MultiHeadAttention as OriginalMultiHeadAttention
-        from tensorflow.keras.layers import LayerNormalization
-        from tensorflow.keras.activations import gelu
-        # Import positional_encoding from your plugin without modifying it.
-        from app.plugins.encoder_plugin_transformer import positional_encoding
+    # Transformer specific loading (can be kept if you still use standalone transformer encoders)
+    # For CVAE encoder component, custom_objects might not be needed unless plugin uses them.
+    custom_objects = {}
+    if config.get('encoder_plugin', '').lower() == 'transformer': # Example if transformer plugin has custom layers
+        # Add transformer specific custom objects if needed by the plugin's model
+        pass 
+    
+    encoder_model_path = config['load_encoder']
+    encoder_component_model = load_model(encoder_model_path, custom_objects=custom_objects, compile=False)
+    print(f"CVAE Encoder component model loaded from {encoder_model_path}")
 
-        # Patched MultiHeadAttention to handle 'head_num' correctly.
-        class PatchedMultiHeadAttention(OriginalMultiHeadAttention):
-            @classmethod
-            def from_config(cls, config):
-                head_num = config.pop("head_num", None)
-                if head_num is None:
-                    head_num = 8  # Default value; adjust if needed.
-                return cls(head_num, **config)
-
-        custom_objects = {
-            'MultiHeadAttention': PatchedMultiHeadAttention,
-            'LayerNormalization': LayerNormalization,
-            'gelu': gelu,
-            # Supply the missing function so that the Lambda layer finds it.
-            'positional_encoding': positional_encoding
-        }
-        model = load_model(config['load_encoder'], custom_objects=custom_objects)
-    else:
-        model = load_model(config['load_encoder'])
-    print(f"Encoder model loaded from {config['load_encoder']}")
-
-    # Load the input data.
-    data = load_csv(
+    # Load input data (x_t values)
+    # IMPORTANT: This data is assumed to be the x_t part of the CVAE input.
+    x_t_data = load_csv(
         file_path=config['input_file'],
         headers=config.get('headers', False),
         force_date=config.get('force_date', False)
-    )
+    ).to_numpy() # Convert to numpy array, assuming it's (num_samples, x_feature_dim)
     
-    # Extract the original date information.
-    original_dates = None
-    if config.get('force_date', False) and data.index.name is not None:
-        # Reset the index so that the date becomes a column.
-        original_dates = data.index.to_series().rename("DATE_TIME").reset_index(drop=True)
-    elif "DATE_TIME" in data.columns:
-        original_dates = data["DATE_TIME"].reset_index(drop=True)
+    num_samples = x_t_data.shape[0]
+
+    # TODO: Prepare h_context and conditions_t for encoder evaluation.
+    # These must match the dimensions the loaded encoder component expects.
+    # These dimensions should be available in the config used to train the model,
+    # or inferred if the plugin's load method repopulates them.
+    rnn_hidden_dim_eval = config.get('rnn_hidden_dim') # Get from config
+    conditioning_dim_eval = config.get('conditioning_dim') # Get from config
+    if rnn_hidden_dim_eval is None or conditioning_dim_eval is None:
+        raise ValueError("rnn_hidden_dim and conditioning_dim must be in config for encoder evaluation.")
+
+    print(f"Generating placeholder h_context and conditions_t for encoder evaluation.")
+    h_context_eval = np.zeros((num_samples, rnn_hidden_dim_eval), dtype=np.float32)
+    conditions_t_eval = np.zeros((num_samples, conditioning_dim_eval), dtype=np.float32)
     
-    # Process data based on whether sliding windows are used.
-    if config.get('use_sliding_windows', True):
-        window_size = config['window_size']
-        print(f"Creating sliding windows of size: {window_size}")
-        processed_data = create_sliding_windows(data, window_size)
-        print(f"Processed data shape for sliding windows: {processed_data.shape}")
-    else:
-        encoder_plugin_name = config.get('encoder_plugin', '').lower()
-        if encoder_plugin_name in ['lstm', 'transformer']:
-            print("[load_and_evaluate_encoder] Detected sequential plugin (LSTM/Transformer) without sliding windows; expanding dimension at axis 1.")
-            processed_data = np.expand_dims(data.to_numpy(), axis=1)
-        else:
-            print("Reshaping data to match encoder input shape.")
-            processed_data = np.expand_dims(data.to_numpy(), axis=-1)
-        print(f"Processed data shape without sliding windows: {processed_data.shape}")
+    encoder_inputs_eval = [x_t_data, h_context_eval, conditions_t_eval]
 
-    # Predict using the encoder.
-    print(f"Encoding data with shape: {processed_data.shape}")
-    encoded_data = model.predict(processed_data, verbose=1)
-    print(f"Encoded data shape: {encoded_data.shape}")
+    print(f"Encoding data. Input shapes: x_t: {encoder_inputs_eval[0].shape}, h_context: {encoder_inputs_eval[1].shape}, conditions_t: {encoder_inputs_eval[2].shape}")
+    # The CVAE encoder component outputs [z_mean, z_log_var]
+    encoded_outputs = encoder_component_model.predict(encoder_inputs_eval, verbose=1)
+    z_mean_data = encoded_outputs[0]
+    z_log_var_data = encoded_outputs[1] # z_log_var might also be useful to save/analyze
+    
+    print(f"Encoded z_mean shape: {z_mean_data.shape}, z_log_var shape: {z_log_var_data.shape}")
 
-    # Flatten 3D encoded data to 2D for saving.
-    if len(encoded_data.shape) == 3:
-        num_samples, dim1, dim2 = encoded_data.shape
-        encoded_data_reshaped = encoded_data.reshape(num_samples, dim1 * dim2)
-        print(f"Reshaped encoded data to 2D: {encoded_data_reshaped.shape}")
-    elif len(encoded_data.shape) == 2:
-        encoded_data_reshaped = encoded_data
-    else:
-        raise ValueError(f"Unexpected encoded_data shape: {encoded_data.shape}")
-
+    # Save z_mean (or both)
     if config.get('evaluate_encoder'):
-        print(f"Saving encoded data to {config['evaluate_encoder']}")
-        encoded_df = pd.DataFrame(encoded_data_reshaped)
-        # Prepend the DATE_TIME column if available and if row counts match.
-        if original_dates is not None and len(original_dates) == encoded_df.shape[0]:
-            encoded_df.insert(0, "DATE_TIME", original_dates)
-        else:
-            print("Warning: Original date information not available or row count mismatch.")
+        output_filename = config['evaluate_encoder']
+        # For simplicity, saving only z_mean. Adapt if you need to save z_log_var or a combined representation.
+        encoded_df = pd.DataFrame(z_mean_data)
         
-        # Rename the feature columns.
-        if "DATE_TIME" in encoded_df.columns:
-            new_columns = ["DATE_TIME"] + [f"feature_{i}" for i in range(encoded_df.shape[1] - 1)]
-        else:
-            new_columns = [f"feature_{i}" for i in range(encoded_df.shape[1])]
-        encoded_df.columns = new_columns
+        # Add headers like 'latent_feature_0', 'latent_feature_1', ...
+        encoded_df.columns = [f'latent_feature_{i}' for i in range(z_mean_data.shape[1])]
         
-        encoded_df.to_csv(config['evaluate_encoder'], index=False)
-        print(f"Encoded data saved to {config['evaluate_encoder']}")
+        # original_dates logic (if applicable and data aligns)
+        # This part needs careful alignment if x_t_data was windowed or transformed.
+        # Assuming x_t_data corresponds row-wise to original dates for now.
+        original_data_for_dates = load_csv(file_path=config['input_file'], headers=config.get('headers', False), force_date=config.get('force_date', False))
+        if config.get('force_date', False) and hasattr(original_data_for_dates, 'index') and original_data_for_dates.index.name is not None:
+            if len(original_data_for_dates.index) == len(encoded_df):
+                encoded_df.index = original_data_for_dates.index[:len(encoded_df)]
+                encoded_df.index.name = 'date'
+                write_csv(output_filename, encoded_df, include_date=True, headers=True, force_date=True)
+            else:
+                print("Warning: Date index length mismatch for encoded data. Saving without dates.")
+                write_csv(output_filename, encoded_df, include_date=False, headers=True)
+        else:
+            write_csv(output_filename, encoded_df, include_date=False, headers=True)
+        print(f"Encoded z_mean data saved to {output_filename}")
 
-
-
-# app/data_processor.py
 
 def load_and_evaluate_decoder(config):
-    model = load_model(config['load_decoder'])
-    print(f"Decoder model loaded from {config['load_decoder']}")
+    """
+    Load and evaluate a pre-trained CVAE decoder component.
+    """
+    decoder_model_path = config['load_decoder']
+    decoder_component_model = load_model(decoder_model_path, compile=False)
+    print(f"CVAE Decoder component model loaded from {decoder_model_path}")
 
-    # Load the input data with headers and date based on config
-    data = load_csv(
-        file_path=config['input_file'],
-        headers=config.get('headers', False),
-        force_date=config.get('force_date', False)
-    )
+    # IMPORTANT: The 'input_file' for decoder evaluation should contain samples of the latent variable z_t.
+    # It should NOT be the original raw data unless it has been processed into z_t samples.
+    z_t_data = load_csv(
+        file_path=config['input_file'], # This file should contain z_t samples
+        headers=config.get('headers', False), # Adjust if z_t file has headers
+        force_date=config.get('force_date', False) # Adjust if z_t file has dates
+    ).to_numpy() # Assuming (num_samples, latent_dim)
 
-    # Apply sliding window
-    window_size = config['window_size']
-    windowed_data = create_sliding_windows(data, window_size)
+    num_samples = z_t_data.shape[0]
+    if z_t_data.shape[1] != config.get('latent_dim'):
+         print(f"Warning: Loaded z_t data feature count ({z_t_data.shape[1]}) does not match config's latent_dim ({config.get('latent_dim')}). Ensure correct z_t input file.")
+    
+    # TODO: Prepare h_context and conditions_t for decoder evaluation.
+    # These must match the dimensions the loaded decoder component expects.
+    rnn_hidden_dim_eval = config.get('rnn_hidden_dim')
+    conditioning_dim_eval = config.get('conditioning_dim')
+    if rnn_hidden_dim_eval is None or conditioning_dim_eval is None:
+        raise ValueError("rnn_hidden_dim and conditioning_dim must be in config for decoder evaluation.")
 
-    print(f"Decoding data with shape: {windowed_data.shape}")
-    decoded_data = model.predict(windowed_data)
-    print(f"Decoded data shape: {decoded_data.shape}")
+    print(f"Generating placeholder h_context and conditions_t for decoder evaluation.")
+    h_context_eval = np.zeros((num_samples, rnn_hidden_dim_eval), dtype=np.float32)
+    conditions_t_eval = np.zeros((num_samples, conditioning_dim_eval), dtype=np.float32)
 
-    # Reshape decoded_data from (samples, 32, 8) to (samples, 256)
-    if len(decoded_data.shape) == 3:
-        samples, dim1, dim2 = decoded_data.shape
-        decoded_data = decoded_data.reshape(samples, dim1 * dim2)
-        print(f"Reshaped decoded data to: {decoded_data.shape}")
-    elif len(decoded_data.shape) != 2:
-        raise ValueError(f"Unexpected decoded_data shape: {decoded_data.shape}")
+    decoder_inputs_eval = [z_t_data, h_context_eval, conditions_t_eval]
 
-    if config.get('force_date', False):
-        # Extract corresponding dates for each window
-        dates = data.index[window_size - 1:]
-        # Create a DataFrame with dates and decoded features
-        decoded_df = pd.DataFrame(decoded_data, index=dates)
-        decoded_df.index.name = 'date'
-    else:
-        # Create a DataFrame without dates
+    print(f"Decoding data. Input shapes: z_t: {decoder_inputs_eval[0].shape}, h_context: {decoder_inputs_eval[1].shape}, conditions_t: {decoder_inputs_eval[2].shape}")
+    # The CVAE decoder component outputs the reconstructed x_prime_t
+    decoded_data = decoder_component_model.predict(decoder_inputs_eval, verbose=1)
+    print(f"Decoded data (reconstructed x_prime_t) shape: {decoded_data.shape}")
+
+    # Save the decoded (reconstructed) data
+    if config.get('evaluate_decoder'):
+        output_filename = config['evaluate_decoder']
         decoded_df = pd.DataFrame(decoded_data)
+        
+        # Add headers like 'reconstructed_feature_0', 'reconstructed_feature_1', ...
+        decoded_df.columns = [f'reconstructed_feature_{i}' for i in range(decoded_data.shape[1])]
 
-    # Assign headers for decoded features, e.g., 'decoded_feature_1', 'decoded_feature_2', etc.
-    feature_names = [f'decoded_feature_{i+1}' for i in range(decoded_data.shape[1])]
-    decoded_df.columns = feature_names
-
-    # Save the decoded data to CSV using the write_csv function
-    evaluate_filename = config['evaluate_decoder']
-    write_csv(
-        file_path=evaluate_filename,
-        data=decoded_df,
-        include_date=config.get('force_date', False),
-        headers=True,  # Always include headers for decoded features
-        force_date=config.get('force_date', False)
-    )
-    print(f"Decoded data saved to {evaluate_filename}")
+        # Date handling: If the input z_t file had dates and they align, use them.
+        # This is complex as z_t might not directly correspond to original dates.
+        # For simplicity, saving without dates unless explicitly handled.
+        # If original_input_for_dates is needed, load it separately.
+        # original_data_for_dates = load_csv(file_path=config['original_data_for_dates_file'], ...) # If needed
+        
+        # Assuming for now that if force_date is true, the z_t input file might have dates.
+        input_z_data_for_dates = load_csv(file_path=config['input_file'], headers=config.get('headers', False), force_date=config.get('force_date', False))
+        if config.get('force_date', False) and hasattr(input_z_data_for_dates, 'index') and input_z_data_for_dates.index.name is not None:
+            if len(input_z_data_for_dates.index) == len(decoded_df):
+                decoded_df.index = input_z_data_for_dates.index[:len(decoded_df)]
+                decoded_df.index.name = 'date'
+                write_csv(output_filename, decoded_df, include_date=True, headers=True, force_date=True)
+            else:
+                print("Warning: Date index length mismatch for decoded data. Saving without dates.")
+                write_csv(output_filename, decoded_df, include_date=False, headers=True)
+        else:
+            write_csv(output_filename, decoded_df, include_date=False, headers=True)
+        print(f"Decoded data saved to {output_filename}")
 
 
 

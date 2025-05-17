@@ -46,11 +46,28 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     datasets = preprocessor_plugin.run_preprocessing(config)
     print("PreprocessorPlugin finished.")
 
-    x_train_data = datasets.get("x_train") # This is the raw x_t data, potentially 2D or 3D
+    x_train_data = datasets.get("x_train") 
     x_val_data = datasets.get("x_val")
+    
+    # Fetch the 6-feature targets from the preprocessor's output
+    y_train_targets_6_features = datasets.get("y_train") # Or whatever key you use
+    y_val_targets_6_features = datasets.get("y_val")   # Or whatever key you use
 
     if x_train_data is None or x_val_data is None:
         raise ValueError("PreprocessorPlugin did not return 'x_train' or 'x_val' data.")
+    if y_train_targets_6_features is None or y_val_targets_6_features is None:
+        raise ValueError("PreprocessorPlugin did not return 'y_train' or 'y_val' target data (6 features).")
+
+    if y_train_targets_6_features.shape[-1] != 6 or (len(y_train_targets_6_features.shape) != 2):
+        raise ValueError(f"y_train_targets_6_features should be 2D with 6 features, but got shape {y_train_targets_6_features.shape}")
+    if y_val_targets_6_features.shape[-1] != 6 or (len(y_val_targets_6_features.shape) != 2):
+        raise ValueError(f"y_val_targets_6_features should be 2D with 6 features, but got shape {y_val_targets_6_features.shape}")
+    
+    # Ensure the number of samples match
+    if x_train_data.shape[0] != y_train_targets_6_features.shape[0]:
+        raise ValueError(f"Sample count mismatch between x_train_data ({x_train_data.shape[0]}) and y_train_targets_6_features ({y_train_targets_6_features.shape[0]})")
+    if x_val_data.shape[0] != y_val_targets_6_features.shape[0]:
+        raise ValueError(f"Sample count mismatch between x_val_data ({x_val_data.shape[0]}) and y_val_targets_6_features ({y_val_targets_6_features.shape[0]})")
 
     # --- Populate necessary dimensions in config ---
     
@@ -163,10 +180,10 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
 
 
     cvae_train_inputs = [x_train_data, h_context_train, conditions_t_train]
-    cvae_train_targets = x_train_data # Target for reconstruction is x_t
+    cvae_train_targets = y_train_targets_6_features # Use the 6-feature targets
 
     cvae_val_inputs = [x_val_data, h_context_val, conditions_t_val]
-    cvae_val_targets = x_val_data
+    cvae_val_targets = y_val_targets_6_features   # Use the 6-feature targets
 
     # Truncate validation inputs/targets if necessary (already handled for x_val_data by preprocessor or earlier logic)
     # This should be ensured by the preprocessor plugin or initial data loading.

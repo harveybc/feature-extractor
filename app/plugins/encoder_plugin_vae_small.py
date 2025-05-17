@@ -1,49 +1,57 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Concatenate # Changed imports
+from keras.layers import Dense, Input, Concatenate, Conv1D, MaxPooling1D, Flatten, Dropout, BatchNormalization, LeakyReLU
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
-# Removed unused imports like Conv1D, MaxPooling1D, Flatten, etc.
-# from keras.callbacks import EarlyStopping # Callbacks are usually for training the whole model
-# from keras.layers import BatchNormalization, LeakyReLU, Reshape
-# from tensorflow.keras.losses import Huber
-# from tensorflow.keras.layers import Bidirectional, LSTM
-
 
 class Plugin:
     """
     Plugin to define and manage a per-step inference network (encoder-like component)
-    for a sequential, conditional generative model (e.g., VRNN).
-    This network takes current inputs (x_t, h_{t-1}, conditions_t) and outputs
-    parameters for the latent variable z_t (z_mean_t, z_log_var_t).
+    for a sequential, conditional generative model (e.g., CVAE for time series).
+    This network takes a window of current inputs (x_window_t), a recurrent context (h_{t-1}),
+    and other conditions (conditions_t) to output parameters for the latent variable z_t.
     """
 
     plugin_params = {
-        "activation": "relu", # Common for intermediate dense layers
-        'learning_rate': 0.0001, # Example, will be part of the larger model's optimizer
+        "conv_activation": "relu",
+        "dense_activation": "relu",
+        'learning_rate': 0.0001, # Example, part of the larger model's optimizer
         "l2_reg": 1e-5,
-        "dense_layer_sizes": [128, 64], # Example intermediate layer sizes
+        "dropout_rate": 0.2,
+        "conv_layers_config": [ # Example: list of dicts for Conv1D layers
+            {"filters": 32, "kernel_size": 5, "strides": 1, "padding": "causal"},
+            {"filters": 64, "kernel_size": 3, "strides": 1, "padding": "causal"}
+        ],
+        "use_batch_norm_conv": True,
+        "use_max_pooling": True,
+        "pool_size": 2,
+        "dense_layer_sizes_after_concat": [128, 64], # Dense layers after concatenating conv output, h_prev, conditions
         # Parameters to be configured:
-        "x_feature_dim": None, # Dimensionality of x_t (e.g., 6 base features)
+        "window_size": None, # Number of time steps in the input window
+        "input_features_per_step": None, # Dimensionality of features at each step in the input window
         "rnn_hidden_dim": None, # Dimensionality of h_{t-1}
-        "conditioning_dim": None, # Dimensionality of other conditions (seasonal, current fundamentals)
+        "conditioning_dim": None, # Dimensionality of other conditions (e.g., previous step's 6 target features)
         "latent_dim": None, # Output latent dimension for z_t
     }
 
     plugin_debug_vars = [
-        'x_feature_dim', 'rnn_hidden_dim', 'conditioning_dim', 'latent_dim',
-        'dense_layer_sizes', 'activation', 'l2_reg'
+        'window_size', 'input_features_per_step', 'rnn_hidden_dim', 'conditioning_dim', 'latent_dim',
+        'conv_layers_config', 'dense_layer_sizes_after_concat', 'conv_activation', 'dense_activation', 
+        'l2_reg', 'dropout_rate', 'use_batch_norm_conv', 'use_max_pooling'
     ]
 
     def __init__(self):
         self.params = self.plugin_params.copy()
-        self.inference_network_model = None # Renamed from encoder_model
-        # self.shape_before_flatten_for_decoder is no longer relevant for this type of model
+        self.inference_network_model = None
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
-            self.params[key] = value # Allow setting any, or check against self.params.keys()
+            if key in self.params: # Only update known params or allow adding new ones
+                self.params[key] = value
+            elif key in ["conv_layers_config", "dense_layer_sizes_after_concat"]: # Deep copy for mutable defaults
+                 self.params[key] = [item.copy() if isinstance(item, dict) else item for item in value]
+
 
     def get_debug_info(self):
         return {var: self.params.get(var) for var in self.plugin_debug_vars}
@@ -52,12 +60,15 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_model_architecture(self, x_feature_dim: int, rnn_hidden_dim: int, conditioning_dim: int, latent_dim: int, config: dict = None):
+    def configure_model_architecture(self, window_size: int, input_features_per_step: int, 
+                                     rnn_hidden_dim: int, conditioning_dim: int, latent_dim: int, 
+                                     config: dict = None):
         """
-        Configures the per-step inference network.
+        Configures the per-step inference network with Conv1D layers for windowed input.
 
         Args:
-            x_feature_dim (int): Dimensionality of the observable x_t at the current step.
+            window_size (int): Number of time steps in the input window.
+            input_features_per_step (int): Dimensionality of features at each step in the input window.
             rnn_hidden_dim (int): Dimensionality of the RNN's previous hidden state h_{t-1}.
             conditioning_dim (int): Dimensionality of other concatenated conditioning variables for step t.
             latent_dim (int): Desired dimensionality for the latent variable z_t.
@@ -66,158 +77,204 @@ class Plugin:
         if config is None:
             config = {}
 
-        self.params['x_feature_dim'] = x_feature_dim
+        # Update internal params with provided arguments and external config
+        self.params['window_size'] = window_size
+        self.params['input_features_per_step'] = input_features_per_step
         self.params['rnn_hidden_dim'] = rnn_hidden_dim
         self.params['conditioning_dim'] = conditioning_dim
         self.params['latent_dim'] = latent_dim
 
-        # Get parameters, prioritizing external config, then self.params (which has defaults)
-        activation = config.get("activation", self.params.get("activation", "relu"))
+        # Get architectural parameters, prioritizing external config, then self.params
+        conv_activation = config.get("conv_activation", self.params.get("conv_activation", "relu"))
+        dense_activation = config.get("dense_activation", self.params.get("dense_activation", "relu"))
         l2_reg_val = config.get("l2_reg", self.params.get("l2_reg", 1e-5))
-        dense_layer_sizes = config.get("dense_layer_sizes", self.params.get("dense_layer_sizes", [128, 64]))
+        dropout_rate = config.get("dropout_rate", self.params.get("dropout_rate", 0.2))
         
-        print(f"[DEBUG PerStepInferenceNetwork] Configuring with: x_dim={x_feature_dim}, h_dim={rnn_hidden_dim}, cond_dim={conditioning_dim}, z_dim={latent_dim}")
-        print(f"[DEBUG PerStepInferenceNetwork] Dense layers: {dense_layer_sizes}, Activation: {activation}, L2: {l2_reg_val}")
+        conv_layers_config = config.get("conv_layers_config", self.params.get("conv_layers_config"))
+        use_batch_norm_conv = config.get("use_batch_norm_conv", self.params.get("use_batch_norm_conv", True))
+        use_max_pooling = config.get("use_max_pooling", self.params.get("use_max_pooling", True))
+        pool_size = config.get("pool_size", self.params.get("pool_size", 2))
+        
+        dense_layer_sizes_after_concat = config.get("dense_layer_sizes_after_concat", self.params.get("dense_layer_sizes_after_concat"))
+        
+        print(f"[DEBUG EncoderPlugin] Configuring with: window_size={window_size}, input_features={input_features_per_step}, "
+              f"h_dim={rnn_hidden_dim}, cond_dim={conditioning_dim}, z_dim={latent_dim}")
+        print(f"[DEBUG EncoderPlugin] Conv Layers: {conv_layers_config}, Dense Layers (post-concat): {dense_layer_sizes_after_concat}")
 
-        # Define inputs for a single time step
-        # Note: x_t_input is primarily used during training when actual x_t is available.
-        # For generation, if x_t is what's being generated, it might not be an input here,
-        # or this network is part of a larger structure. Assuming VRNN-like training for now.
-        input_x_t = Input(shape=(x_feature_dim,), name="input_x_t")
+        # --- Define Model ---
+        input_x_window = Input(shape=(window_size, input_features_per_step), name="input_x_window")
         input_h_prev = Input(shape=(rnn_hidden_dim,), name="input_h_prev")
         input_conditions_t = Input(shape=(conditioning_dim,), name="input_conditions_t")
 
-        # Concatenate all inputs
-        concatenated_inputs = Concatenate(name="concat_inputs")([input_x_t, input_h_prev, input_conditions_t])
-
-        # Intermediate Dense layers
-        x = concatenated_inputs
-        for i, units in enumerate(dense_layer_sizes):
-            x = Dense(
-                units,
-                activation=activation,
+        # Convolutional part for processing the window
+        x_conv = input_x_window
+        for i, conv_config in enumerate(conv_layers_config):
+            x_conv = Conv1D(
+                filters=conv_config["filters"],
+                kernel_size=conv_config["kernel_size"],
+                strides=conv_config.get("strides", 1),
+                padding=conv_config.get("padding", "causal"),
                 kernel_regularizer=l2(l2_reg_val),
-                name=f"dense_layer_{i+1}"
-            )(x)
+                name=f"conv1d_layer_{i+1}"
+            )(x_conv)
+            if use_batch_norm_conv:
+                x_conv = BatchNormalization(name=f"bn_conv_{i+1}")(x_conv)
+            if conv_activation == 'leakyrelu':
+                x_conv = LeakyReLU(name=f"leakyrelu_conv_{i+1}")(x_conv)
+            else:
+                x_conv = Dense(0, activation=conv_activation, name=f"{conv_activation}_conv_{i+1}")(x_conv) # Placeholder for activation if not LeakyReLU
+                # A bit of a hack for general activation, Keras Conv1D takes activation directly
+                # For simplicity, let's assume conv_activation is directly usable or handle specific cases
+                # Reverting to direct activation in Conv1D if simple
+                # x_conv = Conv1D(..., activation=conv_activation)(x_conv) # Simpler if activation is standard
+
+            if use_max_pooling and conv_config.get("pool_after", True): # Optional pooling after each conv
+                 x_conv = MaxPooling1D(pool_size=pool_size, name=f"maxpool_{i+1}")(x_conv)
+            if dropout_rate > 0:
+                x_conv = Dropout(dropout_rate, name=f"dropout_conv_{i+1}")(x_conv)
+        
+        # Flatten the output of Conv layers
+        flattened_conv_output = Flatten(name="flatten_conv_output")(x_conv)
+
+        # Concatenate flattened conv output with h_prev and conditions_t
+        concatenated_features = Concatenate(name="concat_features")([flattened_conv_output, input_h_prev, input_conditions_t])
+
+        # Dense layers after concatenation
+        x_dense = concatenated_features
+        for i, units in enumerate(dense_layer_sizes_after_concat):
+            x_dense = Dense(
+                units,
+                kernel_regularizer=l2(l2_reg_val),
+                name=f"dense_layer_post_concat_{i+1}"
+            )(x_dense)
+            # Batch Norm and Activation for Dense layers
+            x_dense = BatchNormalization(name=f"bn_dense_{i+1}")(x_dense)
+            if dense_activation == 'leakyrelu':
+                 x_dense = LeakyReLU(name=f"leakyrelu_dense_{i+1}")(x_dense)
+            else:
+                 x_dense = Dense(0, activation=dense_activation, name=f"{dense_activation}_dense_{i+1}")(x_dense) # Placeholder for activation
+                 # x_dense = Dense(units, activation=dense_activation, ...)(x_dense) # Simpler
+
+            if dropout_rate > 0:
+                x_dense = Dropout(dropout_rate, name=f"dropout_dense_{i+1}")(x_dense)
+
 
         # Output layers for z_mean and z_log_var
-        z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(x)
-        z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(x)
+        z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(x_dense)
+        z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(x_dense)
 
         self.inference_network_model = Model(
-            inputs=[input_x_t, input_h_prev, input_conditions_t],
+            inputs=[input_x_window, input_h_prev, input_conditions_t],
             outputs=[z_mean, z_log_var],
-            name="per_step_inference_network"
+            name="conv1d_cvae_encoder"
         )
         
-        print(f"[DEBUG PerStepInferenceNetwork] Model built. Inputs: {[input_x_t, input_h_prev, input_conditions_t]}, Outputs: {[z_mean, z_log_var]}")
-        self.inference_network_model.summary() # Print model summary
+        print(f"[DEBUG EncoderPlugin] Model built.")
+        self.inference_network_model.summary()
 
     def train(self, *args, **kwargs):
-        # This plugin defines a component. Training is handled by the main sequential model
-        # (e.g., the VRNN model in synthetic-datagen's OptimizerPlugin).
-        # This method could be used for pre-training this component if desired,
-        # but that would require a specific setup.
-        print("WARNING: PerStepInferenceNetworkPlugin.train() called. This component is typically trained as part of a larger sequential model.")
+        print("WARNING: EncoderPlugin.train() called. This component is typically trained as part of a larger CVAE model.")
         pass
 
     def encode(self, per_step_inputs: list):
         """
-        Processes the inputs for a single time step (or a batch of time steps)
-        to produce z_mean and z_log_var.
+        Processes the inputs (window, h_prev, conditions) to produce z_mean and z_log_var.
 
         Args:
-            per_step_inputs (list): A list containing [x_t_batch, h_prev_batch, conditions_t_batch].
+            per_step_inputs (list): A list containing [x_window_batch, h_prev_batch, conditions_t_batch].
                                    Shapes:
-                                   - x_t_batch: (batch_size, x_feature_dim)
+                                   - x_window_batch: (batch_size, window_size, input_features_per_step)
                                    - h_prev_batch: (batch_size, rnn_hidden_dim)
                                    - conditions_t_batch: (batch_size, conditioning_dim)
         Returns:
             tuple: (z_mean_batch, z_log_var_batch)
         """
         if not self.inference_network_model:
-            raise ValueError("Per-step inference network model is not configured or loaded.")
+            raise ValueError("Encoder model is not configured or loaded.")
         if not isinstance(per_step_inputs, list) or len(per_step_inputs) != 3:
-            raise ValueError("per_step_inputs must be a list of three numpy arrays: [x_t_batch, h_prev_batch, conditions_t_batch]")
+            raise ValueError("per_step_inputs must be a list of three numpy arrays: [x_window_batch, h_prev_batch, conditions_t_batch]")
         
-        print(f"[PerStepInferenceNetwork] Encoding with input shapes: {[data.shape for data in per_step_inputs]}")
-        z_mean_batch, z_log_var_batch = self.inference_network_model.predict(per_step_inputs)
-        print(f"[PerStepInferenceNetwork] Produced z_mean shape: {z_mean_batch.shape}, z_log_var shape: {z_log_var_batch.shape}")
+        # print(f"[EncoderPlugin] Encoding with input shapes: {[data.shape for data in per_step_inputs]}")
+        z_mean_batch, z_log_var_batch = self.inference_network_model.predict(per_step_inputs, verbose=0)
+        # print(f"[EncoderPlugin] Produced z_mean shape: {z_mean_batch.shape}, z_log_var shape: {z_log_var_batch.shape}")
         return z_mean_batch, z_log_var_batch
 
     def save(self, file_path):
         if self.inference_network_model:
-            # Save the architectural configuration (self.params) alongside the model weights if needed,
-            # or ensure the loading mechanism can reconstruct it.
-            # For simplicity, just saving the Keras model here.
             save_model(self.inference_network_model, file_path)
-            print(f"Per-step inference network model saved to {file_path}")
+            print(f"Encoder model saved to {file_path}")
         else:
-            print("Per-step inference network model not available to save.")
+            print("Encoder model not available to save.")
 
-    def load(self, file_path, compile_model=False): # Changed compile to compile_model for clarity
-        # compile=False is typical if this model is a sub-component or only used for predict.
+    def load(self, file_path, compile_model=False):
         self.inference_network_model = load_model(file_path, compile=compile_model)
-        print(f"Per-step inference network model loaded from {file_path}")
+        print(f"Encoder model loaded from {file_path}")
         
-        # Attempt to re-populate params from the loaded model's structure
         try:
             input_layers = self.inference_network_model.inputs
-            self.params['x_feature_dim'] = input_layers[0].shape[-1]
+            self.params['window_size'] = input_layers[0].shape[1]
+            self.params['input_features_per_step'] = input_layers[0].shape[2]
             self.params['rnn_hidden_dim'] = input_layers[1].shape[-1]
             self.params['conditioning_dim'] = input_layers[2].shape[-1]
             
             output_layers = self.inference_network_model.outputs
             self.params['latent_dim'] = output_layers[0].shape[-1]
             
-            print(f"[DEBUG PerStepInferenceNetwork Load] Reconstructed params from model: "
-                  f"x_dim={self.params['x_feature_dim']}, h_dim={self.params['rnn_hidden_dim']}, "
-                  f"cond_dim={self.params['conditioning_dim']}, z_dim={self.params['latent_dim']}")
+            print(f"[DEBUG EncoderPlugin Load] Reconstructed params from model: "
+                  f"window_size={self.params['window_size']}, input_features={self.params['input_features_per_step']}, "
+                  f"h_dim={self.params['rnn_hidden_dim']}, cond_dim={self.params['conditioning_dim']}, "
+                  f"z_dim={self.params['latent_dim']}")
         except Exception as e:
-            print(f"[WARNING PerStepInferenceNetwork Load] Could not fully reconstruct params from loaded model structure. Error: {e}. Ensure manual configuration if needed.")
+            print(f"[WARNING EncoderPlugin Load] Could not fully reconstruct params from loaded model. Error: {e}.")
 
-# Example of how this plugin might be used (conceptual, actual use is within synthetic-datagen)
+# Example usage
 if __name__ == "__main__":
     plugin = Plugin()
     
-    # Example dimensions
-    _x_dim = 6
+    _window_size = 20
+    _input_features = 50 # e.g., O,H,L,C,Vol + many TIs + seasonal
     _h_dim = 64
-    _cond_dim = 10 # e.g., 6 seasonal + 2 current fundamentals + 2 high-frequency summary
+    _cond_dim = 6 # e.g., previous step's 6 target features (O,L,H,C,BC-BO,BH-BL)
     _latent_dim = 32
     
+    # Example config override for testing
+    test_config = {
+        "conv_layers_config": [
+            {"filters": 16, "kernel_size": 5, "strides": 1, "padding": "causal", "pool_after": True},
+            {"filters": 32, "kernel_size": 3, "strides": 1, "padding": "causal", "pool_after": False}
+        ],
+        "dense_layer_sizes_after_concat": [64],
+        "dropout_rate": 0.1,
+        "conv_activation": "relu", # Changed to relu for direct use in Conv1D
+        "dense_activation": "relu" # Changed to relu for direct use in Dense
+    }
+
     plugin.configure_model_architecture(
-        x_feature_dim=_x_dim,
+        window_size=_window_size,
+        input_features_per_step=_input_features,
         rnn_hidden_dim=_h_dim,
         conditioning_dim=_cond_dim,
         latent_dim=_latent_dim,
-        config={"dense_layer_sizes": [100, 50], "activation": "swish"} # Example override
+        config=test_config
     )
     
-    # Create dummy batch data for testing encode
     batch_size = 4
-    dummy_x_t = np.random.rand(batch_size, _x_dim).astype(np.float32)
+    dummy_x_window = np.random.rand(batch_size, _window_size, _input_features).astype(np.float32)
     dummy_h_prev = np.random.rand(batch_size, _h_dim).astype(np.float32)
     dummy_conditions_t = np.random.rand(batch_size, _cond_dim).astype(np.float32)
     
-    z_mean, z_log_var = plugin.encode([dummy_x_t, dummy_h_prev, dummy_conditions_t])
-    
+    z_mean, z_log_var = plugin.encode([dummy_x_window, dummy_h_prev, dummy_conditions_t])
     print(f"\nTest encode output shapes: z_mean: {z_mean.shape}, z_log_var: {z_log_var.shape}")
 
-    # Test save and load
-    model_path = "temp_per_step_inference_net.keras"
+    model_path = "temp_conv1d_cvae_encoder.keras"
     plugin.save(model_path)
-    
     loaded_plugin = Plugin()
     loaded_plugin.load(model_path)
-    
-    # Verify loaded model can predict
-    z_mean_loaded, z_log_var_loaded = loaded_plugin.encode([dummy_x_t, dummy_h_prev, dummy_conditions_t])
+    z_mean_loaded, z_log_var_loaded = loaded_plugin.encode([dummy_x_window, dummy_h_prev, dummy_conditions_t])
     print(f"Test loaded encode output shapes: z_mean: {z_mean_loaded.shape}, z_log_var: {z_log_var_loaded.shape}")
-    np.testing.assert_array_almost_equal(z_mean, z_mean_loaded) # Check if outputs are the same
+    np.testing.assert_array_almost_equal(z_mean, z_mean_loaded)
     print("\nSave, load, and re-encode test successful.")
     
-    # Clean up
     import os
     if os.path.exists(model_path):
         os.remove(model_path)

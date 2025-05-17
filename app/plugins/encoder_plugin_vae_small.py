@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Concatenate, Conv1D, MaxPooling1D, Flatten, Dropout, BatchNormalization, LeakyReLU
+from keras.layers import Dense, Input, Concatenate, Conv1D, Flatten, LSTM, Bidirectional # Removed MaxPooling, Dropout, BatchNormalization, LeakyReLU
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
@@ -11,34 +11,29 @@ class Plugin:
     for a sequential, conditional generative model (e.g., CVAE for time series).
     This network takes a window of current inputs (x_window_t), a recurrent context (h_{t-1}),
     and other conditions (conditions_t) to output parameters for the latent variable z_t.
+    Uses a simplified Conv1D -> BiLSTM architecture.
     """
 
     plugin_params = {
         "conv_activation": "relu",
-        "dense_activation": "relu",
-        'learning_rate': 0.0001, # Example, part of the larger model's optimizer
+        'learning_rate': 0.0001, 
         "l2_reg": 1e-5,
-        "dropout_rate": 0.2,
-        "conv_layers_config": [ # Example: list of dicts for Conv1D layers
-            {"filters": 32, "kernel_size": 5, "strides": 1, "padding": "causal"},
-            {"filters": 64, "kernel_size": 3, "strides": 1, "padding": "causal"}
-        ],
-        "use_batch_norm_conv": True,
-        "use_max_pooling": True,
-        "pool_size": 2,
-        "dense_layer_sizes_after_concat": [128, 64], # Dense layers after concatenating conv output, h_prev, conditions
+        # Parameters for the 4 Conv1D layers
+        "initial_conv_filters": 128, # Filters for the first Conv1D layer, e.g., 128 -> 64 -> 32 -> 16
+        "conv_kernel_size": 5,      # Kernel size for all Conv1D layers
+        "conv_padding": "same",     # Padding for Conv1D layers
         # Parameters to be configured:
-        "window_size": None, # Number of time steps in the input window
-        "input_features_per_step": None, # Dimensionality of features at each step in the input window
-        "rnn_hidden_dim": None, # Dimensionality of h_{t-1}
-        "conditioning_dim": None, # Dimensionality of other conditions (e.g., previous step's 6 target features)
-        "latent_dim": None, # Output latent dimension for z_t
+        "window_size": None, 
+        "input_features_per_step": None, 
+        "rnn_hidden_dim": None, 
+        "conditioning_dim": None, 
+        "latent_dim": None, 
     }
 
     plugin_debug_vars = [
         'window_size', 'input_features_per_step', 'rnn_hidden_dim', 'conditioning_dim', 'latent_dim',
-        'conv_layers_config', 'dense_layer_sizes_after_concat', 'conv_activation', 'dense_activation', 
-        'l2_reg', 'dropout_rate', 'use_batch_norm_conv', 'use_max_pooling'
+        'initial_conv_filters', 'conv_kernel_size', 'conv_padding', 'conv_activation', 
+        'l2_reg'
     ]
 
     def __init__(self):
@@ -47,11 +42,8 @@ class Plugin:
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
-            if key in self.params: # Only update known params or allow adding new ones
+            if key in self.params: 
                 self.params[key] = value
-            elif key in ["conv_layers_config", "dense_layer_sizes_after_concat"]: # Deep copy for mutable defaults
-                 self.params[key] = [item.copy() if isinstance(item, dict) else item for item in value]
-
 
     def get_debug_info(self):
         return {var: self.params.get(var) for var in self.plugin_debug_vars}
@@ -64,7 +56,8 @@ class Plugin:
                                      rnn_hidden_dim: int, conditioning_dim: int, latent_dim: int, 
                                      config: dict = None):
         """
-        Configures the per-step inference network with Conv1D layers for windowed input.
+        Configures the per-step inference network with a fixed 4-layer Conv1D architecture
+        followed by a Bidirectional LSTM.
 
         Args:
             window_size (int): Number of time steps in the input window.
@@ -85,21 +78,16 @@ class Plugin:
         self.params['latent_dim'] = latent_dim
 
         # Get architectural parameters, prioritizing external config, then self.params
-        conv_activation = config.get("conv_activation", self.params.get("conv_activation", "relu"))
-        dense_activation = config.get("dense_activation", self.params.get("dense_activation", "relu"))
+        conv_activation_str = config.get("conv_activation", self.params.get("conv_activation", "relu"))
         l2_reg_val = config.get("l2_reg", self.params.get("l2_reg", 1e-5))
-        dropout_rate = config.get("dropout_rate", self.params.get("dropout_rate", 0.2))
-        
-        conv_layers_config = config.get("conv_layers_config", self.params.get("conv_layers_config"))
-        use_batch_norm_conv = config.get("use_batch_norm_conv", self.params.get("use_batch_norm_conv", True))
-        use_max_pooling = config.get("use_max_pooling", self.params.get("use_max_pooling", True))
-        pool_size = config.get("pool_size", self.params.get("pool_size", 2))
-        
-        dense_layer_sizes_after_concat = config.get("dense_layer_sizes_after_concat", self.params.get("dense_layer_sizes_after_concat"))
+        initial_conv_filters = config.get("initial_conv_filters", self.params.get("initial_conv_filters", 128))
+        conv_kernel_size = config.get("conv_kernel_size", self.params.get("conv_kernel_size", 5))
+        conv_padding = config.get("conv_padding", self.params.get("conv_padding", "same"))
         
         print(f"[DEBUG EncoderPlugin] Configuring with: window_size={window_size}, input_features={input_features_per_step}, "
               f"h_dim={rnn_hidden_dim}, cond_dim={conditioning_dim}, z_dim={latent_dim}")
-        print(f"[DEBUG EncoderPlugin] Conv Layers: {conv_layers_config}, Dense Layers (post-concat): {dense_layer_sizes_after_concat}")
+        print(f"[DEBUG EncoderPlugin] Conv Params: initial_filters={initial_conv_filters}, kernel_size={conv_kernel_size}, "
+              f"padding='{conv_padding}', activation='{conv_activation_str}', l2_reg={l2_reg_val}")
 
         # --- Define Model ---
         input_x_window = Input(shape=(window_size, input_features_per_step), name="input_x_window")
@@ -108,69 +96,51 @@ class Plugin:
 
         # Convolutional part for processing the window
         x_conv = input_x_window
-        for i, conv_config in enumerate(conv_layers_config):
+        current_filters = initial_conv_filters
+
+        for i in range(4): # 4 Conv1D layers
             x_conv = Conv1D(
-                filters=conv_config["filters"],
-                kernel_size=conv_config["kernel_size"],
-                strides=conv_config.get("strides", 1),
-                padding=conv_config.get("padding", "causal"),
+                filters=current_filters,
+                kernel_size=conv_kernel_size,
+                strides=2, # Downsample
+                padding=conv_padding,
+                activation=conv_activation_str,
                 kernel_regularizer=l2(l2_reg_val),
                 name=f"conv1d_layer_{i+1}"
             )(x_conv)
-            if use_batch_norm_conv:
-                x_conv = BatchNormalization(name=f"bn_conv_{i+1}")(x_conv)
-            if conv_activation == 'leakyrelu':
-                x_conv = LeakyReLU(name=f"leakyrelu_conv_{i+1}")(x_conv)
-            else:
-                x_conv = Dense(0, activation=conv_activation, name=f"{conv_activation}_conv_{i+1}")(x_conv) # Placeholder for activation if not LeakyReLU
-                # A bit of a hack for general activation, Keras Conv1D takes activation directly
-                # For simplicity, let's assume conv_activation is directly usable or handle specific cases
-                # Reverting to direct activation in Conv1D if simple
-                # x_conv = Conv1D(..., activation=conv_activation)(x_conv) # Simpler if activation is standard
+            if i < 3: # For the first 3 layers, halve the filters for the next layer
+                current_filters = max(1, current_filters // 2) # Ensure filters don't go below 1
 
-            if use_max_pooling and conv_config.get("pool_after", True): # Optional pooling after each conv
-                 x_conv = MaxPooling1D(pool_size=pool_size, name=f"maxpool_{i+1}")(x_conv)
-            if dropout_rate > 0:
-                x_conv = Dropout(dropout_rate, name=f"dropout_conv_{i+1}")(x_conv)
-        
-        # Flatten the output of Conv layers
-        flattened_conv_output = Flatten(name="flatten_conv_output")(x_conv)
+        # Bidirectional LSTM layer
+        # The number of units for LSTM will be the number of filters in the last Conv1D layer
+        lstm_units = current_filters 
+        print(f"[DEBUG EncoderPlugin] LSTM units (derived from last Conv1D filters): {lstm_units}")
+        bilstm_output = Bidirectional(
+            LSTM(units=lstm_units, 
+                 activation='tanh', # Common activation for LSTM
+                 recurrent_activation='sigmoid', # Common activation for LSTM
+                 kernel_regularizer=l2(l2_reg_val),
+                 recurrent_regularizer=l2(l2_reg_val),
+                 return_sequences=False), # Output only the final state
+            name="bilstm_layer"
+        )(x_conv) # Input to BiLSTM is the output of the last Conv1D layer
 
-        # Concatenate flattened conv output with h_prev and conditions_t
-        concatenated_features = Concatenate(name="concat_features")([flattened_conv_output, input_h_prev, input_conditions_t])
+        # Concatenate BiLSTM output with h_prev and conditions_t
+        # Note: BiLSTM output is already flattened because return_sequences=False
+        concatenated_features = Concatenate(name="concat_features")([bilstm_output, input_h_prev, input_conditions_t])
 
-        # Dense layers after concatenation
-        x_dense = concatenated_features
-        for i, units in enumerate(dense_layer_sizes_after_concat):
-            x_dense = Dense(
-                units,
-                kernel_regularizer=l2(l2_reg_val),
-                name=f"dense_layer_post_concat_{i+1}"
-            )(x_dense)
-            # Batch Norm and Activation for Dense layers
-            x_dense = BatchNormalization(name=f"bn_dense_{i+1}")(x_dense)
-            if dense_activation == 'leakyrelu':
-                 x_dense = LeakyReLU(name=f"leakyrelu_dense_{i+1}")(x_dense)
-            else:
-                 x_dense = Dense(0, activation=dense_activation, name=f"{dense_activation}_dense_{i+1}")(x_dense) # Placeholder for activation
-                 # x_dense = Dense(units, activation=dense_activation, ...)(x_dense) # Simpler
-
-            if dropout_rate > 0:
-                x_dense = Dropout(dropout_rate, name=f"dropout_dense_{i+1}")(x_dense)
-
-
-        # Output layers for z_mean and z_log_var
-        z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(x_dense)
-        z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(x_dense)
+        # Output layers for z_mean and z_log_var, fed directly from concatenated_features
+        z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(concatenated_features)
+        z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(concatenated_features)
 
         self.inference_network_model = Model(
             inputs=[input_x_window, input_h_prev, input_conditions_t],
             outputs=[z_mean, z_log_var],
-            name="conv1d_cvae_encoder"
+            name="simplified_conv_bilstm_cvae_encoder"
         )
         
         print(f"[DEBUG EncoderPlugin] Model built.")
-        self.inference_network_model.summary()
+        self.inference_network_model.summary(line_length=120)
 
     def train(self, *args, **kwargs):
         print("WARNING: EncoderPlugin.train() called. This component is typically trained as part of a larger CVAE model.")
@@ -231,22 +201,19 @@ class Plugin:
 if __name__ == "__main__":
     plugin = Plugin()
     
-    _window_size = 20
-    _input_features = 50 # e.g., O,H,L,C,Vol + many TIs + seasonal
+    _window_size = 288 # Example: 1 day of 5-min intervals
+    _input_features = 54 
     _h_dim = 64
-    _cond_dim = 6 # e.g., previous step's 6 target features (O,L,H,C,BC-BO,BH-BL)
+    _cond_dim = 6 
     _latent_dim = 32
     
-    # Example config override for testing
+    # Example config override for testing the simplified architecture
     test_config = {
-        "conv_layers_config": [
-            {"filters": 16, "kernel_size": 5, "strides": 1, "padding": "causal", "pool_after": True},
-            {"filters": 32, "kernel_size": 3, "strides": 1, "padding": "causal", "pool_after": False}
-        ],
-        "dense_layer_sizes_after_concat": [64],
-        "dropout_rate": 0.1,
-        "conv_activation": "relu", # Changed to relu for direct use in Conv1D
-        "dense_activation": "relu" # Changed to relu for direct use in Dense
+        "initial_conv_filters": 128, # e.g., 128 -> 64 -> 32 -> 16
+        "conv_kernel_size": 5,
+        "conv_padding": "same",
+        "conv_activation": "relu",
+        "l2_reg": 1e-5
     }
 
     plugin.configure_model_architecture(

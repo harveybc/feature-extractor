@@ -35,8 +35,8 @@ class MMDWeightAdjustmentCallback(tf.keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         # compute current Huber and MMD contributions
-        huber_val = logs.get('huber_metric', logs['loss'] - logs.get('kl_metric', 0.0) - logs.get('mmd_metric', 0.0) - logs.get('skew_metric', 0.0) - logs.get('kurtosis_metric', 0.0) - logs.get('covariance_metric', 0.0))
-        mmd_val   = logs.get('mmd_metric', 0.0)
+        huber_val = logs.get('huber_metric_fn', logs['loss'] - logs.get('kl_metric_fn', 0.0) - logs.get('mmd_metric_fn', 0.0) - logs.get('skew_metric_fn', 0.0) - logs.get('kurtosis_metric_fn', 0.0) - logs.get('covariance_metric_fn', 0.0)) # Use actual metric names
+        mmd_val   = logs.get('mmd_metric_fn', 0.0) # Use actual metric name
         ratio     = huber_val / (mmd_val + 1e-12)
         # keep ratio roughly in [0.5, 2.0]
         if ratio > 2.0:
@@ -86,25 +86,22 @@ def positional_encoding(position, d_model):
     pos_encoding = pos_encoding[np.newaxis, ...]  # Shape: (1, position, d_model)
     return tf.cast(pos_encoding, dtype=tf.float32)
 
-def mae_magnitude(y_true, y_pred_list): # y_pred is now a list
+def mae_magnitude(y_true, y_pred_reconstruction): # y_pred_reconstruction is the tensor
     """Compute MAE on the first column (e.g., 'OPEN' price) of the reconstruction."""
-    y_pred_reconstruction = y_pred_list[0] # Actual reconstruction (shape: batch, 6)
     # y_true will also have shape (batch, 6)
 
-    # Ensure y_true and y_pred_reconstruction are 2D and have at least one feature
     if len(tf.shape(y_true)) != 2 or len(tf.shape(y_pred_reconstruction)) != 2:
         tf.print(f"Warning: mae_magnitude expects 2D y_true (shape {tf.shape(y_true)}) and y_pred_reconstruction (shape {tf.shape(y_pred_reconstruction)}).")
-        return 0.0 # Or handle error appropriately
+        return 0.0 
     if tf.shape(y_true)[-1] == 0 or tf.shape(y_pred_reconstruction)[-1] == 0:
-        return 0.0 # No features to compare
+        return 0.0 
 
-    mag_true = y_true[:, 0:1] # Select the first feature
-    mag_pred = y_pred_reconstruction[:, 0:1] # Select the first feature
+    mag_true = y_true[:, 0:1] 
+    mag_pred = y_pred_reconstruction[:, 0:1] 
     return tf.reduce_mean(tf.abs(mag_true - mag_pred))
 
-def r2_metric(y_true, y_pred_list): # y_pred is now a list
+def r2_metric(y_true, y_pred_reconstruction): # y_pred_reconstruction is the tensor
     """Compute R² metric on the first column (e.g., 'OPEN' price) of the reconstruction."""
-    y_pred_reconstruction = y_pred_list[0] # Actual reconstruction (shape: batch, 6)
     # y_true will also have shape (batch, 6)
 
     if len(tf.shape(y_true)) != 2 or len(tf.shape(y_pred_reconstruction)) != 2:
@@ -113,8 +110,8 @@ def r2_metric(y_true, y_pred_list): # y_pred is now a list
     if tf.shape(y_true)[-1] == 0 or tf.shape(y_pred_reconstruction)[-1] == 0:
         return 0.0
 
-    mag_true = y_true[:, 0:1] # Select the first feature
-    mag_pred = y_pred_reconstruction[:, 0:1] # Select the first feature
+    mag_true = y_true[:, 0:1] 
+    mag_pred = y_pred_reconstruction[:, 0:1] 
     SS_res = tf.reduce_sum(tf.square(mag_true - mag_pred))
     SS_tot = tf.reduce_sum(tf.square(mag_true - tf.reduce_mean(mag_true)))
     return 1 - SS_res/(SS_tot + tf.keras.backend.epsilon())
@@ -291,7 +288,11 @@ class AutoencoderManager:
             # 7. Create the Single-Step CVAE Model
             self.autoencoder_model = Model(
                 inputs=[input_x_window, input_h_context, input_conditions_t], # CVAE takes the window as x_input
-                outputs=[reconstruction, z_mean, z_log_var], # Reconstruction is the 6-feature output
+                outputs={
+                    'reconstruction_output': reconstruction,
+                    'z_mean_output': z_mean,
+                    'z_log_var_output': z_log_var
+                },
                 name="windowed_input_cvae_6_features_out"
             )
             self.model = self.autoencoder_model # Keep self.model for compatibility if used elsewhere
@@ -310,10 +311,10 @@ class AutoencoderManager:
             # Loss function wrapper
             # y_true will be the 6 target features (batch_size, 6)
             # y_pred_list[0] (reconstruction_pred) will also be (batch_size, 6)
-            def cvae_combined_loss(y_true, y_pred_list):
-                reconstruction_pred = y_pred_list[0] # Shape (batch, 6)
-                z_mean_pred = y_pred_list[1]
-                z_log_var_pred = y_pred_list[2]
+            def cvae_combined_loss(y_true, y_pred):
+                reconstruction_pred = y_pred['reconstruction_output'] # Shape (batch, 6)
+                z_mean_pred = y_pred['z_mean_output']
+                z_log_var_pred = y_pred['z_log_var_output']
 
                 y_true_f32 = tf.cast(y_true, tf.float32) # Shape (batch, 6)
                 reconstruction_pred_f32 = tf.cast(reconstruction_pred, tf.float32) # Shape (batch, 6)
@@ -371,12 +372,12 @@ class AutoencoderManager:
                 return total_loss
 
             # Metrics
-            def mmd_metric_fn(y_true, y_pred_list): return mmd_total
-            def huber_metric_fn(y_true, y_pred_list): return huber_loss_tracker
-            def kl_metric_fn(y_true, y_pred_list): return kl_loss_tracker
-            def skew_metric_fn(y_true, y_pred_list): return skew_loss_tracker
-            def kurtosis_metric_fn(y_true, y_pred_list): return kurtosis_loss_tracker
-            def covariance_metric_fn(y_true, y_pred_list): return covariance_loss_tracker
+            def mmd_metric_fn(y_true, y_pred): return mmd_total
+            def huber_metric_fn(y_true, y_pred): return huber_loss_tracker
+            def kl_metric_fn(y_true, y_pred): return kl_loss_tracker
+            def skew_metric_fn(y_true, y_pred): return skew_loss_tracker
+            def kurtosis_metric_fn(y_true, y_pred): return kurtosis_loss_tracker
+            def covariance_metric_fn(y_true, y_pred): return covariance_loss_tracker
 
             metrics_list = [
                 'mae', # Keras default MAE on y_true vs reconstruction_pred (both are 6 features)
@@ -392,7 +393,7 @@ class AutoencoderManager:
 
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
-                loss=cvae_combined_loss,
+                loss={'reconstruction_output': cvae_combined_loss},
                 metrics=metrics_list,
                 run_eagerly=config.get('run_eagerly', False)
             )
@@ -410,11 +411,6 @@ class AutoencoderManager:
         if not self.autoencoder_model:
             raise RuntimeError("[train_autoencoder] Single-step CVAE model not built. Please call build_autoencoder first.")
 
-        # data_inputs is expected to be a list/tuple: 
-        # [x_window_numpy (batch, window, features_in_window), 
-        #  h_context_numpy (batch, rnn_hidden_dim), 
-        #  conditions_t_numpy (batch, conditioning_dim)]
-        # data_targets is expected to be x_target_numpy (batch, 6) for reconstruction loss
         if not isinstance(data_inputs, (list, tuple)) or len(data_inputs) != 3:
             raise ValueError("data_inputs must be a list/tuple of 3 arrays: [x_window_data, h_context_data, conditions_t_data]")
         
@@ -438,12 +434,14 @@ class AutoencoderManager:
             ReduceLROnPlateauWithCounter(monitor="val_loss", factor=0.5, patience=patience_rlr, cooldown=5, min_delta=min_delta_es, verbose=1),
             LambdaCallback(on_epoch_end=lambda epoch, logs: print(f"Epoch {epoch+1}: LR={K.get_value(self.model.optimizer.learning_rate):.6f}"))
         ]
-        if config.get('use_mmd_weight_adjustment', False) and config.get('mmd_weight', 0.0) > 0: # Only add if MMD is active
-            callbacks_list.append(MMDWeightAdjustmentCallback(config))
+        # MMDWeightAdjustmentCallback needs to know the name of the kl_metric in logs
+        # It will be 'kl_metric_fn' based on the function name.
+        if config.get('use_mmd_weight_adjustment', False) and config.get('mmd_weight', 0.0) > 0:
+            callbacks_list.append(MMDWeightAdjustmentCallback(config)) # Ensure callback uses 'kl_metric_fn'
 
         history = self.autoencoder_model.fit(
             x=data_inputs, 
-            y=data_targets, 
+            y={'reconstruction_output': data_targets}, # Pass targets as a dictionary
             epochs=epochs, 
             batch_size=batch_size, 
             verbose=1,
@@ -490,14 +488,14 @@ class AutoencoderManager:
         if config is None: config = {}
         if not self.autoencoder_model:
             print(f"[evaluate] CVAE model evaluation skipped for {dataset_name}: Model not available.")
-            return None # Return a single None or (None, None) as per original expectation
+            return None 
         
         print(f"[evaluate] Evaluating CVAE on {dataset_name}.")
         results = self.autoencoder_model.evaluate(
             x=data_inputs, 
-            y=data_targets, 
+            y={'reconstruction_output': data_targets}, # Pass targets as a dictionary
             verbose=1,
-            batch_size=config.get('batch_size', 128) # Use batch_size from config if available
+            batch_size=config.get('batch_size', 128) 
         )
         # results is a list: [total_loss, mae_on_reconstruction, huber_metric, kl_metric, mmd_metric, ...]
         loss_val = results[0]

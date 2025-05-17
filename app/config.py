@@ -86,7 +86,9 @@ DEFAULT_VALUES = {
     'dataset_periodicity': '1h',  # Add dataset_periodicity here, can be 1m, 5m, 15m, 30m, 1h, 4h, daily
     "mmd_sigma": 1.0,
     "mmd_weight": 1.0,
-
+    "rnn_hidden_dim": 64,
+    "conditioning_dim": 10,
+    "latent_dim": 32,
 
     "use_daily": False,
     "max_steps_train": 25200,

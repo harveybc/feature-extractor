@@ -87,23 +87,34 @@ def positional_encoding(position, d_model):
     return tf.cast(pos_encoding, dtype=tf.float32)
 
 def mae_magnitude(y_true, y_pred_list): # y_pred is now a list
-    """Compute MAE on the first column (magnitude) of the reconstruction."""
-    y_pred = y_pred_list[0] # Actual reconstruction
-    if len(y_true.shape) == 1 or (len(y_true.shape) == 2 and y_true.shape[1] == 1):
-        y_true = tf.reshape(y_true, [-1, 1])
-        y_true = tf.concat([y_true, tf.zeros_like(y_true)], axis=1)
-    mag_true = y_true[:, 0:1]
-    mag_pred = y_pred[:, 0:1]
+    """Compute MAE on the first column (e.g., 'OPEN' price) of the reconstruction."""
+    y_pred_reconstruction = y_pred_list[0] # Actual reconstruction (shape: batch, 6)
+    # y_true will also have shape (batch, 6)
+
+    # Ensure y_true and y_pred_reconstruction are 2D and have at least one feature
+    if len(tf.shape(y_true)) != 2 or len(tf.shape(y_pred_reconstruction)) != 2:
+        tf.print(f"Warning: mae_magnitude expects 2D y_true (shape {tf.shape(y_true)}) and y_pred_reconstruction (shape {tf.shape(y_pred_reconstruction)}).")
+        return 0.0 # Or handle error appropriately
+    if tf.shape(y_true)[-1] == 0 or tf.shape(y_pred_reconstruction)[-1] == 0:
+        return 0.0 # No features to compare
+
+    mag_true = y_true[:, 0:1] # Select the first feature
+    mag_pred = y_pred_reconstruction[:, 0:1] # Select the first feature
     return tf.reduce_mean(tf.abs(mag_true - mag_pred))
 
 def r2_metric(y_true, y_pred_list): # y_pred is now a list
-    """Compute R² metric on the first column (magnitude) of the reconstruction."""
-    y_pred = y_pred_list[0] # Actual reconstruction
-    if len(y_true.shape) == 1 or (len(y_true.shape) == 2 and y_true.shape[1] == 1):
-        y_true = tf.reshape(y_true, [-1, 1])
-        y_true = tf.concat([y_true, tf.zeros_like(y_true)], axis=1)
-    mag_true = y_true[:, 0:1]
-    mag_pred = y_pred[:, 0:1]
+    """Compute R² metric on the first column (e.g., 'OPEN' price) of the reconstruction."""
+    y_pred_reconstruction = y_pred_list[0] # Actual reconstruction (shape: batch, 6)
+    # y_true will also have shape (batch, 6)
+
+    if len(tf.shape(y_true)) != 2 or len(tf.shape(y_pred_reconstruction)) != 2:
+        tf.print(f"Warning: r2_metric expects 2D y_true (shape {tf.shape(y_true)}) and y_pred_reconstruction (shape {tf.shape(y_pred_reconstruction)}).")
+        return 0.0
+    if tf.shape(y_true)[-1] == 0 or tf.shape(y_pred_reconstruction)[-1] == 0:
+        return 0.0
+
+    mag_true = y_true[:, 0:1] # Select the first feature
+    mag_pred = y_pred_reconstruction[:, 0:1] # Select the first feature
     SS_res = tf.reduce_sum(tf.square(mag_true - mag_pred))
     SS_tot = tf.reduce_sum(tf.square(mag_true - tf.reduce_mean(mag_true)))
     return 1 - SS_res/(SS_tot + tf.keras.backend.epsilon())
@@ -190,63 +201,78 @@ class AutoencoderManager:
         self.encoder_plugin = encoder_plugin
         self.decoder_plugin = decoder_plugin
         self.autoencoder_model = None # This will be the single-step CVAE model
-        self.encoder_model = None # Component model
-        self.decoder_model = None # Component model
+        self.encoder_model = None # Component model from encoder_plugin
+        self.decoder_model = None # Component model from decoder_plugin
         self.model = None # Points to self.autoencoder_model
         print(f"[AutoencoderManager] Initialized for Sequential CVAE components.")
 
-    def build_autoencoder(self, config): # input_shape and num_channels are now less direct
+    def build_autoencoder(self, config):
         try:
-            print("[build_autoencoder] Starting to build single-step CVAE components...")
+            print("[build_autoencoder] Starting to build single-step CVAE with Conv1D Encoder and 6-feature Decoder...")
 
             # Get dimensions from config
-            x_feature_dim = config.get('x_feature_dim')
-            rnn_hidden_dim = config.get('rnn_hidden_dim') # For h_context
-            conditioning_dim = config.get('conditioning_dim') # For general conditions_t
-            latent_dim = config.get('latent_dim') # This was 'interface_size'
+            # For Encoder Input (Windowed Data)
+            window_size = config.get('window_size')
+            input_features_per_step = config.get('input_features_per_step') # Full features in the input window
 
-            if not all(v is not None for v in [x_feature_dim, rnn_hidden_dim, conditioning_dim, latent_dim]):
+            # For CVAE context and latent space
+            rnn_hidden_dim = config.get('rnn_hidden_dim') # For h_context
+            conditioning_dim = config.get('conditioning_dim') # For general conditions_t (e.g., previous 6 targets)
+            latent_dim = config.get('latent_dim')
+
+            # For Decoder Output (and CVAE target)
+            output_feature_dim = 6 # Hardcoded as per requirement for OHLC + 2 derived
+
+            if not all(v is not None for v in [window_size, input_features_per_step, rnn_hidden_dim, conditioning_dim, latent_dim]):
                 raise ValueError(
-                    "Config must provide 'x_feature_dim', 'rnn_hidden_dim', "
+                    "Config must provide 'window_size', 'input_features_per_step', 'rnn_hidden_dim', "
                     "'conditioning_dim', and 'latent_dim'."
                 )
+            if not isinstance(window_size, int) or window_size <= 0:
+                raise ValueError(f"'window_size' must be a positive integer. Got: {window_size}")
+            if not isinstance(input_features_per_step, int) or input_features_per_step <= 0:
+                raise ValueError(f"'input_features_per_step' must be a positive integer. Got: {input_features_per_step}")
 
-            # 1. Configure and get Encoder (Per-Step Inference Network)
+
+            # 1. Configure and get Encoder (Processes windowed input)
             self.encoder_plugin.configure_model_architecture(
-                x_feature_dim=x_feature_dim,
-                rnn_hidden_dim=rnn_hidden_dim, # Encoder takes h_context
-                conditioning_dim=conditioning_dim, # Encoder takes conditions_t
+                window_size=window_size,
+                input_features_per_step=input_features_per_step,
+                rnn_hidden_dim=rnn_hidden_dim,
+                conditioning_dim=conditioning_dim,
                 latent_dim=latent_dim,
                 config=config
             )
             self.encoder_model = getattr(self.encoder_plugin, 'inference_network_model', None)
             if self.encoder_model is None:
                 raise ValueError("Encoder plugin failed to build its model (inference_network_model).")
-            print("[build_autoencoder] Per-step inference network (encoder component) built.")
+            print("[build_autoencoder] Encoder component (Conv1D-based) built.")
             self.encoder_model.summary(line_length=120)
 
-            # 2. Configure and get Decoder (Per-Step Generative Network)
+            # 2. Configure and get Decoder (Generates 6 features)
             self.decoder_plugin.configure_model_architecture(
                 latent_dim=latent_dim,
-                rnn_hidden_dim=rnn_hidden_dim, # Decoder also takes h_context
-                conditioning_dim=conditioning_dim, # Decoder also takes conditions_t
-                output_feature_dim=x_feature_dim, # Output should match input x_t
+                rnn_hidden_dim=rnn_hidden_dim,
+                conditioning_dim=conditioning_dim,
+                output_feature_dim=output_feature_dim, # Should be 6, plugin enforces this
                 config=config
             )
             self.decoder_model = getattr(self.decoder_plugin, 'generative_network_model', None)
             if self.decoder_model is None:
                 raise ValueError("Decoder plugin failed to build its model (generative_network_model).")
-            print("[build_autoencoder] Per-step generative network (decoder component) built.")
+            print(f"[build_autoencoder] Decoder component (outputting {output_feature_dim} features) built.")
             self.decoder_model.summary(line_length=120)
 
             # 3. Define Inputs for the combined Single-Step CVAE model
-            input_x_t = Input(shape=(x_feature_dim,), name="cvae_input_x_t")
+            # Input for the encoder part of CVAE
+            input_x_window = Input(shape=(window_size, input_features_per_step), name="cvae_input_x_window")
+            # Context inputs, shared by encoder and decoder logic
             input_h_context = Input(shape=(rnn_hidden_dim,), name="cvae_input_h_context")
             input_conditions_t = Input(shape=(conditioning_dim,), name="cvae_input_conditions_t")
 
             # 4. Pass inputs through Encoder
-            # Encoder expects [x_t, h_context, conditions_t]
-            z_mean, z_log_var = self.encoder_model([input_x_t, input_h_context, input_conditions_t])
+            # Encoder plugin expects [x_window, h_context, conditions_t]
+            z_mean, z_log_var = self.encoder_model([input_x_window, input_h_context, input_conditions_t])
 
             # 5. Sampling Layer
             def sampling(args):
@@ -259,23 +285,22 @@ class AutoencoderManager:
             z = Lambda(sampling, output_shape=(latent_dim,), name='cvae_sampling_z')([z_mean, z_log_var])
 
             # 6. Pass z and context to Decoder
-            # Decoder expects [z, h_context, conditions_t]
-            reconstruction = self.decoder_model([z, input_h_context, input_conditions_t])
+            # Decoder plugin expects [z, h_context, conditions_t]
+            reconstruction = self.decoder_model([z, input_h_context, input_conditions_t]) # Output shape (batch, 6)
 
             # 7. Create the Single-Step CVAE Model
-            # Outputs: reconstruction (for Huber, MMD, etc.), z_mean, z_log_var (for KL)
             self.autoencoder_model = Model(
-                inputs=[input_x_t, input_h_context, input_conditions_t],
-                outputs=[reconstruction, z_mean, z_log_var],
-                name="single_step_cvae"
+                inputs=[input_x_window, input_h_context, input_conditions_t], # CVAE takes the window as x_input
+                outputs=[reconstruction, z_mean, z_log_var], # Reconstruction is the 6-feature output
+                name="windowed_input_cvae_6_features_out"
             )
-            self.model = self.autoencoder_model
+            self.model = self.autoencoder_model # Keep self.model for compatibility if used elsewhere
             print("[build_autoencoder] Single-step CVAE model assembled.")
             self.autoencoder_model.summary(line_length=150)
 
             # 8. Compile the CVAE Model
             adam_optimizer = Adam(
-                learning_rate=config.get('learning_rate', 0.0001), # Adjusted default
+                learning_rate=config.get('learning_rate', 0.0001),
                 beta_1=config.get('beta_1', 0.9),
                 beta_2=config.get('beta_2', 0.999),
                 epsilon=config.get('epsilon', 1e-7),
@@ -283,45 +308,45 @@ class AutoencoderManager:
             )
 
             # Loss function wrapper
+            # y_true will be the 6 target features (batch_size, 6)
+            # y_pred_list[0] (reconstruction_pred) will also be (batch_size, 6)
             def cvae_combined_loss(y_true, y_pred_list):
-                reconstruction_pred = y_pred_list[0]
+                reconstruction_pred = y_pred_list[0] # Shape (batch, 6)
                 z_mean_pred = y_pred_list[1]
                 z_log_var_pred = y_pred_list[2]
 
-                # Cast to float32
-                y_true_f32 = tf.cast(y_true, tf.float32)
-                reconstruction_pred_f32 = tf.cast(reconstruction_pred, tf.float32)
+                y_true_f32 = tf.cast(y_true, tf.float32) # Shape (batch, 6)
+                reconstruction_pred_f32 = tf.cast(reconstruction_pred, tf.float32) # Shape (batch, 6)
 
-                # Reconstruction Loss (Huber)
+                # Reconstruction Loss (Huber) - operates on the 6 features
                 h_loss = Huber(delta=config.get('huber_delta', 1.0))(y_true_f32, reconstruction_pred_f32)
                 huber_loss_tracker.assign(h_loss)
                 total_loss = h_loss
 
                 # KL Divergence
                 kl_loss = -0.5 * K.sum(1 + z_log_var_pred - K.square(z_mean_pred) - K.exp(z_log_var_pred), axis=-1)
-                kl_loss = K.mean(kl_loss) # Average over batch
+                kl_loss = K.mean(kl_loss)
                 kl_loss_tracker.assign(kl_loss)
                 total_loss += config.get('kl_beta', 1.0) * kl_loss
                 
-                # MMD Loss (on reconstruction)
-                mmd_weight = config.get('mmd_weight', 0.0) # Default to 0 if not specified
+                # MMD Loss (on the 6-feature reconstruction)
+                mmd_weight = config.get('mmd_weight', 0.0)
                 if mmd_weight > 0:
-                    # Reshape for MMD if necessary (MMD expects 2D: (batch, features_flat))
-                    y_true_flat = tf.reshape(y_true_f32, [tf.shape(y_true_f32)[0], -1])
-                    reconstruction_flat = tf.reshape(reconstruction_pred_f32, [tf.shape(reconstruction_pred_f32)[0], -1])
-                    
-                    mmd_val = compute_mmd(y_true_flat, reconstruction_flat, config.get('mmd_sigma', 1.0), config.get('mmd_sample_size', 32))
+                    # y_true_f32 and reconstruction_pred_f32 are already (batch, 6)
+                    # MMD compute_mmd expects 2D: (batch, features)
+                    mmd_val = compute_mmd(y_true_f32, reconstruction_pred_f32, 
+                                          config.get('mmd_sigma', 1.0), 
+                                          config.get('mmd_sample_size', 32))
                     weighted_mmd = mmd_weight * mmd_val
-                    mmd_total.assign(weighted_mmd) # mmd_total tracks the weighted MMD
+                    mmd_total.assign(weighted_mmd)
                     total_loss += weighted_mmd
                 else:
                     mmd_total.assign(0.0)
 
-                # Other statistical losses (skew, kurtosis, covariance) on reconstruction
-                # These need to be adapted to use y_true_f32 and reconstruction_pred_f32
+                # Statistical losses (skew, kurtosis, covariance) on the 6-feature reconstruction
                 skew_loss_w = config.get('skew_loss_weight', 0.0)
                 if skew_loss_w > 0:
-                    # Example: diff in skewness
+                    # Flatten for moment calculation across all 6 features and batch
                     skew_true = calculate_standardized_moment(tf.reshape(y_true_f32, [-1]), 3)
                     skew_pred = calculate_standardized_moment(tf.reshape(reconstruction_pred_f32, [-1]), 3)
                     skew_loss_val = tf.abs(skew_true - skew_pred) * skew_loss_w
@@ -332,7 +357,6 @@ class AutoencoderManager:
 
                 kurtosis_loss_w = config.get('kurtosis_loss_weight', 0.0)
                 if kurtosis_loss_w > 0:
-                    # Example: diff in kurtosis
                     kurt_true = calculate_standardized_moment(tf.reshape(y_true_f32, [-1]), 4)
                     kurt_pred = calculate_standardized_moment(tf.reshape(reconstruction_pred_f32, [-1]), 4)
                     kurt_loss_val = tf.abs(kurt_true - kurt_pred) * kurtosis_loss_w
@@ -341,17 +365,13 @@ class AutoencoderManager:
                 else:
                     kurtosis_loss_tracker.assign(0.0)
                 
-                # Covariance loss
-                cov_loss_val = covariance_loss_calc(y_true_f32, reconstruction_pred_f32, config) # Already weighted
-                # covariance_loss_tracker is updated inside covariance_loss_calc
+                cov_loss_val = covariance_loss_calc(y_true_f32, reconstruction_pred_f32, config) # Operates on (batch, 6)
                 total_loss += cov_loss_val
 
                 return total_loss
 
             # Metrics
-            # Keras applies metrics by comparing y_true with the first output of the model if y_pred is a list.
-            # So, 'mae' will be mae(y_true, reconstruction_pred).
-            def mmd_metric_fn(y_true, y_pred_list): return mmd_total # Returns the weighted MMD
+            def mmd_metric_fn(y_true, y_pred_list): return mmd_total
             def huber_metric_fn(y_true, y_pred_list): return huber_loss_tracker
             def kl_metric_fn(y_true, y_pred_list): return kl_loss_tracker
             def skew_metric_fn(y_true, y_pred_list): return skew_loss_tracker
@@ -359,7 +379,9 @@ class AutoencoderManager:
             def covariance_metric_fn(y_true, y_pred_list): return covariance_loss_tracker
 
             metrics_list = [
-                'mae', # Applied to y_true vs. reconstruction_pred
+                'mae', # Keras default MAE on y_true vs reconstruction_pred (both are 6 features)
+                mae_magnitude, # Custom MAE on the first feature
+                r2_metric,     # Custom R2 on the first feature
                 huber_metric_fn, 
                 kl_metric_fn,
                 mmd_metric_fn,
@@ -388,14 +410,20 @@ class AutoencoderManager:
         if not self.autoencoder_model:
             raise RuntimeError("[train_autoencoder] Single-step CVAE model not built. Please call build_autoencoder first.")
 
-        # data_inputs is expected to be a list/tuple: [x_t_numpy, h_context_numpy, conditions_t_numpy]
-        # data_targets is expected to be x_t_numpy (for reconstruction loss)
+        # data_inputs is expected to be a list/tuple: 
+        # [x_window_numpy (batch, window, features_in_window), 
+        #  h_context_numpy (batch, rnn_hidden_dim), 
+        #  conditions_t_numpy (batch, conditioning_dim)]
+        # data_targets is expected to be x_target_numpy (batch, 6) for reconstruction loss
         if not isinstance(data_inputs, (list, tuple)) or len(data_inputs) != 3:
-            raise ValueError("data_inputs must be a list/tuple of 3 arrays: [x_t_data, h_context_data, conditions_t_data]")
+            raise ValueError("data_inputs must be a list/tuple of 3 arrays: [x_window_data, h_context_data, conditions_t_data]")
         
         print(f"[train_autoencoder] Starting CVAE training.")
-        print(f"Input data shapes: x_t: {data_inputs[0].shape}, h_context: {data_inputs[1].shape}, conditions_t: {data_inputs[2].shape}")
-        print(f"Target data shape (x_t): {data_targets.shape}")
+        print(f"Input data shapes: x_window: {data_inputs[0].shape}, h_context: {data_inputs[1].shape}, conditions_t: {data_inputs[2].shape}")
+        print(f"Target data shape (6 features): {data_targets.shape}")
+
+        if data_targets.shape[-1] != 6:
+            raise ValueError(f"data_targets should have 6 features, but got shape {data_targets.shape}")
 
         if np.isnan(data_inputs[0]).any() or np.isnan(data_inputs[1]).any() or np.isnan(data_inputs[2]).any() or np.isnan(data_targets).any():
             raise ValueError("[train_autoencoder] Training data or targets contain NaN values.")
@@ -426,38 +454,35 @@ class AutoencoderManager:
         print("[train_autoencoder] CVAE Training completed.")
         return history
 
-    def encode_data(self, per_step_encoder_inputs, config=None): # config might not be needed if using plugin's encode
-        if not self.encoder_model: # Check if the component model is available
-            # Try to get it from the main model if not directly set
+    def encode_data(self, per_step_encoder_inputs, config=None):
+        if not self.encoder_model:
             if self.autoencoder_model and self.encoder_plugin and hasattr(self.encoder_plugin, 'inference_network_model'):
                  self.encoder_model = self.encoder_plugin.inference_network_model
             else:
                 raise ValueError("[encode_data] Encoder component model not available.")
         
-        # The encoder_plugin's 'encode' method expects a list of inputs: [x_t, h_context, conditions_t]
+        # Encoder plugin expects a list: [x_window_batch, h_prev_batch, conditions_t_batch]
         if not isinstance(per_step_encoder_inputs, list) or len(per_step_encoder_inputs) != 3:
-            raise ValueError("[encode_data] 'per_step_encoder_inputs' must be a list of three arrays: [x_t_batch, h_context_batch, conditions_t_batch].")
+            raise ValueError("[encode_data] 'per_step_encoder_inputs' must be a list of three arrays: [x_window_batch, h_context_batch, conditions_t_batch].")
         
-        print(f"[encode_data] Encoding with per-step inference network. Input part shapes: {[d.shape for d in per_step_encoder_inputs]}")
-        # Use the plugin's encode method, which calls predict on its Keras model
+        print(f"[encode_data] Encoding with Conv1D encoder. Input part shapes: {[d.shape for d in per_step_encoder_inputs]}")
         z_mean, z_log_var = self.encoder_plugin.encode(per_step_encoder_inputs) 
         print(f"[encode_data] Encoder produced z_mean shape: {z_mean.shape}, z_log_var shape: {z_log_var.shape}")
         return z_mean, z_log_var
 
-    def decode_data(self, per_step_decoder_inputs, config=None): # config might not be needed
-        if not self.decoder_model: # Check if the component model is available
+    def decode_data(self, per_step_decoder_inputs, config=None):
+        if not self.decoder_model:
             if self.autoencoder_model and self.decoder_plugin and hasattr(self.decoder_plugin, 'generative_network_model'):
                 self.decoder_model = self.decoder_plugin.generative_network_model
             else:
                 raise ValueError("[decode_data] Decoder component model not available.")
 
-        # The decoder_plugin's 'decode' method expects a list: [z_t, h_context, conditions_t]
+        # Decoder plugin expects a list: [z_t_batch, h_t_batch, conditions_t_batch]
         if not isinstance(per_step_decoder_inputs, list) or len(per_step_decoder_inputs) != 3:
             raise ValueError("[decode_data] 'per_step_decoder_inputs' must be a list of three arrays: [z_t_batch, h_context_batch, conditions_t_batch].")
 
-        print(f"[decode_data] Decoding with per-step generative network. Input part shapes: {[d.shape for d in per_step_decoder_inputs]}")
-        # Use the plugin's decode method
-        reconstructed_x_t = self.decoder_plugin.decode(per_step_decoder_inputs)
+        print(f"[decode_data] Decoding with 6-feature decoder. Input part shapes: {[d.shape for d in per_step_decoder_inputs]}")
+        reconstructed_x_t = self.decoder_plugin.decode(per_step_decoder_inputs) # Output shape (batch, 6)
         print(f"[decode_data] Decoder produced reconstructed x_t shape: {reconstructed_x_t.shape}")
         return reconstructed_x_t
 

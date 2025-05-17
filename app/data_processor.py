@@ -57,7 +57,6 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     if x_train_data is None or x_val_data is None:
         raise ValueError("PreprocessorPlugin did not return 'x_train' or 'x_val' data.")
     if y_train_targets_6_features is None or y_val_targets_6_features is None:
-        # Update error message to reflect the new expected keys
         raise ValueError("PreprocessorPlugin did not return 'y_train_cvae_target' or 'y_val_cvae_target' data (6 features).")
 
     # Add a type check to ensure it's a NumPy array before accessing .shape

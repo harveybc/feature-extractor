@@ -12,6 +12,7 @@ from keras.regularizers import l2
 from keras.layers import BatchNormalization, LeakyReLU
 from keras.layers import MaxPooling1D, UpSampling1D
 from keras.layers import Lambda
+import keras # Import the top-level keras
 
 
 #set_global_policy('mixed_float16')
@@ -301,7 +302,8 @@ class AutoencoderManager:
             
             # Add KL divergence as a model loss here
             # This will be automatically included by Keras in the total loss
-            kl_loss_value = -0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+            # Use keras.ops for operations on symbolic tensors
+            kl_loss_value = -0.5 * K.sum(1 + z_log_var - keras.ops.square(z_mean) - keras.ops.exp(z_log_var), axis=-1)
             kl_loss_value_mean = K.mean(kl_loss_value) # Mean over batch
             weighted_kl_loss_for_model = config.get('kl_beta', 1.0) * kl_loss_value_mean
             self.autoencoder_model.add_loss(weighted_kl_loss_for_model)
@@ -387,7 +389,8 @@ class AutoencoderManager:
             def kl_metric_fn(y_true, y_pred): # y_pred is the dict of all model outputs
                 z_mean_m = y_pred['z_mean_output']
                 z_log_var_m = y_pred['z_log_var_output']
-                kl = K.mean(-0.5 * K.sum(1 + z_log_var_m - K.square(z_mean_m) - K.exp(z_log_var_m), axis=-1))
+                # Use keras.ops here as well for consistency if needed, though K.mean/K.sum might be okay in metrics
+                kl = K.mean(-0.5 * K.sum(1 + z_log_var_m - keras.ops.square(z_mean_m) - keras.ops.exp(z_log_var_m), axis=-1))
                 kl_loss_tracker.assign(kl) # Track raw KL for monitoring
                 return kl # This is the value shown in logs for this metric
 

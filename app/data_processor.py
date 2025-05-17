@@ -50,13 +50,21 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     x_val_data = datasets.get("x_val")
     
     # Fetch the 6-feature targets from the preprocessor's output
-    y_train_targets_6_features = datasets.get("y_train") # Or whatever key you use
-    y_val_targets_6_features = datasets.get("y_val")   # Or whatever key you use
+    # Use new keys that specifically point to the 2D NumPy array (samples, 6) for CVAE targets
+    y_train_targets_6_features = datasets.get("y_train_cvae_target") 
+    y_val_targets_6_features = datasets.get("y_val_cvae_target")   
 
     if x_train_data is None or x_val_data is None:
         raise ValueError("PreprocessorPlugin did not return 'x_train' or 'x_val' data.")
     if y_train_targets_6_features is None or y_val_targets_6_features is None:
-        raise ValueError("PreprocessorPlugin did not return 'y_train' or 'y_val' target data (6 features).")
+        # Update error message to reflect the new expected keys
+        raise ValueError("PreprocessorPlugin did not return 'y_train_cvae_target' or 'y_val_cvae_target' data (6 features).")
+
+    # Add a type check to ensure it's a NumPy array before accessing .shape
+    if not isinstance(y_train_targets_6_features, np.ndarray):
+        raise TypeError(f"y_train_cvae_target (expected 6-feature array) is type {type(y_train_targets_6_features)}, expected np.ndarray.")
+    if not isinstance(y_val_targets_6_features, np.ndarray):
+        raise TypeError(f"y_val_cvae_target (expected 6-feature array) is type {type(y_val_targets_6_features)}, expected np.ndarray.")
 
     if y_train_targets_6_features.shape[-1] != 6 or (len(y_train_targets_6_features.shape) != 2):
         raise ValueError(f"y_train_targets_6_features should be 2D with 6 features, but got shape {y_train_targets_6_features.shape}")

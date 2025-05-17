@@ -54,21 +54,38 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
 
     # --- Populate necessary dimensions in config ---
     # These should ideally be set by the preprocessor or in the main config loading.
-    if 'x_feature_dim' not in config:
-        config['x_feature_dim'] = x_train_data.shape[1]
-        print(f"Derived 'x_feature_dim' from training data: {config['x_feature_dim']}")
+    if 'x_feature_dim' not in config or not isinstance(config['x_feature_dim'], int):
+        if 'x_train' in datasets and datasets['x_train'] is not None:
+            config['x_feature_dim'] = datasets['x_train'].shape[1]
+            print(f"Derived 'x_feature_dim' from training data: {config['x_feature_dim']}")
+        else:
+            raise ValueError("'x_feature_dim' could not be derived and is not a valid integer in config.")
     
-    # IMPORTANT: 'rnn_hidden_dim' and 'conditioning_dim' must be set in the config.
-    # These are specific to your CVAE architecture.
-    if 'rnn_hidden_dim' not in config:
-        # config['rnn_hidden_dim'] = 64 # Example: Set a default or raise error
-        raise ValueError("'rnn_hidden_dim' not found in config. It's required for CVAE components.") # THIS LINE IS COMMENTED OUT IN YOUR ACTUAL CODE
-    if 'conditioning_dim' not in config:
-        # config['conditioning_dim'] = 10 # Example: Set a default or raise error
-        raise ValueError("'conditioning_dim' not found in config. It's required for CVAE components.") # THIS LINE IS COMMENTED OUT
-    if 'latent_dim' not in config: # This replaces 'interface_size' or 'initial_size' for the main loop
-        config['latent_dim'] = config.get('initial_latent_dim', 32) # Example default
-        print(f"Using initial 'latent_dim': {config['latent_dim']}")
+    # IMPORTANT: 'rnn_hidden_dim', 'conditioning_dim', and 'latent_dim' must be set in the config
+    # and must be integers.
+    
+    required_dims = {
+        'rnn_hidden_dim': "RNN hidden state dimension for CVAE components.",
+        'conditioning_dim': "Conditioning vector dimension for CVAE components.",
+        'latent_dim': "Latent space dimension for CVAE."
+    }
+    
+    default_dims = { # Define sensible defaults if you prefer this over raising errors
+        'rnn_hidden_dim': 64,
+        'conditioning_dim': 10,
+        'latent_dim': 32 
+    }
+
+    for dim_key, description in required_dims.items():
+        if dim_key not in config or not isinstance(config.get(dim_key), int):
+            # Option 1: Raise an error if not found or not an integer (safer)
+            raise ValueError(f"'{dim_key}' not found in config or is not a valid integer. {description} It's required.")
+            
+            # Option 2: Use a default value (use with caution, ensure defaults match your model design)
+            # config[dim_key] = default_dims[dim_key]
+            # print(f"Warning: '{dim_key}' not found in config or not an integer. Using default: {config[dim_key]}. {description}")
+        elif config.get(dim_key) <= 0: # Dimensions should be positive
+             raise ValueError(f"'{dim_key}' in config must be a positive integer, but got {config.get(dim_key)}.")
 
 
     # --- Prepare h_context and conditions_t for training and validation ---
@@ -79,13 +96,15 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     num_train_samples = x_train_data.shape[0]
     h_context_train = datasets.get("h_train")
     if h_context_train is None:
+        # Now config['rnn_hidden_dim'] is guaranteed to be an integer
         print(f"Warning: 'h_train' not found in datasets. Generating zeros for h_context_train (shape: ({num_train_samples}, {config['rnn_hidden_dim']})).")
-        h_context_train = np.zeros((num_train_samples, config['rnn_hidden_dim']), dtype=np.float32) # ERROR HERE
+        h_context_train = np.zeros((num_train_samples, config['rnn_hidden_dim']), dtype=np.float32)
     elif h_context_train.shape != (num_train_samples, config['rnn_hidden_dim']):
         raise ValueError(f"Shape mismatch for h_context_train. Expected ({num_train_samples}, {config['rnn_hidden_dim']}), got {h_context_train.shape}")
 
     conditions_t_train = datasets.get("cond_train")
     if conditions_t_train is None:
+        # Now config['conditioning_dim'] is guaranteed to be an integer
         print(f"Warning: 'cond_train' not found in datasets. Generating zeros for conditions_t_train (shape: ({num_train_samples}, {config['conditioning_dim']})).")
         conditions_t_train = np.zeros((num_train_samples, config['conditioning_dim']), dtype=np.float32)
     elif conditions_t_train.shape != (num_train_samples, config['conditioning_dim']):
@@ -94,6 +113,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     num_val_samples = x_val_data.shape[0]
     h_context_val = datasets.get("h_val")
     if h_context_val is None:
+        # Now config['rnn_hidden_dim'] is guaranteed to be an integer
         print(f"Warning: 'h_val' not found in datasets. Generating zeros for h_context_val (shape: ({num_val_samples}, {config['rnn_hidden_dim']})).")
         h_context_val = np.zeros((num_val_samples, config['rnn_hidden_dim']), dtype=np.float32)
     elif h_context_val.shape != (num_val_samples, config['rnn_hidden_dim']):
@@ -101,6 +121,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
 
     conditions_t_val = datasets.get("cond_val")
     if conditions_t_val is None:
+        # Now config['conditioning_dim'] is guaranteed to be an integer
         print(f"Warning: 'cond_val' not found in datasets. Generating zeros for conditions_t_val (shape: ({num_val_samples}, {config['conditioning_dim']})).")
         conditions_t_val = np.zeros((num_val_samples, config['conditioning_dim']), dtype=np.float32)
     elif conditions_t_val.shape != (num_val_samples, config['conditioning_dim']):

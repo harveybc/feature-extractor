@@ -86,6 +86,7 @@ def positional_encoding(position, d_model):
     pos_encoding = pos_encoding[np.newaxis, ...]  # Shape: (1, position, d_model)
     return tf.cast(pos_encoding, dtype=tf.float32)
 
+# Adapt mae_magnitude and r2_metric to take the reconstruction tensor directly
 def mae_magnitude(y_true, y_pred_reconstruction): # y_pred_reconstruction is the tensor
     """Compute MAE on the first column (e.g., 'OPEN' price) of the reconstruction."""
     # y_true will also have shape (batch, 6)

@@ -48,16 +48,48 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
 
     x_train_data = datasets.get("x_train") 
     x_val_data = datasets.get("x_val")
-    
-    # Fetch the 6-feature targets from the preprocessor's output
-    # Use new keys that specifically point to the 2D NumPy array (samples, 6) for CVAE targets
-    y_train_targets_6_features = datasets.get("y_train_cvae_target") 
-    y_val_targets_6_features = datasets.get("y_val_cvae_target")   
+    feature_names_all = datasets.get("feature_names") # Get all feature names
 
     if x_train_data is None or x_val_data is None:
         raise ValueError("PreprocessorPlugin did not return 'x_train' or 'x_val' data.")
+    if feature_names_all is None:
+        raise ValueError("PreprocessorPlugin did not return 'feature_names'.")
+    if not isinstance(feature_names_all, list):
+        raise TypeError(f"'feature_names' must be a list, got {type(feature_names_all)}")
+
+    # Define the 6 target feature names for the CVAE
+    # IMPORTANT: Ensure these names EXACTLY match the names in 'feature_names_all'
+    # Assuming 'BH-BL' from preprocessor output corresponds to your 'BHIGH-BLOW' target
+    target_feature_names = ['OPEN', 'LOW', 'HIGH', 'CLOSE', 'BC-BO', 'BH-BL'] 
+    
+    # Find indices of these target features
+    try:
+        target_indices = [feature_names_all.index(name) for name in target_feature_names]
+    except ValueError as e:
+        missing_feature = str(e).split("'")[1] # Extract missing feature name
+        raise ValueError(
+            f"One of the CVAE target features ('{missing_feature}') not found in 'feature_names' "
+            f"provided by PreprocessorPlugin. Available features: {feature_names_all}"
+        ) from e
+
+    # Extract the 6 target features from the LAST time step of each window in x_train_data and x_val_data
+    # x_train_data shape: (num_samples, window_size, num_all_features)
+    # We want y_train_targets_6_features shape: (num_samples, 6)
+    if len(x_train_data.shape) != 3:
+        raise ValueError(f"x_train_data is expected to be 3D (samples, window, features), but got shape {x_train_data.shape}")
+    if len(x_val_data.shape) != 3:
+        raise ValueError(f"x_val_data is expected to be 3D (samples, window, features), but got shape {x_val_data.shape}")
+
+    y_train_targets_6_features = x_train_data[:, -1, target_indices]
+    y_val_targets_6_features = x_val_data[:, -1, target_indices]
+    
+    print(f"Constructed y_train_targets_6_features with shape: {y_train_targets_6_features.shape}")
+    print(f"Constructed y_val_targets_6_features with shape: {y_val_targets_6_features.shape}")
+
+    # The following checks should now pass if the above logic is correct
     if y_train_targets_6_features is None or y_val_targets_6_features is None:
-        raise ValueError("PreprocessorPlugin did not return 'y_train_cvae_target' or 'y_val_cvae_target' data (6 features).")
+        # This should not be hit if extraction was successful, but keep as a safeguard
+        raise ValueError("Failed to construct 'y_train_cvae_target' or 'y_val_cvae_target' data (6 features).")
 
     # Add a type check to ensure it's a NumPy array before accessing .shape
     if not isinstance(y_train_targets_6_features, np.ndarray):

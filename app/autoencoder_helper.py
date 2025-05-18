@@ -109,9 +109,22 @@ def compute_mmd(x, y, sigma=1.0, sample_size=None):
 def calculate_standardized_moment(data, order):
     mean = tf.reduce_mean(data)
     std_dev = tf.math.reduce_std(data)
-    if tf.math.equal(std_dev, 0.0): 
+    
+    # --- MODIFIED ZERO STD_DEV CHECK ---
+    def calculate_moment():
+        return tf.reduce_mean(((data - mean) / tf.maximum(std_dev, 1e-9)) ** order) # Add epsilon for safety
+
+    def return_zero_moment():
         return tf.constant(0.0, dtype=tf.float32)
-    return tf.reduce_mean(((data - mean) / std_dev) ** order)
+
+    # Use tf.cond to handle the std_dev == 0 case
+    moment = tf.cond(
+        tf.math.less_equal(std_dev, 1e-9), # Check if std_dev is very close to zero
+        true_fn=return_zero_moment,
+        false_fn=calculate_moment
+    )
+    # --- END MODIFIED CHECK ---
+    return moment
 
 def covariance_loss_calc(y_true, y_pred, cfg):
     tf.print("[covariance_loss_calc] Placeholder called. Returning 0.")

@@ -65,7 +65,7 @@ class AutoencoderManager:
             tf.print("Error: Model not available in _compile_model. Cannot compile.")
             raise RuntimeError("Model not available for compilation in _compile_model.")
 
-        adam_optimizer = tf.keras.optimizers.Adam( # Changed
+        adam_optimizer = tf.keras.optimizers.Adam(
             learning_rate=config.get('learning_rate', 0.0001),
             beta_1=config.get('adam_beta_1', 0.9),
             beta_2=config.get('adam_beta_2', 0.999),
@@ -74,11 +74,9 @@ class AutoencoderManager:
         
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
-        # MODIFICATION: Use the Keras string alias 'mae' for the reconstruction output's metric.
-        # helper_mae_metrics = get_metrics(config) # This returns a list like [mae_function]
-        # reconstruction_metrics = helper_mae_metrics # This was the version leading to 'compile_metrics'
-        
-        reconstruction_metric_to_use = 'mae' # Use the Keras string alias.
+        # MODIFICATION: Try the more explicit Keras string alias 'mean_absolute_error'.
+        # reconstruction_metric_to_use = 'mae' 
+        reconstruction_metric_to_use = 'mean_absolute_error' # Try this more explicit alias
         tf.print(f"DEBUG: Attempting to compile with reconstruction_out metric: '{reconstruction_metric_to_use}' (Keras string alias)")
 
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
@@ -104,7 +102,7 @@ class AutoencoderManager:
                 'kl_beta_out': 0.0
             },
             metrics={ 
-                'reconstruction_out': reconstruction_metric_to_use, # MODIFIED to use the string alias
+                'reconstruction_out': reconstruction_metric_to_use, # Use the new alias
                 'kl_raw_out': pass_through_metric, 
                 'kl_weighted_out': pass_through_metric,
                 'kl_beta_out': pass_through_metric
@@ -112,7 +110,6 @@ class AutoencoderManager:
             run_eagerly=config.get('run_eagerly', False) 
         )
         tf.print("[_compile_model] Model compiled successfully.")
-        # ADDED DEBUG PRINT
         tf.print(f"DEBUG: Model compiled. Optimizer: {self.autoencoder_model.optimizer}, Metrics names: {self.autoencoder_model.metrics_names}")
 
 

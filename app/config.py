@@ -123,7 +123,23 @@ DEFAULT_VALUES = {
     "predicted_horizons": [1,2,3,4,5,6],
     "use_stl": True,
     "use_wavelets": True,
-    "use_multi_tapper": True
+    "use_multi_tapper": True,
+    
+    # --- Loss Function Weights ---
+    'huber_delta': 1.0,          # Delta for Huber loss (implicitly weight 1)
+    
+    'mmd_weight': 0.01,          # Weight for MMD loss
+    'mmd_sigma': 1.0,            # Sigma for MMD kernel (if your compute_mmd uses it)
+    # 'mmd_sample_size': 256,    # Optional: if your compute_mmd supports sub-sampling
+
+    'skew_weight': 0.0,          # Set to >0 to activate skewness loss (e.g., 0.001)
+    'kurtosis_weight': 0.0,      # Set to >0 to activate kurtosis loss (e.g., 0.001)
+    'cov_weight': 0.0,           # Set to >0 to activate covariance loss (e.g., 0.001)
+
+    # --- KL Divergence Annealing ---
+    'kl_beta_start': 0.0001,
+    'kl_beta': 1.0, # This is kl_beta_end for the annealing
+    'kl_anneal_epochs': 100,
     
 }
 

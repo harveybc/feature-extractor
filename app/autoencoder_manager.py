@@ -9,7 +9,7 @@ import json
 
 from app.autoencoder_helper import (
     get_reconstruction_and_stats_loss_fn, 
-    # get_metrics, # Temporarily not used, will use tf.keras.metrics.MeanAbsoluteError directly
+    get_metrics, # MODIFIED: Uncomment this line
     EarlyStoppingWithPatienceCounter,
     ReduceLROnPlateauWithCounter,
     KLAnnealingCallback,
@@ -74,8 +74,10 @@ class AutoencoderManager:
         
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
-        # MODIFICATION: Use a standard Keras MAE metric object directly
-        reconstruction_metrics = [tf.keras.metrics.MeanAbsoluteError(name='mae')]
+        # MODIFICATION: Revert to using the MAE function from autoencoder_helper.py
+        # reconstruction_metrics = [tf.keras.metrics.MeanAbsoluteError(name='mae')] # This was the previous attempt
+        helper_mae_metrics = get_metrics(config) # This returns a list like [mae_function]
+        reconstruction_metrics = helper_mae_metrics # Assign the list of function(s)
 
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
@@ -100,7 +102,7 @@ class AutoencoderManager:
                 'kl_beta_out': 0.0
             },
             metrics={ 
-                'reconstruction_out': reconstruction_metrics, # Apply MAE here
+                'reconstruction_out': reconstruction_metrics, # Apply MAE function list here
                 'kl_raw_out': pass_through_metric, 
                 'kl_weighted_out': pass_through_metric,
                 'kl_beta_out': pass_through_metric

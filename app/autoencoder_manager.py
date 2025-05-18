@@ -12,7 +12,8 @@ from app.autoencoder_helper import (
     get_metrics,
     EarlyStoppingWithPatienceCounter,
     ReduceLROnPlateauWithCounter,
-    KLAnnealingCallback 
+    KLAnnealingCallback,
+    EpochEndLogger # Import the new logger
 )
 
 class KLDivergenceLayer(Layer):
@@ -214,11 +215,15 @@ class AutoencoderManager:
         tf.print(f"Target data shape for reconstruction_output: {data_targets.shape}")
 
         callbacks_list = []
+        
+        # Add EpochEndLogger: This will print consolidated info at epoch end
+        callbacks_list.append(EpochEndLogger())
+
         if config.get('early_stopping_patience', 0) > 0:
             callbacks_list.append(EarlyStoppingWithPatienceCounter(
                 monitor=config.get('early_stopping_monitor', 'val_loss'),
                 patience=config.get('early_stopping_patience'),
-                verbose=1,
+                verbose=0, # MODIFIED: Set to 0 to let EpochEndLogger handle printing
                 restore_best_weights=config.get('early_stopping_restore_best_weights', True)
             ))
 
@@ -228,7 +233,7 @@ class AutoencoderManager:
                 factor=config.get('reduce_lr_factor', 0.2),
                 patience=config.get('reduce_lr_patience'),
                 min_lr=config.get('reduce_lr_min_lr', 0.00001),
-                verbose=1
+                verbose=0 # MODIFIED: Set to 0 to let EpochEndLogger handle printing
             ))
         
         if self.kl_layer_instance_obj and config.get('kl_anneal_epochs', 0) > 0:
@@ -237,7 +242,7 @@ class AutoencoderManager:
                 kl_beta_end=config.get('kl_beta', 1.0), 
                 anneal_epochs=config.get('kl_anneal_epochs'),
                 kl_layer_instance=self.kl_layer_instance_obj, 
-                verbose=1
+                verbose=0 # Verbose for KLAnnealing can remain 0 as EpochEndLogger handles its state
             )
             callbacks_list.append(kl_annealing)
             tf.print("[train_autoencoder] KL Annealing callback configured with layer object.")
@@ -268,7 +273,7 @@ class AutoencoderManager:
             callbacks=callbacks_list,
             validation_data=validation_data_prepared,
             shuffle=True,
-            verbose=config.get('keras_verbose_level', 1)
+            verbose=config.get('keras_verbose_level', 1) # Keras's main verbose for progress bar etc.
         )
         return history
 

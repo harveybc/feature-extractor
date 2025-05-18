@@ -149,8 +149,9 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
         
         if mmd_weight > 0:
             mmd_val = compute_mmd(actual_reconstruction_target, recon_pred, sigma=mmd_sigma, sample_size=mmd_sample_size)
-            if tf.rank(mmd_val) != 0: 
-                mmd_val = tf.reduce_mean(mmd_val)
+            # Removed: if tf.rank(mmd_val) != 0: 
+            # Removed:     mmd_val = tf.reduce_mean(mmd_val)
+            # compute_mmd is expected to return a scalar
             mmd_total.assign(mmd_val) 
             total_loss += mmd_weight * mmd_val
             tf.print("[LossFn_INNER] MMD calculated:", mmd_val, "weighted_mmd_added:", mmd_weight * mmd_val, summarize=-1)
@@ -179,8 +180,9 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
             
         if cov_weight > 0:
             cov_loss_val = covariance_loss_calc(actual_reconstruction_target, recon_pred, config_to_use) 
-            if tf.rank(cov_loss_val) != 0: 
-                cov_loss_val = tf.reduce_mean(cov_loss_val)
+            # Removed: if tf.rank(cov_loss_val) != 0: 
+            # Removed:     cov_loss_val = tf.reduce_mean(cov_loss_val)
+            # covariance_loss_calc is expected to return a scalar
             covariance_loss_tracker.assign(cov_loss_val) 
             total_loss += cov_weight * cov_loss_val
             tf.print("[LossFn_INNER] Covariance loss calculated:", cov_loss_val, "weighted_cov_added:", cov_weight * cov_loss_val, summarize=-1)

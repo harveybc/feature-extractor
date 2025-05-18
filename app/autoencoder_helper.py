@@ -1,7 +1,7 @@
 import tensorflow as tf
 import keras
 from tensorflow.keras.losses import Huber
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback # Add Callback
 
 # Trackers
 mmd_total = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="mmd_total_tracker")
@@ -131,3 +131,43 @@ class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
         super().on_epoch_end(epoch, logs)
         if hasattr(self, 'wait'):
             print(f"RLROP patience: {self.wait}/{self.patience}")
+
+class KLAnnealingCallback(Callback):
+    def __init__(self, kl_beta_start, kl_beta_end, anneal_epochs, layer_name="kl_loss_adder_node", verbose=0):
+        super(KLAnnealingCallback, self).__init__()
+        self.kl_beta_start = kl_beta_start
+        self.kl_beta_end = kl_beta_end
+        self.anneal_epochs = anneal_epochs
+        self.layer_name = layer_name
+        self.verbose = verbose
+        self.current_kl_beta = tf.Variable(kl_beta_start, trainable=False, dtype=tf.float32)
+
+    def on_epoch_begin(self, epoch, logs=None):
+        if epoch < self.anneal_epochs:
+            new_beta = self.kl_beta_start + (self.kl_beta_end - self.kl_beta_start) * (epoch / float(self.anneal_epochs))
+            self.current_kl_beta.assign(new_beta)
+        else:
+            self.current_kl_beta.assign(self.kl_beta_end)
+        
+        try:
+            kl_layer = self.model.get_layer(self.layer_name)
+            # Ensure kl_layer.kl_beta is a tf.Variable to be assignable
+            if hasattr(kl_layer, 'kl_beta') and isinstance(kl_layer.kl_beta, tf.Variable):
+                kl_layer.kl_beta.assign(self.current_kl_beta)
+            elif hasattr(kl_layer, 'kl_beta'): # if it's a simple attribute, try to set it
+                kl_layer.kl_beta = self.current_kl_beta.numpy() # convert tf.Variable to numpy
+            else:
+                if self.verbose > 0 and epoch == 0:
+                    print(f"\nKLAnnealingCallback: Layer '{self.layer_name}' does not have a 'kl_beta' attribute.")
+                    
+            if self.verbose > 0 and epoch == 0 and hasattr(kl_layer, 'kl_beta'):
+                 print(f"\nKLAnnealingCallback: Initial kl_beta set to {self.current_kl_beta.numpy():.6f} for layer '{self.layer_name}'")
+        except ValueError:
+            if self.verbose > 0 and epoch == 0:
+                print(f"\nKLAnnealingCallback: Warning: Layer '{self.layer_name}' not found in model.")
+
+    def on_epoch_end(self, epoch, logs=None):
+        if logs is not None:
+            logs['kl_beta'] = self.current_kl_beta.numpy()
+        if self.verbose > 0 :
+             print(f" - kl_beta: {self.current_kl_beta.numpy():.6f}", end="")

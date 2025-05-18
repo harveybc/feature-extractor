@@ -44,6 +44,9 @@ DEFAULT_VALUES = {
     'use_sliding_window' : False,
     "kl_weight": 1e-6,
     "kl_anneal_epochs": 100,        
+    "kl_beta_start": 0.0001,        # Starting value for KL beta annealing
+    "kl_beta": 1.0,                 # Final value for KL beta (used as kl_beta_end by annealing)
+    "kl_anneal_epochs": 100,  
     "mmd_lambda": 0.1,
     "overfitting_penalty": 0.1,
     "use_returns": True,

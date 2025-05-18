@@ -6,7 +6,10 @@ from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import load_csv, write_csv
 # from app.reconstruction import unwindow_data 
 from app.config_handler import save_debug_info, remote_log
-from keras.models import load_model
+import os # Add os import for load_and_evaluate_encoder/decoder path checks
+from tensorflow.keras.models import load_model # Changed
+from tensorflow.keras.utils import plot_model # Changed
+
 
 # This utility function might still be useful for a preprocessor plugin,
 # but not directly for creating the CVAE's per-step inputs in this file.
@@ -63,17 +66,17 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             f"provided by PreprocessorPlugin. Available features: {feature_names_all}"
         ) from e
 
-    if len(x_train_data.shape) != 3:
+    if x_train_data.ndim != 3: # Expect 3D (samples, window_size, features)
         raise ValueError(f"x_train_data is expected to be 3D (samples, window, features), but got shape {x_train_data.shape}")
     
-    y_train_targets_6_features = x_train_data[:, -1, target_indices]
+    y_train_targets_6_features = x_train_data[:, -1, target_indices] # Extract last step of target features
     tf.print(f"Constructed y_train_targets_6_features with shape: {y_train_targets_6_features.shape}")
 
     y_val_targets_6_features = None
     if x_val_data is not None:
-        if len(x_val_data.shape) != 3:
+        if x_val_data.ndim != 3: # Expect 3D
             raise ValueError(f"x_val_data is expected to be 3D (samples, window, features), but got shape {x_val_data.shape}")
-        y_val_targets_6_features = x_val_data[:, -1, target_indices]
+        y_val_targets_6_features = x_val_data[:, -1, target_indices] # Extract last step
         tf.print(f"Constructed y_val_targets_6_features with shape: {y_val_targets_6_features.shape}")
         if x_val_data.shape[0] != y_val_targets_6_features.shape[0]:
             raise ValueError(f"Sample count mismatch between x_val_data ({x_val_data.shape[0]}) and y_val_targets_6_features ({y_val_targets_6_features.shape[0]})")
@@ -86,9 +89,10 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     if y_val_targets_6_features is not None and not isinstance(y_val_targets_6_features, np.ndarray):
         raise TypeError(f"y_val_targets_6_features is type {type(y_val_targets_6_features)}, expected np.ndarray.")
 
-    if y_train_targets_6_features.shape[-1] != len(target_feature_names) or (len(y_train_targets_6_features.shape) != 2):
+    # y_targets should be 2D (samples, num_target_features)
+    if y_train_targets_6_features.ndim != 2 or y_train_targets_6_features.shape[-1] != len(target_feature_names):
         raise ValueError(f"y_train_targets_6_features should be 2D with {len(target_feature_names)} features, but got shape {y_train_targets_6_features.shape}")
-    if y_val_targets_6_features is not None and (y_val_targets_6_features.shape[-1] != len(target_feature_names) or (len(y_val_targets_6_features.shape) != 2)):
+    if y_val_targets_6_features is not None and (y_val_targets_6_features.ndim != 2 or y_val_targets_6_features.shape[-1] != len(target_feature_names)):
         raise ValueError(f"y_val_targets_6_features should be 2D with {len(target_feature_names)} features, but got shape {y_val_targets_6_features.shape}")
     
     if x_train_data.shape[0] != y_train_targets_6_features.shape[0]:
@@ -96,16 +100,28 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
 
     # --- Populate necessary dimensions in config ---
     if 'window_size' not in config or not isinstance(config.get('window_size'), int) or config.get('window_size') <= 0:
-        config['window_size'] = x_train_data.shape[1]
-        tf.print(f"Derived 'window_size' from 3D preprocessed training data: {config['window_size']}")
-    elif x_train_data.shape[1] != config['window_size']:
+        if x_train_data.ndim == 3: # Check if x_train_data is 3D
+            config['window_size'] = x_train_data.shape[1]
+            tf.print(f"Derived 'window_size' from 3D preprocessed training data: {config['window_size']}")
+        else: # Handle case where x_train_data is not 3D and window_size is not in config
+            raise ValueError("x_train_data is not 3D and 'window_size' is not specified in config. Cannot derive window_size.")
+    elif x_train_data.ndim == 3 and x_train_data.shape[1] != config['window_size']: # If 3D and mismatch
          tf.print(f"Warning: Mismatch between explicitly set config 'window_size' ({config['window_size']}) and "
                f"3D x_train_data.shape[1] ({x_train_data.shape[1]}). Using config 'window_size'.")
+    elif x_train_data.ndim != 3: # If not 3D but window_size is in config
+        tf.print(f"Warning: 'window_size' is set in config to {config['window_size']}, but x_train_data is not 3D (shape: {x_train_data.shape}). Proceeding with config 'window_size'. Ensure model handles this.")
 
-    config['num_features_input'] = x_train_data.shape[2]
-    tf.print(f"[DataPrep] Automatically set 'num_features_input': {config['num_features_input']} from x_train_data.shape[2]")
 
-    config['num_features_output'] = y_train_targets_6_features.shape[1]
+    if x_train_data.ndim == 3:
+        config['num_features_input'] = x_train_data.shape[2]
+    elif x_train_data.ndim == 2: # If preprocessor returns 2D (samples, features) and windowing is internal to model
+        config['num_features_input'] = x_train_data.shape[1]
+        tf.print(f"Warning: x_train_data is 2D. Assuming 'num_features_input' is x_train_data.shape[1]. Ensure model handles windowing if needed.")
+    else: # Should have been caught by earlier x_train_data.ndim != 3 check
+        raise ValueError(f"Cannot determine 'num_features_input'. x_train_data has unexpected shape: {x_train_data.shape}")
+    tf.print(f"[DataPrep] Automatically set 'num_features_input': {config['num_features_input']}")
+
+    config['num_features_output'] = y_train_targets_6_features.shape[1] # num_features_output is from the target
     tf.print(f"[DataPrep] Automatically set 'num_features_output': {config['num_features_output']} from y_train_targets_6_features.shape[1]")
 
     required_dims = {
@@ -162,9 +178,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     else:
         tf.print("[data_processor] Validation data (x_val_data or y_val_targets_6_features from preprocessor) is None. "
                  "Training will proceed without validation unless 'cvae_val_inputs' and 'cvae_val_targets' are already in config.")
-        # If not provided by preprocessor, check if they were loaded from a config file
         if 'cvae_val_inputs' not in config or 'cvae_val_targets' not in config:
-            config.pop('cvae_val_inputs', None) # Ensure they are removed if incomplete
+            config.pop('cvae_val_inputs', None) 
             config.pop('cvae_val_targets', None)
             tf.print("[data_processor] No validation data found in preprocessor output or existing config.")
 
@@ -181,8 +196,10 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     best_latent_dim = current_latent_dim
     best_autoencoder_manager = None
     
-    expected_mae_key = 'reconstruction_out_mae'
-    expected_val_mae_key = f'val_{expected_mae_key}'
+    # This key should now be 'reconstruction_out_mae' due to tf.keras.metrics.MeanAbsoluteError(name='mae')
+    # Keras prepends the output name 'reconstruction_out' to the metric's given name 'mae'.
+    expected_mae_key = 'reconstruction_out_mae' 
+    expected_val_mae_key = f'val_{expected_mae_key}' # Keras prepends 'val_' for validation metrics
 
     while True:
         config['latent_dim'] = current_latent_dim 
@@ -202,24 +219,23 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         train_eval_results = autoencoder_manager.evaluate(cvae_train_inputs, cvae_train_targets, "Training", config)
         
         training_mae = float('nan')
-        mae_metric_key_train_found = None
-        if train_eval_results:
-            if expected_mae_key in train_eval_results:
-                training_mae = train_eval_results[expected_mae_key]
-                mae_metric_key_train_found = expected_mae_key
-            else: # Fallback search
-                for key in train_eval_results.keys():
-                    if 'mae' in key.lower() and 'reconstruction_out' in key.lower():
-                        training_mae = train_eval_results[key]
-                        mae_metric_key_train_found = key
-                        tf.print(f"Warning: Training MAE key '{expected_mae_key}' not found. Using fallback key '{mae_metric_key_train_found}'.")
-                        break
+        if train_eval_results and expected_mae_key in train_eval_results:
+            training_mae = train_eval_results[expected_mae_key]
         
-        tf.print(f"Training MAE with latent_dim {current_latent_dim}: {training_mae:.4f} (extracted with key: {mae_metric_key_train_found})")
+        if np.isnan(training_mae):
+            tf.print(f"CRITICAL ERROR: Training MAE ('{expected_mae_key}') is NaN or key not found in evaluation results!")
+            tf.print(f"Evaluation results for Training: {train_eval_results}")
+            # Try to get compiled metric names from the manager if available
+            compiled_metrics_names_str = "N/A"
+            if hasattr(autoencoder_manager, 'autoencoder_model') and autoencoder_manager.autoencoder_model and hasattr(autoencoder_manager.autoencoder_model, 'metrics_names'):
+                 compiled_metrics_names_str = str(autoencoder_manager.autoencoder_model.metrics_names)
+            tf.print(f"Model's compiled metrics names: {compiled_metrics_names_str}")
+            raise ValueError(f"Training MAE ('{expected_mae_key}') is missing or NaN. Stopping execution. Results: {train_eval_results}. Compiled metrics: {compiled_metrics_names_str}")
+        
+        tf.print(f"Training MAE with latent_dim {current_latent_dim}: {training_mae:.4f} (extracted with key: {expected_mae_key})")
         tf.print(f"Full Training Evaluation Results: {train_eval_results}")
 
-        validation_mae = float('nan') # Default to NaN if no validation
-        mae_metric_key_val_found = None
+        validation_mae = float('nan') 
         if config.get('cvae_val_inputs') and config.get('cvae_val_targets') is not None:
             eval_val_inputs_list = [
                 config['cvae_val_inputs']['x_window'],
@@ -230,18 +246,19 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             
             val_eval_results = autoencoder_manager.evaluate(eval_val_inputs_list, eval_val_targets_array, "Validation", config)
             
-            if val_eval_results:
-                if expected_val_mae_key in val_eval_results:
-                    validation_mae = val_eval_results[expected_val_mae_key]
-                    mae_metric_key_val_found = expected_val_mae_key
-                else: # Fallback search
-                    for key in val_eval_results.keys():
-                        if 'mae' in key.lower() and 'reconstruction_out' in key.lower() and 'val_' in key.lower():
-                            validation_mae = val_eval_results[key]
-                            mae_metric_key_val_found = key
-                            tf.print(f"Warning: Validation MAE key '{expected_val_mae_key}' not found. Using fallback key '{mae_metric_key_val_found}'.")
-                            break
-            tf.print(f"Validation MAE with latent_dim {current_latent_dim}: {validation_mae:.4f} (extracted with key: {mae_metric_key_val_found})")
+            if val_eval_results and expected_val_mae_key in val_eval_results:
+                validation_mae = val_eval_results[expected_val_mae_key]
+
+            if np.isnan(validation_mae):
+                tf.print(f"CRITICAL ERROR: Validation MAE ('{expected_val_mae_key}') is NaN or key not found in evaluation results!")
+                tf.print(f"Evaluation results for Validation: {val_eval_results}")
+                compiled_metrics_names_str = "N/A"
+                if hasattr(autoencoder_manager, 'autoencoder_model') and autoencoder_manager.autoencoder_model and hasattr(autoencoder_manager.autoencoder_model, 'metrics_names'):
+                    compiled_metrics_names_str = str(autoencoder_manager.autoencoder_model.metrics_names)
+                tf.print(f"Model's compiled metrics names: {compiled_metrics_names_str}")
+                raise ValueError(f"Validation MAE ('{expected_val_mae_key}') is missing or NaN. Stopping execution. Results: {val_eval_results}. Compiled metrics: {compiled_metrics_names_str}")
+
+            tf.print(f"Validation MAE with latent_dim {current_latent_dim}: {validation_mae:.4f} (extracted with key: {expected_val_mae_key})") # Corrected key
             tf.print(f"Full Validation Evaluation Results: {val_eval_results}")
         else:
             tf.print(f"Validation data not configured for latent_dim {current_latent_dim}. Skipping validation MAE comparison for search.")
@@ -251,7 +268,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             best_latent_dim = current_latent_dim
             best_autoencoder_manager = autoencoder_manager 
             tf.print(f"New best Validation MAE: {best_val_mae:.4f} with latent_dim: {best_latent_dim}")
-        elif np.isnan(validation_mae) and best_autoencoder_manager is None: # First run, no validation, save current
+        elif np.isnan(validation_mae) and best_autoencoder_manager is None: 
             best_latent_dim = current_latent_dim
             best_autoencoder_manager = autoencoder_manager
             tf.print(f"No validation MAE. Storing model for latent_dim: {current_latent_dim} as current best.")
@@ -259,48 +276,52 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
 
         if not incremental_search:
             tf.print("Incremental search disabled. Completing after one iteration.")
-            if best_autoencoder_manager is None: best_autoencoder_manager = autoencoder_manager # Ensure a model is selected
+            if best_autoencoder_manager is None: best_autoencoder_manager = autoencoder_manager 
             break 
         
         if not np.isnan(validation_mae) and validation_mae <= threshold_error:
             tf.print(f"Threshold MAE ({threshold_error}) met or improved. Optimal latent_dim likely found: {current_latent_dim}")
             break
-        else:
+        else: # Check if validation_mae is NaN before deciding to increment latent_dim
+            if np.isnan(validation_mae) and not config.get('allow_search_without_val_mae', False): # Add a config flag if you want to allow search without val_mae
+                tf.print(f"Validation MAE is NaN and search without val_mae is not allowed. Stopping search at latent_dim {current_latent_dim}.")
+                if best_autoencoder_manager is None: best_autoencoder_manager = autoencoder_manager # Ensure a model is selected
+                break
+
             current_latent_dim += step_size_latent
             if current_latent_dim > config.get('max_latent_dim', 256):
                 tf.print(f"Reached max_latent_dim ({config.get('max_latent_dim', 256)}). Stopping search.")
                 break
-            if current_latent_dim <= 0: # Should not happen with positive step_size
+            if current_latent_dim <= 0: 
                 tf.print(f"Latent dimension became non-positive ({current_latent_dim}). Stopping search.")
                 break
     
     if best_autoencoder_manager is None: 
-        if autoencoder_manager: # If loop ran at least once
-            tf.print("Warning: best_autoencoder_manager was not set (e.g. all val_mae were NaN or search conditions not met). Using the last trained model.")
+        if autoencoder_manager: 
+            tf.print("Warning: best_autoencoder_manager was not set. Using the last trained model.")
             best_autoencoder_manager = autoencoder_manager
-            best_latent_dim = config.get('latent_dim') # Get the last used latent_dim
-        else: # Should not happen if pipeline starts correctly
+            best_latent_dim = config.get('latent_dim') 
+        else: 
             raise RuntimeError("Autoencoder training loop did not run or failed to select a model.")
 
-    tf.print(f"Final selected latent_dim: {best_latent_dim} with Best Validation MAE: {best_val_mae:.4f}")
+    tf.print(f"Final selected latent_dim: {best_latent_dim} with Best Validation MAE: {best_val_mae:.4f if not np.isnan(best_val_mae) else 'N/A'}") # Handle NaN for print
     
-    config['latent_dim'] = best_latent_dim # Ensure config reflects the best latent_dim for final ops
+    config['latent_dim'] = best_latent_dim 
 
     encoder_model_filename = config.get('save_encoder', 'encoder_model.keras').replace(".keras", f"_ld{best_latent_dim}.keras").replace(".h5", f"_ld{best_latent_dim}.keras")
     decoder_model_filename = config.get('save_decoder', 'decoder_model.keras').replace(".keras", f"_ld{best_latent_dim}.keras").replace(".h5", f"_ld{best_latent_dim}.keras")
     
     if best_autoencoder_manager.encoder_plugin:
-        best_autoencoder_manager.save_encoder(encoder_model_filename) # Uses plugin's save
+        best_autoencoder_manager.save_encoder(encoder_model_filename) 
         tf.print(f"Saved best encoder component model to {encoder_model_filename}")
     if best_autoencoder_manager.decoder_plugin:
-        best_autoencoder_manager.save_decoder(decoder_model_filename) # Uses plugin's save
+        best_autoencoder_manager.save_decoder(decoder_model_filename) 
         tf.print(f"Saved best decoder component model to {decoder_model_filename}")
     
-    # Save the full CVAE model if a path is provided in config
     full_model_save_path_template = config.get('model_save_path', None)
     if full_model_save_path_template:
         full_model_filename = full_model_save_path_template.replace(".keras", f"_ld{best_latent_dim}.keras").replace(".h5", f"_ld{best_latent_dim}.keras")
-        best_autoencoder_manager.save_model(full_model_filename) # Saves the full Keras model
+        best_autoencoder_manager.save_model(full_model_filename) 
         tf.print(f"Saved best full CVAE model to {full_model_filename}")
 
 
@@ -309,23 +330,22 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     
     final_train_eval_results = best_autoencoder_manager.evaluate(cvae_train_inputs, cvae_train_targets, "Final Training", config)
     final_training_mae = float('nan')
-    final_mae_metric_key_train_found = None
-    if final_train_eval_results:
-        if expected_mae_key in final_train_eval_results:
-            final_training_mae = final_train_eval_results[expected_mae_key]
-            final_mae_metric_key_train_found = expected_mae_key
-        else: # Fallback
-            for key in final_train_eval_results.keys():
-                if 'mae' in key.lower() and 'reconstruction_out' in key.lower():
-                    final_training_mae = final_train_eval_results[key]
-                    final_mae_metric_key_train_found = key
-                    break
-    tf.print(f"Final Training MAE (best model): {final_training_mae:.4f} (key: {final_mae_metric_key_train_found})")
+    if final_train_eval_results and expected_mae_key in final_train_eval_results:
+        final_training_mae = final_train_eval_results[expected_mae_key]
+    
+    if np.isnan(final_training_mae):
+        tf.print(f"CRITICAL ERROR: Final Training MAE ('{expected_mae_key}') is NaN or key not found!")
+        tf.print(f"Final Training Evaluation Results: {final_train_eval_results}")
+        compiled_metrics_names_str = "N/A"
+        if hasattr(best_autoencoder_manager, 'autoencoder_model') and best_autoencoder_manager.autoencoder_model and hasattr(best_autoencoder_manager.autoencoder_model, 'metrics_names'):
+            compiled_metrics_names_str = str(best_autoencoder_manager.autoencoder_model.metrics_names)
+        tf.print(f"Model's compiled metrics names: {compiled_metrics_names_str}")
+        raise ValueError(f"Final Training MAE ('{expected_mae_key}') is missing or NaN. Results: {final_train_eval_results}. Compiled metrics: {compiled_metrics_names_str}")
+    tf.print(f"Final Training MAE (best model): {final_training_mae:.4f} (key: {expected_mae_key})")
 
 
     final_val_eval_results = None
     final_validation_mae = float('nan')
-    final_mae_metric_key_val_found = None
     if config.get('cvae_val_inputs') and config.get('cvae_val_targets') is not None:
         final_eval_val_inputs_list = [
             config['cvae_val_inputs']['x_window'],
@@ -334,32 +354,32 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         ]
         final_eval_val_targets_array = config['cvae_val_targets']
         final_val_eval_results = best_autoencoder_manager.evaluate(final_eval_val_inputs_list, final_eval_val_targets_array, "Final Validation", config)
-        if final_val_eval_results:
-            if expected_val_mae_key in final_val_eval_results:
-                final_validation_mae = final_val_eval_results[expected_val_mae_key]
-                final_mae_metric_key_val_found = expected_val_mae_key
-            else: # Fallback
-                for key in final_val_eval_results.keys():
-                    if 'mae' in key.lower() and 'reconstruction_out' in key.lower() and 'val_' in key.lower():
-                        final_validation_mae = final_val_eval_results[key]
-                        final_mae_metric_key_val_found = key
-                        break
-    tf.print(f"Final Validation MAE (best model): {final_validation_mae:.4f} (key: {final_mae_metric_key_val_found})")
+        if final_val_eval_results and expected_val_mae_key in final_val_eval_results:
+            final_validation_mae = final_val_eval_results[expected_val_mae_key]
+        
+        if np.isnan(final_validation_mae): # Check if NaN after attempting to extract
+            tf.print(f"CRITICAL ERROR: Final Validation MAE ('{expected_val_mae_key}') is NaN or key not found!")
+            tf.print(f"Final Validation Evaluation Results: {final_val_eval_results}")
+            compiled_metrics_names_str = "N/A"
+            if hasattr(best_autoencoder_manager, 'autoencoder_model') and best_autoencoder_manager.autoencoder_model and hasattr(best_autoencoder_manager.autoencoder_model, 'metrics_names'):
+                compiled_metrics_names_str = str(best_autoencoder_manager.autoencoder_model.metrics_names)
+            tf.print(f"Model's compiled metrics names: {compiled_metrics_names_str}")
+            raise ValueError(f"Final Validation MAE ('{expected_val_mae_key}') is missing or NaN. Results: {final_val_eval_results}. Compiled metrics: {compiled_metrics_names_str}")
+    tf.print(f"Final Validation MAE (best model): {final_validation_mae:.4f if not np.isnan(final_validation_mae) else 'N/A'} (key: {expected_val_mae_key})") # Handle NaN for print
 
 
     debug_info = {
         'execution_time_seconds': execution_time,
         'best_latent_dim': best_latent_dim,
-        'encoder_plugin_params': best_autoencoder_manager.encoder_plugin.get_debug_info() if best_autoencoder_manager.encoder_plugin else None,
-        'decoder_plugin_params': best_autoencoder_manager.decoder_plugin.get_debug_info() if best_autoencoder_manager.decoder_plugin else None,
+        'encoder_plugin_params': best_autoencoder_manager.encoder_plugin.get_debug_info() if best_autoencoder_manager.encoder_plugin and hasattr(best_autoencoder_manager.encoder_plugin, 'get_debug_info') else None,
+        'decoder_plugin_params': best_autoencoder_manager.decoder_plugin.get_debug_info() if best_autoencoder_manager.decoder_plugin and hasattr(best_autoencoder_manager.decoder_plugin, 'get_debug_info') else None,
         'final_validation_mae': final_validation_mae if not np.isnan(final_validation_mae) else None,
         'final_training_mae': final_training_mae if not np.isnan(final_training_mae) else None,
         'final_validation_metrics': final_val_eval_results,
         'final_training_metrics': final_train_eval_results,
-        'config_used': {k: v for k, v in config.items() if not isinstance(v, np.ndarray)} # Avoid saving large arrays in debug log
+        'config_used': {k: v for k, v in config.items() if not isinstance(v, np.ndarray)} 
     }
 
-    from tensorflow.keras.utils import plot_model
     if 'save_log' in config and config['save_log']:
         save_debug_info(debug_info, config['save_log'])
         tf.print(f"Debug info saved to {config['save_log']}.")
@@ -382,46 +402,30 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
 
 def load_and_evaluate_encoder(config):
     custom_objects = {} 
-    # encoder_plugin_name = config.get('encoder_plugin', '').lower()
-    # if encoder_plugin_name == 'your_plugin_name_if_it_has_custom_layers':
-    #     from app.plugins.your_encoder_plugin import CustomLayerForEncoder # Example
-    #     custom_objects['CustomLayerForEncoder'] = CustomLayerForEncoder
     
     encoder_model_path = config['load_encoder']
     if not encoder_model_path or not os.path.exists(encoder_model_path):
         print(f"Encoder model path not found or not specified: {encoder_model_path}")
         return
 
-    # This loads the Keras model of the encoder *component*
-    encoder_component_model = load_model(encoder_model_path, custom_objects=custom_objects, compile=False)
+    encoder_component_model = tf.keras.models.load_model(encoder_model_path, custom_objects=custom_objects, compile=False) # Changed
     print(f"CVAE Encoder component model loaded from {encoder_model_path}")
 
-    x_input_file = config.get('x_test_file', config.get('x_validation_file')) # Prioritize test, then val
+    x_input_file = config.get('x_test_file', config.get('x_validation_file')) 
     if not x_input_file: raise ValueError("No input file (x_test_file or x_validation_file) specified for encoder evaluation.")
-
-    # Load raw input data (e.g., windowed data as produced by preprocessor)
-    # This should be the X_window part of the CVAE input.
-    # We assume the preprocessor has already windowed it.
-    # The preprocessor should return 'x_test' or 'x_val' in 3D shape (samples, window_size, num_features_input)
     
-    # For evaluation, we need to run the preprocessor on the test/val data specified
-    # This is a simplified approach; ideally, preprocessor is run once and datasets are split.
-    # Here, we re-run preprocessor for the specified file to get x_test_data.
     temp_eval_config = config.copy()
-    # Temporarily override train/val files to point to the test file for preprocessing
     temp_eval_config['x_train_file'] = x_input_file 
-    temp_eval_config['y_train_file'] = x_input_file # Assuming y_file is same for autoencoder preprocessing
-    temp_eval_config['x_validation_file'] = None # Don't need validation split here
+    temp_eval_config['y_train_file'] = x_input_file 
+    temp_eval_config['x_validation_file'] = None 
     temp_eval_config['y_validation_file'] = None
     
-    # Instantiate a new preprocessor to avoid state issues if the main one is stateful
-    # This requires preprocessor_plugin to be an importable class path or similar
-    from app.plugin_loader import load_plugin # Assuming you have a plugin loader
+    from app.plugin_loader import load_plugin 
     preprocessor_class = load_plugin(config['preprocessor_plugin'], 'preprocessor_plugins')
     eval_preprocessor = preprocessor_class()
 
     eval_datasets = eval_preprocessor.run_preprocessing(temp_eval_config)
-    x_window_eval_data = eval_datasets.get("x_train") # Preprocessor output for 'x_train' is our eval data
+    x_window_eval_data = eval_datasets.get("x_train") 
 
     if x_window_eval_data is None or x_window_eval_data.ndim != 3:
         raise ValueError(f"Evaluation data 'x_window_eval_data' from preprocessor is not correctly shaped or is None. Shape: {getattr(x_window_eval_data, 'shape', 'N/A')}")
@@ -433,8 +437,6 @@ def load_and_evaluate_encoder(config):
     if rnn_hidden_dim_eval is None or conditioning_dim_eval is None:
         raise ValueError("rnn_hidden_dim and conditioning_dim must be in config for encoder evaluation.")
 
-    # Generate h_context and conditions_t for evaluation
-    # These could also come from eval_datasets if preprocessor provides them ('h_train', 'cond_train')
     h_context_eval = eval_datasets.get("h_train")
     if h_context_eval is None:
         print(f"Generating placeholder h_context for encoder evaluation (shape: ({num_samples_eval}, {rnn_hidden_dim_eval})).")
@@ -454,9 +456,15 @@ def load_and_evaluate_encoder(config):
 
     print(f"Encoding data. Input shapes: x_window: {encoder_inputs_eval[0].shape}, h_context: {encoder_inputs_eval[1].shape}, conditions_t: {encoder_inputs_eval[2].shape}")
     encoded_outputs = encoder_component_model.predict(encoder_inputs_eval, verbose=1)
-    z_mean_data = encoded_outputs[0]
-    # z_log_var_data = encoded_outputs[1] 
     
+    # Assuming encoder_component_model outputs [z_mean, z_log_var]
+    if isinstance(encoded_outputs, list) and len(encoded_outputs) > 0:
+        z_mean_data = encoded_outputs[0]
+    elif isinstance(encoded_outputs, np.ndarray): # If only one output (e.g. just z_mean)
+        z_mean_data = encoded_outputs
+    else:
+        raise ValueError(f"Unexpected output format from encoder component model: {type(encoded_outputs)}")
+
     print(f"Encoded z_mean shape: {z_mean_data.shape}")
 
     if config.get('evaluate_encoder'):
@@ -464,13 +472,12 @@ def load_and_evaluate_encoder(config):
         encoded_df = pd.DataFrame(z_mean_data)
         encoded_df.columns = [f'latent_feature_{i}' for i in range(z_mean_data.shape[1])]
         
-        # Date handling: If the preprocessor output 'x_train_dates' (or similar) exists and aligns
-        eval_dates = eval_datasets.get("x_train_dates") # Assuming preprocessor might return dates
+        eval_dates = eval_datasets.get("x_train_dates") 
         if eval_dates is not None and len(eval_dates) == len(encoded_df):
             encoded_df.index = pd.to_datetime(eval_dates)
             print(f"Added dates to encoded output from preprocessor.")
         
-        write_csv(encoded_df, output_filename, index=eval_dates is not None) # Write index if dates were added
+        write_csv(encoded_df, output_filename, index=eval_dates is not None) 
         print(f"Encoded z_mean data saved to {output_filename}")
 
 
@@ -480,23 +487,19 @@ def load_and_evaluate_decoder(config):
         print(f"Decoder model path not found or not specified: {decoder_model_path}")
         return
         
-    decoder_component_model = load_model(decoder_model_path, compile=False)
+    decoder_component_model = tf.keras.models.load_model(decoder_model_path, compile=False) # Changed
     print(f"CVAE Decoder component model loaded from {decoder_model_path}")
 
-    # Input for decoder evaluation should be z_t samples.
-    # This could be the output of the encoder evaluation, or a separate file of z_t samples.
-    z_t_input_file = config.get('evaluate_encoder_output_for_decoder', config.get('evaluate_encoder')) # Use encoder output if specified
+    z_t_input_file = config.get('evaluate_encoder_output_for_decoder', config.get('evaluate_encoder')) 
     if not z_t_input_file:
-        # Fallback to a generic input file if evaluate_encoder is not set for this purpose
-        z_t_input_file = config.get('x_test_file_for_z_samples') # A new config key might be needed
+        z_t_input_file = config.get('x_test_file_for_z_samples') 
         if not z_t_input_file:
             raise ValueError("No input file specified for z_t samples for decoder evaluation.")
     
     if not os.path.exists(z_t_input_file):
         raise FileNotFoundError(f"Input file for z_t samples not found: {z_t_input_file}")
 
-    # Load z_t samples. Assume it's a CSV without dates unless 'force_date' and headers suggest otherwise.
-    z_t_df = load_csv(file_path=z_t_input_file, headers=True, force_date=False) # Assume headers like latent_feature_0
+    z_t_df = load_csv(file_path=z_t_input_file, headers=True, force_date=False) 
     z_t_data = z_t_df.to_numpy()
 
     num_samples_eval = z_t_data.shape[0]
@@ -508,9 +511,6 @@ def load_and_evaluate_decoder(config):
     if rnn_hidden_dim_eval is None or conditioning_dim_eval is None:
         raise ValueError("rnn_hidden_dim and conditioning_dim must be in config for decoder evaluation.")
 
-    # Generate h_context and conditions_t for evaluation
-    # These might need to be loaded if they correspond to the z_t samples
-    # For simplicity, generating zeros.
     print(f"Generating placeholder h_context and conditions_t for decoder evaluation.")
     h_context_eval = np.zeros((num_samples_eval, rnn_hidden_dim_eval), dtype=np.float32)
     conditions_t_eval = np.zeros((num_samples_eval, conditioning_dim_eval), dtype=np.float32)
@@ -525,7 +525,6 @@ def load_and_evaluate_decoder(config):
         output_filename = config['evaluate_decoder']
         decoded_df = pd.DataFrame(decoded_data)
         
-        # Use the target feature names for columns
         target_feature_names_eval = config.get('cvae_target_feature_names', ['OPEN', 'LOW', 'HIGH', 'vix_close', 'BC-BO', 'BH-BL'])
         if len(target_feature_names_eval) == decoded_data.shape[1]:
             decoded_df.columns = target_feature_names_eval
@@ -534,23 +533,12 @@ def load_and_evaluate_decoder(config):
             print(f"Warning: Number of target feature names ({len(target_feature_names_eval)}) "
                   f"does not match decoded data features ({decoded_data.shape[1]}). Using generic column names.")
 
-        # Date handling: If the input z_t_df had an index (e.g., dates), try to use it.
         if isinstance(z_t_df.index, pd.DatetimeIndex):
             decoded_df.index = z_t_df.index
             print(f"Added dates to decoded output from z_t input file.")
         
         write_csv(decoded_df, output_filename, index=isinstance(z_t_df.index, pd.DatetimeIndex))
         print(f"Decoded data saved to {output_filename}")
-
-# --- Remove the redundant num_features_input/output setup block at the end ---
-# The logic for setting these is now at the beginning of run_autoencoder_pipeline.
-# The block starting with:
-# # In data_processor.py (inside run_autoencoder_pipeline) or main.py before calling it
-# ...
-# if x_window_train is not None and x_window_train.ndim == 3:
-# down to 
-#     raise ValueError("y_train_recon is not correctly shaped or is None. Cannot determine num_features_output.")
-# should be deleted.
 
 
 

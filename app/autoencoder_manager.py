@@ -74,10 +74,12 @@ class AutoencoderManager:
         
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
-        # MODIFICATION: Instantiate MAE with simple name 'mae' for reconstruction_out.
-        # Keras should prepend the output name.
-        reconstruction_metric_instance = tf.keras.metrics.MeanAbsoluteError(name='mae')
-        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: MeanAbsoluteError(name='mae'), and pass-through metrics for KL components.")
+        # MODIFICATION: Provide the MeanAbsoluteError class directly.
+        # Keras will instantiate it. Its default name is 'mean_absolute_error'.
+        # Keras should then prepend the output name 'reconstruction_out'.
+        # reconstruction_metric_instance = tf.keras.metrics.MeanAbsoluteError(name='mae') # Previous attempt
+        reconstruction_metric_spec = tf.keras.metrics.MeanAbsoluteError 
+        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: tf.keras.metrics.MeanAbsoluteError (class), and pass-through metrics for KL components.")
 
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
@@ -101,10 +103,8 @@ class AutoencoderManager:
                 'kl_weighted_out': 0.0,
                 'kl_beta_out': 0.0
             },
-            # MODIFICATION: Use a dictionary for metrics, including MAE for reconstruction_out
-            # and pass-through metrics for KL components.
             metrics={ 
-                'reconstruction_out': reconstruction_metric_instance,
+                'reconstruction_out': reconstruction_metric_spec, # Provide the class
                 'kl_raw_out': pass_through_metric, 
                 'kl_weighted_out': pass_through_metric,
                 'kl_beta_out': pass_through_metric 

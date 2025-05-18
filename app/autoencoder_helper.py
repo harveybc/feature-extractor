@@ -217,12 +217,12 @@ def get_metrics(config=None):
     # This function will be temporarily bypassed by the change in AutoencoderManager._compile_model
     # to use tf.keras.metrics.MeanAbsoluteError directly.
     # If that works, this function can be updated or removed.
-    def mae(y_true_tensor, y_pred_tensor):
+    def calculate_mae_for_reconstruction(y_true_tensor, y_pred_tensor): # RENAMED from mae
         yt_recon = tf.cast(y_true_tensor, tf.float32)
         yp_recon = tf.cast(y_pred_tensor, tf.float32)
         return tf.reduce_mean(tf.abs(yt_recon - yp_recon))
     
-    metrics_to_return = [mae] 
+    metrics_to_return = [calculate_mae_for_reconstruction] # Use renamed function
     return metrics_to_return
 
 class EarlyStoppingWithPatienceCounter(tf.keras.callbacks.EarlyStopping): # Changed to tf.keras
@@ -320,22 +320,18 @@ class EpochEndLogger(tf.keras.callbacks.Callback): # Changed to tf.keras
         # Standard Keras metrics from logs
         if 'loss' in logs: log_items.append(f"loss: {logs['loss']:.4f}")
         
-        # MAE: Keras prepends output name. Our output is 'reconstruction_out'. Metric fn is 'mae'.
-        # So, the key in logs should be 'reconstruction_out_mae'.
-        mae_key = 'reconstruction_out_mae' 
+        # MAE: Keras prepends output name. Our output is 'reconstruction_out'. Metric fn is 'calculate_mae_for_reconstruction'.
+        # So, the key in logs should be 'reconstruction_out_calculate_mae_for_reconstruction'.
+        mae_key = 'reconstruction_out_calculate_mae_for_reconstruction' # UPDATED EXPECTED KEY
         if mae_key in logs: 
             log_items.append(f"mae: {logs[mae_key]:.4f}")
-        elif 'mae' in logs: # Fallback for simpler 'mae' key if Keras uses it for some reason
-            log_items.append(f"mae: {logs['mae']:.4f}")
         # else: MAE not found in logs, will not be printed for this epoch
 
         if 'val_loss' in logs: log_items.append(f"val_loss: {logs['val_loss']:.4f}")
         
-        val_mae_key = f"val_{mae_key}" # Expected "val_reconstruction_out_mae"
+        val_mae_key = f"val_{mae_key}" # Expected "val_reconstruction_out_calculate_mae_for_reconstruction"
         if val_mae_key in logs:
             log_items.append(f"val_mae: {logs[val_mae_key]:.4f}")
-        elif 'val_mae' in logs: # Fallback for simpler 'val_mae'
-            log_items.append(f"val_mae: {logs['val_mae']:.4f}")
         # else: Val_MAE not found in logs, will not be printed
 
         # Learning rate

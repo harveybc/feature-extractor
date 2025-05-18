@@ -75,11 +75,12 @@ class AutoencoderManager:
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
         # MODIFICATION: Use the MAE function from autoencoder_helper.get_metrics()
-        # get_metrics(config) returns a list like [mae_function]. We need the function itself.
+        # get_metrics(config) now returns a list like [calculate_mae_for_reconstruction].
         helper_mae_functions = get_metrics(config)
         if not helper_mae_functions:
             raise ValueError("get_metrics(config) from autoencoder_helper returned an empty list or None.")
-        mae_fn_for_compile = helper_mae_functions[0] # Get the actual 'mae' function
+        # This will now be the 'calculate_mae_for_reconstruction' function
+        mae_fn_for_compile = helper_mae_functions[0] 
 
         tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: a custom MAE function (name: {mae_fn_for_compile.__name__}), and pass-through metrics for KL components.")
 
@@ -106,7 +107,8 @@ class AutoencoderManager:
                 'kl_beta_out': 0.0
             },
             metrics={ 
-                'reconstruction_out': mae_fn_for_compile, # Use the MAE function
+                # Use the (renamed) MAE function from autoencoder_helper
+                'reconstruction_out': mae_fn_for_compile, 
                 'kl_raw_out': pass_through_metric, 
                 'kl_weighted_out': pass_through_metric,
                 'kl_beta_out': pass_through_metric 

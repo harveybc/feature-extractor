@@ -122,8 +122,10 @@ def get_metrics(config=None):
 class EarlyStoppingWithPatienceCounter(EarlyStopping):
     def on_epoch_end(self, epoch, logs=None):
         super().on_epoch_end(epoch, logs) # Important to call parent for its logic
-        if logs is None:
-            logs = {}
+        # If logs is None, the super call might populate it or handle it.
+        # We don't strictly need to re-initialize if super() handles it.
+        # if logs is None:
+        #     logs = {} 
         
         best_val = self.best
         best_loss_str = "N/A"
@@ -131,29 +133,56 @@ class EarlyStoppingWithPatienceCounter(EarlyStopping):
         if not (best_val is None or best_val == np.inf or best_val == -np.inf):
             try:
                 best_loss_str = f"{best_val:.6f}"
-            except TypeError: # Should be caught by the None check, but as a safeguard
-                best_loss_str = "ErrorFormatting" # Or simply keep "N/A"
+            except TypeError: 
+                best_loss_str = "ErrorFormatting"
         
-        # Add to logs dictionary for Keras to print
-        logs[f'best_{self.monitor}'] = best_loss_str 
+        # Do NOT add to logs dictionary for Keras to print if it's a string Keras can't average.
+        # logs[f'best_{self.monitor}'] = best_loss_str 
         
+        patience_str = ""
         if hasattr(self, 'wait'):
-            logs['es_patience'] = f"{self.wait}/{self.patience}"
-        # Removed custom print statement
+            # Do NOT add to logs dictionary
+            # logs['es_patience'] = f"{self.wait}/{self.patience}"
+            patience_str = f" - ES patience: {self.wait}/{self.patience}"
+
+        # Reinstate custom print statement
+        print(f"{patience_str} - Best {self.monitor}: {best_loss_str}", end="")
 
 class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
     def on_epoch_end(self, epoch, logs=None):
         # The parent class ReduceLROnPlateau already handles LR changes and adds 'lr' to logs.
+        # Get old LR before super().on_epoch_end() potentially changes it
+        old_lr_variable = self.model.optimizer.learning_rate
+        if hasattr(old_lr_variable, 'numpy'):
+            old_lr = old_lr_variable.numpy()
+        else: 
+            old_lr = old_lr_variable
+
         super().on_epoch_end(epoch, logs) 
-        if logs is None: # Should be populated by parent, but as a safeguard
-            logs = {}
+        # if logs is None: # Super should handle logs
+        #     logs = {}
+
+        new_lr_variable = self.model.optimizer.learning_rate
+        if hasattr(new_lr_variable, 'numpy'):
+            new_lr = new_lr_variable.numpy()
+        else:
+            new_lr = new_lr_variable
         
+        patience_str = ""
         if hasattr(self, 'wait'):
-            # Add to logs dictionary for Keras to print
-            logs['rlrop_patience'] = f"{self.wait}/{self.patience}"
+            # Do NOT add to logs dictionary
+            # logs['rlrop_patience'] = f"{self.wait}/{self.patience}"
+            patience_str = f" - RLROP patience: {self.wait}/{self.patience}"
         
+        lr_info_str = f" - LR: {new_lr:.7f}"
+        if new_lr < old_lr: # Check if LR actually changed
+            lr_info_str = f" - LR reduced to: {new_lr:.7f}"
+
+        # Reinstate custom print statement
         # Keras will automatically log the 'lr' from the logs dict if ReduceLROnPlateau updated it.
-        # Removed custom print statement
+        # So we only need to print our custom patience string.
+        print(f"{patience_str}{lr_info_str}", end="")
+
 
 class KLAnnealingCallback(Callback):
     def __init__(self, kl_beta_start, kl_beta_end, anneal_epochs, 
@@ -205,6 +234,9 @@ class KLAnnealingCallback(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         if logs is not None:
-            logs['kl_beta'] = self.current_kl_beta.numpy() 
+            logs['kl_beta'] = self.current_kl_beta.numpy() # This is fine, kl_beta is numerical
+        
+        # Reinstate custom print for kl_beta, as Keras might not show all log items by default
+        # depending on verbosity settings or if other prints overwrite the line.
         if self.verbose > 0 : 
              print(f" - kl_beta: {self.current_kl_beta.numpy():.6f}", end="")

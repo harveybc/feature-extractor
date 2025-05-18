@@ -1,7 +1,7 @@
 import tensorflow as tf
-import keras
+# import keras # Remove direct keras import if not strictly needed for something tf.keras doesn't cover
 from tensorflow.keras.losses import Huber
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback # Changed to tensorflow.keras
 import numpy as np
 
 # Global TensorFlow Variables for Callback States
@@ -162,8 +162,10 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
         cov_weight = config_to_use.get('cov_weight', 0.0)
         huber_delta = config_to_use.get('huber_delta', 1.0)
 
-        h_loss = Huber(delta=huber_delta)(actual_reconstruction_target, recon_pred)
-        huber_loss_component_tracker.assign(h_loss) # Use RENAMED tracker
+        # Use tf.keras.losses.Huber
+        h_loss_fn = tf.keras.losses.Huber(delta=huber_delta)
+        h_loss = h_loss_fn(actual_reconstruction_target, recon_pred)
+        huber_loss_component_tracker.assign(h_loss) 
         total_loss = h_loss
         
         if mmd_weight > 0:
@@ -212,20 +214,18 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
 
 
 def get_metrics(config=None): 
-    # This is the primary Keras metric we want to see in logs and evaluate results.
-    # Keras will name it based on the output name + function name, e.g., "reconstruction_out_mae".
+    # This function will be temporarily bypassed by the change in AutoencoderManager._compile_model
+    # to use tf.keras.metrics.MeanAbsoluteError directly.
+    # If that works, this function can be updated or removed.
     def mae(y_true_tensor, y_pred_tensor):
         yt_recon = tf.cast(y_true_tensor, tf.float32)
         yp_recon = tf.cast(y_pred_tensor, tf.float32)
         return tf.reduce_mean(tf.abs(yt_recon - yp_recon))
     
-    # Only return actual Keras-compatible metric functions here.
-    # The other values (MMD, Skew, etc.) are tracked via global tf.Variables
-    # and will be printed by EpochEndLogger directly from those variables.
     metrics_to_return = [mae] 
     return metrics_to_return
 
-class EarlyStoppingWithPatienceCounter(EarlyStopping):
+class EarlyStoppingWithPatienceCounter(tf.keras.callbacks.EarlyStopping): # Changed to tf.keras
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Store configured patience in the global tracker when callback is initialized
@@ -241,7 +241,7 @@ class EarlyStoppingWithPatienceCounter(EarlyStopping):
             es_best_value_tracker.assign(self.best)
         # Original print statement is removed; EpochEndLogger will handle display
 
-class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
+class ReduceLROnPlateauWithCounter(tf.keras.callbacks.ReduceLROnPlateau): # Changed to tf.keras
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Store configured patience in the global tracker
@@ -261,9 +261,9 @@ class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
         # LR is typically added to logs by the base ReduceLROnPlateau callback as 'lr'
         # Original print statement is removed
 
-class KLAnnealingCallback(Callback):
+class KLAnnealingCallback(tf.keras.callbacks.Callback): # Changed to tf.keras
     def __init__(self, kl_beta_start, kl_beta_end, anneal_epochs, 
-                 kl_layer_instance=None, layer_name="kl_loss_adder_node", verbose=0): # Set default verbose to 0
+                 kl_layer_instance=None, layer_name="kl_loss_adder_node", verbose=0): 
         super(KLAnnealingCallback, self).__init__()
         self.kl_beta_start = kl_beta_start
         self.kl_beta_end = kl_beta_end
@@ -312,7 +312,7 @@ class KLAnnealingCallback(Callback):
         # Original print statement is removed
 
 # New callback for consolidated epoch-end logging
-class EpochEndLogger(Callback):
+class EpochEndLogger(tf.keras.callbacks.Callback): # Changed to tf.keras
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
         log_items = [f"Epoch {epoch+1}"]

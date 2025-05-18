@@ -146,9 +146,20 @@ class EarlyStoppingWithPatienceCounter(EarlyStopping):
 
 class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
     def on_epoch_end(self, epoch, logs=None):
-        old_lr = keras.backend.get_value(self.model.optimizer.learning_rate)
-        super().on_epoch_end(epoch, logs)
-        new_lr = keras.backend.get_value(self.model.optimizer.learning_rate)
+        # MODIFIED: Get learning rate value correctly for Keras 3
+        old_lr_variable = self.model.optimizer.learning_rate
+        if hasattr(old_lr_variable, 'numpy'):
+            old_lr = old_lr_variable.numpy()
+        else: # Fallback if it's somehow a direct float (less common for new optimizers)
+            old_lr = old_lr_variable 
+
+        super().on_epoch_end(epoch, logs) # This will potentially change the LR
+
+        new_lr_variable = self.model.optimizer.learning_rate
+        if hasattr(new_lr_variable, 'numpy'):
+            new_lr = new_lr_variable.numpy()
+        else:
+            new_lr = new_lr_variable
         
         patience_info = ""
         if hasattr(self, 'wait'):

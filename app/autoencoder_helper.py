@@ -11,45 +11,6 @@ skew_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="sk
 kurtosis_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="kurtosis_loss_tracker")
 covariance_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="covariance_loss_tracker")
 
-# Dummy implementations (User should have their actual implementations)
-def gaussian_kernel(x, y, sigma=1.0):
-    """Gaussian kernel for MMD."""
-    beta = 1. / (2. * sigma**2)
-    # x_col = tf.expand_dims(x, 1) # For pairwise distances if needed, but MMD sums over all pairs
-    # y_lin = tf.expand_dims(y, 0)
-    # dist = tf.reduce_sum((x_col - y_lin)**2, 2)
-    
-    # More direct way for MMD terms:
-    # For K(x,x) and K(y,y), we need pairwise distances within each set
-    # For K(x,y), pairwise distances between sets
-    
-    # This is a simplified approach for illustration.
-    # A full MMD implementation would compute K(x,x), K(y,y), and K(x,y) terms.
-    # For simplicity here, let's assume x and y are batches and we want a rough measure.
-    # This is NOT a full unbiased MMD estimator, but will produce non-zero values.
-    
-    # A common way to compute kernel values for MMD:
-    # XX = tf.matmul(x, x, transpose_b=True)
-    # XY = tf.matmul(x, y, transpose_b=True)
-    # YY = tf.matmul(y, y, transpose_b=True)
-
-    # diag_X = tf.linalg.diag_part(XX)
-    # diag_Y = tf.linalg.diag_part(YY)
-
-    # K_XX = tf.exp(-beta * (tf.expand_dims(diag_X, 1) - 2 * XX + tf.expand_dims(diag_X, 0)))
-    # K_YY = tf.exp(-beta * (tf.expand_dims(diag_Y, 1) - 2 * YY + tf.expand_dims(diag_Y, 0)))
-    # K_XY = tf.exp(-beta * (tf.expand_dims(diag_X, 1) - 2 * XY + tf.expand_dims(diag_Y, 0)))
-    
-    # For a simpler, biased MMD^2 estimate (often used):
-    # Ensure x and y are [batch_size, feature_dim]
-    # This requires careful handling of dimensions.
-    # Let's use a simpler pairwise distance sum for illustration of non-zero output.
-    
-    # Simplified kernel application for demonstration:
-    # This is not a correct MMD, but will show a non-zero value if x and y differ.
-    diff = x - y
-    return tf.exp(-tf.reduce_sum(diff**2, axis=-1) / (2.0 * sigma**2))
-
 
 def compute_mmd(x, y, sigma=1.0, sample_size=None):
     """

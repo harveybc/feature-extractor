@@ -99,7 +99,7 @@ DEFAULT_VALUES = {
     "intermediate_layers": 2,
     "initial_layer_size": 128,
     "layer_size_divisor": 2,
-    "learning_rate": 1e-3,
+    "learning_rate": 1e-4,
     "activation": "tanh",
     "l2_reg": 1e-6,
     "early_patience": 40,

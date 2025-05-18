@@ -52,6 +52,9 @@ def reconstruction_and_stats_loss_fn(y_true_recon_tensor, y_pred_recon_tensor, c
 
     # Get weights from config or use defaults
     mmd_weight = config.get('mmd_weight', 0.0) 
+    mmd_sigma = config.get('mmd_sigma', 1.0) # Get sigma for MMD
+    # mmd_sample_size = config.get('mmd_sample_size', None) # Get sample_size for MMD
+
     skew_weight = config.get('skew_weight', 0.0)
     kurtosis_weight = config.get('kurtosis_weight', 0.0)
     cov_weight = config.get('cov_weight', 0.0)
@@ -66,9 +69,13 @@ def reconstruction_and_stats_loss_fn(y_true_recon_tensor, y_pred_recon_tensor, c
     
     # 3) MMD Loss
     if mmd_weight > 0:
-        mmd_val = compute_mmd(actual_reconstruction_target, recon_pred)
+        # Pass sigma (and sample_size if using) to your MMD function
+        mmd_val = compute_mmd(actual_reconstruction_target, recon_pred, sigma=mmd_sigma) #, sample_size=mmd_sample_size)
+        if tf.rank(mmd_val) != 0: # Ensure mmd_val is a scalar
+            mmd_val = tf.reduce_mean(mmd_val) # Or appropriate reduction
         mmd_total.assign(mmd_val)
         total_loss += mmd_weight * mmd_val
+        print(f"[LossFn Debug] MMD calculated: {mmd_val.numpy()}, weight: {mmd_weight}") # For debugging
     else:
         mmd_total.assign(0.0) # Ensure tracker is zero if not used
         
@@ -79,6 +86,7 @@ def reconstruction_and_stats_loss_fn(y_true_recon_tensor, y_pred_recon_tensor, c
         skew_loss_val = tf.abs(skew_true - skew_pred)
         skew_loss_tracker.assign(skew_loss_val)
         total_loss += skew_weight * skew_loss_val
+        print(f"[LossFn Debug] Skew loss calculated: {skew_loss_val.numpy()}, weight: {skew_weight}")
     else:
         skew_loss_tracker.assign(0.0)
 
@@ -89,6 +97,7 @@ def reconstruction_and_stats_loss_fn(y_true_recon_tensor, y_pred_recon_tensor, c
         kurt_loss_val = tf.abs(kurt_true - kurt_pred)
         kurtosis_loss_tracker.assign(kurt_loss_val)
         total_loss += kurtosis_weight * kurt_loss_val
+        print(f"[LossFn Debug] Kurtosis loss calculated: {kurt_loss_val.numpy()}, weight: {kurtosis_weight}")
     else:
         kurtosis_loss_tracker.assign(0.0)
         
@@ -96,8 +105,11 @@ def reconstruction_and_stats_loss_fn(y_true_recon_tensor, y_pred_recon_tensor, c
     if cov_weight > 0:
         # Pass relevant part of config if covariance_loss_calc needs it
         cov_loss_val = covariance_loss_calc(actual_reconstruction_target, recon_pred, config) 
+        if tf.rank(cov_loss_val) != 0: # Ensure cov_loss_val is a scalar
+            cov_loss_val = tf.reduce_mean(cov_loss_val)
         covariance_loss_tracker.assign(cov_loss_val)
         total_loss += cov_weight * cov_loss_val
+        print(f"[LossFn Debug] Covariance loss calculated: {cov_loss_val.numpy()}, weight: {cov_weight}")
     else:
         covariance_loss_tracker.assign(0.0)
 

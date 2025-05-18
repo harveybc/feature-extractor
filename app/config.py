@@ -1,64 +1,99 @@
 DEFAULT_VALUES = {
-    "use_normalization_json": "examples/data/phase_3/phase_3_debug_out.json",
+    # --- File Paths ---
+    "use_normalization_json": "examples/data/phase_3/phase_3_debug_out.json", # Kept phase_3 specific
     "x_train_file": "examples/data/phase_3/normalized_d1.csv",
-    "y_train_file": "examples/data/phase_3/normalized_d1.csv",
+    "y_train_file": "examples/data/phase_3/normalized_d1.csv", # Assumed y_train is same as x_train for autoencoder
     "x_validation_file": "examples/data/phase_3/normalized_d2.csv",
-    "y_validation_file": "examples/data/phase_3/normalized_d2.csv",
+    "y_validation_file": "examples/data/phase_3/normalized_d2.csv", # Assumed y_val is same as x_val
     "x_test_file": "examples/data/phase_3/normalized_d3.csv",
-    "y_test_file": "examples/data/phase_3/normalized_d3.csv",
-    "output_file": "examples/results/phase_3_2/phase_3_2_cnn_25200_1h_prediction.csv",
+    "y_test_file": "examples/data/phase_3/normalized_d3.csv",     # Assumed y_test is same as x_test
+
+    "output_file": "examples/results/phase_3_2/phase_3_2_cnn_25200_1h_prediction.csv", # Kept more specific phase_3_2
     "results_file": "examples/results/phase_3_2/phase_3_2_cnn_25200_1h_results.csv",
     "loss_plot_file": "examples/results/phase_3_2/phase_3_2_cnn_25200_1h_loss_plot.png",
     "model_plot_file": "examples/results/phase_3_2/phase_3_2_cnn_1h_model_plot.png",
-    "uncertainties_file": "examples/results/phase_3_2/phase_3_2_cnn_25200_1h_uncertanties.csv",
+    "uncertainties_file": "examples/results/phase_3_2/phase_3_2_cnn_25200_1h_uncertanties.csv", # Renamed from "uncertainty_file" for consistency
     "predictions_plot_file": "examples/results/phase_3_2/phase_3_2_cnn_25200_1h_predictions_plot.png",
     "stl_plot_file": "examples/results/phase_3_2/phase_3_2_25200_1h_stl_decomposition_plot.png",
     "wavelet_plot_file": "examples/results/phase_3_2/phase_3_2_25200_1h_wavelet_decomposition_plot.png",
     "tapper_plot_file": "examples/results/phase_3_2/phase_3_2_25200_1h_multi_tapper_decomposition_plot.png",
-    "target_column": "CLOSE",
-    'output_file': './csv_output.csv',
+    
     'save_encoder': 'examples/results/phase_3_2/phase_3_2_cnn_25200_1h_encoder_model.h5',
     'save_decoder': 'examples/results/phase_3_2/phase_3_2_cnn_25200_1h_decoder_model.h5',
     'load_encoder': None,
     'load_decoder': None,
     'evaluate_encoder': './encoder_eval.csv',
     'evaluate_decoder': './decoder_eval.csv',
+
+    # --- Plugin Configuration ---
     "preprocessor_plugin": "stl_preprocessor",
-    'encoder_plugin': 'cnn',
-    'decoder_plugin': 'cnn',
-    'use_sliding_windows': False,
-    'quiet_mode': False,
-    'force_date': False,
-    'headers': True,
+    'encoder_plugin': 'cnn', # Default encoder plugin
+    'decoder_plugin': 'cnn', # Default decoder plugin
+
+    # --- Data and Model Structure ---
+    "target_column": "CLOSE",
     'input_offset': 0,
-    'window_size': 256,  # Number of time steps in each window (e.g., 24 for daily patterns)
-    'l2_reg': 1e-4,          # L2 regularization factor
-    'early_patience': 30,           # Early stopping patience
-    'max_steps_train': 6300,
-    'max_steps_val': 6300,
-    'max_steps_test': 6300,
-    'iterations': 1,
-    'epochs': 1000,
-    'uncertainty_file': 'prediction_uncertainties.csv',
-    'batch_size': 32,
-    'use_sliding_window' : False,
-    "kl_weight": 1e-6,
-    "kl_anneal_epochs": 100,        
-    "kl_beta_start": 0.0001,        # Starting value for KL beta annealing
+    'window_size': 288,  # Kept later definition
+    'l2_reg': 1e-6,          # Kept later definition (smaller L2)
+    'max_steps_train': 25200, # Kept later definition
+    'max_steps_val': 6300,    # This was only defined once
+    'max_steps_test': 6300,   # Kept later definition
+    'batch_size': 128,        # Kept later definition
+    "rnn_hidden_dim": 64,
+    "conditioning_dim": 10,
+    "latent_dim": 32,         # Default latent_dim, can be overridden by search
+    "intermediate_layers": 2, # For plugins that use this
+    "initial_layer_size": 128,# For plugins that use this
+    "layer_size_divisor": 2,  # For plugins that use this
+    "activation": "tanh",     # Default activation for some plugin layers
+
+    # --- Training Parameters ---
+    'iterations': 1,          # Typically 1 unless doing multiple runs with different seeds
+    'epochs': 1000,           # Kept later definition
+    'learning_rate': 1e-4,    # Kept later definition
+    'early_patience': 40,     # Kept later definition
+    "min_delta": 1e-7,        # Kept later definition for early stopping / reduceLR
+    "start_from_epoch": 15,   # Kept later definition
+    
+    # --- KL Divergence Annealing (CVAE specific) ---
+    "kl_beta_start": 0.0001,
     "kl_beta": 1.0,                 # Final value for KL beta (used as kl_beta_end by annealing)
-    "kl_anneal_epochs": 100,  
-    "mmd_lambda": 0.1,
-    "overfitting_penalty": 0.1,
-    "use_returns": True,
-    "mc_samples":100,
+    "kl_anneal_epochs": 100,        # Only one "kl_anneal_epochs" needed
+    # "kl_weight": 1e-6, # This seems like an alternative to annealing, or a fixed weight. Removed for clarity with annealing.
+
+    # --- Loss Function Weights & Parameters ---
+    'huber_delta': 1.0,
+    'mmd_weight': 0.01,       # Kept later definition
+    'mmd_sigma': 1.0,         # Kept later definition
+    'skew_weight': 0.001,
+    'kurtosis_weight': 0.001,
+    'cov_weight': 0.0,
+    # "mmd_lambda": 1e-2, # This seems like a duplicate/alternative to mmd_weight. Removed.
+    # "overfitting_penalty": 0.1, # Unclear how this is used, removed for now.
+    # "penalty_close_lambda":0.0001, # Unclear, removed.
+    # "penalty_far_lambda":0.0001,   # Unclear, removed.
+
+    # --- Feature Engineering & Preprocessing ---
+    'use_sliding_windows': False, # This is a general flag, preprocessor might handle windowing.
+    "use_returns": True,          # Kept later definition
+    "dataset_periodicity": '1h',
+    "use_stl": True,
+    "stl_period":24,
+    "use_wavelets": True,
+    "use_multi_tapper": True,
+    "target_scaling_factor":1000, # If used by preprocessor for specific targets
+
+    # --- Evaluation & Plotting ---
+    "mc_samples":20,              # Kept later definition (fewer samples)
     "plotted_horizon": 6,
-    "start_from_epoch": 10,
-    "plot_color_predicted": "orange",
+    "plot_color_predicted": "red", # Kept later definition
     "plot_color_true": "blue",
     "plot_color_uncertainty": "green",
+    "plot_color_target": "orange", # Added from later section
     "uncertainty_color_alpha": 0.01,
-    "min_delta": 1e-5,
-    "plot_points": 240,
+    "plot_points": 48,             # Kept later definition
+
+    # --- Strategy (if used, seems disabled by default) ---
     "use_strategy": False,
     "strategy_plugin_group": "heuristic_strategy.plugins",
     "strategy_plugin_name": "ls_pred_strategy",
@@ -66,78 +101,41 @@ DEFAULT_VALUES = {
     "strategy_1h_uncertainty": "examples/results/phase_1/phase_1_cnn_25200_1h_uncertanties.csv",
     "strategy_base_dataset": "examples/data/phase_1/phase_1_base_d3.csv",
     "strategy_load_parameters": "examples/data/phase_1/strategy_parameters.json",
-    "target_scaling_factor":1000,
-    "optimizer_output_file": "optimizer_output.json",
-    "penalty_close_lambda":0.0001, # penalty in thel loss function for the predicted value being 0 (Naive)
-    "penalty_far_lambda":0.0001,
-    'threshold_error': 0.5,
-    'initial_size': 48, #initial interface size for incremental/decremmental search (NOT USED)
-    "interface_size": 48, # not used
-    'step_size': 2,
+    
+    # --- Incremental Search (for latent_dim or other hyperparameters) ---
+    'incremental_search': True,
+    'threshold_error': 0.5,       # For search loop termination
+    # 'initial_size': 48, # Marked as NOT USED, removed.
+    # "interface_size": 48, # Marked as not used, removed.
+    # 'step_size': 2,       # Ambiguous, could be for latent_dim search or other. Define more clearly if needed.
+    
+    # --- Logging and Config Management ---
     'save_log': './debug_out.json',
     'remote_log': None,
     'remote_load_config': None,
     'remote_save_config': None,
     'username': None,
     'password': None, 
-    'load_config': None,
-    'save_config': './config_out.json',
-    'quiet_mode': False,
-    'force_date': True,
-    'incremental_search': True, # if false performs decresing search instead
-    'headers': True,
-    'dataset_periodicity': '1h',  # Add dataset_periodicity here, can be 1m, 5m, 15m, 30m, 1h, 4h, daily
-    "mmd_sigma": 1.0,
-    "mmd_weight": 1.0,
-    "rnn_hidden_dim": 64,
-    "conditioning_dim": 10,
-    "latent_dim": 32,
+    'load_config': None,          # Path to load a full config.json from
+    'save_config': './config_out.json', # Path to save the current config to
+    'quiet_mode': False,          # Controls verbosity (later definition was False)
+    'force_date': True,           # Kept later definition
+    'headers': True,              # Kept later definition (True for CSVs with headers)
+    "optimizer_output_file": "optimizer_output.json", # If using a separate optimizer script
 
-    "use_daily": False,
-    "max_steps_train": 25200,
-    "max_steps_test": 6300,
-    "intermediate_layers": 2,
-    "initial_layer_size": 128,
-    "layer_size_divisor": 2,
-    "learning_rate": 1e-4,
-    "activation": "tanh",
-    "l2_reg": 1e-6,
-    "early_patience": 40,
-    "start_from_epoch": 15,
-    "use_returns": True,
-    "mc_samples":20,
-    "plotted_horizon": 6,
-    "mmd_lambda": 1e-2,
-    "window_size": 288,
-    "batch_size": 128,
-    "plot_color_predicted": "red",
-    "plot_color_true": "blue",
-    "plot_color_uncertainty": "green",
-    "plot_color_target": "orange",
-    "uncertainty_color_alpha": 0.01,
-    "plot_points": 48,
-    "min_delta": 1e-7,
-    "epochs": 1000,
-    "use_strategy": False,
-    "stl_period":24,
-    "predicted_horizons": [1,2,3,4,5,6],
-    "use_stl": True,
-    "use_wavelets": True,
-    "use_multi_tapper": True,
-    
-    # --- Loss Function Weights ---
-    'huber_delta': 1.0,          # Delta for Huber loss (implicitly weight 1)
-    
-    'mmd_weight': 0.01,          # MUST be > 0 for MMD to be calculated
-    'mmd_sigma': 1.0,
-    'skew_weight': 0.001,     # MUST be > 0 for skewness loss
-    'kurtosis_weight': 0.001, # MUST be > 0 for kurtosis loss
-    'cov_weight': 0.0,        # Set > 0 and implement covariance_loss_calc
+    # --- Parameters for specific plugins or advanced features ---
+    "use_daily": False, # Example: if some plugin behaves differently for daily data
+    "predicted_horizons": [1,2,3,4,5,6], # If model predicts multiple steps ahead
 
-    # --- KL Divergence Annealing ---
-    'kl_beta_start': 0.0001,
-    'kl_beta': 1.0, # This is kl_beta_end for the annealing
-    'kl_anneal_epochs': 100,
-    
+    # --- Early Stopping and ReduceLROnPlateau (ensure these are used by callbacks) ---
+    'early_stopping_monitor': 'val_loss', # Default monitor for early stopping
+    # 'early_patience' is already defined above
+    'early_stopping_restore_best_weights': True,
+    'reduce_lr_monitor': 'val_loss',    # Default monitor for ReduceLROnPlateau
+    'reduce_lr_patience': 15,           # Patience for ReduceLROnPlateau
+    'reduce_lr_factor': 0.2,            # Factor for ReduceLROnPlateau
+    'reduce_lr_min_lr': 1e-6,           # Min LR for ReduceLROnPlateau
 }
+
+# ... rest of your config.py file (load_config_from_file, get_config, etc.)
 

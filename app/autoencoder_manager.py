@@ -28,16 +28,13 @@ class KLDivergenceLayer(Layer):
         weighted_kl_loss = self.kl_beta * mean_kl_loss_val
         self.add_loss(weighted_kl_loss)
         
-        # Add the same value as a metric for monitoring
-        # Keras will automatically name it based on the layer's name and this metric's name,
-        # e.g., kl_divergence_layer_kl_divergence_metric
-        self.add_metric(weighted_kl_loss, name="kl_divergence_value") 
+        # self.add_metric(weighted_kl_loss, name="kl_divergence_value") # Removed
         
-        return z_mean
+        return z_mean # Layer must return a tensor
 
     def get_config(self):
         config = super().get_config()
-        config.update({"kl_beta": self.kl_beta}) # Correctly update and return config
+        config.update({"kl_beta": self.kl_beta})
         return config
 
 class AutoencoderManager:
@@ -170,9 +167,8 @@ class AutoencoderManager:
                 amsgrad=config.get('amsgrad', False)
             )
 
-            # Get metrics (kl_metric_fn will be removed from this list by the helper patch)
-            # The remaining metrics are applicable to reconstruction_output
-            metrics_for_reconstruction = get_metrics(config=config)
+            # get_metrics will now include kl_metric_fn again
+            all_metrics = get_metrics(config=config)
 
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
@@ -180,9 +176,10 @@ class AutoencoderManager:
                     'reconstruction_output': reconstruction_and_stats_loss_fn,
                 },
                 metrics={ # Provide metrics as a dictionary
-                    'reconstruction_output': metrics_for_reconstruction
-                    # z_mean_output and z_log_var_output have no direct loss or metrics here
-                    # KL divergence is handled by KLDivergenceLayer (loss and metric)
+                    # All metrics, including KL, will be associated with reconstruction_output.
+                    # Keras passes the full y_true_dict and y_pred_dict to these metrics,
+                    # so kl_metric_fn can access z_mean_output and z_log_var_output.
+                    'reconstruction_output': all_metrics
                 },
                 run_eagerly=config.get('run_eagerly', False)
             )

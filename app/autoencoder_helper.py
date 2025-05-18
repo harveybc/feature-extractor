@@ -28,7 +28,7 @@ def covariance_loss_calc(y_true, y_pred, cfg):
 
 # This is the loss function for 'reconstruction_output'
 # Keras will pass the specific y_true tensor and y_pred tensor for this output.
-def reconstruction_and_stats_loss_fn(y_true_recon_tensor, y_pred_recon_tensor, config=None): # Add config as optional arg
+def reconstruction_and_stats_loss_fn(y_true_recon_tensor, y_pred_recon_tensor, config=None):
     if config is None: config = {} 
 
     actual_reconstruction_target = tf.cast(y_true_recon_tensor, tf.float32)
@@ -87,17 +87,27 @@ def reconstruction_and_stats_loss_fn(y_true_recon_tensor, y_pred_recon_tensor, c
 
     return total_loss
 
+
 def get_metrics(config=None):
     if config is None: config = {}
-    # kl_beta = config.get('kl_beta', 1.0) # No longer needed here for kl_metric_fn
+    kl_beta = config.get('kl_beta', 1.0) 
 
     def huber_metric_fn(y_true_dict, y_pred_dict):
+        # This tracker is updated by the reconstruction_and_stats_loss_fn
+        # y_true_dict is {'reconstruction_output': tensor}
+        # y_pred_dict is {'reconstruction_output': tensor, 'z_mean_output': tensor, ...}
         return huber_loss_tracker 
 
-    # kl_metric_fn is removed as KLDivergenceLayer will use self.add_metric()
-    # The kl_loss_tracker variable will not be updated by a metric here.
-    # If kl_loss_tracker is needed for other purposes, its update logic needs to be elsewhere
-    # or KLDivergenceLayer could be passed a reference to it (more complex).
+    def kl_metric_fn(y_true_dict, y_pred_dict):
+        # Calculate KL divergence from model outputs for monitoring
+        z_mean_m = y_pred_dict['z_mean_output']
+        z_log_var_m = y_pred_dict['z_log_var_output']
+        
+        kl_raw = keras.ops.mean(-0.5 * keras.ops.sum(1 + z_log_var_m - keras.ops.square(z_mean_m) - keras.ops.exp(z_log_var_m), axis=-1))
+        weighted_kl_for_metric = kl_beta * kl_raw
+        
+        kl_loss_tracker.assign(weighted_kl_for_metric) 
+        return weighted_kl_for_metric
 
     def mmd_metric_fn(y_true_dict, y_pred_dict): return mmd_total
     def skew_metric_fn(y_true_dict, y_pred_dict): return skew_loss_tracker
@@ -105,16 +115,16 @@ def get_metrics(config=None):
     def covariance_metric_fn(y_true_dict, y_pred_dict): return covariance_loss_tracker
 
     def mae_magnitude_metric(y_true_dict, y_pred_dict):
-        # When associated with 'reconstruction_output', y_true_dict and y_pred_dict
-        # will be the specific tensors for that output.
-        yt_recon = tf.cast(y_true_dict, tf.float32) # y_true_dict is now the tensor
-        yp_recon = tf.cast(y_pred_dict, tf.float32) # y_pred_dict is now the tensor
+        # y_true_dict is {'reconstruction_output': tensor}
+        # y_pred_dict is {'reconstruction_output': tensor, 'z_mean_output': tensor, ...}
+        yt_recon = tf.cast(y_true_dict['reconstruction_output'], tf.float32)
+        yp_recon = tf.cast(y_pred_dict['reconstruction_output'], tf.float32)
         return tf.reduce_mean(tf.abs(yt_recon - yp_recon))
 
     return [
         mae_magnitude_metric, 
         huber_metric_fn,    
-        # kl_metric_fn, # Removed
+        kl_metric_fn, # Re-added
         mmd_metric_fn,
         skew_metric_fn,
         kurtosis_metric_fn,

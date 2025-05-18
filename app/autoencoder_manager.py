@@ -107,28 +107,23 @@ class AutoencoderManager:
             z_log_var = Lambda(lambda x: x, name='z_log_var_output')(z_log_var_raw)
 
             # 5. Sampling Layer
-            def sampling_fn(args): # Renamed to avoid conflict with keras.layers.Lambda
+            def sampling_fn(args): 
                 z_mean_sample, z_log_var_sample = args
                 batch = tf.shape(z_mean_sample)[0]
                 dim   = tf.shape(z_mean_sample)[1]
                 epsilon = tf.random.normal(shape=(batch, dim))
                 return z_mean_sample + tf.exp(0.5 * z_log_var_sample) * epsilon
             
-            # Ensure the Lambda layer for sampling is correctly defined
             z_sampled = Lambda(sampling_fn, output_shape=(latent_dim,), name='cvae_sampling_z')([z_mean, z_log_var])
-
 
             # 6. Pass z and context to Decoder
             reconstruction_raw = self.decoder_model([z_sampled, input_h_context, input_conditions_t])
             
-            # Explicitly name the reconstruction output tensor using a Lambda layer
             reconstruction = Lambda(lambda x: x, name='reconstruction_output')(reconstruction_raw)
 
-            # The KLDivergenceLayer adds loss.
             kl_beta_config = config.get('kl_beta', 1.0)
             _ = KLDivergenceLayer(kl_beta=kl_beta_config, name="kl_loss_adder_node")([z_mean, z_log_var])
 
-            # 7. Create the Single-Step CVAE Model
             self.autoencoder_model = Model(
                 inputs=[input_x_window, input_h_context, input_conditions_t],
                 outputs={
@@ -151,17 +146,15 @@ class AutoencoderManager:
                 print(f"DEBUG: autoencoder_model.inputs: {self.autoencoder_model.inputs}")
                 print(f"DEBUG: autoencoder_model.outputs: {self.autoencoder_model.outputs}") 
                 try:
-                    # In Keras 3, output names are often derived from the layer names producing the output tensors
-                    # if not explicitly overridden by the 'outputs' dictionary keys in a way Keras fully respects.
-                    # The name of the Lambda layer should become the output name.
                     print(f"DEBUG: autoencoder_model.output_names: {self.autoencoder_model.output_names}") 
                 except Exception as e:
                     print(f"DEBUG: Error accessing autoencoder_model.output_names: {e}")
                 
                 print(f"DEBUG: Tensors used in Model's outputs dict construction:")
-                print(f"DEBUG:   'reconstruction_output' tensor: {reconstruction} (Layer name: {reconstruction.node.layer.name}, Tensor name: {reconstruction.name})")
-                print(f"DEBUG:   'z_mean_output' tensor: {z_mean} (Layer name: {z_mean.node.layer.name}, Tensor name: {z_mean.name})")
-                print(f"DEBUG:   'z_log_var_output' tensor: {z_log_var} (Layer name: {z_log_var.node.layer.name}, Tensor name: {z_log_var.name})")
+                # Corrected debug prints:
+                print(f"DEBUG:   'reconstruction_output' tensor: {reconstruction} (Tensor name: {reconstruction.name})")
+                print(f"DEBUG:   'z_mean_output' tensor: {z_mean} (Tensor name: {z_mean.name})")
+                print(f"DEBUG:   'z_log_var_output' tensor: {z_log_var} (Tensor name: {z_log_var.name})")
 
             print("="*72 + "\n")
             # === DEBUG PRINTS END ===

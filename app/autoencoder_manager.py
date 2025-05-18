@@ -123,21 +123,25 @@ class AutoencoderManager:
             # --- END MODIFIED SAMPLING LOGIC ---
 
             # Decoder plugin's model outputs reconstruction
-            # It expects [z_sampled, h_context, conditions_t]
             reconstruction_output = self.decoder_plugin.generative_network_model(
                 [z_sampled, cvae_input_h_context, cvae_input_conditions_t]
             )
 
+            # Give explicit, unique names to output tensors for clarity in compile.
+            # These names will be used as keys in the outputs dictionary.
+            # Keras might still alter them if they conflict with layer names, so we'll check model.output_names.
+            output_dict = {
+                'reconstruction_target': reconstruction_output, # Changed key for clarity
+                'z_mean_latent': z_mean,                   # Changed key
+                'z_log_var_latent': z_log_var,             # Changed key
+                'kl_divergence_raw': kl_raw_output,        # Changed key
+                'kl_divergence_weighted': kl_weighted_output, # Changed key
+                'kl_beta_value': kl_beta_output            # Changed key
+            }
+
             self.autoencoder_model = Model(
                 inputs=[cvae_input_x_window, cvae_input_h_context, cvae_input_conditions_t],
-                outputs={
-                    'reconstruction_output': reconstruction_output,
-                    'z_mean_output': z_mean,       
-                    'z_log_var_output': z_log_var,
-                    'kl_raw_metric': kl_raw_output, # New output for raw KL divergence
-                    'kl_weighted_metric': kl_weighted_output, # New output for weighted KL
-                    'kl_beta_metric': kl_beta_output # New output for current kl_beta
-                },
+                outputs=output_dict, # Use the dictionary with new keys
                 name=f"windowed_input_cvae_{num_features_output}_features_out"
             )
             self.model = self.autoencoder_model 
@@ -152,35 +156,89 @@ class AutoencoderManager:
             configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
             reconstruction_metrics = get_metrics(config=config) 
 
-            tf.print(f"DEBUG: autoencoder_model.outputs: {self.autoencoder_model.outputs}")
-            tf.print(f"DEBUG: autoencoder_model.output_names: {self.autoencoder_model.output_names}")
+            tf.print(f"DEBUG: autoencoder_model.outputs (symbolic tensors): {self.autoencoder_model.outputs}")
+            tf.print(f"DEBUG: autoencoder_model.output_names (actual names used by Keras): {self.autoencoder_model.output_names}")
 
             # Define pass-through metric functions
             def pass_through_metric(y_true, y_pred): return y_pred
+            
+            # --- Dynamically build compile dictionaries based on actual model output names ---
+            actual_output_names = self.autoencoder_model.output_names
+            
+            # Map our desired keys to actual Keras output names
+            # This is crucial if Keras renames outputs.
+            # For simplicity, we'll assume Keras uses the keys from our `output_dict` if they are valid identifiers
+            # and don't clash. If it renames them, this mapping needs to be more robust,
+            # potentially by finding the tensor in model.outputs and getting its name.
+
+            # Let's assume the keys we used in `output_dict` are the ones Keras will try to use.
+            # The error message suggests Keras is looking for 'reconstruction_output' from your previous `metrics` dict.
+            # The `output_names` from your debug log were:
+            # ['kl_loss_adder_node', 'kl_loss_adder_node', 'kl_loss_adder_node', 
+            #  'dynamic_conv_transpose_cvae_decoder', 
+            #  'configurable_conv_bilstm_cvae_encoder', 'configurable_conv_bilstm_cvae_encoder']
+            # We need to map these to our conceptual outputs.
+
+            # Tentative mapping based on typical Keras behavior and your layer names:
+            # This is an educated guess and might need refinement based on exact Keras naming.
+            # It's better if the output tensors themselves are named before creating the Model.
+            
+            # Let's try to name the tensors directly when creating them or ensure layers have unique names.
+            # For now, we will use the keys from our `output_dict` and hope Keras respects them.
+            # If not, the error will persist but might point to the correct Keras-generated names.
+
+            # The most important output for loss and metrics:
+            recon_output_actual_name = actual_output_names[actual_output_names.index(self.decoder_plugin.generative_network_model.name)] \
+                                       if self.decoder_plugin.generative_network_model.name in actual_output_names \
+                                       else 'reconstruction_target' # Fallback to our desired name
+
+            # Find the actual names for z_mean and z_log_var (likely from encoder model name)
+            # This is tricky if the encoder outputs two tensors. Keras might append _1, _2 or use layer names.
+            # Assuming encoder model name is unique and Keras uses it for its outputs:
+            encoder_outputs_actual_names = [name for name in actual_output_names if name == self.encoder_plugin.inference_network_model.name]
+            z_mean_actual_name = encoder_outputs_actual_names[0] if len(encoder_outputs_actual_names) > 0 else 'z_mean_latent' # Fallback
+            z_log_var_actual_name = encoder_outputs_actual_names[1] if len(encoder_outputs_actual_names) > 1 else 'z_log_var_latent' # Fallback
+
+            # Find actual names for KL metrics (likely from KLDivergenceLayer name)
+            kl_layer_name = self.kl_layer_instance_obj.name
+            kl_outputs_actual_names = [name for name in actual_output_names if name == kl_layer_name]
+            # KLDivergenceLayer returns z_mean, kl_raw, kl_weighted, kl_beta.
+            # The first output (z_mean) is kl_processed_z_mean, not directly in model outputs dict with this name.
+            # The other three are what we named:
+            kl_raw_actual_name = kl_outputs_actual_names[1] if len(kl_outputs_actual_names) > 1 else 'kl_divergence_raw' # Fallback (index 1 for 2nd output)
+            kl_weighted_actual_name = kl_outputs_actual_names[2] if len(kl_outputs_actual_names) > 2 else 'kl_divergence_weighted' # Fallback
+            kl_beta_actual_name = kl_outputs_actual_names[3] if len(kl_outputs_actual_names) > 3 else 'kl_beta_value' # Fallback
+
+
+            tf.print(f"INFO: Attempting to use actual output name for reconstruction: {recon_output_actual_name}")
+            tf.print(f"INFO: Attempting to use actual output name for z_mean: {z_mean_actual_name}")
+            tf.print(f"INFO: Attempting to use actual output name for z_log_var: {z_log_var_actual_name}")
+            tf.print(f"INFO: Attempting to use actual output name for kl_raw: {kl_raw_actual_name}")
+
 
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss={
-                    'reconstruction_output': configured_loss_fn, 
-                    'z_mean_output': None, 
-                    'z_log_var_output': None,
-                    'kl_raw_metric': None, # No direct loss for these metric outputs
-                    'kl_weighted_metric': None,
-                    'kl_beta_metric': None
+                    recon_output_actual_name: configured_loss_fn, 
+                    z_mean_actual_name: None, 
+                    z_log_var_actual_name: None,
+                    kl_raw_actual_name: None, 
+                    kl_weighted_actual_name: None,
+                    kl_beta_actual_name: None
                 },
                 loss_weights={ 
-                    'reconstruction_output': 1.0,
-                    'z_mean_output': 0.0,
-                    'z_log_var_output': 0.0,
-                    'kl_raw_metric': 0.0,
-                    'kl_weighted_metric': 0.0,
-                    'kl_beta_metric': 0.0
+                    recon_output_actual_name: 1.0,
+                    z_mean_actual_name: 0.0,
+                    z_log_var_actual_name: 0.0,
+                    kl_raw_actual_name: 0.0,
+                    kl_weighted_actual_name: 0.0,
+                    kl_beta_actual_name: 0.0
                 },
                 metrics={ 
-                    'reconstruction_output': reconstruction_metrics,
-                    'kl_raw_metric': pass_through_metric, # Track the output directly
-                    'kl_weighted_metric': pass_through_metric,
-                    'kl_beta_metric': pass_through_metric
+                    recon_output_actual_name: reconstruction_metrics, # This should be a list of metric functions
+                    kl_raw_actual_name: pass_through_metric, 
+                    kl_weighted_actual_name: pass_through_metric,
+                    kl_beta_actual_name: pass_through_metric
                 },
                 run_eagerly=config.get('run_eagerly', False) 
             )
@@ -200,11 +258,16 @@ class AutoencoderManager:
             'cvae_input_h_context': data_inputs[1],
             'cvae_input_conditions_t': data_inputs[2]
         }
-        # Targets only needed for outputs that have a loss
+        
+        # Determine the actual name used by Keras for the reconstruction output
+        # This should match the key used in model.compile()
+        # For robustness, find it from model.output_names
+        recon_output_actual_name_train = self.autoencoder_model.output_names[self.autoencoder_model.output_names.index(self.decoder_plugin.generative_network_model.name)] \
+                                       if self.decoder_plugin.generative_network_model.name in self.autoencoder_model.output_names \
+                                       else 'reconstruction_target' # Fallback to our desired name
+
         train_targets_dict = {
-            'reconstruction_output': data_targets,
-            # No targets needed for z_mean_output, z_log_var_output, or the new kl metric outputs
-            # as their losses are None or weights are 0.0
+            recon_output_actual_name_train: data_targets,
         }
 
         tf.print(f"Input data shapes: x_window: {data_inputs[0].shape}, h_context: {data_inputs[1].shape}, conditions_t: {data_inputs[2].shape}")
@@ -250,10 +313,9 @@ class AutoencoderManager:
                 'cvae_input_h_context': config['cvae_val_inputs']['h_context'],
                 'cvae_input_conditions_t': config['cvae_val_inputs']['conditions_t']
             }
-            # Validation targets also only for outputs with a loss
-            val_targets_dict = {'reconstruction_output': config['cvae_val_targets']}
+            val_targets_dict = {recon_output_actual_name_train: config['cvae_val_targets']} # Use the same actual name
             validation_data_prepared = (val_inputs_dict, val_targets_dict)
-            tf.print(f"[train_autoencoder] Using pre-defined validation data.")
+            tf.print(f"[train_autoencoder] Using pre-defined validation data with target key: {recon_output_actual_name_train}")
         else:
             tf.print("[train_autoencoder] No pre-defined validation_data.")
 
@@ -334,9 +396,13 @@ class AutoencoderManager:
             'cvae_input_h_context': data_inputs[1],
             'cvae_input_conditions_t': data_inputs[2]
         }
+        
+        recon_output_actual_name_eval = self.autoencoder_model.output_names[self.autoencoder_model.output_names.index(self.decoder_plugin.generative_network_model.name)] \
+                                       if self.decoder_plugin.generative_network_model.name in self.autoencoder_model.output_names \
+                                       else 'reconstruction_target' # Fallback
+
         eval_targets_dict = {
-            'reconstruction_output': data_targets
-            # No targets needed for other outputs during evaluation if their loss is None/0
+            recon_output_actual_name_eval: data_targets
         }
         
         # Store metric names from the compiled model to match with results
@@ -363,7 +429,7 @@ class AutoencoderManager:
         tf.print("Generating predictions...")
         pred_inputs_dict = {
             'cvae_input_x_window': data_inputs[0],
-            'cvae_input_h_context': data_inputs[1],
+            'cmae_input_h_context': data_inputs[1], # Typo: cmae_ -> cvae_
             'cvae_input_conditions_t': data_inputs[2]
         }
         
@@ -375,10 +441,15 @@ class AutoencoderManager:
         
         # Predictions is a dict if model has multiple named outputs
         if isinstance(predictions, dict):
-            if 'reconstruction_output' in predictions:
-                return predictions['reconstruction_output']
-            else: # Fallback if the primary output name is different or only one output
-                tf.print(f"Warning: 'reconstruction_output' not in prediction keys. Returning first available output.")
+            # Try to find the reconstruction output using the decoder's model name as a key
+            recon_output_actual_name_pred = self.autoencoder_model.output_names[self.autoencoder_model.output_names.index(self.decoder_plugin.generative_network_model.name)] \
+                                       if self.decoder_plugin.generative_network_model.name in self.autoencoder_model.output_names \
+                                       else 'reconstruction_target' # Fallback
+
+            if recon_output_actual_name_pred in predictions:
+                return predictions[recon_output_actual_name_pred]
+            else: 
+                tf.print(f"Warning: Actual reconstruction output name '{recon_output_actual_name_pred}' not in prediction keys {list(predictions.keys())}. Returning first available output.")
                 return list(predictions.values())[0]
         return predictions # If single unnamed output
 

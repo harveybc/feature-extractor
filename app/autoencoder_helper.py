@@ -214,8 +214,9 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
 
 
 def get_metrics(config=None): 
-    # Ensure this function provides the MAE calculation.
-    # Keras should prepend 'reconstruction_out_' to this function's name.
+    # This function is currently not directly used by AutoencoderManager._compile_model
+    # as it's using the string 'mae'.
+    # The function name here was 'calculate_mae_for_reconstruction'.
     def calculate_mae_for_reconstruction(y_true_tensor, y_pred_tensor): 
         yt_recon = tf.cast(y_true_tensor, tf.float32)
         yp_recon = tf.cast(y_pred_tensor, tf.float32)
@@ -227,12 +228,18 @@ def get_metrics(config=None):
 class EarlyStoppingWithPatienceCounter(tf.keras.callbacks.EarlyStopping): # Changed to tf.keras
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.patience_counter_name = "es_patience_counter" # Name for the log
+        # Store configured patience in the global tracker when callback is initialized
+        if hasattr(self, 'patience'):
+             es_patience_config_tracker.assign(self.patience)
 
     def on_epoch_end(self, epoch, logs=None):
-        super().on_epoch_end(epoch, logs)
-        if logs is not None:
-            logs[self.patience_counter_name] = self.wait # self.wait is the patience counter
+        super().on_epoch_end(epoch, logs) # Original EarlyStopping logic
+        # Update global trackers with current state
+        if hasattr(self, 'wait'):
+            es_wait_tracker.assign(self.wait)
+        if self.best is not None and np.isfinite(self.best):
+            es_best_value_tracker.assign(self.best)
+        # Original print statement is removed; EpochEndLogger will handle display
 
 class ReduceLROnPlateauWithCounter(tf.keras.callbacks.ReduceLROnPlateau): # Changed to tf.keras
     def __init__(self, **kwargs):
@@ -313,35 +320,61 @@ class EpochEndLogger(tf.keras.callbacks.Callback): # Changed to tf.keras
         # Standard Keras metrics from logs
         if 'loss' in logs: log_items.append(f"loss: {logs['loss']:.4f}")
         
-        # MAE: Keras should prepend output name 'reconstruction_out' to the metric function name 'calculate_mae_for_reconstruction'.
-        mae_key = 'reconstruction_out_calculate_mae_for_reconstruction' # EXPECTING THIS KEY
+        # MAE: Keras should prepend output name 'reconstruction_out' to the metric string 'mae'.
+        # So, the key in logs should be 'reconstruction_out_mae'.
+        mae_key = 'reconstruction_out_mae' # UPDATED EXPECTED KEY
         if mae_key in logs: 
             log_items.append(f"mae: {logs[mae_key]:.4f}")
-        
+        # else: MAE not found in logs, will not be printed for this epoch
+
         if 'val_loss' in logs: log_items.append(f"val_loss: {logs['val_loss']:.4f}")
         
-        val_mae_key = f"val_{mae_key}" # Expected "val_reconstruction_out_calculate_mae_for_reconstruction"
+        val_mae_key = f"val_{mae_key}" # Expected "val_reconstruction_out_mae"
         if val_mae_key in logs:
             log_items.append(f"val_mae: {logs[val_mae_key]:.4f}")
+        # else: Val_MAE not found in logs, will not be printed
 
         # Learning rate
-        if 'lr' in logs:
-            log_items.append(f"lr: {logs['lr']:.7f}")
+        current_lr_val_str = "N/A"
+        if 'lr' in logs: # ReduceLROnPlateau adds 'lr' to logs
+            current_lr_val_str = f"{logs['lr']:.7f}"
+        elif hasattr(self.model, 'optimizer') and hasattr(self.model.optimizer, 'learning_rate'):
+            try: 
+                lr_val_obj = self.model.optimizer.learning_rate
+                if isinstance(lr_val_obj, tf.Variable):
+                    current_lr_val_str = f"{lr_val_obj.numpy():.7f}"
+                elif callable(lr_val_obj): # If it's a LearningRateSchedule
+                     # Get current step, might need a global step counter if not using iterations_per_epoch
+                    current_step = self.model.optimizer.iterations.numpy() # Get current iterations
+                    current_lr_val_str = f"{lr_val_obj(current_step).numpy():.7f}"
+                else: # Assuming it's a direct float value
+                    current_lr_val_str = f"{tf.keras.backend.get_value(lr_val_obj):.7f}"
+            except Exception as e:
+                # print(f"Debug: Could not retrieve LR directly: {e}") # Optional debug
+                pass # Keep N/A
+        log_items.append(f"lr: {current_lr_val_str}")
 
-        # ReduceLROnPlateau patience counter
-        if 'rlrop_patience_counter' in logs:
-            log_items.append(f"rlrop_wait: {logs['rlrop_patience_counter']}")
-
-        # EarlyStopping patience counter
-        if EarlyStoppingWithPatienceCounter(monitor='val_loss').patience_counter_name in logs: # Use the defined name
-            log_items.append(f"es_wait: {logs[EarlyStoppingWithPatienceCounter(monitor='val_loss').patience_counter_name]}")
-
-        # KL Beta value from KLDivergenceLayer (if KLAnnealingCallback adds it to logs)
-        # Or, if KLAnnealingCallback is used, it might log kl_beta directly.
-        # For now, let's assume KLAnnealingCallback handles its own logging if needed,
-        # or we can enhance it later to add kl_beta to logs.
-        # We know 'kl_beta_out_pass_through_metric' is in the eval results, so it's in logs.
-        if 'kl_beta_out_pass_through_metric' in logs:
-             log_items.append(f"kl_beta: {logs['kl_beta_out_pass_through_metric']:.5f}")
+        # KL Beta (from global tracker, updated by KLAnnealingCallback)
+        log_items.append(f"kl_beta: {kl_beta_callback_tracker.numpy():.6f}")
         
-        tf.print(" | ".join(log_items))
+        # Log other tracked components directly from global tf.Variables (using RENAMED trackers)
+        log_items.append(f"huber_c: {huber_loss_component_tracker.numpy():.4f}")
+        log_items.append(f"mmd_c: {mmd_total_tracker.numpy():.4f}") # RENAMED
+        log_items.append(f"skew_c: {skew_loss_component_tracker.numpy():.4f}") # RENAMED
+        log_items.append(f"kurt_c: {kurtosis_loss_component_tracker.numpy():.4f}") # RENAMED
+        # covariance_loss_component_tracker is also available if needed
+
+        # Early Stopping Info
+        es_patience_val = es_patience_config_tracker.numpy()
+        if es_patience_val > 0: # Only print if ES is active (patience configured)
+            best_val_np = es_best_value_tracker.numpy()
+            best_val_str = f"{best_val_np:.4f}" if np.isfinite(best_val_np) else "N/A"
+            log_items.append(f"ES_wait: {es_wait_tracker.numpy()}/{es_patience_val}")
+            log_items.append(f"ES_best: {best_val_str}")
+
+        # Reduce LR Info
+        rlrop_patience_val = rlrop_patience_config_tracker.numpy()
+        if rlrop_patience_val > 0: # Only print if RLROP is active (patience configured)
+            log_items.append(f"RLROP_wait: {rlrop_wait_tracker.numpy()}/{rlrop_patience_val}")
+        
+        print(" - ".join(log_items)) # Standard Python print

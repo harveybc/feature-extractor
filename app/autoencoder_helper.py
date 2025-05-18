@@ -131,7 +131,8 @@ class EarlyStoppingWithPatienceCounter(EarlyStopping):
             current_val_loss = logs.get('val_' + self.monitor)
 
         # self.best should hold the best value of the monitored quantity
-        best_loss_info = f"Best {self.monitor}: {self.best:.6f}" if self.best != np.Inf and self.best != -np.Inf else f"Best {self.monitor}: N/A"
+        # MODIFIED LINE: Replace np.Inf with np.inf
+        best_loss_info = f"Best {self.monitor}: {self.best:.6f}" if self.best != np.inf and self.best != -np.inf else f"Best {self.monitor}: N/A"
         
         patience_info = ""
         if hasattr(self, 'wait'):

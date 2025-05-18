@@ -12,24 +12,96 @@ kurtosis_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name
 covariance_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="covariance_loss_tracker")
 
 # Dummy implementations (User should have their actual implementations)
-def compute_mmd(x, y, sigma=1.0, sample_size=None): # Added sample_size, make it configurable
+def gaussian_kernel(x, y, sigma=1.0):
+    """Gaussian kernel for MMD."""
+    beta = 1. / (2. * sigma**2)
+    # x_col = tf.expand_dims(x, 1) # For pairwise distances if needed, but MMD sums over all pairs
+    # y_lin = tf.expand_dims(y, 0)
+    # dist = tf.reduce_sum((x_col - y_lin)**2, 2)
+    
+    # More direct way for MMD terms:
+    # For K(x,x) and K(y,y), we need pairwise distances within each set
+    # For K(x,y), pairwise distances between sets
+    
+    # This is a simplified approach for illustration.
+    # A full MMD implementation would compute K(x,x), K(y,y), and K(x,y) terms.
+    # For simplicity here, let's assume x and y are batches and we want a rough measure.
+    # This is NOT a full unbiased MMD estimator, but will produce non-zero values.
+    
+    # A common way to compute kernel values for MMD:
+    # XX = tf.matmul(x, x, transpose_b=True)
+    # XY = tf.matmul(x, y, transpose_b=True)
+    # YY = tf.matmul(y, y, transpose_b=True)
+
+    # diag_X = tf.linalg.diag_part(XX)
+    # diag_Y = tf.linalg.diag_part(YY)
+
+    # K_XX = tf.exp(-beta * (tf.expand_dims(diag_X, 1) - 2 * XX + tf.expand_dims(diag_X, 0)))
+    # K_YY = tf.exp(-beta * (tf.expand_dims(diag_Y, 1) - 2 * YY + tf.expand_dims(diag_Y, 0)))
+    # K_XY = tf.exp(-beta * (tf.expand_dims(diag_X, 1) - 2 * XY + tf.expand_dims(diag_Y, 0)))
+    
+    # For a simpler, biased MMD^2 estimate (often used):
+    # Ensure x and y are [batch_size, feature_dim]
+    # This requires careful handling of dimensions.
+    # Let's use a simpler pairwise distance sum for illustration of non-zero output.
+    
+    # Simplified kernel application for demonstration:
+    # This is not a correct MMD, but will show a non-zero value if x and y differ.
+    diff = x - y
+    return tf.exp(-tf.reduce_sum(diff**2, axis=-1) / (2.0 * sigma**2))
+
+
+def compute_mmd(x, y, sigma=1.0, sample_size=None):
     """
-    Placeholder for MMD calculation.
-    User needs to implement a proper MMD function.
-    Example: Gaussian RBF kernel MMD.
+    Illustrative MMD calculation using a Gaussian kernel.
+    This is a simplified (biased) estimator for MMD^2.
+    Replace with a more robust MMD implementation if needed.
     x, y: Tensors of shape (batch_size, feature_dim)
     sigma: Kernel bandwidth
-    sample_size: If None, use all samples. Otherwise, take a random subset.
-                 (Consider performance implications for large batches if not sampling)
     """
-    # THIS IS STILL A PLACEHOLDER - REPLACE WITH YOUR ACTUAL MMD IMPLEMENTATION
-    # For the MMD to be non-zero, this function must return a non-zero tensor
-    # when x and y are different.
-    print(f"[compute_mmd] Called with sigma={sigma}. X shape: {tf.shape(x)}, Y shape: {tf.shape(y)}. THIS IS A PLACEHOLDER.")
-    # Example of a very simple (and incorrect for MMD) difference, just to make it non-zero if x!=y:
-    # if not tf.reduce_all(tf.equal(x,y)):
-    #     return tf.abs(tf.reduce_mean(x) - tf.reduce_mean(y)) * 0.001 # Arbitrary small non-zero
-    return tf.constant(0.0, dtype=tf.float32) # Current placeholder
+    # Ensure x and y are 2D: (batch_size, num_features)
+    # The loss function receives y_true_recon_tensor and y_pred_recon_tensor
+    # which are likely (batch_size, output_feature_dim) e.g. (128, 6)
+
+    if sample_size is not None:
+        # Optional: Subsample for performance if batches are very large
+        # Ensure sample_size is not larger than batch_size
+        batch_size_x = tf.shape(x)[0]
+        batch_size_y = tf.shape(y)[0]
+        
+        # Ensure sample_size is valid
+        current_sample_size_x = tf.minimum(sample_size, batch_size_x)
+        current_sample_size_y = tf.minimum(sample_size, batch_size_y)
+
+        idx_x = tf.random.shuffle(tf.range(batch_size_x))[:current_sample_size_x]
+        idx_y = tf.random.shuffle(tf.range(batch_size_y))[:current_sample_size_y]
+        x_sample = tf.gather(x, idx_x)
+        y_sample = tf.gather(y, idx_y)
+    else:
+        x_sample = x
+        y_sample = y
+
+    # Gaussian kernel MMD (biased estimator for MMD^2)
+    # K(X, X)
+    xx_dist = tf.reduce_sum(tf.square(tf.expand_dims(x_sample, 1) - tf.expand_dims(x_sample, 0)), axis=-1)
+    k_xx = tf.exp(-xx_dist / (2.0 * sigma**2))
+    
+    # K(Y, Y)
+    yy_dist = tf.reduce_sum(tf.square(tf.expand_dims(y_sample, 1) - tf.expand_dims(y_sample, 0)), axis=-1)
+    k_yy = tf.exp(-yy_dist / (2.0 * sigma**2))
+    
+    # K(X, Y)
+    xy_dist = tf.reduce_sum(tf.square(tf.expand_dims(x_sample, 1) - tf.expand_dims(y_sample, 0)), axis=-1)
+    k_xy = tf.exp(-xy_dist / (2.0 * sigma**2))
+    
+    mmd_sq = tf.reduce_mean(k_xx) + tf.reduce_mean(k_yy) - 2 * tf.reduce_mean(k_xy)
+    
+    # MMD is sqrt(MMD^2), ensure non-negative before sqrt
+    mmd_val = tf.sqrt(tf.maximum(0.0, mmd_sq)) 
+
+    print(f"[compute_mmd] Sigma={sigma}, X_sample shape: {tf.shape(x_sample)}, Y_sample shape: {tf.shape(y_sample)}, Calculated MMD: {mmd_val.numpy()}")
+    return mmd_val
+
 
 def calculate_standardized_moment(data, order):
     mean = tf.reduce_mean(data)

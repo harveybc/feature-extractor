@@ -24,10 +24,15 @@ def covariance_loss_calc(y_true, y_pred, cfg):
     return tf.constant(0.0)
 
 def combined_cvae_loss_fn(y_true, y_pred):
-    # y_pred is a dict with keys: 'reconstruction_output','z_mean_output','z_log_var_output'
-    recon = tf.cast(y_pred['reconstruction_output'], tf.float32)
-    z_mean = y_pred['z_mean_output']
-    z_log_var = y_pred['z_log_var_output']
+    # y_pred will be a list [recon, z_mean, z_log_var] when training;
+    # when called elsewhere it may still be a dict.
+    if isinstance(y_pred, (list, tuple)):
+        recon, z_mean, z_log_var = y_pred
+    else:
+        recon     = y_pred['reconstruction_output']
+        z_mean    = y_pred['z_mean_output']
+        z_log_var = y_pred['z_log_var_output']
+    recon = tf.cast(recon, tf.float32)
     y_true = tf.cast(y_true, tf.float32)
 
     # 1) Huber
@@ -36,7 +41,7 @@ def combined_cvae_loss_fn(y_true, y_pred):
     total = h
     
     # 2) KL
-    kl = -0.5 * keras.ops.sum(1 + z_log_var - keras.ops.square(z_mean) - keras.ops.exp(z_log_var), axis=-1)
+    kl = -0.5 * keras.ops.sum(1 + z_log_var - keras.ops.square(z_mean)   - keras.ops.exp(z_log_var), axis=-1)
     kl = keras.ops.mean(kl)
     kl_loss_tracker.assign(kl)
     total += kl

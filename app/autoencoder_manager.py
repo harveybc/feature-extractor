@@ -24,19 +24,17 @@ class KLDivergenceLayer(Layer):
 
     def call(self, inputs):
         z_mean, z_log_var = inputs
-        kl_loss_raw = -0.5 * tf.reduce_mean( # Renamed to kl_loss_raw for clarity
+        # tf.reduce_sum(..., axis=1) reduces over features, result shape (batch_size,)
+        # tf.reduce_mean(...) then averages over the batch, resulting in a scalar.
+        kl_loss_raw = -0.5 * tf.reduce_mean( 
             tf.reduce_sum(1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)
         )
-        # Ensure kl_loss_raw is a scalar if reduce_mean is over batch
-        if tf.rank(kl_loss_raw) != 0: # Should be scalar due to tf.reduce_mean
-             kl_loss_raw = tf.reduce_mean(kl_loss_raw)
-
+        # The check 'if tf.rank(kl_loss_raw) != 0:' is removed as kl_loss_raw should be scalar.
+        # If it wasn't, the tf.reduce_mean above would make it so.
 
         weighted_kl_loss = self.kl_beta * kl_loss_raw
         self.add_loss(weighted_kl_loss) # This adds the loss to the model
         
-        # self.add_metric calls are removed
-        # These values will be returned and handled as model outputs/metrics
         return z_mean, kl_loss_raw, weighted_kl_loss, self.kl_beta 
 
     def compute_output_shape(self, input_shape):

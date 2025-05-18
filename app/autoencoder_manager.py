@@ -74,10 +74,12 @@ class AutoencoderManager:
         
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
-        # MODIFICATION: Revert to using the MAE function from autoencoder_helper.py
-        # reconstruction_metrics = [tf.keras.metrics.MeanAbsoluteError(name='mae')] # This was the previous attempt
-        helper_mae_metrics = get_metrics(config) # This returns a list like [mae_function]
-        reconstruction_metrics = helper_mae_metrics # Assign the list of function(s)
+        # MODIFICATION: Use the Keras string alias 'mae' for the reconstruction output's metric.
+        # helper_mae_metrics = get_metrics(config) # This returns a list like [mae_function]
+        # reconstruction_metrics = helper_mae_metrics # This was the version leading to 'compile_metrics'
+        
+        reconstruction_metric_to_use = 'mae' # Use the Keras string alias.
+        tf.print(f"DEBUG: Attempting to compile with reconstruction_out metric: '{reconstruction_metric_to_use}' (Keras string alias)")
 
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
@@ -102,7 +104,7 @@ class AutoencoderManager:
                 'kl_beta_out': 0.0
             },
             metrics={ 
-                'reconstruction_out': reconstruction_metrics, # Apply MAE function list here
+                'reconstruction_out': reconstruction_metric_to_use, # MODIFIED to use the string alias
                 'kl_raw_out': pass_through_metric, 
                 'kl_weighted_out': pass_through_metric,
                 'kl_beta_out': pass_through_metric

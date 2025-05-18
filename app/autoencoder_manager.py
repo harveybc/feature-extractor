@@ -109,7 +109,7 @@ class AutoencoderManager:
             # 7. Create the Single-Step CVAE Model
             # Define model with named outputs
             self.autoencoder_model = Model(
-                inputs=[input_x_window, input_h_context, input_conditions_t], # CVAE takes the window as x_input
+                inputs=[input_x_window, input_h_context, input_conditions_t],
                 outputs=[reconstruction, z_mean, z_log_var],
                 name="windowed_input_cvae_6_features_out"
             )

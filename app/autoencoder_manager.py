@@ -19,24 +19,25 @@ class KLDivergenceLayer(Layer):
     def __init__(self, kl_beta=1.0, name="kl_divergence_layer", **kwargs):
         super().__init__(name=name, **kwargs)
         self.kl_beta = kl_beta
-        # Assuming kl_loss_tracker is a tf.Variable defined in autoencoder_helper
-        # If you want this layer to update it, it needs access or a callback mechanism.
-        # For simplicity, the loss is added directly. Metric can compute/track separately.
 
     def call(self, inputs):
         z_mean, z_log_var = inputs
-        kl_loss = -0.5 * keras.ops.sum(1 + z_log_var - keras.ops.square(z_mean) - keras.ops.exp(z_log_var), axis=-1)
-        mean_kl_loss = keras.ops.mean(kl_loss)
-        self.add_loss(self.kl_beta * mean_kl_loss)
-        # This layer is primarily for adding loss, it can pass through one of its inputs
-        # or a combination if needed by subsequent layers, here we pass z_mean.
-        # However, its output is not strictly used if it's just for add_loss and
-        # the original z_mean, z_log_var are passed to model outputs.
-        return z_mean # Or simply return inputs if no transformation is intended
+        kl_loss_val = -0.5 * keras.ops.sum(1 + z_log_var - keras.ops.square(z_mean) - keras.ops.exp(z_log_var), axis=-1)
+        mean_kl_loss_val = keras.ops.mean(kl_loss_val)
+        
+        weighted_kl_loss = self.kl_beta * mean_kl_loss_val
+        self.add_loss(weighted_kl_loss)
+        
+        # Add the same value as a metric for monitoring
+        # Keras will automatically name it based on the layer's name and this metric's name,
+        # e.g., kl_divergence_layer_kl_divergence_metric
+        self.add_metric(weighted_kl_loss, name="kl_divergence_value") 
+        
+        return z_mean
 
     def get_config(self):
         config = super().get_config()
-        config.update({"kl_beta": self.kl_beta})
+        config.update({"kl_beta": self.kl_beta}) # Correctly update and return config
         return config
 
 class AutoencoderManager:
@@ -158,12 +159,10 @@ class AutoencoderManager:
             # Its loss will be automatically collected.
             _ = KLDivergenceLayer(kl_beta=kl_beta_config, name="kl_loss_adder_node")([z_mean, z_log_var])
 
-
             print("[build_autoencoder] Single-step CVAE model assembled.")
             self.autoencoder_model.summary(line_length=150)
 
-            # 8. Compile the CVAE Model
-            adam_optimizer = Adam( # This is the optimizer instance to use
+            adam_optimizer = Adam(
                 learning_rate=config.get('learning_rate', 0.0001),
                 beta_1=config.get('beta_1', 0.9),
                 beta_2=config.get('beta_2', 0.999),
@@ -171,13 +170,20 @@ class AutoencoderManager:
                 amsgrad=config.get('amsgrad', False)
             )
 
+            # Get metrics (kl_metric_fn will be removed from this list by the helper patch)
+            # The remaining metrics are applicable to reconstruction_output
+            metrics_for_reconstruction = get_metrics(config=config)
+
             self.autoencoder_model.compile(
-                optimizer=adam_optimizer, # Use the created optimizer instance
+                optimizer=adam_optimizer,
                 loss={
                     'reconstruction_output': reconstruction_and_stats_loss_fn,
-                    # No loss for z_mean_output and z_log_var_output here, KL is via KLDivergenceLayer
                 },
-                metrics=get_metrics(config=config), 
+                metrics={ # Provide metrics as a dictionary
+                    'reconstruction_output': metrics_for_reconstruction
+                    # z_mean_output and z_log_var_output have no direct loss or metrics here
+                    # KL divergence is handled by KLDivergenceLayer (loss and metric)
+                },
                 run_eagerly=config.get('run_eagerly', False)
             )
             print("[build_autoencoder] Single-step CVAE model compiled successfully.")

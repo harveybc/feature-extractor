@@ -95,68 +95,51 @@ class AutoencoderManager:
             self.decoder_model.summary(line_length=120)
 
             # 3. Define Inputs for the combined Single-Step CVAE model
-            # Input for the encoder part of CVAE
             input_x_window = Input(shape=(window_size, input_features_per_step), name="cvae_input_x_window")
-            # Context inputs, shared by encoder and decoder logic
             input_h_context = Input(shape=(rnn_hidden_dim,), name="cvae_input_h_context")
             input_conditions_t = Input(shape=(conditioning_dim,), name="cvae_input_conditions_t")
 
             # 4. Pass inputs through Encoder
-            # Encoder plugin expects [x_window, h_context, conditions_t]
-            z_mean, z_log_var = self.encoder_model([input_x_window, input_h_context, input_conditions_t])
+            z_mean_raw, z_log_var_raw = self.encoder_model([input_x_window, input_h_context, input_conditions_t])
+
+            # Explicitly name the output tensors from the encoder
+            z_mean = tf.identity(z_mean_raw, name='z_mean_output')
+            z_log_var = tf.identity(z_log_var_raw, name='z_log_var_output')
 
             # 5. Sampling Layer
             def sampling(args):
                 z_mean_sample, z_log_var_sample = args
                 batch = tf.shape(z_mean_sample)[0]
                 dim   = tf.shape(z_mean_sample)[1]
-                # draw epsilon from N(0,1)
                 epsilon = tf.random.normal(shape=(batch, dim))
                 return z_mean_sample + tf.exp(0.5 * z_log_var_sample) * epsilon
             
-            z = Lambda(sampling, output_shape=(latent_dim,), name='cvae_sampling_z')([z_mean, z_log_var])
+            z_sampled = Lambda(sampling, output_shape=(latent_dim,), name='cvae_sampling_z')([z_mean, z_log_var])
 
             # 6. Pass z and context to Decoder
-            # Decoder plugin expects [z, h_context, conditions_t]
-            reconstruction = self.decoder_model([z, input_h_context, input_conditions_t]) # Output shape (batch, 6)
+            reconstruction_raw = self.decoder_model([z_sampled, input_h_context, input_conditions_t])
+            
+            # Explicitly name the reconstruction output tensor
+            reconstruction = tf.identity(reconstruction_raw, name='reconstruction_output')
+
+            # The KLDivergenceLayer adds loss. Its output tensor is not part of the model's main outputs.
+            kl_beta_config = config.get('kl_beta', 1.0)
+            _ = KLDivergenceLayer(kl_beta=kl_beta_config, name="kl_loss_adder_node")([z_mean, z_log_var])
 
             # 7. Create the Single-Step CVAE Model
-            # Define model with named outputs
+            # The keys in this dictionary SHOULD ideally become the output names.
+            # With the tf.identity naming, Keras might pick these up.
             self.autoencoder_model = Model(
                 inputs=[input_x_window, input_h_context, input_conditions_t],
-                outputs={ # Revert to dictionary outputs
-                    'reconstruction_output': reconstruction,
-                    'z_mean_output': z_mean,
-                    'z_log_var_output': z_log_var
+                outputs={
+                    'reconstruction_output': reconstruction, # Tensor is now named 'reconstruction_output'
+                    'z_mean_output': z_mean,                 # Tensor is now named 'z_mean_output'
+                    'z_log_var_output': z_log_var            # Tensor is now named 'z_log_var_output'
                 },
                 name="windowed_input_cvae_6_features_out"
             )
-            self.model = self.autoencoder_model 
+            self.model = self.autoencoder_model
             
-            # KL divergence is now added by KLDivergenceLayer
-            # Add KL Divergence using the custom layer
-            kl_beta_config = config.get('kl_beta', 1.0) # Get kl_beta from config
-            # The KLDivergenceLayer must be part of the model graph *before* Model instantiation
-            # if its add_loss is to be registered with THIS model instance.
-            # Let's adjust the model construction slightly:
-            # z_mean, z_log_var are outputs of encoder_model
-            # kl_output = KLDivergenceLayer(kl_beta=kl_beta_config, name="kl_loss_adder")([z_mean, z_log_var])
-            # z = Lambda(sampling, output_shape=(latent_dim,), name='cvae_sampling_z')([z_mean, z_log_var])
-            # reconstruction = self.decoder_model([z, input_h_context, input_conditions_t])
-
-            # Correct placement of KLDivergenceLayer: It should be part of the graph.
-            # Its output isn't used by the decoder, but it adds its loss.
-            # We need z_mean and z_log_var as direct outputs for metrics.
-            # The KLDivergenceLayer call should be made such that its loss is part of the main model.
-            # One way is to make it an "output" that isn't used or make it a layer that passes through.
-            # The current KLDivergenceLayer returns z_mean.
-            
-            # The KLDivergenceLayer should be called here to be part of the graph
-            # that self.autoencoder_model is built from.
-            # Its loss will be automatically collected.
-            # We assign its output to a variable, even if not used, to ensure it's in the graph.
-            kl_div_layer_call_output = KLDivergenceLayer(kl_beta=kl_beta_config, name="kl_loss_adder_node")([z_mean, z_log_var])
-
             print("[build_autoencoder] Single-step CVAE model assembled.")
             self.autoencoder_model.summary(line_length=150)
 
@@ -166,17 +149,16 @@ class AutoencoderManager:
             if self.autoencoder_model is not None:
                 print(f"DEBUG: autoencoder_model.name: {self.autoencoder_model.name}")
                 print(f"DEBUG: autoencoder_model.inputs: {self.autoencoder_model.inputs}")
-                print(f"DEBUG: autoencoder_model.outputs: {self.autoencoder_model.outputs}")
+                print(f"DEBUG: autoencoder_model.outputs: {self.autoencoder_model.outputs}") # Check tensor names here
                 try:
-                    print(f"DEBUG: autoencoder_model.output_names: {self.autoencoder_model.output_names}")
+                    print(f"DEBUG: autoencoder_model.output_names: {self.autoencoder_model.output_names}") # Crucial check
                 except Exception as e:
                     print(f"DEBUG: Error accessing autoencoder_model.output_names: {e}")
                 
                 print(f"DEBUG: Tensors used in Model's outputs dict construction:")
-                print(f"DEBUG:   'reconstruction_output' tensor: {reconstruction}")
-                print(f"DEBUG:   'z_mean_output' tensor: {z_mean}")
-                print(f"DEBUG:   'z_log_var_output' tensor: {z_log_var}")
-                print(f"DEBUG:   KLDivergenceLayer call output tensor: {kl_div_layer_call_output}")
+                print(f"DEBUG:   'reconstruction_output' tensor: {reconstruction} (name: {reconstruction.name})")
+                print(f"DEBUG:   'z_mean_output' tensor: {z_mean} (name: {z_mean.name})")
+                print(f"DEBUG:   'z_log_var_output' tensor: {z_log_var} (name: {z_log_var.name})")
 
             print("="*72 + "\n")
             # === DEBUG PRINTS END ===
@@ -192,9 +174,8 @@ class AutoencoderManager:
             all_metrics = get_metrics(config=config)
             print(f"DEBUG: Metrics to be used for 'reconstruction_output': {all_metrics}")
 
-
-            print(f"DEBUG: Compiling with loss: {{'reconstruction_output': {reconstruction_and_stats_loss_fn}}}")
-            print(f"DEBUG: Compiling with metrics: {{'reconstruction_output': {all_metrics}}}")
+            print(f"DEBUG: Compiling with loss: {{'reconstruction_output': reconstruction_and_stats_loss_fn}}")
+            print(f"DEBUG: Compiling with metrics: {{'reconstruction_output': all_metrics}}")
 
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
@@ -212,7 +193,6 @@ class AutoencoderManager:
             print(f"[build_autoencoder] Exception occurred: {e}")
             import traceback
             traceback.print_exc()
-            # === ADD MORE DEBUG ON EXCEPTION ===
             if hasattr(self, 'autoencoder_model') and self.autoencoder_model is not None:
                 print("\n" + "="*30 + " DEBUG INFO ON EXCEPTION " + "="*30)
                 print(f"DEBUG (exception): autoencoder_model.name: {self.autoencoder_model.name}")
@@ -222,9 +202,7 @@ class AutoencoderManager:
                 except Exception as e_inner:
                     print(f"DEBUG (exception): Error accessing autoencoder_model.output_names: {e_inner}")
                 print("="*86 + "\n")
-            # === END DEBUG ON EXCEPTION ===
             raise
-
     def train_autoencoder(self, data_inputs, data_targets, epochs=100, batch_size=128, config=None):
         if config is None: config = {}
         

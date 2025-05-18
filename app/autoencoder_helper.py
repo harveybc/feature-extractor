@@ -2,6 +2,7 @@ import tensorflow as tf
 import keras
 from tensorflow.keras.losses import Huber
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback
+import numpy as np
 
 # Trackers
 mmd_total = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="mmd_total_tracker")

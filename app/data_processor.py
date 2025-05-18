@@ -110,46 +110,70 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
 
     # --- Populate necessary dimensions in config ---
     
-    # 1. window_size: Must be provided in the main configuration.
+    # 1. window_size:
     if 'window_size' not in config or not isinstance(config.get('window_size'), int) or config.get('window_size') <= 0:
-        # If x_train_data is already 3D from preprocessor, we can try to infer window_size
         if x_train_data is not None and len(x_train_data.shape) == 3:
             config['window_size'] = x_train_data.shape[1]
             print(f"Derived 'window_size' from 3D preprocessed training data: {config['window_size']}")
         else:
             raise ValueError(
                 "'window_size' not found in config or is not a valid positive integer. "
-                "It's required for the Conv1D encoder. Please add it to your main configuration file."
+                "It's required. Please add it to your main configuration file or ensure preprocessor provides 3D x_train_data."
             )
+    elif x_train_data is not None and len(x_train_data.shape) == 3 and x_train_data.shape[1] != config['window_size']:
+         print(f"Warning: Mismatch between explicitly set config 'window_size' ({config['window_size']}) and "
+               f"3D x_train_data.shape[1] ({x_train_data.shape[1]}). Using config 'window_size'. "
+               f"Ensure this is intended or allow 'window_size' to be derived if x_train_data is authoritative.")
+
+
+    # 2. num_features_input (was input_features_per_step): Number of features at each time step within the input window.
+    # This MUST be derived from x_train_data.
+    if x_train_data is not None and hasattr(x_train_data, 'shape') and x_train_data.ndim == 3:
+        config['num_features_input'] = x_train_data.shape[2]
+        print(f"[DataPrep] Automatically set 'num_features_input': {config['num_features_input']} from x_train_data.shape[2]")
+    else:
+        raise ValueError(f"x_train_data is not correctly shaped (expected 3D array for [samples, window, features]) or is None. Shape: {getattr(x_train_data, 'shape', 'N/A')}. Cannot set 'num_features_input'.")
+
+    # 3. num_features_output: Number of features in the reconstruction target.
+    # This MUST be derived from y_train_targets_6_features.
+    if y_train_targets_6_features is not None and hasattr(y_train_targets_6_features, 'shape') and y_train_targets_6_features.ndim == 2:
+        config['num_features_output'] = y_train_targets_6_features.shape[1]
+        print(f"[DataPrep] Automatically set 'num_features_output': {config['num_features_output']} from y_train_targets_6_features.shape[1]")
+    else:
+        raise ValueError(f"y_train_targets_6_features is not correctly shaped (expected 2D array for [samples, features]) or is None. Shape: {getattr(y_train_targets_6_features, 'shape', 'N/A')}. Cannot set 'num_features_output'.")
+
+    # Remove the old logic for 'input_features_per_step' and 'x_feature_dim' as 'num_features_input' replaces it.
+    # The section from "if 'input_features_per_step' not in config..." down to the related "else"
+    # (approximately lines 108 to 125 in your provided full file context for data_processor.py,
+    # or lines corresponding to the block starting with "if 'input_features_per_step' not in config"
+    # in your excerpt lines 139-176) should be removed or commented out, as the logic above now handles this.
+    # For clarity, I am showing the removal of the specific block you highlighted (lines 139-150 in excerpt).
+    # The following block is what was previously there and should be superseded by the above:
+    #
+    # if 'input_features_per_step' not in config or not isinstance(config.get('input_features_per_step'), int) or config.get('input_features_per_step') <= 0:
+    #     if 'x_feature_dim' in config and isinstance(config['x_feature_dim'], int) and config['x_feature_dim'] > 0:
+    #         config['input_features_per_step'] = config['x_feature_dim']
+    #         print(f"Used existing 'x_feature_dim' for 'input_features_per_step': {config['input_features_per_step']}")
+    #     elif x_train_data is not None:
+    #         if len(x_train_data.shape) == 3: 
+    #             if x_train_data.shape[1] != config['window_size']:
+    #                 print(f"Warning: Mismatch between config 'window_size' ({config['window_size']}) and "
+    #                       f"3D x_train_data.shape[1] ({x_train_data.shape[1]}). Using config 'window_size'.")
+    #             config['input_features_per_step'] = x_train_data.shape[2]
+    #             print(f"Derived 'input_features_per_step' from 3D training data: {config['input_features_per_step']}")
+    #         elif len(x_train_data.shape) == 2: 
+    #             config['input_features_per_step'] = x_train_data.shape[1]
+    #             print(f"Derived 'input_features_per_step' from 2D training data: {config['input_features_per_step']}")
+    #         else:
+    #             raise ValueError(f"Cannot derive 'input_features_per_step' from x_train_data with shape {x_train_data.shape}")
+    #     else:
+    #         raise ValueError(
+    #             "'input_features_per_step' could not be derived and is not set in config (nor as 'x_feature_dim'). "
+    #             "It's required."
+    #         )
     
-    # 2. input_features_per_step: Number of features at each time step within the input window.
-    if 'input_features_per_step' not in config or not isinstance(config.get('input_features_per_step'), int) or config.get('input_features_per_step') <= 0:
-        if 'x_feature_dim' in config and isinstance(config['x_feature_dim'], int) and config['x_feature_dim'] > 0:
-            # If old 'x_feature_dim' exists and likely means features per step
-            config['input_features_per_step'] = config['x_feature_dim']
-            print(f"Used existing 'x_feature_dim' for 'input_features_per_step': {config['input_features_per_step']}")
-        elif x_train_data is not None:
-            if len(x_train_data.shape) == 3: # Shape: (num_samples, window_size, features_per_step)
-                # Ensure derived window_size matches if data is 3D
-                if x_train_data.shape[1] != config['window_size']:
-                    print(f"Warning: Mismatch between config 'window_size' ({config['window_size']}) and "
-                          f"3D x_train_data.shape[1] ({x_train_data.shape[1]}). Using config 'window_size'.")
-                config['input_features_per_step'] = x_train_data.shape[2]
-                print(f"Derived 'input_features_per_step' from 3D training data: {config['input_features_per_step']}")
-            elif len(x_train_data.shape) == 2: # Shape: (num_samples, features_per_step)
-                config['input_features_per_step'] = x_train_data.shape[1]
-                print(f"Derived 'input_features_per_step' from 2D training data: {config['input_features_per_step']}")
-            else:
-                raise ValueError(f"Cannot derive 'input_features_per_step' from x_train_data with shape {x_train_data.shape}")
-        else:
-            raise ValueError(
-                "'input_features_per_step' could not be derived and is not set in config (nor as 'x_feature_dim'). "
-                "It's required."
-            )
-    
-    # The old 'x_feature_dim' specific check (lines 57-63 of your original snippet) can be removed
-    # as 'input_features_per_step' now serves this purpose for the encoder.
-    # If 'x_feature_dim' is used elsewhere, ensure it's consistent.
+    # The old 'x_feature_dim' specific check can be removed
+    # as 'num_features_input' now serves this purpose for the encoder.
 
     # IMPORTANT: 'rnn_hidden_dim', 'conditioning_dim', and 'latent_dim' must be set in the config
     # and must be integers.
@@ -551,6 +575,36 @@ def load_and_evaluate_decoder(config):
         else:
             write_csv(output_filename, decoded_df, include_date=False, headers=True)
         print(f"Decoded data saved to {output_filename}")
+
+    # In data_processor.py (inside run_autoencoder_pipeline) or main.py before calling it
+
+    # ... (load your data: x_data, h_context_data, conditions_data) ...
+    # ... (preprocess and window your data to get x_window_train, h_context_train, conditions_train_t) ...
+    # For example, after you have:
+    # x_window_train, h_context_train, conditions_train_t, y_train_recon = preprocessor_plugin.preprocess_for_cvae(...)
+
+    # !!! IMPORTANT: Determine num_features_input from the data !!!
+    # x_window_train should have shape (num_samples, window_size, num_features_input)
+    if x_window_train is not None and x_window_train.ndim == 3:
+        config['num_features_input'] = x_window_train.shape[2]
+        tf.print(f"[DataSetup] Determined num_features_input: {config['num_features_input']}")
+    else:
+        # Handle error: x_window_train is not as expected
+        raise ValueError("x_window_train is not correctly shaped or is None. Cannot determine num_features_input.")
+
+    # Also, ensure num_features_output is correctly set in config if it's derived from y_train_recon
+    if y_train_recon is not None and y_train_recon.ndim == 2: # Assuming y_train_recon is (num_samples, num_features_output)
+        config['num_features_output'] = y_train_recon.shape[1]
+        tf.print(f"[DataSetup] Determined num_features_output: {config['num_features_output']}")
+    elif y_train_recon is not None and y_train_recon.ndim == 3: # If y_train_recon is (num_samples, 1, num_features_output)
+        config['num_features_output'] = y_train_recon.shape[2]
+        tf.print(f"[DataSetup] Determined num_features_output (from 3D y_train_recon): {config['num_features_output']}")
+    else:
+        raise ValueError("y_train_recon is not correctly shaped or is None. Cannot determine num_features_output.")
+
+
+    # Now, when you build the autoencoder, the config will have 'num_features_input'
+    # autoencoder_manager.build_autoencoder(config) # This call happens later in your flow
 
 
 

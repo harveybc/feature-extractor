@@ -1,6 +1,6 @@
 import tensorflow as tf
 from keras.models import Model, load_model
-from keras.layers import Input, Dense, LSTM, RepeatVector, TimeDistributed, Concatenate, Layer, GRU
+from keras.layers import Input, Dense, LSTM, RepeatVector, TimeDistributed, Concatenate, Layer, GRU, Lambda # Added Lambda
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import numpy as np
@@ -110,10 +110,20 @@ class AutoencoderManager:
             self.kl_layer_instance_obj = KLDivergenceLayer(kl_beta_start=kl_beta_start_from_config, name="kl_loss_adder_node")
             kl_processed_z_mean = self.kl_layer_instance_obj([z_mean, z_log_var])
             
-            batch = tf.shape(kl_processed_z_mean)[0] 
-            dim = tf.shape(kl_processed_z_mean)[1]
-            epsilon = tf.random.normal(shape=(batch, dim))
-            z_sampled = kl_processed_z_mean + tf.exp(0.5 * z_log_var) * epsilon
+            # --- MODIFIED SAMPLING LOGIC ---
+            # Wrap the reparameterization trick in a Lambda layer
+            def sampling(args):
+                z_mean_sampling, z_log_var_sampling = args
+                batch = tf.shape(z_mean_sampling)[0]
+                dim = tf.shape(z_mean_sampling)[1]
+                # Use keras.ops.random.normal for Keras 3 compatibility if needed,
+                # but tf.random.normal should work if tf.shape is handled correctly within Lambda.
+                epsilon = tf.random.normal(shape=(batch, dim))
+                return z_mean_sampling + tf.exp(0.5 * z_log_var_sampling) * epsilon
+
+            # The KLDivergenceLayer returns z_mean, so use kl_processed_z_mean and the original z_log_var
+            z_sampled = Lambda(sampling, name='z_sampling_lambda')([kl_processed_z_mean, z_log_var])
+            # --- END MODIFIED SAMPLING LOGIC ---
 
             # Decoder plugin's model outputs reconstruction
             # It expects [z_sampled, h_context, conditions_t]

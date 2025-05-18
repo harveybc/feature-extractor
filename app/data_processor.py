@@ -196,11 +196,10 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     best_latent_dim = current_latent_dim
     best_autoencoder_manager = None
     
-    # This key should now be 'reconstruction_out_calculate_mae_for_reconstruction' 
-    # because autoencoder_manager.py is using the 'calculate_mae_for_reconstruction' function
-    # (from autoencoder_helper.get_metrics) for the reconstruction_out metric.
-    # Keras prepends the output name 'reconstruction_out' to the metric function's name.
-    expected_mae_key = 'reconstruction_out_calculate_mae_for_reconstruction' # ENSURE THIS IS THE EXPECTED KEY
+    # This key should now be 'reconstruction_out_mae' 
+    # because autoencoder_manager.py is using 'mae' (string alias) for the reconstruction_out metric.
+    # Keras prepends the output name 'reconstruction_out' to the metric string 'mae'.
+    expected_mae_key = 'reconstruction_out_mae' # UPDATED EXPECTED KEY
     expected_val_mae_key = f'val_{expected_mae_key}' # Keras prepends 'val_'
 
     while True:

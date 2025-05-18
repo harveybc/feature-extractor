@@ -481,7 +481,7 @@ class AutoencoderManager:
         # Keras will pass y_true as is, and y_pred as a dict of model outputs.
         history = self.autoencoder_model.fit(
             x=data_inputs, 
-            y=data_targets, # Pass only reconstruction targets
+            y={'reconstruction_output': data_targets}, # Pass targets as a dictionary
             epochs=epochs, 
             batch_size=batch_size, 
             verbose=1,
@@ -533,12 +533,11 @@ class AutoencoderManager:
         print(f"[evaluate] Evaluating CVAE on {dataset_name}.")
         results = self.autoencoder_model.evaluate(
             x=data_inputs, 
-            y=data_targets, # Pass only reconstruction targets
+            y={'reconstruction_output': data_targets}, # Pass targets as a dictionary
             verbose=1,
             batch_size=config.get('batch_size', 128) 
         )
         # results is a list: [total_loss, mae_on_reconstruction, huber_metric, kl_metric, mmd_metric, ...]
-        loss_val = results[0]
         # MAE is typically the first metric after loss if 'mae' was in the metrics list at compile time
         # and Keras applies it to the first output.
         # The order in results matches the order in metrics_list during compile, plus the loss.

@@ -110,11 +110,7 @@ class AutoencoderManager:
             # Define model with named outputs
             self.autoencoder_model = Model(
                 inputs=[input_x_window, input_h_context, input_conditions_t], # CVAE takes the window as x_input
-                outputs={
-                    'reconstruction_output': reconstruction, # This will be y_pred in the reconstruction_loss_fn
-                    'z_mean_output': z_mean,                 # For KL metric
-                    'z_log_var_output': z_log_var            # For KL metric
-                },
+                outputs=[reconstruction, z_mean, z_log_var],
                 name="windowed_input_cvae_6_features_out"
             )
             self.model = self.autoencoder_model 

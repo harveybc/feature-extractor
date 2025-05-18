@@ -95,9 +95,10 @@ class AutoencoderManager:
             def sampling(args):
                 z_mean_sample, z_log_var_sample = args
                 batch = tf.shape(z_mean_sample)[0]
-                dim = tf.shape(z_mean_sample)[1]
-                epsilon = K.random_normal(shape=(batch, dim))
-                return z_mean_sample + K.exp(0.5 * z_log_var_sample) * epsilon
+                dim   = tf.shape(z_mean_sample)[1]
+                # draw epsilon from N(0,1)
+                epsilon = tf.random.normal(shape=(batch, dim))
+                return z_mean_sample + tf.exp(0.5 * z_log_var_sample) * epsilon
             
             z = Lambda(sampling, output_shape=(latent_dim,), name='cvae_sampling_z')([z_mean, z_log_var])
 

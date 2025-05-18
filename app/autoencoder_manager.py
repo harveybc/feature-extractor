@@ -74,12 +74,14 @@ class AutoencoderManager:
         
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
-        tf.print(f"DEBUG: Attempting to compile with metrics=['mae']")
+        # MODIFICATION: Instantiate MAE with simple name 'mae' for reconstruction_out.
+        # Keras should prepend the output name.
+        reconstruction_metric_instance = tf.keras.metrics.MeanAbsoluteError(name='mae')
+        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: MeanAbsoluteError(name='mae'), and pass-through metrics for KL components.")
+
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
-        # Note: The pass_through_metric for KL components will not be active with this approach,
-        # as we are simplifying the metrics argument to a list.
-        # def pass_through_metric(y_true, y_pred): return y_pred 
+        def pass_through_metric(y_true, y_pred): return y_pred 
 
         self.autoencoder_model.compile(
             optimizer=adam_optimizer,
@@ -92,24 +94,21 @@ class AutoencoderManager:
                 'kl_beta_out': None
             },
             loss_weights={ 
-                'reconstruction_out': 1.0, # Only reconstruction_out contributes to the compile-time loss
+                'reconstruction_out': 1.0,
                 'z_mean_out': 0.0,
                 'z_log_var_out': 0.0,
                 'kl_raw_out': 0.0,
                 'kl_weighted_out': 0.0,
                 'kl_beta_out': 0.0
             },
-            # MODIFICATION: Simplify metrics to a list with the string alias 'mae'.
-            # Keras should apply this to 'reconstruction_out' as it's the only output with a loss.
-            metrics=['mae'] 
-            # Previous attempt:
-            # metrics={ 
-            #     'reconstruction_out': reconstruction_metric_instance, 
-            #     'kl_raw_out': pass_through_metric, 
-            #     'kl_weighted_out': pass_through_metric,
-            #     'kl_beta_out': pass_through_metric 
-            # },
-            ,
+            # MODIFICATION: Use a dictionary for metrics, including MAE for reconstruction_out
+            # and pass-through metrics for KL components.
+            metrics={ 
+                'reconstruction_out': reconstruction_metric_instance,
+                'kl_raw_out': pass_through_metric, 
+                'kl_weighted_out': pass_through_metric,
+                'kl_beta_out': pass_through_metric 
+            },
             run_eagerly=config.get('run_eagerly', False) 
         )
         tf.print("[_compile_model] Model compiled successfully.")

@@ -74,14 +74,12 @@ class AutoencoderManager:
         
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
-        # MODIFICATION: Try the more explicit Keras string alias 'mean_absolute_error'.
-        # reconstruction_metric_to_use = 'mae' 
-        reconstruction_metric_to_use = 'mean_absolute_error' # Try this more explicit alias
+        reconstruction_metric_to_use = 'mean_absolute_error' 
         tf.print(f"DEBUG: Attempting to compile with reconstruction_out metric: '{reconstruction_metric_to_use}' (Keras string alias)")
 
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
-        def pass_through_metric(y_true, y_pred): return y_pred 
+        # def pass_through_metric(y_true, y_pred): return y_pred # Temporarily not used
 
         self.autoencoder_model.compile(
             optimizer=adam_optimizer,
@@ -102,10 +100,11 @@ class AutoencoderManager:
                 'kl_beta_out': 0.0
             },
             metrics={ 
-                'reconstruction_out': reconstruction_metric_to_use, # Use the new alias
-                'kl_raw_out': pass_through_metric, 
-                'kl_weighted_out': pass_through_metric,
-                'kl_beta_out': pass_through_metric
+                # MODIFICATION: Simplify to only include the metric for reconstruction_out
+                'reconstruction_out': reconstruction_metric_to_use
+                # 'kl_raw_out': pass_through_metric, # Temporarily removed
+                # 'kl_weighted_out': pass_through_metric, # Temporarily removed
+                # 'kl_beta_out': pass_through_metric # Temporarily removed
             },
             run_eagerly=config.get('run_eagerly', False) 
         )

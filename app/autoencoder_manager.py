@@ -428,9 +428,10 @@ class AutoencoderManager:
                 covariance_metric_fn
             ]
 
+            # use single loss fn (it unpacks all three outputs internally)
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
-                loss={'reconstruction_output': combined_cvae_loss_fn}, # Explicitly map loss to the output
+                loss=combined_cvae_loss_fn,
                 metrics=metrics_list,
                 run_eagerly=config.get('run_eagerly', False)
             )
@@ -480,12 +481,12 @@ class AutoencoderManager:
         # y_true can be the direct target for the primary output (reconstruction).
         # Keras will pass y_true as is, and y_pred as a dict of model outputs.
         history = self.autoencoder_model.fit(
-            x=data_inputs, 
-            y={'reconstruction_output': data_targets}, # Pass targets as a dictionary
-            epochs=epochs, 
-            batch_size=batch_size, 
+            x=data_inputs,
+            y=data_targets,        # pass raw (batch,6) targets
+            epochs=epochs,
+            batch_size=batch_size,
             verbose=1,
-            callbacks=callbacks_list, 
+            callbacks=callbacks_list,
             validation_split=config.get('validation_split', 0.2)
         )
         print(f"[train_autoencoder] CVAE Training loss: {history.history['loss'][-1] if history.history['loss'] else 'N/A'}")
@@ -532,10 +533,10 @@ class AutoencoderManager:
         
         print(f"[evaluate] Evaluating CVAE on {dataset_name}.")
         results = self.autoencoder_model.evaluate(
-            x=data_inputs, 
-            y={'reconstruction_output': data_targets}, # Pass targets as a dictionary
+            x=data_inputs,
+            y=data_targets,
             verbose=1,
-            batch_size=config.get('batch_size', 128) 
+            batch_size=config.get('batch_size', 128)
         )
         # results is a list: [total_loss, mae_on_reconstruction, huber_metric, kl_metric, mmd_metric, ...]
         # MAE is typically the first metric after loss if 'mae' was in the metrics list at compile time

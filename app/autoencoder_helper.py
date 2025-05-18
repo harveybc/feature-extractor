@@ -20,7 +20,7 @@ def compute_mmd(x, y, sigma=1.0, sample_size=None):
     """
     # This sigma check can remain as it's likely evaluated during graph construction or eagerly if possible
     if isinstance(sigma, (float, int)) and sigma <= 1e-6: 
-        tf.print("[compute_mmd] Warning: sigma is very small or zero. Setting to 1.0.")
+       # tf.print("[compute_mmd] Warning: sigma is very small or zero. Setting to 1.0.")
         sigma = 1.0
     elif tf.is_tensor(sigma): # If sigma is a tensor, use tf.cond for the check
         sigma = tf.cond(
@@ -80,9 +80,9 @@ def compute_mmd(x, y, sigma=1.0, sample_size=None):
         mmd_sq_val = mean_k_xx + mean_k_yy - 2 * mean_k_xy # Renamed to mmd_sq_val
         mmd_val_calc = tf.sqrt(tf.maximum(1e-9, mmd_sq_val)) # Renamed to mmd_val_calc
 
-        tf.print("[compute_mmd_TF_PRINT_CORE] Sigma:", sigma, "Shapes X_s, Y_s:", tf.shape(x_sample), tf.shape(y_sample),
-                 "means k_xx, k_yy, k_xy:", mean_k_xx, mean_k_yy, mean_k_xy,
-                 "mmd_sq:", mmd_sq_val, "MMD_val:", mmd_val_calc, summarize=-1)
+       # tf.print("[compute_mmd_TF_PRINT_CORE] Sigma:", sigma, "Shapes X_s, Y_s:", tf.shape(x_sample), tf.shape(y_sample),
+       #          "means k_xx, k_yy, k_xy:", mean_k_xx, mean_k_yy, mean_k_xy,
+       #          "mmd_sq:", mmd_sq_val, "MMD_val:", mmd_val_calc, summarize=-1)
         
         # Check for NaN within the lambda to ensure it's handled in graph mode
         return tf.cond(
@@ -92,7 +92,7 @@ def compute_mmd(x, y, sigma=1.0, sample_size=None):
         )
 
     def return_zero_mmd():
-        tf.print("[compute_mmd] Warning: Samples for MMD are empty. Returning 0.")
+       # tf.print("[compute_mmd] Warning: Samples for MMD are empty. Returning 0.")
         return tf.constant(0.0, dtype=tf.float32)
 
     # Use tf.cond for the empty check
@@ -127,7 +127,7 @@ def calculate_standardized_moment(data, order):
     return moment
 
 def covariance_loss_calc(y_true, y_pred, cfg):
-    tf.print("[covariance_loss_calc] Placeholder called. Returning 0.")
+   # tf.print("[covariance_loss_calc] Placeholder called. Returning 0.")
     return tf.constant(0.0, dtype=tf.float32)
 
 
@@ -152,9 +152,9 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
         cov_weight = config_to_use.get('cov_weight', 0.0)
         huber_delta = config_to_use.get('huber_delta', 1.0)
 
-        tf.print("[LossFn_INNER] Using weights - MMD:", mmd_weight, "Skew:", skew_weight, 
-                 "Kurtosis:", kurtosis_weight, "Cov:", cov_weight, "HuberDelta:", huber_delta, summarize=-1)
-        tf.print("[LossFn_INNER] MMD params - Sigma:", mmd_sigma, "Sample Size:", mmd_sample_size, summarize=-1)
+        #tf.print("[LossFn_INNER] Using weights - MMD:", mmd_weight, "Skew:", skew_weight, 
+        #         "Kurtosis:", kurtosis_weight, "Cov:", cov_weight, "HuberDelta:", huber_delta, summarize=-1)
+        #tf.print("[LossFn_INNER] MMD params - Sigma:", mmd_sigma, "Sample Size:", mmd_sample_size, summarize=-1)
 
         h_loss = Huber(delta=huber_delta)(actual_reconstruction_target, recon_pred)
         huber_loss_tracker.assign(h_loss)
@@ -167,7 +167,7 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
             # compute_mmd is expected to return a scalar
             mmd_total.assign(mmd_val) 
             total_loss += mmd_weight * mmd_val
-            tf.print("[LossFn_INNER] MMD calculated:", mmd_val, "weighted_mmd_added:", mmd_weight * mmd_val, summarize=-1)
+           # tf.print("[LossFn_INNER] MMD calculated:", mmd_val, "weighted_mmd_added:", mmd_weight * mmd_val, summarize=-1)
         else:
             mmd_total.assign(0.0)
             
@@ -177,7 +177,7 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
             skew_loss_val = tf.abs(skew_true - skew_pred)
             skew_loss_tracker.assign(skew_loss_val) 
             total_loss += skew_weight * skew_loss_val
-            tf.print("[LossFn_INNER] Skew loss calculated:", skew_loss_val, "weighted_skew_added:", skew_weight * skew_loss_val, summarize=-1)
+           # tf.print("[LossFn_INNER] Skew loss calculated:", skew_loss_val, "weighted_skew_added:", skew_weight * skew_loss_val, summarize=-1)
         else:
             skew_loss_tracker.assign(0.0)
 
@@ -187,7 +187,7 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
             kurt_loss_val = tf.abs(kurt_true - kurt_pred)
             kurtosis_loss_tracker.assign(kurt_loss_val) 
             total_loss += kurtosis_weight * kurt_loss_val
-            tf.print("[LossFn_INNER] Kurtosis loss calculated:", kurt_loss_val, "weighted_kurtosis_added:", kurtosis_weight * kurt_loss_val, summarize=-1)
+           # tf.print("[LossFn_INNER] Kurtosis loss calculated:", kurt_loss_val, "weighted_kurtosis_added:", kurtosis_weight * kurt_loss_val, summarize=-1)
         else:
             kurtosis_loss_tracker.assign(0.0)
             
@@ -198,11 +198,11 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
             # covariance_loss_calc is expected to return a scalar
             covariance_loss_tracker.assign(cov_loss_val) 
             total_loss += cov_weight * cov_loss_val
-            tf.print("[LossFn_INNER] Covariance loss calculated:", cov_loss_val, "weighted_cov_added:", cov_weight * cov_loss_val, summarize=-1)
+           # tf.print("[LossFn_INNER] Covariance loss calculated:", cov_loss_val, "weighted_cov_added:", cov_weight * cov_loss_val, summarize=-1)
         else:
             covariance_loss_tracker.assign(0.0)
 
-        tf.print("[LossFn_INNER] Total calculated loss for batch:", total_loss, summarize=-1)
+       # tf.print("[LossFn_INNER] Total calculated loss for batch:", total_loss, summarize=-1)
         return total_loss
     
     return reconstruction_and_stats_loss_fn_inner
@@ -308,23 +308,23 @@ class KLAnnealingCallback(Callback):
                 target_kl_layer = self.model.get_layer(self.layer_name)
             except ValueError:
                 if self.verbose > 0 and epoch == 0:
-                    tf.print(f"\nKLAnnealingCallback: Layer '{self.layer_name}' not found by name (fallback).")
+                   tf.print(f"\nKLAnnealingCallback: Layer '{self.layer_name}' not found by name (fallback).")
         
         if target_kl_layer:
             if hasattr(target_kl_layer, 'kl_beta') and isinstance(target_kl_layer.kl_beta, tf.Variable):
                 target_kl_layer.kl_beta.assign(self.current_kl_beta)
-                if self.verbose > 0 and epoch == 0: 
-                    tf.print(f"\nKLAnnealingCallback: Initial kl_beta set to {self.current_kl_beta.numpy():.6f} for layer '{target_kl_layer.name}'")
+                #if self.verbose > 0 and epoch == 0: 
+                   # tf.print(f"\nKLAnnealingCallback: Initial kl_beta set to {self.current_kl_beta.numpy():.6f} for layer '{target_kl_layer.name}'")
             elif hasattr(target_kl_layer, 'kl_beta'): 
                 target_kl_layer.kl_beta = self.current_kl_beta.numpy() 
-                if self.verbose > 0 and epoch == 0:
-                    tf.print(f"\nKLAnnealingCallback: Initial kl_beta set (non-Variable) to {self.current_kl_beta.numpy():.6f} for layer '{target_kl_layer.name}'")
+                #if self.verbose > 0 and epoch == 0:
+                   # tf.print(f"\nKLAnnealingCallback: Initial kl_beta set (non-Variable) to {self.current_kl_beta.numpy():.6f} for layer '{target_kl_layer.name}'")
             else:
                 if self.verbose > 0 and epoch == 0:
-                    tf.print(f"\nKLAnnealingCallback: Layer '{target_kl_layer.name}' does not have 'kl_beta' attribute or it's not assignable.")
+                   tf.print(f"\nKLAnnealingCallback: Layer '{target_kl_layer.name}' does not have 'kl_beta' attribute or it's not assignable.")
         else:
             if self.verbose > 0 and epoch == 0: 
-                tf.print(f"\nKLAnnealingCallback: KL divergence layer not found. KL beta will not be annealed by this callback.")
+               tf.print(f"\nKLAnnealingCallback: KL divergence layer not found. KL beta will not be annealed by this callback.")
 
     def on_epoch_end(self, epoch, logs=None):
         if logs is not None:

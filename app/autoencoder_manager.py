@@ -24,30 +24,27 @@ class KLDivergenceLayer(Layer):
 
     def call(self, inputs):
         z_mean, z_log_var = inputs
-        kl_loss = -0.5 * tf.reduce_mean(
+        kl_loss_raw = -0.5 * tf.reduce_mean( # Renamed to kl_loss_raw for clarity
             tf.reduce_sum(1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)
         )
-        weighted_kl_loss = self.kl_beta * kl_loss
-        self.add_loss(weighted_kl_loss)
+        # Ensure kl_loss_raw is a scalar if reduce_mean is over batch
+        if tf.rank(kl_loss_raw) != 0: # Should be scalar due to tf.reduce_mean
+             kl_loss_raw = tf.reduce_mean(kl_loss_raw)
+
+
+        weighted_kl_loss = self.kl_beta * kl_loss_raw
+        self.add_loss(weighted_kl_loss) # This adds the loss to the model
         
-        self.add_metric(kl_loss, name="kl_divergence_raw") 
-        self.add_metric(weighted_kl_loss, name="kl_divergence_weighted") 
-        self.add_metric(self.kl_beta, name="kl_beta_current")
-        return z_mean 
+        # self.add_metric calls are removed
+        # These values will be returned and handled as model outputs/metrics
+        return z_mean, kl_loss_raw, weighted_kl_loss, self.kl_beta 
 
     def compute_output_shape(self, input_shape):
-        if isinstance(input_shape, list) and len(input_shape) > 0 and isinstance(input_shape[0], tuple):
-            return input_shape[0]
-        if isinstance(input_shape, (list, tuple)) and len(input_shape) > 0 and \
-           isinstance(input_shape[0], (list, tuple, tf.TensorShape)):
-             return tf.TensorShape(input_shape[0])
-        if isinstance(input_shape, tf.TensorShape):
-            return input_shape
-        tf.print(f"Warning: KLDivergenceLayer.compute_output_shape received unexpected input_shape: {input_shape}. Falling back.")
-        # Fallback, assuming the first element of a list is the shape of z_mean
-        if isinstance(input_shape, list) and len(input_shape) > 0:
-            return input_shape[0]
-        raise ValueError(f"Unexpected input_shape format for KLDivergenceLayer: {input_shape}")
+        # input_shape is a list: [z_mean_shape, z_log_var_shape]
+        z_mean_shape = tf.TensorShape(input_shape[0])
+        # kl_loss_raw, weighted_kl_loss, and self.kl_beta are scalars
+        scalar_shape = tf.TensorShape([])
+        return [z_mean_shape, scalar_shape, scalar_shape, scalar_shape]
 
     def get_config(self):
         config = super().get_config()
@@ -108,7 +105,9 @@ class AutoencoderManager:
             
             kl_beta_start_from_config = config.get('kl_beta_start', 0.0001)
             self.kl_layer_instance_obj = KLDivergenceLayer(kl_beta_start=kl_beta_start_from_config, name="kl_loss_adder_node")
-            kl_processed_z_mean = self.kl_layer_instance_obj([z_mean, z_log_var])
+            # KLDivergenceLayer now returns multiple outputs
+            kl_processed_z_mean, kl_raw_output, kl_weighted_output, kl_beta_output = \
+                self.kl_layer_instance_obj([z_mean, z_log_var])
             
             # --- MODIFIED SAMPLING LOGIC ---
             # Wrap the reparameterization trick in a Lambda layer
@@ -136,7 +135,10 @@ class AutoencoderManager:
                 outputs={
                     'reconstruction_output': reconstruction_output,
                     'z_mean_output': z_mean,       
-                    'z_log_var_output': z_log_var  
+                    'z_log_var_output': z_log_var,
+                    'kl_raw_metric': kl_raw_output, # New output for raw KL divergence
+                    'kl_weighted_metric': kl_weighted_output, # New output for weighted KL
+                    'kl_beta_metric': kl_beta_output # New output for current kl_beta
                 },
                 name=f"windowed_input_cvae_{num_features_output}_features_out"
             )
@@ -155,20 +157,32 @@ class AutoencoderManager:
             tf.print(f"DEBUG: autoencoder_model.outputs: {self.autoencoder_model.outputs}")
             tf.print(f"DEBUG: autoencoder_model.output_names: {self.autoencoder_model.output_names}")
 
+            # Define pass-through metric functions
+            def pass_through_metric(y_true, y_pred): return y_pred
+
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss={
                     'reconstruction_output': configured_loss_fn, 
                     'z_mean_output': None, 
-                    'z_log_var_output': None
+                    'z_log_var_output': None,
+                    'kl_raw_metric': None, # No direct loss for these metric outputs
+                    'kl_weighted_metric': None,
+                    'kl_beta_metric': None
                 },
                 loss_weights={ 
                     'reconstruction_output': 1.0,
                     'z_mean_output': 0.0,
-                    'z_log_var_output': 0.0
+                    'z_log_var_output': 0.0,
+                    'kl_raw_metric': 0.0,
+                    'kl_weighted_metric': 0.0,
+                    'kl_beta_metric': 0.0
                 },
                 metrics={ 
-                    'reconstruction_output': reconstruction_metrics
+                    'reconstruction_output': reconstruction_metrics,
+                    'kl_raw_metric': pass_through_metric, # Track the output directly
+                    'kl_weighted_metric': pass_through_metric,
+                    'kl_beta_metric': pass_through_metric
                 },
                 run_eagerly=config.get('run_eagerly', False) 
             )
@@ -188,7 +202,12 @@ class AutoencoderManager:
             'cvae_input_h_context': data_inputs[1],
             'cvae_input_conditions_t': data_inputs[2]
         }
-        train_targets_dict = {'reconstruction_output': data_targets}
+        # Targets only needed for outputs that have a loss
+        train_targets_dict = {
+            'reconstruction_output': data_targets,
+            # No targets needed for z_mean_output, z_log_var_output, or the new kl metric outputs
+            # as their losses are None or weights are 0.0
+        }
 
         tf.print(f"Input data shapes: x_window: {data_inputs[0].shape}, h_context: {data_inputs[1].shape}, conditions_t: {data_inputs[2].shape}")
         tf.print(f"Target data shape for reconstruction_output: {data_targets.shape}")
@@ -233,6 +252,7 @@ class AutoencoderManager:
                 'cvae_input_h_context': config['cvae_val_inputs']['h_context'],
                 'cvae_input_conditions_t': config['cvae_val_inputs']['conditions_t']
             }
+            # Validation targets also only for outputs with a loss
             val_targets_dict = {'reconstruction_output': config['cvae_val_targets']}
             validation_data_prepared = (val_inputs_dict, val_targets_dict)
             tf.print(f"[train_autoencoder] Using pre-defined validation data.")
@@ -316,52 +336,26 @@ class AutoencoderManager:
             'cvae_input_h_context': data_inputs[1],
             'cvae_input_conditions_t': data_inputs[2]
         }
-        eval_targets_dict = {'reconstruction_output': data_targets}
+        eval_targets_dict = {
+            'reconstruction_output': data_targets
+            # No targets needed for other outputs during evaluation if their loss is None/0
+        }
         
-        results = self.autoencoder_model.evaluate(
+        # Store metric names from the compiled model to match with results
+        metric_names = self.autoencoder_model.metrics_names
+        
+        results_list = self.autoencoder_model.evaluate(
             eval_inputs_dict,
             eval_targets_dict,
             batch_size=config.get('batch_size', 128) if config else 128,
-            verbose=config.get('keras_verbose_level', 1) if config else 1
+            verbose=config.get('keras_verbose_level', 1) if config else 1,
+            return_dict=False # Ensure results are a list
         )
         
-        tf.print(f"Evaluation results for {dataset_name}:")
-        if isinstance(results, list): 
-            i = 0
-            tf.print(f"  Total Loss: {results[i]}")
-            i += 1
-            # Iterate through compiled metrics which include losses for outputs and other metrics
-            metric_idx_start = 1 # Start after total loss
-            for output_name in self.autoencoder_model.output_names:
-                # Find the loss for this output if it exists (not None in compile)
-                loss_fn_for_output_idx = self.autoencoder_model.output_names.index(output_name)
-                if self.autoencoder_model.loss_functions[loss_fn_for_output_idx] is not None:
-                    loss_name_in_metrics = f"{output_name}_loss" # Keras default naming
-                    # Check if this loss name is in metrics_names (it might not be if loss_weight is 0)
-                    # Or directly use the order if Keras guarantees it.
-                    # For simplicity, let's assume Keras lists output losses first if they contribute.
-                    # A more robust way is to map self.autoencoder_model.metrics_names
-                    tf.print(f"  Loss for '{output_name}': {results[metric_idx_start]}") # This assumes order
-                    metric_idx_start +=1
-                
-                # Find metrics associated with this output
-                # This part is tricky as Keras flattens metrics_names
-                # For now, let's print all remaining metrics by name
-            
-            # Print all metrics by name from metrics_names
-            for metric_name_idx, name in enumerate(self.autoencoder_model.metrics_names):
-                if name == "loss": continue # Already printed as Total Loss
-                if name.endswith("_loss") and name.split("_loss")[0] in self.autoencoder_model.output_names:
-                    # This was an output-specific loss, already handled if it contributed
-                    # Or, if it didn't contribute (weight 0), it might still be here.
-                    # For now, we assume the previous loop handled contributing losses.
-                    continue 
-                tf.print(f"  Metric '{name}': {results[metric_name_idx]}") # metric_name_idx is for the full results list
+        results_dict = dict(zip(metric_names, results_list))
 
-        else: 
-            tf.print(f"  Loss: {results}")
-            
-        return results
+        tf.print(f"Evaluation results for {dataset_name} (as dict): {results_dict}")
+        return results_dict # Return dictionary for easier access by name
 
     def predict(self, data_inputs, config=None):
         if not self.autoencoder_model:

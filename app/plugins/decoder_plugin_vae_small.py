@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Concatenate, Reshape, Conv1DTranspose, Flatten # Removed BatchNormalization, LeakyReLU, Activation, Dropout
+from keras.layers import Dense, Input, Concatenate, Reshape, Conv1DTranspose, Flatten
 from keras.optimizers import Adam 
 from keras.regularizers import l2
 
@@ -14,23 +14,28 @@ class Plugin:
     """
 
     plugin_params = {
-        "conv_activation": "relu",  # Activation for Dense layer before reshape and Conv1DTranspose layers
+        "conv_activation": "relu",
         'learning_rate': 0.0001, 
         "l2_reg": 1e-5,
-        "initial_conv_filters": 128, # Should match the encoder's initial_conv_filters for filter progression
-        "conv_kernel_size": 5,      # Kernel size for Conv1DTranspose, should match encoder's
-        "decoder_initial_seq_len": 4, # Initial sequence length after reshape, before Conv1DTranspose
-        "output_activation": "linear", # For the final Dense output layer
-        # Parameters to be configured by AutoencoderManager:
-        "latent_dim": None,         # Dimensionality of z_t
-        "rnn_hidden_dim": None,     # Dimensionality of h_t (or h_{t-1})
-        "conditioning_dim": None,   # Dimensionality of other conditions
-        "output_feature_dim": 6,    # Fixed to 6
+        # Reference to encoder's parameters, will be overridden by config from AutoencoderManager
+        "encoder_ref_initial_conv_filters": 128, 
+        "encoder_ref_num_conv_layers": 4,
+        "encoder_ref_num_strided_conv_layers": 2,
+        "encoder_ref_min_conv_filters": 16,
+        "conv_kernel_size": 5, # Kernel size for Conv1DTranspose
+        "decoder_initial_seq_len": 4, # Initial sequence length after reshape
+        "output_activation": "linear",
+        "latent_dim": None,
+        "rnn_hidden_dim": None,
+        "conditioning_dim": None,
+        "output_feature_dim": 6, # Fixed
     }
 
     plugin_debug_vars = [
         'latent_dim', 'rnn_hidden_dim', 'conditioning_dim', 'output_feature_dim',
-        'initial_conv_filters', 'conv_kernel_size', 'decoder_initial_seq_len',
+        'encoder_ref_initial_conv_filters', 'encoder_ref_num_conv_layers', 
+        'encoder_ref_num_strided_conv_layers', 'encoder_ref_min_conv_filters',
+        'conv_kernel_size', 'decoder_initial_seq_len',
         'conv_activation', 'l2_reg', 'output_activation'
     ]
 
@@ -56,8 +61,7 @@ class Plugin:
         """
         Configures the per-step generative network with Conv1DTranspose. output_feature_dim will be forced to 6.
         """
-        if config is None:
-            config = {}
+        if config is None: config = {}
 
         self.params['latent_dim'] = latent_dim
         self.params['rnn_hidden_dim'] = rnn_hidden_dim
@@ -70,34 +74,56 @@ class Plugin:
         # Get parameters, prioritizing external config, then self.params
         conv_activation_name = config.get("conv_activation", self.params.get("conv_activation", "relu"))
         l2_reg_val = config.get("l2_reg", self.params.get("l2_reg", 1e-5))
-        
-        # initial_conv_filters refers to the encoder's starting point, used to derive decoder filter progression
-        # e.g., if encoder is 128->64->32->16, decoder ConvT is 16->32->64->128
-        encoder_initial_conv_filters = config.get("initial_conv_filters", self.params.get("initial_conv_filters", 128))
         conv_kernel_size_val = config.get("conv_kernel_size", self.params.get("conv_kernel_size", 5))
         decoder_initial_seq_len_val = config.get("decoder_initial_seq_len", self.params.get("decoder_initial_seq_len", 4))
         output_activation_name = config.get("output_activation", self.params.get("output_activation", "linear"))
         
-        final_output_dim = self.params['output_feature_dim'] # Should be 6
+        # Get encoder's structural parameters from the main config
+        enc_initial_filters = config.get("initial_conv_filters", self.params.get("encoder_ref_initial_conv_filters"))
+        enc_num_conv_layers = config.get("num_conv_layers", self.params.get("encoder_ref_num_conv_layers"))
+        enc_num_strided_layers = config.get("num_strided_conv_layers", self.params.get("encoder_ref_num_strided_conv_layers"))
+        enc_min_filters = config.get("min_conv_filters", self.params.get("encoder_ref_min_conv_filters"))
 
-        # Define filter progression for Conv1DTranspose (mirrors encoder's reduction)
-        # Encoder: F, F/2, F/4, F/8. Decoder ConvT: F/8, F/4, F/2, F.
-        decoder_conv_filters_progression = [
-            encoder_initial_conv_filters // 8,
-            encoder_initial_conv_filters // 4,
-            encoder_initial_conv_filters // 2,
-            encoder_initial_conv_filters
-        ]
-        # Ensure filters are at least 1
-        decoder_conv_filters_progression = [max(1, f) for f in decoder_conv_filters_progression]
+        # 1. Calculate encoder's actual output filter sizes and strides per layer
+        encoder_actual_output_filters = []
+        encoder_actual_strides = []
+        current_enc_filters = enc_initial_filters
+        for i in range(enc_num_conv_layers):
+            encoder_actual_output_filters.append(current_enc_filters)
+            is_strided_encoder_layer = (i < enc_num_strided_layers)
+            encoder_actual_strides.append(2 if is_strided_encoder_layer else 1)
+            
+            if i < enc_num_conv_layers - 1:
+                if is_strided_encoder_layer:
+                    current_enc_filters = max(enc_min_filters, current_enc_filters // 2)
+                else:
+                    current_enc_filters = max(enc_min_filters, int(current_enc_filters * 0.8))
         
-        dense_upsample_units = decoder_initial_seq_len_val * decoder_conv_filters_progression[0]
+        # 2. Define Decoder's ConvT output filter progression (reversed from encoder's output filters)
+        # Example: Encoder outputs [128, 64, 32, 16]. Decoder ConvT aims for [16, 32, 64, 128] as output filters.
+        decoder_convt_output_filters = list(reversed(encoder_actual_output_filters))
+        
+        # The last ConvT layer's filters might be different (e.g., smaller, or related to output_feature_dim)
+        # For now, let's keep it symmetric, so decoder_convt_output_filters[-1] would be enc_initial_filters.
+        # Or, we can introduce a 'decoder_last_convt_filters' if needed.
+        # Let's assume the last layer of decoder_convt_output_filters is the target.
 
-        print(f"[DEBUG DecoderPlugin] Configuring with: z_dim={latent_dim}, h_dim={rnn_hidden_dim}, cond_dim={conditioning_dim}, out_dim={final_output_dim}")
-        print(f"[DEBUG DecoderPlugin] ConvT Params: initial_seq_len={decoder_initial_seq_len_val}, base_filters_for_dense={decoder_conv_filters_progression[0]}, "
-              f"dense_upsample_units={dense_upsample_units}, kernel_size={conv_kernel_size_val}, activation={conv_activation_name}")
-        print(f"[DEBUG DecoderPlugin] ConvT Filter Progression: {decoder_conv_filters_progression}")
-        print(f"[DEBUG DecoderPlugin] L2: {l2_reg_val}, Output Activation: {output_activation_name}")
+        if not decoder_convt_output_filters:
+            raise ValueError("Could not determine decoder ConvT filter progression. Check encoder parameters.")
+
+        # 3. Initial Dense and Reshape
+        # The first ConvT layer will take `decoder_convt_output_filters[0]` as its *input* channels.
+        # This means the Reshape layer must output `decoder_convt_output_filters[0]` channels.
+        first_convt_input_channels = decoder_convt_output_filters[0] # This is encoder_actual_output_filters[-1]
+        
+        dense_upsample_units = decoder_initial_seq_len_val * first_convt_input_channels
+
+        print(f"[DEBUG DecoderPlugin] Configuring with: z_dim={latent_dim}, h_dim={rnn_hidden_dim}, cond_dim={conditioning_dim}, out_dim={self.params['output_feature_dim']}")
+        print(f"[DEBUG DecoderPlugin] Encoder structure ref: initial_filters={enc_initial_filters}, num_layers={enc_num_conv_layers}, num_strided={enc_num_strided_layers}")
+        print(f"[DEBUG DecoderPlugin] Encoder calculated output filters: {encoder_actual_output_filters}")
+        print(f"[DEBUG DecoderPlugin] Encoder calculated strides: {encoder_actual_strides}")
+        print(f"[DEBUG DecoderPlugin] Decoder ConvT target output filters: {decoder_convt_output_filters}")
+        print(f"[DEBUG DecoderPlugin] Initial Dense units: {dense_upsample_units}, Reshape to: ({decoder_initial_seq_len_val}, {first_convt_input_channels})")
 
         # Define inputs for a single time step
         input_z_t = Input(shape=(latent_dim,), name="decoder_input_z_t")
@@ -117,32 +143,51 @@ class Plugin:
 
         # Reshape for Conv1DTranspose
         x = Reshape(
-            (decoder_initial_seq_len_val, decoder_conv_filters_progression[0]),
+            (decoder_initial_seq_len_val, first_convt_input_channels),
             name="decoder_reshape_for_conv"
         )(x)
 
         # Conv1DTranspose layers
-        for i, num_filters in enumerate(decoder_conv_filters_progression):
-            # The first layer uses decoder_conv_filters_progression[0] which is already set by Reshape
-            # So, Conv1DTranspose layers will effectively use filters from index 0 to 3 for their output channels
-            # The actual number of filters for Conv1DTranspose[i] is decoder_conv_filters_progression[i]
+        num_decoder_convt_layers = enc_num_conv_layers
+        for i in range(num_decoder_convt_layers):
+            # Output filters for this ConvT layer:
+            # If decoder_convt_output_filters = [16, 32, 64, 128] (derived from encoder)
+            # Layer 0 ConvT outputs 16 filters (already input shape)
+            # Layer 1 ConvT outputs 32 filters
+            # Layer 2 ConvT outputs 64 filters
+            # Layer 3 ConvT outputs 128 filters
+            # The `filters` param for Conv1DTranspose is its output channels.
+            # The input channels for ConvT[i] is the output channels of ConvT[i-1]
+            # (or from Reshape for i=0).
+            
+            # For ConvT layer `i`, its output filter count should be `decoder_convt_output_filters[i]`.
+            # However, the list `decoder_convt_output_filters` was defined as `list(reversed(encoder_actual_output_filters))`.
+            # So, `decoder_convt_output_filters[0]` is `encoder_actual_output_filters[-1]`.
+            # `decoder_convt_output_filters[1]` is `encoder_actual_output_filters[-2]`.
+            # This means the target output filters for ConvT[i] should be `decoder_convt_output_filters[i]` if we want to build up.
+            # Let's use `target_output_filters_for_this_convT = decoder_convt_output_filters[i]`
+
+            target_output_filters_for_this_convT = decoder_convt_output_filters[i]
+            
+            # Strides are reversed from encoder's strides
+            current_convt_stride = encoder_actual_strides[enc_num_conv_layers - 1 - i]
+            
             x = Conv1DTranspose(
-                filters=num_filters, # This is the output filter count for this layer
+                filters=target_output_filters_for_this_convT,
                 kernel_size=conv_kernel_size_val,
-                strides=2,
+                strides=current_convt_stride,
                 padding='same',
                 activation=conv_activation_name,
                 kernel_regularizer=l2(l2_reg_val),
                 name=f"decoder_conv_transpose_{i+1}"
             )(x)
-            # After this layer, num_filters is num_filters, seq_len is doubled.
-
+        
         # Flatten the output of Conv1DTranspose layers
         x = Flatten(name="decoder_flatten_upsampled")(x)
 
         # Output layer for x'_t (6 features)
         output_x_prime_t = Dense(
-            final_output_dim, 
+            self.params['output_feature_dim'], 
             activation=output_activation_name, 
             name='decoder_output_x_prime_t', 
             kernel_regularizer=l2(l2_reg_val)
@@ -151,7 +196,7 @@ class Plugin:
         self.generative_network_model = Model(
             inputs=[input_z_t, input_h_t, input_conditions_t],
             outputs=output_x_prime_t,
-            name="conv_transpose_cvae_decoder"
+            name="dynamic_conv_transpose_cvae_decoder"
         )
         
         print(f"[DEBUG DecoderPlugin] Model built.")

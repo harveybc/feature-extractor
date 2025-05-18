@@ -121,56 +121,39 @@ def get_metrics(config=None):
 # Callbacks
 class EarlyStoppingWithPatienceCounter(EarlyStopping):
     def on_epoch_end(self, epoch, logs=None):
-        super().on_epoch_end(epoch, logs)
+        super().on_epoch_end(epoch, logs) # Important to call parent for its logic
         if logs is None:
             logs = {}
         
-        # self.best should hold the best value of the monitored quantity
-        # It's initialized to np.inf or -np.inf by the parent class.
-        # If the monitored metric (e.g., val_loss) is never available, self.best might remain np.inf or be None.
-        best_val = self.best 
-        
-        if best_val is None or best_val == np.inf or best_val == -np.inf:
-            best_loss_info = f"Best {self.monitor}: N/A"
-        else:
+        best_val = self.best
+        best_loss_str = "N/A"
+        # Check if best_val is a valid number before formatting
+        if not (best_val is None or best_val == np.inf or best_val == -np.inf):
             try:
-                best_loss_info = f"Best {self.monitor}: {best_val:.6f}"
-            except TypeError: # Safeguard if best_val is unexpectedly not format-able
-                best_loss_info = f"Best {self.monitor}: ErrorFormatting"
-
-        patience_info = ""
-        if hasattr(self, 'wait'):
-            patience_info = f"ES patience: {self.wait}/{self.patience}"
+                best_loss_str = f"{best_val:.6f}"
+            except TypeError: # Should be caught by the None check, but as a safeguard
+                best_loss_str = "ErrorFormatting" # Or simply keep "N/A"
         
-        print(f" - {patience_info} - {best_loss_info}", end="")
+        # Add to logs dictionary for Keras to print
+        logs[f'best_{self.monitor}'] = best_loss_str 
+        
+        if hasattr(self, 'wait'):
+            logs['es_patience'] = f"{self.wait}/{self.patience}"
+        # Removed custom print statement
 
 class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
     def on_epoch_end(self, epoch, logs=None):
-        # MODIFIED: Get learning rate value correctly for Keras 3
-        old_lr_variable = self.model.optimizer.learning_rate
-        if hasattr(old_lr_variable, 'numpy'):
-            old_lr = old_lr_variable.numpy()
-        else: # Fallback if it's somehow a direct float (less common for new optimizers)
-            old_lr = old_lr_variable 
-
-        super().on_epoch_end(epoch, logs) # This will potentially change the LR
-
-        new_lr_variable = self.model.optimizer.learning_rate
-        if hasattr(new_lr_variable, 'numpy'):
-            new_lr = new_lr_variable.numpy()
-        else:
-            new_lr = new_lr_variable
+        # The parent class ReduceLROnPlateau already handles LR changes and adds 'lr' to logs.
+        super().on_epoch_end(epoch, logs) 
+        if logs is None: # Should be populated by parent, but as a safeguard
+            logs = {}
         
-        patience_info = ""
         if hasattr(self, 'wait'):
-            patience_info = f"RLROP patience: {self.wait}/{self.patience}"
-
-        lr_info = f"LR: {new_lr:.7f}"
-        if new_lr < old_lr:
-            lr_info = f"LR reduced to: {new_lr:.7f}"
-            
-        print(f" - {patience_info} - {lr_info}", end="")
-
+            # Add to logs dictionary for Keras to print
+            logs['rlrop_patience'] = f"{self.wait}/{self.patience}"
+        
+        # Keras will automatically log the 'lr' from the logs dict if ReduceLROnPlateau updated it.
+        # Removed custom print statement
 
 class KLAnnealingCallback(Callback):
     def __init__(self, kl_beta_start, kl_beta_end, anneal_epochs, 

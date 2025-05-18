@@ -221,16 +221,34 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     cvae_train_inputs = [x_train_data, h_context_train, conditions_t_train]
     cvae_train_targets = y_train_targets_6_features # Use the 6-feature targets
 
-    cvae_val_inputs = [x_val_data, h_context_val, conditions_t_val]
-    cvae_val_targets = y_val_targets_6_features   # Use the 6-feature targets
+    cvae_val_inputs_list = [x_val_data, h_context_val, conditions_t_val] # Local list
+    cvae_val_targets_array = y_val_targets_6_features   # Local array
 
-    # Truncate validation inputs/targets if necessary (already handled for x_val_data by preprocessor or earlier logic)
-    # This should be ensured by the preprocessor plugin or initial data loading.
-    if cvae_val_inputs[0].shape[0] > cvae_train_inputs[0].shape[0]:
-        print(f"[run_autoencoder_pipeline] Truncating validation CVAE inputs/targets to match training samples: {cvae_train_inputs[0].shape[0]}")
-        for i in range(len(cvae_val_inputs)):
-            cvae_val_inputs[i] = cvae_val_inputs[i][:cvae_train_inputs[0].shape[0]]
-        cvae_val_targets = cvae_val_targets[:cvae_train_inputs[0].shape[0]]
+    # Truncate validation inputs/targets if necessary
+    # Ensure the number of validation samples does not exceed training samples if that's a requirement
+    # or handle appropriately. Here, we'll just ensure they are not None.
+    if cvae_val_inputs_list[0] is None or cvae_val_targets_array is None:
+        print("[data_processor] Warning: Validation data (x_val_data or y_val_targets_6_features) is None. Training will proceed without validation monitoring.")
+        # Ensure config keys are not set if data is None to avoid issues in AutoencoderManager
+        config.pop('cvae_val_inputs', None)
+        config.pop('cvae_val_targets', None)
+    else:
+        # Ensure validation sample counts match if they are not None
+        if cvae_val_inputs_list[0].shape[0] != cvae_val_targets_array.shape[0]:
+            raise ValueError(f"Sample count mismatch in validation data: x_val_data ({cvae_val_inputs_list[0].shape[0]}) vs y_val_targets ({cvae_val_targets_array.shape[0]})")
+        
+        # If validation data is present, add it to the config for AutoencoderManager
+        config['cvae_val_inputs'] = {
+            'x_window': cvae_val_inputs_list[0],
+            'h_context': cvae_val_inputs_list[1],
+            'conditions_t': cvae_val_inputs_list[2]
+        }
+        config['cvae_val_targets'] = cvae_val_targets_array
+        print(f"[data_processor] Added cvae_val_inputs and cvae_val_targets to config for AutoencoderManager.")
+        print(f"[data_processor] Validation input shapes: x_window: {config['cvae_val_inputs']['x_window'].shape}, "
+              f"h_context: {config['cvae_val_inputs']['h_context'].shape}, "
+              f"conditions_t: {config['cvae_val_inputs']['conditions_t'].shape}")
+        print(f"[data_processor] Validation target shape: {config['cvae_val_targets'].shape}")
 
     initial_latent_dim = config.get('initial_latent_dim', config['latent_dim']) # Use 'latent_dim' if 'initial_latent_dim' not set
     step_size_latent = config.get('step_size_latent', 8) # Step for adjusting latent_dim
@@ -254,6 +272,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         
         autoencoder_manager.build_autoencoder(config) 
         
+        # The 'config' passed here will now contain the validation data if set above
         autoencoder_manager.train_autoencoder(
             data_inputs=cvae_train_inputs,
             data_targets=cvae_train_targets,

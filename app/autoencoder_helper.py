@@ -14,12 +14,12 @@ es_best_value_tracker = tf.Variable(np.inf, dtype=tf.float32, name="es_best_valu
 rlrop_wait_tracker = tf.Variable(0, dtype=tf.int32, name="rlrop_wait_tracker")
 rlrop_patience_config_tracker = tf.Variable(0, dtype=tf.int32, name="rlrop_patience_config_tracker")
 
-# Trackers for loss components (already existing, ensure they are used if needed by metrics)
-mmd_total = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="mmd_total_tracker")
-huber_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="huber_loss_tracker")
-skew_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="skew_loss_tracker")
-kurtosis_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="kurtosis_loss_tracker")
-covariance_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="covariance_loss_tracker")
+# Trackers for loss components - RENAMED for clarity
+mmd_total_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="mmd_total_component_tracker") # RENAMED from mmd_total
+huber_loss_component_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="huber_loss_component_tracker") # RENAMED from huber_loss_tracker
+skew_loss_component_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="skew_loss_component_tracker") # RENAMED from skew_loss_tracker
+kurtosis_loss_component_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="kurtosis_loss_component_tracker") # RENAMED from kurtosis_loss_tracker
+covariance_loss_component_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="covariance_loss_component_tracker") # RENAMED from covariance_loss_tracker
 
 
 def compute_mmd(x, y, sigma=1.0, sample_size=None):
@@ -162,57 +162,42 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
         cov_weight = config_to_use.get('cov_weight', 0.0)
         huber_delta = config_to_use.get('huber_delta', 1.0)
 
-        #tf.print("[LossFn_INNER] Using weights - MMD:", mmd_weight, "Skew:", skew_weight, 
-        #         "Kurtosis:", kurtosis_weight, "Cov:", cov_weight, "HuberDelta:", huber_delta, summarize=-1)
-        #tf.print("[LossFn_INNER] MMD params - Sigma:", mmd_sigma, "Sample Size:", mmd_sample_size, summarize=-1)
-
         h_loss = Huber(delta=huber_delta)(actual_reconstruction_target, recon_pred)
-        huber_loss_tracker.assign(h_loss)
+        huber_loss_component_tracker.assign(h_loss) # Use RENAMED tracker
         total_loss = h_loss
         
         if mmd_weight > 0:
             mmd_val = compute_mmd(actual_reconstruction_target, recon_pred, sigma=mmd_sigma, sample_size=mmd_sample_size)
-            # Removed: if tf.rank(mmd_val) != 0: 
-            # Removed:     mmd_val = tf.reduce_mean(mmd_val)
-            # compute_mmd is expected to return a scalar
-            mmd_total.assign(mmd_val) 
+            mmd_total_tracker.assign(mmd_val) # Use RENAMED tracker
             total_loss += mmd_weight * mmd_val
-           # tf.print("[LossFn_INNER] MMD calculated:", mmd_val, "weighted_mmd_added:", mmd_weight * mmd_val, summarize=-1)
         else:
-            mmd_total.assign(0.0)
+            mmd_total_tracker.assign(0.0) # Use RENAMED tracker
             
         if skew_weight > 0:
             skew_true = calculate_standardized_moment(tf.reshape(actual_reconstruction_target, [-1]), 3)
             skew_pred = calculate_standardized_moment(tf.reshape(recon_pred, [-1]), 3)
             skew_loss_val = tf.abs(skew_true - skew_pred)
-            skew_loss_tracker.assign(skew_loss_val) 
+            skew_loss_component_tracker.assign(skew_loss_val) # Use RENAMED tracker
             total_loss += skew_weight * skew_loss_val
-           # tf.print("[LossFn_INNER] Skew loss calculated:", skew_loss_val, "weighted_skew_added:", skew_weight * skew_loss_val, summarize=-1)
         else:
-            skew_loss_tracker.assign(0.0)
+            skew_loss_component_tracker.assign(0.0) # Use RENAMED tracker
 
         if kurtosis_weight > 0:
             kurt_true = calculate_standardized_moment(tf.reshape(actual_reconstruction_target, [-1]), 4)
             kurt_pred = calculate_standardized_moment(tf.reshape(recon_pred, [-1]), 4)
             kurt_loss_val = tf.abs(kurt_true - kurt_pred)
-            kurtosis_loss_tracker.assign(kurt_loss_val) 
+            kurtosis_loss_component_tracker.assign(kurt_loss_val) # Use RENAMED tracker
             total_loss += kurtosis_weight * kurt_loss_val
-           # tf.print("[LossFn_INNER] Kurtosis loss calculated:", kurt_loss_val, "weighted_kurtosis_added:", kurtosis_weight * kurt_loss_val, summarize=-1)
         else:
-            kurtosis_loss_tracker.assign(0.0)
+            kurtosis_loss_component_tracker.assign(0.0) # Use RENAMED tracker
             
         if cov_weight > 0:
             cov_loss_val = covariance_loss_calc(actual_reconstruction_target, recon_pred, config_to_use) 
-            # Removed: if tf.rank(cov_loss_val) != 0: 
-            # Removed:     cov_loss_val = tf.reduce_mean(cov_loss_val)
-            # covariance_loss_calc is expected to return a scalar
-            covariance_loss_tracker.assign(cov_loss_val) 
+            covariance_loss_component_tracker.assign(cov_loss_val) # Use RENAMED tracker
             total_loss += cov_weight * cov_loss_val
-           # tf.print("[LossFn_INNER] Covariance loss calculated:", cov_loss_val, "weighted_cov_added:", cov_weight * cov_loss_val, summarize=-1)
         else:
-            covariance_loss_tracker.assign(0.0)
+            covariance_loss_component_tracker.assign(0.0) # Use RENAMED tracker
 
-       # tf.print("[LossFn_INNER] Total calculated loss for batch:", total_loss, summarize=-1)
         return total_loss
     
     return reconstruction_and_stats_loss_fn_inner
@@ -227,27 +212,17 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
 
 
 def get_metrics(config=None): 
-    # Renamed mae_magnitude_metric to mae for simpler log keys
-    def mae(y_true_tensor, y_pred_tensor): # RENAMED
+    # This is the primary Keras metric we want to see in logs and evaluate results.
+    # Keras will name it based on the output name + function name, e.g., "reconstruction_out_mae".
+    def mae(y_true_tensor, y_pred_tensor):
         yt_recon = tf.cast(y_true_tensor, tf.float32)
         yp_recon = tf.cast(y_pred_tensor, tf.float32)
         return tf.reduce_mean(tf.abs(yt_recon - yp_recon))
     
-    # Existing metric functions that use trackers
-    def huber_metric_fn(y_true_tensor, y_pred_tensor): return huber_loss_tracker 
-    def mmd_metric_fn(y_true_tensor, y_pred_tensor): return mmd_total
-    def skew_metric_fn(y_true_tensor, y_pred_tensor): return skew_loss_tracker
-    def kurtosis_metric_fn(y_true_tensor, y_pred_tensor): return kurtosis_loss_tracker
-    def covariance_metric_fn(y_true_tensor, y_pred_tensor): return covariance_loss_tracker
-    
-    metrics_to_return = [
-        mae, # USE RENAMED
-        huber_metric_fn, 
-        mmd_metric_fn, 
-        skew_metric_fn, 
-        kurtosis_metric_fn, 
-        covariance_metric_fn
-    ]
+    # Only return actual Keras-compatible metric functions here.
+    # The other values (MMD, Skew, etc.) are tracked via global tf.Variables
+    # and will be printed by EpochEndLogger directly from those variables.
+    metrics_to_return = [mae] 
     return metrics_to_return
 
 class EarlyStoppingWithPatienceCounter(EarlyStopping):
@@ -342,26 +317,60 @@ class EpochEndLogger(Callback):
         logs = logs or {}
         log_items = [f"Epoch {epoch+1}"]
 
-        # Standard metrics from logs
+        # Standard Keras metrics from logs
         if 'loss' in logs: log_items.append(f"loss: {logs['loss']:.4f}")
-        if 'mae' in logs: log_items.append(f"mae: {logs['mae']:.4f}") # Using renamed 'mae'
         
-        if 'val_loss' in logs: log_items.append(f"val_loss: {logs['val_loss']:.4f}")
-        if 'val_mae' in logs: log_items.append(f"val_mae: {logs['val_mae']:.4f}") # Keras prepends 'val_'
-        
-        # Learning rate (from logs, added by ReduceLROnPlateau)
-        if 'lr' in logs:
-            log_items.append(f"lr: {logs['lr']:.7f}")
-        else: # Fallback if 'lr' not in logs
-            log_items.append(f"lr: {self.model.optimizer.learning_rate.numpy():.7f}")
+        # MAE: Keras prepends output name. Our output is 'reconstruction_out'. Metric fn is 'mae'.
+        # So, the key in logs should be 'reconstruction_out_mae'.
+        mae_key = 'reconstruction_out_mae' 
+        if mae_key in logs: 
+            log_items.append(f"mae: {logs[mae_key]:.4f}")
+        elif 'mae' in logs: # Fallback for simpler 'mae' key if Keras uses it for some reason
+            log_items.append(f"mae: {logs['mae']:.4f}")
+        # else: MAE not found in logs, will not be printed for this epoch
 
+        if 'val_loss' in logs: log_items.append(f"val_loss: {logs['val_loss']:.4f}")
+        
+        val_mae_key = f"val_{mae_key}" # Expected "val_reconstruction_out_mae"
+        if val_mae_key in logs:
+            log_items.append(f"val_mae: {logs[val_mae_key]:.4f}")
+        elif 'val_mae' in logs: # Fallback for simpler 'val_mae'
+            log_items.append(f"val_mae: {logs['val_mae']:.4f}")
+        # else: Val_MAE not found in logs, will not be printed
+
+        # Learning rate
+        current_lr_val_str = "N/A"
+        if 'lr' in logs: # ReduceLROnPlateau adds 'lr' to logs
+            current_lr_val_str = f"{logs['lr']:.7f}"
+        elif hasattr(self.model, 'optimizer') and hasattr(self.model.optimizer, 'learning_rate'):
+            try: 
+                lr_val_obj = self.model.optimizer.learning_rate
+                if isinstance(lr_val_obj, tf.Variable):
+                    current_lr_val_str = f"{lr_val_obj.numpy():.7f}"
+                elif callable(lr_val_obj): # If it's a LearningRateSchedule
+                     # Get current step, might need a global step counter if not using iterations_per_epoch
+                    current_step = self.model.optimizer.iterations.numpy() # Get current iterations
+                    current_lr_val_str = f"{lr_val_obj(current_step).numpy():.7f}"
+                else: # Assuming it's a direct float value
+                    current_lr_val_str = f"{tf.keras.backend.get_value(lr_val_obj):.7f}"
+            except Exception as e:
+                # print(f"Debug: Could not retrieve LR directly: {e}") # Optional debug
+                pass # Keep N/A
+        log_items.append(f"lr: {current_lr_val_str}")
 
         # KL Beta (from global tracker, updated by KLAnnealingCallback)
         log_items.append(f"kl_beta: {kl_beta_callback_tracker.numpy():.6f}")
+        
+        # Log other tracked components directly from global tf.Variables (using RENAMED trackers)
+        log_items.append(f"huber_c: {huber_loss_component_tracker.numpy():.4f}")
+        log_items.append(f"mmd_c: {mmd_total_tracker.numpy():.4f}") # RENAMED
+        log_items.append(f"skew_c: {skew_loss_component_tracker.numpy():.4f}") # RENAMED
+        log_items.append(f"kurt_c: {kurtosis_loss_component_tracker.numpy():.4f}") # RENAMED
+        # covariance_loss_component_tracker is also available if needed
 
         # Early Stopping Info
         es_patience_val = es_patience_config_tracker.numpy()
-        if es_patience_val > 0: # Only print if ES is active
+        if es_patience_val > 0: # Only print if ES is active (patience configured)
             best_val_np = es_best_value_tracker.numpy()
             best_val_str = f"{best_val_np:.4f}" if np.isfinite(best_val_np) else "N/A"
             log_items.append(f"ES_wait: {es_wait_tracker.numpy()}/{es_patience_val}")
@@ -369,7 +378,7 @@ class EpochEndLogger(Callback):
 
         # Reduce LR Info
         rlrop_patience_val = rlrop_patience_config_tracker.numpy()
-        if rlrop_patience_val > 0: # Only print if RLROP is active
+        if rlrop_patience_val > 0: # Only print if RLROP is active (patience configured)
             log_items.append(f"RLROP_wait: {rlrop_wait_tracker.numpy()}/{rlrop_patience_val}")
         
-        print(" - ".join(log_items))
+        print(" - ".join(log_items)) # Standard Python print

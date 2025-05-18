@@ -1,13 +1,11 @@
 import tensorflow as tf
 import keras
 from tensorflow.keras.losses import Huber
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback # Add Callback
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback
 
 # Trackers
 mmd_total = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="mmd_total_tracker")
 huber_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="huber_loss_tracker")
-# kl_loss_tracker will not be updated here if KL metric is handled by the layer
-# kl_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="kl_loss_tracker") 
 skew_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="skew_loss_tracker")
 kurtosis_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="kurtosis_loss_tracker")
 covariance_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="covariance_loss_tracker")
@@ -109,37 +107,62 @@ def get_metrics(config=None):
         yp_recon = tf.cast(y_pred_tensor, tf.float32)
         return tf.reduce_mean(tf.abs(yt_recon - yp_recon))
 
-    return [
-        mae_magnitude_metric, 
-        huber_metric_fn,    
-        # kl_metric_fn, # Removed
-        mmd_metric_fn,
-        skew_metric_fn,
-        kurtosis_metric_fn,
-        covariance_metric_fn
-    ]
+    metrics_to_return = [mae_magnitude_metric] # Ensure MAE is always included
+
+    # Conditionally add other metrics based on config if needed, for now, always include all
+    metrics_to_return.extend([
+        huber_metric_fn, mmd_metric_fn, skew_metric_fn, 
+        kurtosis_metric_fn, covariance_metric_fn
+    ])
+    return metrics_to_return
+
 
 # Callbacks
 class EarlyStoppingWithPatienceCounter(EarlyStopping):
     def on_epoch_end(self, epoch, logs=None):
         super().on_epoch_end(epoch, logs)
-        if hasattr(self, 'wait'): 
-            print(f"ES patience: {self.wait}/{self.patience}")
+        if logs is None:
+            logs = {}
+        
+        current_val_loss = logs.get(self.monitor)
+        if current_val_loss is None:
+            # Try to get it if Keras prepends 'val_'
+            current_val_loss = logs.get('val_' + self.monitor)
+
+        # self.best should hold the best value of the monitored quantity
+        best_loss_info = f"Best {self.monitor}: {self.best:.6f}" if self.best != np.Inf and self.best != -np.Inf else f"Best {self.monitor}: N/A"
+        
+        patience_info = ""
+        if hasattr(self, 'wait'):
+            patience_info = f"ES patience: {self.wait}/{self.patience}"
+        
+        print(f" - {patience_info} - {best_loss_info}", end="")
 
 class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
     def on_epoch_end(self, epoch, logs=None):
+        old_lr = keras.backend.get_value(self.model.optimizer.learning_rate)
         super().on_epoch_end(epoch, logs)
+        new_lr = keras.backend.get_value(self.model.optimizer.learning_rate)
+        
+        patience_info = ""
         if hasattr(self, 'wait'):
-            print(f"RLROP patience: {self.wait}/{self.patience}")
+            patience_info = f"RLROP patience: {self.wait}/{self.patience}"
+
+        lr_info = f"LR: {new_lr:.7f}"
+        if new_lr < old_lr:
+            lr_info = f"LR reduced to: {new_lr:.7f}"
+            
+        print(f" - {patience_info} - {lr_info}", end="")
+
 
 class KLAnnealingCallback(Callback):
-    def __init__(self, kl_beta_start, kl_beta_end, anneal_epochs, layer_name="kl_loss_adder_node", verbose=0):
+    def __init__(self, kl_beta_start, kl_beta_end, anneal_epochs, layer_name="kl_loss_adder_node", verbose=1): # Default verbose to 1
         super(KLAnnealingCallback, self).__init__()
         self.kl_beta_start = kl_beta_start
         self.kl_beta_end = kl_beta_end
         self.anneal_epochs = anneal_epochs
         self.layer_name = layer_name
-        self.verbose = verbose
+        self.verbose = verbose # Store verbose level
         self.current_kl_beta = tf.Variable(kl_beta_start, trainable=False, dtype=tf.float32)
 
     def on_epoch_begin(self, epoch, logs=None):
@@ -151,23 +174,22 @@ class KLAnnealingCallback(Callback):
         
         try:
             kl_layer = self.model.get_layer(self.layer_name)
-            # Ensure kl_layer.kl_beta is a tf.Variable to be assignable
             if hasattr(kl_layer, 'kl_beta') and isinstance(kl_layer.kl_beta, tf.Variable):
                 kl_layer.kl_beta.assign(self.current_kl_beta)
-            elif hasattr(kl_layer, 'kl_beta'): # if it's a simple attribute, try to set it
-                kl_layer.kl_beta = self.current_kl_beta.numpy() # convert tf.Variable to numpy
+            elif hasattr(kl_layer, 'kl_beta'): 
+                kl_layer.kl_beta = self.current_kl_beta.numpy() 
             else:
-                if self.verbose > 0 and epoch == 0:
-                    print(f"\nKLAnnealingCallback: Layer '{self.layer_name}' does not have a 'kl_beta' attribute.")
+                if self.verbose > 0 and epoch == 0: # Print only once if layer/attribute missing
+                    print(f"\nKLAnnealingCallback: Layer '{self.layer_name}' or its 'kl_beta' attribute not found/assignable.")
                     
-            if self.verbose > 0 and epoch == 0 and hasattr(kl_layer, 'kl_beta'):
+            if self.verbose > 0 and epoch == 0 and hasattr(kl_layer, 'kl_beta'): # Print initial beta once
                  print(f"\nKLAnnealingCallback: Initial kl_beta set to {self.current_kl_beta.numpy():.6f} for layer '{self.layer_name}'")
-        except ValueError:
+        except ValueError: # Layer not found
             if self.verbose > 0 and epoch == 0:
                 print(f"\nKLAnnealingCallback: Warning: Layer '{self.layer_name}' not found in model.")
 
     def on_epoch_end(self, epoch, logs=None):
         if logs is not None:
-            logs['kl_beta'] = self.current_kl_beta.numpy()
-        if self.verbose > 0 :
+            logs['kl_beta'] = self.current_kl_beta.numpy() # Add to logs for Keras history
+        if self.verbose > 0 : # Print kl_beta at the end of each epoch if verbose
              print(f" - kl_beta: {self.current_kl_beta.numpy():.6f}", end="")

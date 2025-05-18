@@ -6,7 +6,8 @@ from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 # Trackers
 mmd_total = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="mmd_total_tracker")
 huber_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="huber_loss_tracker")
-kl_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="kl_loss_tracker") # Updated by kl_metric_fn
+# kl_loss_tracker will not be updated here if KL metric is handled by the layer
+# kl_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="kl_loss_tracker") 
 skew_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="skew_loss_tracker")
 kurtosis_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="kurtosis_loss_tracker")
 covariance_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="covariance_loss_tracker")
@@ -90,41 +91,28 @@ def reconstruction_and_stats_loss_fn(y_true_recon_tensor, y_pred_recon_tensor, c
 
 def get_metrics(config=None):
     if config is None: config = {}
-    kl_beta = config.get('kl_beta', 1.0) 
+    # kl_beta = config.get('kl_beta', 1.0) # Not needed here if KL metric is by layer
 
-    def huber_metric_fn(y_true_dict, y_pred_dict):
-        # This tracker is updated by the reconstruction_and_stats_loss_fn
-        # y_true_dict is {'reconstruction_output': tensor}
-        # y_pred_dict is {'reconstruction_output': tensor, 'z_mean_output': tensor, ...}
+    # These metrics are associated with 'reconstruction_output', so they get tensors.
+    def huber_metric_fn(y_true_tensor, y_pred_tensor):
         return huber_loss_tracker 
 
-    def kl_metric_fn(y_true_dict, y_pred_dict):
-        # Calculate KL divergence from model outputs for monitoring
-        z_mean_m = y_pred_dict['z_mean_output']
-        z_log_var_m = y_pred_dict['z_log_var_output']
-        
-        kl_raw = keras.ops.mean(-0.5 * keras.ops.sum(1 + z_log_var_m - keras.ops.square(z_mean_m) - keras.ops.exp(z_log_var_m), axis=-1))
-        weighted_kl_for_metric = kl_beta * kl_raw
-        
-        kl_loss_tracker.assign(weighted_kl_for_metric) 
-        return weighted_kl_for_metric
+    # kl_metric_fn is removed from here. It will be handled by KLDivergenceLayer.add_metric()
 
-    def mmd_metric_fn(y_true_dict, y_pred_dict): return mmd_total
-    def skew_metric_fn(y_true_dict, y_pred_dict): return skew_loss_tracker
-    def kurtosis_metric_fn(y_true_dict, y_pred_dict): return kurtosis_loss_tracker
-    def covariance_metric_fn(y_true_dict, y_pred_dict): return covariance_loss_tracker
+    def mmd_metric_fn(y_true_tensor, y_pred_tensor): return mmd_total
+    def skew_metric_fn(y_true_tensor, y_pred_tensor): return skew_loss_tracker
+    def kurtosis_metric_fn(y_true_tensor, y_pred_tensor): return kurtosis_loss_tracker
+    def covariance_metric_fn(y_true_tensor, y_pred_tensor): return covariance_loss_tracker
 
-    def mae_magnitude_metric(y_true_dict, y_pred_dict):
-        # y_true_dict is {'reconstruction_output': tensor}
-        # y_pred_dict is {'reconstruction_output': tensor, 'z_mean_output': tensor, ...}
-        yt_recon = tf.cast(y_true_dict['reconstruction_output'], tf.float32)
-        yp_recon = tf.cast(y_pred_dict['reconstruction_output'], tf.float32)
+    def mae_magnitude_metric(y_true_tensor, y_pred_tensor):
+        yt_recon = tf.cast(y_true_tensor, tf.float32)
+        yp_recon = tf.cast(y_pred_tensor, tf.float32)
         return tf.reduce_mean(tf.abs(yt_recon - yp_recon))
 
     return [
         mae_magnitude_metric, 
         huber_metric_fn,    
-        kl_metric_fn, # Re-added
+        # kl_metric_fn, # Removed
         mmd_metric_fn,
         skew_metric_fn,
         kurtosis_metric_fn,

@@ -74,12 +74,15 @@ class AutoencoderManager:
         
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
-        reconstruction_metric_to_use = 'mean_absolute_error' 
-        tf.print(f"DEBUG: Attempting to compile with reconstruction_out metric: '{reconstruction_metric_to_use}' (Keras string alias)")
+        # MODIFICATION: Instantiate the metric with a simple name 'mae'.
+        # Keras is expected to prepend the output name 'reconstruction_out' to this.
+        # reconstruction_metric_instance = tf.keras.metrics.MeanAbsoluteError(name='reconstruction_out_mae') # Previous attempt in your visible code
+        reconstruction_metric_instance = tf.keras.metrics.MeanAbsoluteError(name='mae')
+        tf.print(f"DEBUG: Attempting to compile with reconstruction_out metric: an instance of MeanAbsoluteError(name='mae')")
 
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
-        # def pass_through_metric(y_true, y_pred): return y_pred # Temporarily not used
+        def pass_through_metric(y_true, y_pred): return y_pred # Re-introducing pass-through metrics
 
         self.autoencoder_model.compile(
             optimizer=adam_optimizer,
@@ -100,11 +103,10 @@ class AutoencoderManager:
                 'kl_beta_out': 0.0
             },
             metrics={ 
-                # MODIFICATION: Simplify to only include the metric for reconstruction_out
-                'reconstruction_out': reconstruction_metric_to_use
-                # 'kl_raw_out': pass_through_metric, # Temporarily removed
-                # 'kl_weighted_out': pass_through_metric, # Temporarily removed
-                # 'kl_beta_out': pass_through_metric # Temporarily removed
+                'reconstruction_out': reconstruction_metric_instance, # Use the instance with simple name 'mae'
+                'kl_raw_out': pass_through_metric, 
+                'kl_weighted_out': pass_through_metric,
+                'kl_beta_out': pass_through_metric 
             },
             run_eagerly=config.get('run_eagerly', False) 
         )

@@ -4,7 +4,17 @@ from tensorflow.keras.losses import Huber
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau, Callback
 import numpy as np
 
-# Trackers
+# Global TensorFlow Variables for Callback States
+# These will be updated by their respective callbacks and printed by EpochEndLogger
+current_lr_tracker = tf.Variable(0.0, dtype=tf.float32, name="current_lr_tracker") # Will be updated from logs['lr']
+kl_beta_callback_tracker = tf.Variable(0.0, dtype=tf.float32, name="kl_beta_callback_tracker")
+es_wait_tracker = tf.Variable(0, dtype=tf.int32, name="es_wait_tracker")
+es_patience_config_tracker = tf.Variable(0, dtype=tf.int32, name="es_patience_config_tracker")
+es_best_value_tracker = tf.Variable(np.inf, dtype=tf.float32, name="es_best_value_tracker")
+rlrop_wait_tracker = tf.Variable(0, dtype=tf.int32, name="rlrop_wait_tracker")
+rlrop_patience_config_tracker = tf.Variable(0, dtype=tf.int32, name="rlrop_patience_config_tracker")
+
+# Trackers for loss components (already existing, ensure they are used if needed by metrics)
 mmd_total = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="mmd_total_tracker")
 huber_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="huber_loss_tracker")
 skew_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="skew_loss_tracker")
@@ -217,18 +227,21 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
 
 
 def get_metrics(config=None): 
-    def huber_metric_fn(y_true_tensor, y_pred_tensor):
-        return huber_loss_tracker 
+    # Renamed mae_magnitude_metric to mae for simpler log keys
+    def mae(y_true_tensor, y_pred_tensor): # RENAMED
+        yt_recon = tf.cast(y_true_tensor, tf.float32)
+        yp_recon = tf.cast(y_pred_tensor, tf.float32)
+        return tf.reduce_mean(tf.abs(yt_recon - yp_recon))
+    
+    # Existing metric functions that use trackers
+    def huber_metric_fn(y_true_tensor, y_pred_tensor): return huber_loss_tracker 
     def mmd_metric_fn(y_true_tensor, y_pred_tensor): return mmd_total
     def skew_metric_fn(y_true_tensor, y_pred_tensor): return skew_loss_tracker
     def kurtosis_metric_fn(y_true_tensor, y_pred_tensor): return kurtosis_loss_tracker
     def covariance_metric_fn(y_true_tensor, y_pred_tensor): return covariance_loss_tracker
-    def mae_magnitude_metric(y_true_tensor, y_pred_tensor):
-        yt_recon = tf.cast(y_true_tensor, tf.float32)
-        yp_recon = tf.cast(y_pred_tensor, tf.float32)
-        return tf.reduce_mean(tf.abs(yt_recon - yp_recon))
+    
     metrics_to_return = [
-        mae_magnitude_metric, 
+        mae, # USE RENAMED
         huber_metric_fn, 
         mmd_metric_fn, 
         skew_metric_fn, 
@@ -237,60 +250,52 @@ def get_metrics(config=None):
     ]
     return metrics_to_return
 
-# ... (rest of your Callbacks: EarlyStoppingWithPatienceCounter, ReduceLROnPlateauWithCounter, KLAnnealingCallback) ...
-# Ensure Callbacks are correctly defined below
 class EarlyStoppingWithPatienceCounter(EarlyStopping):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Store configured patience in the global tracker when callback is initialized
+        if hasattr(self, 'patience'):
+             es_patience_config_tracker.assign(self.patience)
+
     def on_epoch_end(self, epoch, logs=None):
-        super().on_epoch_end(epoch, logs)
-        best_val = self.best
-        best_loss_str = "N/A"
-        if not (best_val is None or best_val == np.inf or best_val == -np.inf):
-            try:
-                best_loss_str = f"{best_val:.6f}"
-            except TypeError: 
-                best_loss_str = "ErrorFormatting"
-        
-        patience_str = ""
+        super().on_epoch_end(epoch, logs) # Original EarlyStopping logic
+        # Update global trackers with current state
         if hasattr(self, 'wait'):
-            patience_str = f" - ES patience: {self.wait}/{self.patience}"
-        print(f"{patience_str} - Best {self.monitor}: {best_loss_str}", end="")
+            es_wait_tracker.assign(self.wait)
+        if self.best is not None and np.isfinite(self.best):
+            es_best_value_tracker.assign(self.best)
+        # Original print statement is removed; EpochEndLogger will handle display
 
 class ReduceLROnPlateauWithCounter(ReduceLROnPlateau):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Store configured patience in the global tracker
+        if hasattr(self, 'patience'):
+            rlrop_patience_config_tracker.assign(self.patience)
+
     def on_epoch_end(self, epoch, logs=None):
-        old_lr_variable = self.model.optimizer.learning_rate
-        if hasattr(old_lr_variable, 'numpy'):
-            old_lr = old_lr_variable.numpy()
-        else: 
-            old_lr = old_lr_variable
-
-        super().on_epoch_end(epoch, logs) 
-
-        new_lr_variable = self.model.optimizer.learning_rate
-        if hasattr(new_lr_variable, 'numpy'):
-            new_lr = new_lr_variable.numpy()
-        else:
-            new_lr = new_lr_variable
-        
-        patience_str = ""
+        # It's important to get LR *before* super().on_epoch_end might change it
+        # However, logs['lr'] will contain the LR for the *next* epoch if it changed.
+        # For current epoch's LR, it's better to read it directly or rely on logs['lr']
+        # if Keras guarantees it's the one used for the ended epoch or start of next.
+        # Let's assume logs['lr'] (added by ReduceLROnPlateau base class) is sufficient.
+        super().on_epoch_end(epoch, logs) # Original ReduceLROnPlateau logic
+        # Update global trackers
         if hasattr(self, 'wait'):
-            patience_str = f" - RLROP patience: {self.wait}/{self.patience}"
-        
-        lr_info_str = f" - LR: {new_lr:.7f}"
-        if new_lr < old_lr: 
-            lr_info_str = f" - LR reduced to: {new_lr:.7f}"
-        print(f"{patience_str}{lr_info_str}", end="")
-
+            rlrop_wait_tracker.assign(self.wait)
+        # LR is typically added to logs by the base ReduceLROnPlateau callback as 'lr'
+        # Original print statement is removed
 
 class KLAnnealingCallback(Callback):
     def __init__(self, kl_beta_start, kl_beta_end, anneal_epochs, 
-                 kl_layer_instance=None, layer_name="kl_loss_adder_node", verbose=1):
+                 kl_layer_instance=None, layer_name="kl_loss_adder_node", verbose=0): # Set default verbose to 0
         super(KLAnnealingCallback, self).__init__()
         self.kl_beta_start = kl_beta_start
         self.kl_beta_end = kl_beta_end
         self.anneal_epochs = anneal_epochs
         self.kl_layer_instance = kl_layer_instance 
         self.layer_name = layer_name 
-        self.verbose = verbose 
+        self.verbose = verbose # User can override if specific prints from this cb are needed
         self.current_kl_beta = tf.Variable(kl_beta_start, trainable=False, dtype=tf.float32)
 
     def on_epoch_begin(self, epoch, logs=None):
@@ -300,6 +305,8 @@ class KLAnnealingCallback(Callback):
         else:
             self.current_kl_beta.assign(self.kl_beta_end)
         
+        kl_beta_callback_tracker.assign(self.current_kl_beta) # Update global tracker
+
         target_kl_layer = None
         if self.kl_layer_instance:
             target_kl_layer = self.kl_layer_instance
@@ -307,18 +314,16 @@ class KLAnnealingCallback(Callback):
             try:
                 target_kl_layer = self.model.get_layer(self.layer_name)
             except ValueError:
-                if self.verbose > 0 and epoch == 0:
+                if self.verbose > 0 and epoch == 0: # Infrequent tf.print for setup is okay
                    tf.print(f"\nKLAnnealingCallback: Layer '{self.layer_name}' not found by name (fallback).")
         
         if target_kl_layer:
             if hasattr(target_kl_layer, 'kl_beta') and isinstance(target_kl_layer.kl_beta, tf.Variable):
                 target_kl_layer.kl_beta.assign(self.current_kl_beta)
-                #if self.verbose > 0 and epoch == 0: 
-                   # tf.print(f"\nKLAnnealingCallback: Initial kl_beta set to {self.current_kl_beta.numpy():.6f} for layer '{target_kl_layer.name}'")
             elif hasattr(target_kl_layer, 'kl_beta'): 
+                # This case might be problematic if kl_beta is not a tf.Variable.
+                # For safety, ensure KLDivergenceLayer.kl_beta is always a tf.Variable.
                 target_kl_layer.kl_beta = self.current_kl_beta.numpy() 
-                #if self.verbose > 0 and epoch == 0:
-                   # tf.print(f"\nKLAnnealingCallback: Initial kl_beta set (non-Variable) to {self.current_kl_beta.numpy():.6f} for layer '{target_kl_layer.name}'")
             else:
                 if self.verbose > 0 and epoch == 0:
                    tf.print(f"\nKLAnnealingCallback: Layer '{target_kl_layer.name}' does not have 'kl_beta' attribute or it's not assignable.")
@@ -328,7 +333,43 @@ class KLAnnealingCallback(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         if logs is not None:
-            logs['kl_beta'] = self.current_kl_beta.numpy() 
+            logs['kl_beta_val'] = self.current_kl_beta.numpy() # Add to logs, use a distinct key
+        # Original print statement is removed
+
+# New callback for consolidated epoch-end logging
+class EpochEndLogger(Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        log_items = [f"Epoch {epoch+1}"]
+
+        # Standard metrics from logs
+        if 'loss' in logs: log_items.append(f"loss: {logs['loss']:.4f}")
+        if 'mae' in logs: log_items.append(f"mae: {logs['mae']:.4f}") # Using renamed 'mae'
         
-        if self.verbose > 0 : 
-             print(f" - kl_beta: {self.current_kl_beta.numpy():.6f}", end="")
+        if 'val_loss' in logs: log_items.append(f"val_loss: {logs['val_loss']:.4f}")
+        if 'val_mae' in logs: log_items.append(f"val_mae: {logs['val_mae']:.4f}") # Keras prepends 'val_'
+        
+        # Learning rate (from logs, added by ReduceLROnPlateau)
+        if 'lr' in logs:
+            log_items.append(f"lr: {logs['lr']:.7f}")
+        else: # Fallback if 'lr' not in logs
+            log_items.append(f"lr: {self.model.optimizer.learning_rate.numpy():.7f}")
+
+
+        # KL Beta (from global tracker, updated by KLAnnealingCallback)
+        log_items.append(f"kl_beta: {kl_beta_callback_tracker.numpy():.6f}")
+
+        # Early Stopping Info
+        es_patience_val = es_patience_config_tracker.numpy()
+        if es_patience_val > 0: # Only print if ES is active
+            best_val_np = es_best_value_tracker.numpy()
+            best_val_str = f"{best_val_np:.4f}" if np.isfinite(best_val_np) else "N/A"
+            log_items.append(f"ES_wait: {es_wait_tracker.numpy()}/{es_patience_val}")
+            log_items.append(f"ES_best: {best_val_str}")
+
+        # Reduce LR Info
+        rlrop_patience_val = rlrop_patience_config_tracker.numpy()
+        if rlrop_patience_val > 0: # Only print if RLROP is active
+            log_items.append(f"RLROP_wait: {rlrop_wait_tracker.numpy()}/{rlrop_patience_val}")
+        
+        print(" - ".join(log_items))

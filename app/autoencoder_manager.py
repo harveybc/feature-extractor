@@ -430,7 +430,7 @@ class AutoencoderManager:
 
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
-                loss=combined_cvae_loss_fn, # Single loss function for all outputs
+                loss={'reconstruction_output': combined_cvae_loss_fn}, # Explicitly map loss to the output
                 metrics=metrics_list,
                 run_eagerly=config.get('run_eagerly', False)
             )

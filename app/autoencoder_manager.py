@@ -110,13 +110,16 @@ class AutoencoderManager:
             # Define model with named outputs
             self.autoencoder_model = Model(
                 inputs=[input_x_window, input_h_context, input_conditions_t],
-                outputs=[reconstruction, z_mean, z_log_var],
+                outputs={ # Revert to dictionary outputs
+                    'reconstruction_output': reconstruction,
+                    'z_mean_output': z_mean,
+                    'z_log_var_output': z_log_var
+                },
                 name="windowed_input_cvae_6_features_out"
             )
             self.model = self.autoencoder_model 
             
             # KL divergence will be calculated within the main loss function
-            # self.autoencoder_model.add_loss(weighted_kl_loss_for_model) # This line is removed
 
             print("[build_autoencoder] Single-step CVAE model assembled.")
             self.autoencoder_model.summary(line_length=150)
@@ -132,8 +135,8 @@ class AutoencoderManager:
 
             # compile with a single CVAE loss and standardized metrics
             self.autoencoder_model.compile(
-                optimizer=Adam(config.get('learning_rate', 1e-4)),
-                loss=combined_cvae_loss_fn,
+                optimizer=Adam(config.get('learning_rate', 1e-4)), # Ensure this optimizer is used, not the other one defined above
+                loss=combined_cvae_loss_fn, # This single loss fn expects a dict of y_preds
                 metrics=get_metrics(),
                 run_eagerly=config.get('run_eagerly', False)
             )
@@ -194,7 +197,7 @@ class AutoencoderManager:
         # Keras will pass y_true as is, and y_pred as a dict of model outputs.
         history = self.autoencoder_model.fit(
             x=data_inputs,
-            y=data_targets,      # raw (batch,6) targets
+            y={'reconstruction_output': data_targets}, # Pass y as a dictionary
             epochs=epochs,
             batch_size=batch_size,
             verbose=1,
@@ -246,7 +249,7 @@ class AutoencoderManager:
         print(f"[evaluate] Evaluating CVAE on {dataset_name}.")
         results = self.autoencoder_model.evaluate(
             x=data_inputs,
-            y=data_targets,         # raw reconstruction targets
+            y={'reconstruction_output': data_targets}, # Pass y as a dictionary
             verbose=1,
             batch_size=config.get('batch_size', 128)
         )

@@ -252,7 +252,6 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         
-        # build_autoencoder now only takes config
         autoencoder_manager.build_autoencoder(config) 
         
         autoencoder_manager.train_autoencoder(
@@ -263,19 +262,39 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             config=config
         )
         
-        # Evaluate
-        # evaluate now returns a dictionary of metrics
         train_eval_results = autoencoder_manager.evaluate(cvae_train_inputs, cvae_train_targets, "Training", config)
-        training_mae = train_eval_results.get('mae', float('nan')) # Get MAE from results
-        print(f"Training MAE with latent_dim {current_latent_dim}: {training_mae}")
+        # --- MODIFIED MAE EXTRACTION ---
+        # Construct the expected MAE metric name. Keras typically prepends the output name.
+        mae_metric_key_train = None
+        if train_eval_results: # Check if results exist
+            for key in train_eval_results.keys():
+                if 'mae_magnitude_metric' in key: # Or a more specific name if Keras changes it
+                    mae_metric_key_train = key
+                    break
+        training_mae = train_eval_results.get(mae_metric_key_train, float('nan')) if mae_metric_key_train else float('nan')
+        # --- END MODIFICATION ---
+        print(f"Training MAE with latent_dim {current_latent_dim}: {training_mae} (extracted with key: {mae_metric_key_train})")
         print(f"Full Training Evaluation Results: {train_eval_results}")
 
         val_eval_results = autoencoder_manager.evaluate(cvae_val_inputs, cvae_val_targets, "Validation", config)
-        validation_mae = val_eval_results.get('mae', float('nan'))
-        print(f"Validation MAE with latent_dim {current_latent_dim}: {validation_mae}")
+        # --- MODIFIED MAE EXTRACTION ---
+        mae_metric_key_val = None
+        if val_eval_results: # Check if results exist
+            for key in val_eval_results.keys():
+                if 'mae_magnitude_metric' in key: # Or a more specific name
+                    mae_metric_key_val = key
+                    break
+        validation_mae = val_eval_results.get(mae_metric_key_val, float('nan')) if mae_metric_key_val else float('nan')
+        # --- END MODIFICATION ---
+        print(f"Validation MAE with latent_dim {current_latent_dim}: {validation_mae} (extracted with key: {mae_metric_key_val})")
         print(f"Full Validation Evaluation Results: {val_eval_results}")
         
-        if validation_mae < best_val_mae:
+        if np.isnan(validation_mae):
+            print(f"Warning: Validation MAE is NaN for latent_dim {current_latent_dim}. This may cause issues with the search loop. Check metric calculation and naming.")
+            # Optionally, decide how to handle NaN: break, continue, or use a default bad value.
+            # For now, it will likely continue the loop if incremental_search is True.
+
+        if validation_mae < best_val_mae: # This comparison will work correctly if validation_mae is a number
             best_val_mae = validation_mae
             best_latent_dim = current_latent_dim
             best_autoencoder_manager = autoencoder_manager # Save the manager with best model
@@ -321,9 +340,26 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     
     # Fetch final MAE values from the best model's evaluation if possible, or last evaluation
     final_train_eval_results = best_autoencoder_manager.evaluate(cvae_train_inputs, cvae_train_targets, "Final Training", config)
-    final_training_mae = final_train_eval_results.get('mae', float('nan'))
+    # --- MODIFIED MAE EXTRACTION ---
+    final_mae_metric_key_train = None
+    if final_train_eval_results:
+        for key in final_train_eval_results.keys():
+            if 'mae_magnitude_metric' in key:
+                final_mae_metric_key_train = key
+                break
+    final_training_mae = final_train_eval_results.get(final_mae_metric_key_train, float('nan')) if final_mae_metric_key_train else float('nan')
+    # --- END MODIFICATION ---
+
     final_val_eval_results = best_autoencoder_manager.evaluate(cvae_val_inputs, cvae_val_targets, "Final Validation", config)
-    final_validation_mae = final_val_eval_results.get('mae', float('nan'))
+    # --- MODIFIED MAE EXTRACTION ---
+    final_mae_metric_key_val = None
+    if final_val_eval_results:
+        for key in final_val_eval_results.keys():
+            if 'mae_magnitude_metric' in key:
+                final_mae_metric_key_val = key
+                break
+    final_validation_mae = final_val_eval_results.get(final_mae_metric_key_val, float('nan')) if final_mae_metric_key_val else float('nan')
+    # --- END MODIFICATION ---
 
     debug_info = {
         'execution_time_seconds': execution_time,

@@ -58,6 +58,7 @@ class AutoencoderManager:
         self.encoder_model = None # Component model
         self.decoder_model = None # Component model
         self.model = None # Alias for autoencoder_model
+        self.kl_layer_instance = None # Add attribute to store KL layer
         print(f"[AutoencoderManager] Initialized for CVAE components.")
 
     def build_autoencoder(self, config):
@@ -137,7 +138,9 @@ class AutoencoderManager:
             # Use kl_beta_start for initial KLDivergenceLayer instantiation
             # The KLAnnealingCallback will update this layer's kl_beta attribute
             initial_kl_beta = config.get('kl_beta_start', 0.0001) 
-            _ = KLDivergenceLayer(kl_beta=initial_kl_beta, name="kl_loss_adder_node")([z_mean, z_log_var])
+            # Store the instance of KLDivergenceLayer
+            self.kl_layer_instance = KLDivergenceLayer(kl_beta=initial_kl_beta, name="kl_loss_adder_node")
+            _ = self.kl_layer_instance([z_mean, z_log_var]) # Call the layer
 
             # 7. Create the CVAE Model
             self.autoencoder_model = Model(
@@ -217,6 +220,9 @@ class AutoencoderManager:
         
         if not self.autoencoder_model:
             raise RuntimeError("[train_autoencoder] CVAE model not built. Please call build_autoencoder first.")
+        
+        if not self.kl_layer_instance:
+            print("[train_autoencoder] Warning: KLDivergenceLayer instance not found in AutoencoderManager. KLAnnealing might not work.")
 
         if not isinstance(data_inputs, (list, tuple)) or len(data_inputs) != 3:
             raise ValueError("data_inputs must be a list/tuple of 3 arrays: [x_window_data, h_context_data, conditions_t_data]")
@@ -251,8 +257,9 @@ class AutoencoderManager:
                 kl_beta_start=kl_beta_start,
                 kl_beta_end=kl_beta_end,
                 anneal_epochs=kl_anneal_epochs,
-                layer_name="kl_loss_adder_node", # Ensure this matches KLDivergenceLayer name
-                verbose=1 # Set to 1 to see kl_beta updates per epoch
+                kl_layer_instance=self.kl_layer_instance, # Pass the layer instance
+                layer_name="kl_loss_adder_node", # Keep as fallback or for reference
+                verbose=1 
             )
         ]
         

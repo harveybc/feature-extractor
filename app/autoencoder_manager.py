@@ -215,16 +215,17 @@ class AutoencoderManager:
     def train_autoencoder(self, data_inputs, data_targets, epochs, batch_size, config):
         tf.print("[train_autoencoder] Starting CVAE training.")
         
-        # Ensure model is compiled before training, especially if loaded without compilation
-        if not self.autoencoder_model._is_compiled:
-            tf.print("[train_autoencoder] Model was not compiled. Compiling now.")
+        # Ensure model is compiled before training
+        # A model is considered compiled if it has an optimizer.
+        if not self.autoencoder_model.optimizer:
+            tf.print("[train_autoencoder] Model was not compiled (no optimizer found). Compiling now.")
             self._compile_model(config)
-        elif self.autoencoder_model.optimizer.learning_rate.numpy() != config.get('learning_rate', 0.0001):
-            # Optional: Re-compile if learning rate in config changed since last compile
-            # This might happen if config is reloaded or modified.
-            tf.print("[train_autoencoder] Learning rate in config differs. Re-compiling model.")
-            self._compile_model(config)
-
+        # Optional: Re-compile if learning rate in config changed since last compile
+        # This might happen if config is reloaded or modified.
+        # Note: Accessing self.autoencoder_model.optimizer.learning_rate might be complex if LR is a schedule.
+        # For simplicity, we'll assume if an optimizer exists, it's adequately configured or will be
+        # handled by callbacks like ReduceLROnPlateau.
+        # If you need to strictly enforce re-compilation on LR change, more detailed checks are needed.
 
         train_inputs_dict = {
             'cvae_input_x_window': data_inputs[0],
@@ -371,12 +372,12 @@ class AutoencoderManager:
             return None
 
         # Ensure model is compiled before evaluation
-        if not self.autoencoder_model._is_compiled:
-            print(f"Warning: Model for evaluation on '{dataset_name}' was not compiled. Attempting to compile with provided config.")
+        if not self.autoencoder_model.optimizer:
+            print(f"Warning: Model for evaluation on '{dataset_name}' was not compiled (no optimizer found). Attempting to compile with provided config.")
             if config:
                 self._compile_model(config)
             else:
-                print("Error: Cannot compile model for evaluation as no config was provided.")
+                print("Error: Cannot compile model for evaluation as no config was provided and model is not compiled.")
                 return None
         
         # Use standard print

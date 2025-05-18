@@ -1,40 +1,53 @@
 import numpy as np
 import tensorflow as tf
 from keras.models import Model, load_model
-from keras.layers import Input, Lambda, Layer # Ensure Lambda is here
+from keras.layers import Input, Lambda, Layer 
 from keras.optimizers import Adam
-import keras # For keras.ops
+import keras 
 
-# pull in all loss/metric/callback helpers
 from app.autoencoder_helper import (
-    # combined_cvae_loss_fn will be renamed/refactored to reconstruction_and_stats_loss_fn
-    reconstruction_and_stats_loss_fn, # Adjusted import name
+    reconstruction_and_stats_loss_fn, 
     get_metrics,
     EarlyStoppingWithPatienceCounter,
-    ReduceLROnPlateauWithCounter
+    ReduceLROnPlateauWithCounter,
+    KLAnnealingCallback # Import the new callback
 )
 
-# Define KLDivergenceLayer here or import if moved to helper
 class KLDivergenceLayer(Layer):
     def __init__(self, kl_beta=1.0, name="kl_divergence_layer", **kwargs):
         super().__init__(name=name, **kwargs)
-        self.kl_beta = kl_beta
+        # Make kl_beta a tf.Variable so it can be updated by the callback
+        self.kl_beta = tf.Variable(initial_value=float(kl_beta), trainable=False, dtype=tf.float32, name="kl_beta_internal")
 
     def call(self, inputs):
         z_mean, z_log_var = inputs
         kl_loss_val = -0.5 * keras.ops.sum(1 + z_log_var - keras.ops.square(z_mean) - keras.ops.exp(z_log_var), axis=-1)
         mean_kl_loss_val = keras.ops.mean(kl_loss_val)
         
-        weighted_kl_loss = self.kl_beta * mean_kl_loss_val
+        weighted_kl_loss = self.kl_beta * mean_kl_loss_val # Use the tf.Variable
         self.add_loss(weighted_kl_loss)
-        
-        # self.add_metric(weighted_kl_loss, name="kl_divergence_value") # Removed
+        # Re-add metric for monitoring if desired
+        self.add_metric(weighted_kl_loss, name="kl_divergence_value") 
         
         return z_mean # Layer must return a tensor
 
+    def compute_output_shape(self, input_shape):
+        # This layer returns z_mean, so its output shape is the shape of z_mean.
+        # input_shape is a list of two shapes: [z_mean_shape, z_log_var_shape]
+        if isinstance(input_shape, list) and len(input_shape) > 0:
+            return input_shape[0]
+        # Fallback or raise error if input_shape is not as expected
+        # For Keras 3, often the shape is inferred, but explicit is safer.
+        # If z_mean is the first input to this layer (if it were a single tensor input)
+        # return input_shape 
+        # However, since inputs is a list [z_mean, z_log_var], input_shape[0] is correct.
+        raise ValueError(f"Unexpected input_shape format for KLDivergenceLayer: {input_shape}")
+
+
     def get_config(self):
         config = super().get_config()
-        config.update({"kl_beta": self.kl_beta})
+        # Save the current value of kl_beta as a float
+        config.update({"kl_beta": float(self.kl_beta.numpy())}) 
         return config
 
 class AutoencoderManager:
@@ -42,10 +55,10 @@ class AutoencoderManager:
         self.encoder_plugin = encoder_plugin
         self.decoder_plugin = decoder_plugin
         self.autoencoder_model = None
-        self.encoder_model = None
-        self.decoder_model = None
-        self.model = None
-        print(f"[AutoencoderManager] Initialized for Sequential CVAE components.")
+        self.encoder_model = None # Component model
+        self.decoder_model = None # Component model
+        self.model = None # Alias for autoencoder_model
+        print(f"[AutoencoderManager] Initialized for CVAE components.")
 
     def build_autoencoder(self, config):
         try:
@@ -55,7 +68,7 @@ class AutoencoderManager:
             rnn_hidden_dim = config.get('rnn_hidden_dim')
             conditioning_dim = config.get('conditioning_dim')
             latent_dim = config.get('latent_dim')
-            output_feature_dim = 6
+            output_feature_dim = 6 # Fixed for this CVAE
 
             if not all(v is not None for v in [window_size, input_features_per_step, rnn_hidden_dim, conditioning_dim, latent_dim]):
                 raise ValueError("Config must provide 'window_size', 'input_features_per_step', 'rnn_hidden_dim', 'conditioning_dim', and 'latent_dim'.")
@@ -121,9 +134,12 @@ class AutoencoderManager:
             
             reconstruction = Lambda(lambda x: x, name='reconstruction_output')(reconstruction_raw)
 
-            kl_beta_config = config.get('kl_beta', 1.0)
-            _ = KLDivergenceLayer(kl_beta=kl_beta_config, name="kl_loss_adder_node")([z_mean, z_log_var])
+            # Use kl_beta_start for initial KLDivergenceLayer instantiation
+            # The KLAnnealingCallback will update this layer's kl_beta attribute
+            initial_kl_beta = config.get('kl_beta_start', 0.0001) 
+            _ = KLDivergenceLayer(kl_beta=initial_kl_beta, name="kl_loss_adder_node")([z_mean, z_log_var])
 
+            # 7. Create the CVAE Model
             self.autoencoder_model = Model(
                 inputs=[input_x_window, input_h_context, input_conditions_t],
                 outputs={
@@ -167,19 +183,16 @@ class AutoencoderManager:
                 amsgrad=config.get('amsgrad', False)
             )
 
-            all_metrics = get_metrics(config=config)
-            print(f"DEBUG: Metrics to be used for 'reconstruction_output': {all_metrics}")
-
-            print(f"DEBUG: Compiling with loss: {{'reconstruction_output': reconstruction_and_stats_loss_fn}}")
-            print(f"DEBUG: Compiling with metrics: {{'reconstruction_output': all_metrics}}")
-
+            reconstruction_metrics = get_metrics(config=config) 
+            print(f"DEBUG: Metrics for 'reconstruction_output': {reconstruction_metrics}")
+            
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss={
                     'reconstruction_output': reconstruction_and_stats_loss_fn,
                 },
                 metrics={ 
-                    'reconstruction_output': all_metrics
+                    'reconstruction_output': reconstruction_metrics
                 },
                 run_eagerly=config.get('run_eagerly', False)
             )
@@ -203,57 +216,78 @@ class AutoencoderManager:
         if config is None: config = {}
         
         if not self.autoencoder_model:
-            raise RuntimeError("[train_autoencoder] Single-step CVAE model not built. Please call build_autoencoder first.")
+            raise RuntimeError("[train_autoencoder] CVAE model not built. Please call build_autoencoder first.")
 
         if not isinstance(data_inputs, (list, tuple)) or len(data_inputs) != 3:
             raise ValueError("data_inputs must be a list/tuple of 3 arrays: [x_window_data, h_context_data, conditions_t_data]")
-        
         print(f"[train_autoencoder] Starting CVAE training.")
         print(f"Input data shapes: x_window: {data_inputs[0].shape}, h_context: {data_inputs[1].shape}, conditions_t: {data_inputs[2].shape}")
         print(f"Target data shape (6 features): {data_targets.shape}")
-
         if data_targets.shape[-1] != 6:
             raise ValueError(f"data_targets should have 6 features, but got shape {data_targets.shape}")
-
         if np.isnan(data_inputs[0]).any() or np.isnan(data_inputs[1]).any() or np.isnan(data_inputs[2]).any() or np.isnan(data_targets).any():
             raise ValueError("[train_autoencoder] Training data or targets contain NaN values.")
             
         min_delta_es = config.get("min_delta", 1e-7)
-        patience_es = config.get('early_patience', 10)
-        start_epoch_es = config.get('start_from_epoch', 10)
-        patience_rlr = config.get("reduce_lr_patience", max(1, int(patience_es / 4)))
+        patience_es = config.get('early_patience', 30) # Default from your config
+        # start_epoch_es = config.get('start_from_epoch', 10) # Not directly used by ES callback
+        patience_rlr = config.get("reduce_lr_patience", max(1, int(patience_es / 3))) # Adjusted
+
+        # KL Annealing parameters from config
+        kl_beta_start = float(config.get('kl_beta_start', 0.0001)) 
+        kl_beta_end = float(config.get('kl_beta', 1.0)) 
+        kl_anneal_epochs = int(config.get('kl_anneal_epochs', 100)) 
 
         callbacks_list = [
             EarlyStoppingWithPatienceCounter(
-               monitor='val_loss',
-               patience=patience_es,
-               restore_best_weights=True,
-               verbose=1,
-               min_delta=min_delta_es
+               monitor='val_loss', patience=patience_es, restore_best_weights=True,
+               verbose=1, min_delta=min_delta_es
             ),
             ReduceLROnPlateauWithCounter(
-               monitor='val_loss',
-               factor=0.5,
-               patience=patience_rlr,
-               cooldown=5,
-               min_delta=min_delta_es,
-               verbose=1
+               monitor='val_loss', factor=0.5, patience=patience_rlr, cooldown=max(1, int(patience_rlr / 2)),
+               min_delta=min_delta_es, verbose=1
+            ),
+            KLAnnealingCallback( # Add the new callback
+                kl_beta_start=kl_beta_start,
+                kl_beta_end=kl_beta_end,
+                anneal_epochs=kl_anneal_epochs,
+                layer_name="kl_loss_adder_node", # Ensure this matches KLDivergenceLayer name
+                verbose=1 # Set to 1 to see kl_beta updates per epoch
             )
         ]
+        
+        # Determine validation data source
+        validation_data = None
+        validation_split_ratio = config.get('validation_split', 0.0) # Default to 0 if not specified
 
-        # When using a single loss function for a model with multiple outputs,
-        # y should be a dictionary mapping output names to targets if Keras needs to
-        # align them. However, if the loss function itself handles the dict of y_preds,
-        # y_true can be the direct target for the primary output (reconstruction).
-        # Keras will pass y_true as is, and y_pred as a dict of model outputs.
+        if 'cvae_val_inputs' in config and 'cvae_val_targets' in config:
+            # User has provided pre-split validation data via config (e.g., from data_processor)
+            val_inputs_list = [
+                config['cvae_val_inputs']['x_window'],
+                config['cvae_val_inputs']['h_context'],
+                config['cvae_val_inputs']['conditions_t']
+            ]
+            val_targets_dict = {'reconstruction_output': config['cvae_val_targets']}
+            validation_data = (val_inputs_list, val_targets_dict)
+            print(f"[train_autoencoder] Using pre-defined validation data. Shapes: "
+                  f"x_window: {val_inputs_list[0].shape}, h_context: {val_inputs_list[1].shape}, "
+                  f"conditions_t: {val_inputs_list[2].shape}, targets: {val_targets_dict['reconstruction_output'].shape}")
+            validation_split_ratio = 0.0 # Do not use validation_split if validation_data is provided
+        elif validation_split_ratio > 0:
+            print(f"[train_autoencoder] Using validation_split: {validation_split_ratio}")
+        else:
+            print("[train_autoencoder] No validation_split and no pre-defined validation_data. Training without validation monitoring during fit.")
+
+
         history = self.autoencoder_model.fit(
             x=data_inputs,
-            y={'reconstruction_output': data_targets}, # Pass y as a dictionary
+            y={'reconstruction_output': data_targets}, 
             epochs=epochs,
             batch_size=batch_size,
             verbose=1,
             callbacks=callbacks_list,
-            validation_split=config.get('validation_split', 0.2)
+            validation_split=validation_split_ratio if validation_data is None else None, # Only if not using validation_data
+            validation_data=validation_data # Pass pre-split validation data if available
         )
         print(f"[train_autoencoder] CVAE Training loss: {history.history['loss'][-1] if history.history['loss'] else 'N/A'}")
         print("[train_autoencoder] CVAE Training completed.")
@@ -298,6 +332,10 @@ class AutoencoderManager:
             return None 
         
         print(f"[evaluate] Evaluating CVAE on {dataset_name}.")
+        # Ensure data_inputs is a list of 3 arrays for the model's inputs
+        if not isinstance(data_inputs, list) or len(data_inputs) != 3:
+             raise ValueError(f"[evaluate] data_inputs for {dataset_name} must be a list of 3 arrays.")
+
         results = self.autoencoder_model.evaluate(
             x=data_inputs,
             y={'reconstruction_output': data_targets}, # Pass y as a dictionary
@@ -336,7 +374,7 @@ class AutoencoderManager:
 
     def load_encoder(self, file_path):
         # This method should load the Keras model and also inform the plugin
-        loaded_keras_model = load_model(file_path, compile=False)
+        loaded_keras_model = load_model(file_path, compile=False, custom_objects={'KLDivergenceLayer': KLDivergenceLayer}) # if KLD is part of encoder
         self.encoder_model = loaded_keras_model # Manager holds a direct reference
         print(f"[load_encoder] Encoder component Keras model loaded from {file_path}")
 
@@ -355,7 +393,7 @@ class AutoencoderManager:
 
 
     def load_decoder(self, file_path):
-        loaded_keras_model = load_model(file_path, compile=False)
+        loaded_keras_model = load_model(file_path, compile=False, custom_objects={'KLDivergenceLayer': KLDivergenceLayer}) # if KLD is part of decoder
         self.decoder_model = loaded_keras_model
         print(f"[load_decoder] Decoder component Keras model loaded from {file_path}")
 

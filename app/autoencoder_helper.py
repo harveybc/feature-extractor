@@ -53,53 +53,71 @@ def gaussian_kernel(x, y, sigma=1.0):
 
 def compute_mmd(x, y, sigma=1.0, sample_size=None):
     """
-    Illustrative MMD calculation using a Gaussian kernel.
-    This is a simplified (biased) estimator for MMD^2.
-    Replace with a more robust MMD implementation if needed.
+    MMD calculation using a Gaussian kernel (biased estimator for MMD^2).
     x, y: Tensors of shape (batch_size, feature_dim)
     sigma: Kernel bandwidth
     """
-    # Ensure x and y are 2D: (batch_size, num_features)
-    # The loss function receives y_true_recon_tensor and y_pred_recon_tensor
-    # which are likely (batch_size, output_feature_dim) e.g. (128, 6)
+    if sigma <= 1e-6: # Prevent sigma from being zero or too small
+        tf.print("[compute_mmd] Warning: sigma is very small or zero. Setting to 1.0.")
+        sigma = 1.0
 
+    x_sample = x
+    y_sample = y
     if sample_size is not None:
-        # Optional: Subsample for performance if batches are very large
-        # Ensure sample_size is not larger than batch_size
         batch_size_x = tf.shape(x)[0]
         batch_size_y = tf.shape(y)[0]
         
-        # Ensure sample_size is valid
         current_sample_size_x = tf.minimum(sample_size, batch_size_x)
         current_sample_size_y = tf.minimum(sample_size, batch_size_y)
 
-        idx_x = tf.random.shuffle(tf.range(batch_size_x))[:current_sample_size_x]
-        idx_y = tf.random.shuffle(tf.range(batch_size_y))[:current_sample_size_y]
-        x_sample = tf.gather(x, idx_x)
-        y_sample = tf.gather(y, idx_y)
-    else:
-        x_sample = x
-        y_sample = y
+        if current_sample_size_x > 0:
+            idx_x = tf.random.shuffle(tf.range(batch_size_x))[:current_sample_size_x]
+            x_sample = tf.gather(x, idx_x)
+        else:
+            x_sample = tf.zeros_like(x, shape=[0, tf.shape(x)[-1]]) 
 
-    # Gaussian kernel MMD (biased estimator for MMD^2)
-    # K(X, X)
-    xx_dist = tf.reduce_sum(tf.square(tf.expand_dims(x_sample, 1) - tf.expand_dims(x_sample, 0)), axis=-1)
-    k_xx = tf.exp(-xx_dist / (2.0 * sigma**2))
+        if current_sample_size_y > 0:
+            idx_y = tf.random.shuffle(tf.range(batch_size_y))[:current_sample_size_y]
+            y_sample = tf.gather(y, idx_y)
+        else:
+            y_sample = tf.zeros_like(y, shape=[0, tf.shape(y)[-1]])
     
-    # K(Y, Y)
-    yy_dist = tf.reduce_sum(tf.square(tf.expand_dims(y_sample, 1) - tf.expand_dims(y_sample, 0)), axis=-1)
-    k_yy = tf.exp(-yy_dist / (2.0 * sigma**2))
-    
-    # K(X, Y)
-    xy_dist = tf.reduce_sum(tf.square(tf.expand_dims(x_sample, 1) - tf.expand_dims(y_sample, 0)), axis=-1)
-    k_xy = tf.exp(-xy_dist / (2.0 * sigma**2))
-    
-    mmd_sq = tf.reduce_mean(k_xx) + tf.reduce_mean(k_yy) - 2 * tf.reduce_mean(k_xy)
-    
-    # MMD is sqrt(MMD^2), ensure non-negative before sqrt
-    mmd_val = tf.sqrt(tf.maximum(0.0, mmd_sq)) 
+    if tf.shape(x_sample)[0] == 0 or tf.shape(y_sample)[0] == 0:
+        tf.print("[compute_mmd] Warning: Samples for MMD are empty. Returning 0.")
+        return tf.constant(0.0, dtype=tf.float32)
 
-    print(f"[compute_mmd] Sigma={sigma}, X_sample shape: {tf.shape(x_sample)}, Y_sample shape: {tf.shape(y_sample)}, Calculated MMD: {mmd_val.numpy()}")
+    # Pairwise squared Euclidean distances
+    def pairwise_sq_distances(a, b):
+        a_sum_sq = tf.reduce_sum(tf.square(a), axis=1, keepdims=True)
+        b_sum_sq = tf.reduce_sum(tf.square(b), axis=1, keepdims=True)
+        ab_dot = tf.matmul(a, b, transpose_b=True)
+        dist_sq = a_sum_sq + tf.transpose(b_sum_sq) - 2 * ab_dot
+        return tf.maximum(0.0, dist_sq) # Ensure non-negative
+
+    k_xx_dist = pairwise_sq_distances(x_sample, x_sample)
+    k_yy_dist = pairwise_sq_distances(y_sample, y_sample)
+    k_xy_dist = pairwise_sq_distances(x_sample, y_sample)
+
+    # Gaussian kernel
+    k_xx = tf.exp(-k_xx_dist / (2.0 * sigma**2))
+    k_yy = tf.exp(-k_yy_dist / (2.0 * sigma**2))
+    k_xy = tf.exp(-k_xy_dist / (2.0 * sigma**2))
+    
+    mean_k_xx = tf.reduce_mean(k_xx)
+    mean_k_yy = tf.reduce_mean(k_yy)
+    mean_k_xy = tf.reduce_mean(k_xy)
+    
+    mmd_sq = mean_k_xx + mean_k_yy - 2 * mean_k_xy
+    mmd_val = tf.sqrt(tf.maximum(1e-9, mmd_sq)) # Add epsilon for stability
+
+    tf.print("[compute_mmd_TF_PRINT] Sigma:", sigma, "Shapes X_s, Y_s:", tf.shape(x_sample), tf.shape(y_sample),
+             "means k_xx, k_yy, k_xy:", mean_k_xx, mean_k_yy, mean_k_xy,
+             "mmd_sq:", mmd_sq, "MMD_val:", mmd_val, summarize=-1)
+    
+    if tf.math.is_nan(mmd_val):
+        tf.print("[compute_mmd_TF_PRINT] MMD_val is NaN! Check inputs and sigma.")
+        return tf.constant(0.0, dtype=tf.float32) # Return safe value
+
     return mmd_val
 
 
@@ -111,6 +129,14 @@ def calculate_standardized_moment(data, order):
     return tf.reduce_mean(((data - mean) / std_dev) ** order)
 
 def covariance_loss_calc(y_true, y_pred, cfg):
+    # --- THIS IS STILL A PLACEHOLDER ---
+    # You MUST implement this if cov_weight > 0 in your config.
+    # Example: tf.abs(tfp.stats.covariance(y_true, y_pred) - desired_covariance_or_diff)
+    # Or, if you want to match the covariance matrices:
+    # cov_true = tfp.stats.covariance(y_true)
+    # cov_pred = tfp.stats.covariance(y_pred)
+    # return tf.reduce_mean(tf.square(cov_true - cov_pred))
+    tf.print("[covariance_loss_calc] Placeholder called. Returning 0.")
     return tf.constant(0.0, dtype=tf.float32)
 
 

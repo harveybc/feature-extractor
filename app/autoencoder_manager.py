@@ -1,22 +1,22 @@
 import tensorflow as tf
-from keras.models import Model, load_model
-from keras.layers import Input, Dense, LSTM, RepeatVector, TimeDistributed, Concatenate, Layer, GRU, Lambda # Added Lambda
-from keras.optimizers import Adam
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.models import Model, load_model # Changed
+from tensorflow.keras.layers import Input, Dense, LSTM, RepeatVector, TimeDistributed, Concatenate, Layer, GRU, Lambda # Changed
+from tensorflow.keras.optimizers import Adam # Changed
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau # Changed
 import numpy as np
 import os
 import json
 
 from app.autoencoder_helper import (
     get_reconstruction_and_stats_loss_fn, 
-    get_metrics,
+    # get_metrics, # Temporarily not used, will use tf.keras.metrics.MeanAbsoluteError directly
     EarlyStoppingWithPatienceCounter,
     ReduceLROnPlateauWithCounter,
     KLAnnealingCallback,
-    EpochEndLogger # Import the new logger
+    EpochEndLogger 
 )
 
-class KLDivergenceLayer(Layer):
+class KLDivergenceLayer(tf.keras.layers.Layer): # Changed
     def __init__(self, kl_beta_start=0.001, name="kl_loss_adder_node", **kwargs):
         super(KLDivergenceLayer, self).__init__(name=name, **kwargs)
         self.kl_beta_val = float(kl_beta_start) 
@@ -65,36 +65,33 @@ class AutoencoderManager:
             tf.print("Error: Model not available in _compile_model. Cannot compile.")
             raise RuntimeError("Model not available for compilation in _compile_model.")
 
-        adam_optimizer = Adam(
+        adam_optimizer = tf.keras.optimizers.Adam( # Changed
             learning_rate=config.get('learning_rate', 0.0001),
             beta_1=config.get('adam_beta_1', 0.9),
             beta_2=config.get('adam_beta_2', 0.999),
             epsilon=config.get('adam_epsilon', 1e-07)
         )
         
-        # Get the loss function using the new wrapper that captures config
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
-        # Get metrics (should now just be MAE)
-        reconstruction_metrics = get_metrics(config=config) 
+        
+        # MODIFICATION: Use a standard Keras MAE metric object directly
+        reconstruction_metrics = [tf.keras.metrics.MeanAbsoluteError(name='mae')]
 
-        tf.print(f"DEBUG: Compiling model. Expected output names for compile: {self.autoencoder_model.output_names}")
+        tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
+        def pass_through_metric(y_true, y_pred): return y_pred 
 
-        def pass_through_metric(y_true, y_pred): return y_pred # For non-loss outputs
-
-        # Using the explicitly defined names which should be the actual output names
         self.autoencoder_model.compile(
             optimizer=adam_optimizer,
             loss={
                 'reconstruction_out': configured_loss_fn, 
-                # Other outputs don't contribute to loss directly unless KLDivergenceLayer adds its own
                 'z_mean_out': None, 
                 'z_log_var_out': None,
                 'kl_raw_out': None, 
                 'kl_weighted_out': None,
                 'kl_beta_out': None
             },
-            loss_weights={ # Ensure only reconstruction_out has weight, KLDivergenceLayer handles its loss
+            loss_weights={ 
                 'reconstruction_out': 1.0,
                 'z_mean_out': 0.0,
                 'z_log_var_out': 0.0,
@@ -104,7 +101,6 @@ class AutoencoderManager:
             },
             metrics={ 
                 'reconstruction_out': reconstruction_metrics, # Apply MAE here
-                # Pass-through metrics for other outputs if needed for monitoring (not strictly necessary)
                 'kl_raw_out': pass_through_metric, 
                 'kl_weighted_out': pass_through_metric,
                 'kl_beta_out': pass_through_metric
@@ -112,6 +108,8 @@ class AutoencoderManager:
             run_eagerly=config.get('run_eagerly', False) 
         )
         tf.print("[_compile_model] Model compiled successfully.")
+        # ADDED DEBUG PRINT
+        tf.print(f"DEBUG: Model compiled. Optimizer: {self.autoencoder_model.optimizer}, Metrics names: {self.autoencoder_model.metrics_names}")
 
 
     def build_autoencoder(self, config):
@@ -162,7 +160,7 @@ class AutoencoderManager:
             self.kl_layer_instance_obj = KLDivergenceLayer(kl_beta_start=kl_beta_start_from_config, name="kl_loss_adder_node")
             # KLDivergenceLayer returns: z_mean (passed through), kl_loss_raw, weighted_kl_loss, kl_beta
             kl_processed_z_mean, inter_kl_raw, inter_kl_weighted, inter_kl_beta = \
-                self.kl_layer_instance_obj([encoder_z_mean, encoder_z_log_var])
+                self.kl_layer_instance_obj([encoder_z_mean, encoder_z_log_var]) # Ensure this is called
             
             def sampling(args):
                 z_mean_sampling, z_log_var_sampling = args
@@ -328,12 +326,16 @@ class AutoencoderManager:
 
     def load_model(self, model_path, config, custom_objects=None): # Added config
         tf.print(f"Loading CVAE model from {model_path}")
+        # Ensure KLDivergenceLayer is passed if it's a custom layer in the saved model
         final_custom_objects = {'KLDivergenceLayer': KLDivergenceLayer}
         if custom_objects:
-            final_custom_objects.update(custom_objects)
+            final_custom_objects.update(custom_objects) # Merge with any other custom objects
         
-        # Load model without compiling it here; compilation will be handled by _compile_model
-        self.autoencoder_model = load_model(model_path, custom_objects=final_custom_objects, compile=False) 
+        self.autoencoder_model = tf.keras.models.load_model( # Changed
+            model_path, 
+            custom_objects=final_custom_objects, 
+            compile=False # Compile will be handled by _compile_model
+        ) 
         self.model = self.autoencoder_model
         
         tf.print(f"Model {self.autoencoder_model.name} loaded.")

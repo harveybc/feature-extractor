@@ -214,15 +214,15 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
 
 
 def get_metrics(config=None): 
-    # This function will be temporarily bypassed by the change in AutoencoderManager._compile_model
-    # to use tf.keras.metrics.MeanAbsoluteError directly.
-    # If that works, this function can be updated or removed.
-    def calculate_mae_for_reconstruction(y_true_tensor, y_pred_tensor): # RENAMED from mae
+    # This function is currently not directly used by AutoencoderManager._compile_model
+    # as it's using the string 'mae'.
+    # The function name here was 'calculate_mae_for_reconstruction'.
+    def calculate_mae_for_reconstruction(y_true_tensor, y_pred_tensor): 
         yt_recon = tf.cast(y_true_tensor, tf.float32)
         yp_recon = tf.cast(y_pred_tensor, tf.float32)
         return tf.reduce_mean(tf.abs(yt_recon - yp_recon))
     
-    metrics_to_return = [calculate_mae_for_reconstruction] # Use renamed function
+    metrics_to_return = [calculate_mae_for_reconstruction] 
     return metrics_to_return
 
 class EarlyStoppingWithPatienceCounter(tf.keras.callbacks.EarlyStopping): # Changed to tf.keras
@@ -320,16 +320,16 @@ class EpochEndLogger(tf.keras.callbacks.Callback): # Changed to tf.keras
         # Standard Keras metrics from logs
         if 'loss' in logs: log_items.append(f"loss: {logs['loss']:.4f}")
         
-        # MAE: Keras prepends output name. Our output is 'reconstruction_out'. Metric fn is 'calculate_mae_for_reconstruction'.
-        # So, the key in logs should be 'reconstruction_out_calculate_mae_for_reconstruction'.
-        mae_key = 'reconstruction_out_calculate_mae_for_reconstruction' # UPDATED EXPECTED KEY
+        # MAE: Keras should prepend output name 'reconstruction_out' to the metric string 'mae'.
+        # So, the key in logs should be 'reconstruction_out_mae'.
+        mae_key = 'reconstruction_out_mae' # UPDATED EXPECTED KEY
         if mae_key in logs: 
             log_items.append(f"mae: {logs[mae_key]:.4f}")
         # else: MAE not found in logs, will not be printed for this epoch
 
         if 'val_loss' in logs: log_items.append(f"val_loss: {logs['val_loss']:.4f}")
         
-        val_mae_key = f"val_{mae_key}" # Expected "val_reconstruction_out_calculate_mae_for_reconstruction"
+        val_mae_key = f"val_{mae_key}" # Expected "val_reconstruction_out_mae"
         if val_mae_key in logs:
             log_items.append(f"val_mae: {logs[val_mae_key]:.4f}")
         # else: Val_MAE not found in logs, will not be printed

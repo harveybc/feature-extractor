@@ -1,50 +1,66 @@
 import numpy as np
 import tensorflow as tf
 from keras.models import Model, load_model
-from keras.layers import Input, Lambda
+from keras.layers import Input, Lambda, Layer # Added Layer
 from keras.optimizers import Adam
+import keras # For keras.ops
 
 # pull in all loss/metric/callback helpers
 from app.autoencoder_helper import (
-    combined_cvae_loss_fn,
+    # combined_cvae_loss_fn will be renamed/refactored to reconstruction_and_stats_loss_fn
+    reconstruction_and_stats_loss_fn, # Adjusted import name
     get_metrics,
     EarlyStoppingWithPatienceCounter,
     ReduceLROnPlateauWithCounter
 )
 
+# Define KLDivergenceLayer here or import if moved to helper
+class KLDivergenceLayer(Layer):
+    def __init__(self, kl_beta=1.0, name="kl_divergence_layer", **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.kl_beta = kl_beta
+        # Assuming kl_loss_tracker is a tf.Variable defined in autoencoder_helper
+        # If you want this layer to update it, it needs access or a callback mechanism.
+        # For simplicity, the loss is added directly. Metric can compute/track separately.
+
+    def call(self, inputs):
+        z_mean, z_log_var = inputs
+        kl_loss = -0.5 * keras.ops.sum(1 + z_log_var - keras.ops.square(z_mean) - keras.ops.exp(z_log_var), axis=-1)
+        mean_kl_loss = keras.ops.mean(kl_loss)
+        self.add_loss(self.kl_beta * mean_kl_loss)
+        # This layer is primarily for adding loss, it can pass through one of its inputs
+        # or a combination if needed by subsequent layers, here we pass z_mean.
+        # However, its output is not strictly used if it's just for add_loss and
+        # the original z_mean, z_log_var are passed to model outputs.
+        return z_mean # Or simply return inputs if no transformation is intended
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({"kl_beta": self.kl_beta})
+        return config
 
 class AutoencoderManager:
     def __init__(self, encoder_plugin, decoder_plugin):
         self.encoder_plugin = encoder_plugin
         self.decoder_plugin = decoder_plugin
-        self.autoencoder_model = None # This will be the single-step CVAE model
-        self.encoder_model = None # Component model from encoder_plugin
-        self.decoder_model = None # Component model from decoder_plugin
-        self.model = None # Points to self.autoencoder_model
+        self.autoencoder_model = None
+        self.encoder_model = None
+        self.decoder_model = None
+        self.model = None
         print(f"[AutoencoderManager] Initialized for Sequential CVAE components.")
 
     def build_autoencoder(self, config):
         try:
-            print("[build_autoencoder] Starting to build single-step CVAE with Conv1D Encoder and 6-feature Decoder...")
-
-            # Get dimensions from config
-            # For Encoder Input (Windowed Data)
+            print("[build_autoencoder] Starting to build single-step CVAE...")
             window_size = config.get('window_size')
-            input_features_per_step = config.get('input_features_per_step') # Full features in the input window
-
-            # For CVAE context and latent space
-            rnn_hidden_dim = config.get('rnn_hidden_dim') # For h_context
-            conditioning_dim = config.get('conditioning_dim') # For general conditions_t (e.g., previous 6 targets)
+            input_features_per_step = config.get('input_features_per_step')
+            rnn_hidden_dim = config.get('rnn_hidden_dim')
+            conditioning_dim = config.get('conditioning_dim')
             latent_dim = config.get('latent_dim')
-
-            # For Decoder Output (and CVAE target)
-            output_feature_dim = 6 # Hardcoded as per requirement for OHLC + 2 derived
+            output_feature_dim = 6
 
             if not all(v is not None for v in [window_size, input_features_per_step, rnn_hidden_dim, conditioning_dim, latent_dim]):
-                raise ValueError(
-                    "Config must provide 'window_size', 'input_features_per_step', 'rnn_hidden_dim', "
-                    "'conditioning_dim', and 'latent_dim'."
-                )
+                raise ValueError("Config must provide 'window_size', 'input_features_per_step', 'rnn_hidden_dim', 'conditioning_dim', and 'latent_dim'.")
             if not isinstance(window_size, int) or window_size <= 0:
                 raise ValueError(f"'window_size' must be a positive integer. Got: {window_size}")
             if not isinstance(input_features_per_step, int) or input_features_per_step <= 0:
@@ -119,13 +135,35 @@ class AutoencoderManager:
             )
             self.model = self.autoencoder_model 
             
-            # KL divergence will be calculated within the main loss function
+            # KL divergence is now added by KLDivergenceLayer
+            # Add KL Divergence using the custom layer
+            kl_beta_config = config.get('kl_beta', 1.0) # Get kl_beta from config
+            # The KLDivergenceLayer must be part of the model graph *before* Model instantiation
+            # if its add_loss is to be registered with THIS model instance.
+            # Let's adjust the model construction slightly:
+            # z_mean, z_log_var are outputs of encoder_model
+            # kl_output = KLDivergenceLayer(kl_beta=kl_beta_config, name="kl_loss_adder")([z_mean, z_log_var])
+            # z = Lambda(sampling, output_shape=(latent_dim,), name='cvae_sampling_z')([z_mean, z_log_var])
+            # reconstruction = self.decoder_model([z, input_h_context, input_conditions_t])
+
+            # Correct placement of KLDivergenceLayer: It should be part of the graph.
+            # Its output isn't used by the decoder, but it adds its loss.
+            # We need z_mean and z_log_var as direct outputs for metrics.
+            # The KLDivergenceLayer call should be made such that its loss is part of the main model.
+            # One way is to make it an "output" that isn't used or make it a layer that passes through.
+            # The current KLDivergenceLayer returns z_mean.
+            
+            # The KLDivergenceLayer should be called here to be part of the graph
+            # that self.autoencoder_model is built from.
+            # Its loss will be automatically collected.
+            _ = KLDivergenceLayer(kl_beta=kl_beta_config, name="kl_loss_adder_node")([z_mean, z_log_var])
+
 
             print("[build_autoencoder] Single-step CVAE model assembled.")
             self.autoencoder_model.summary(line_length=150)
 
             # 8. Compile the CVAE Model
-            adam_optimizer = Adam(
+            adam_optimizer = Adam( # This is the optimizer instance to use
                 learning_rate=config.get('learning_rate', 0.0001),
                 beta_1=config.get('beta_1', 0.9),
                 beta_2=config.get('beta_2', 0.999),
@@ -133,11 +171,13 @@ class AutoencoderManager:
                 amsgrad=config.get('amsgrad', False)
             )
 
-            # compile with a single CVAE loss and standardized metrics
             self.autoencoder_model.compile(
-                optimizer=Adam(config.get('learning_rate', 1e-4)), # Ensure this optimizer is used, not the other one defined above
-                loss=combined_cvae_loss_fn, # This single loss fn expects a dict of y_preds
-                metrics=get_metrics(),
+                optimizer=adam_optimizer, # Use the created optimizer instance
+                loss={
+                    'reconstruction_output': reconstruction_and_stats_loss_fn,
+                    # No loss for z_mean_output and z_log_var_output here, KL is via KLDivergenceLayer
+                },
+                metrics=get_metrics(config=config), 
                 run_eagerly=config.get('run_eagerly', False)
             )
             print("[build_autoencoder] Single-step CVAE model compiled successfully.")

@@ -154,10 +154,32 @@ class AutoencoderManager:
             # The KLDivergenceLayer should be called here to be part of the graph
             # that self.autoencoder_model is built from.
             # Its loss will be automatically collected.
-            _ = KLDivergenceLayer(kl_beta=kl_beta_config, name="kl_loss_adder_node")([z_mean, z_log_var])
+            # We assign its output to a variable, even if not used, to ensure it's in the graph.
+            kl_div_layer_call_output = KLDivergenceLayer(kl_beta=kl_beta_config, name="kl_loss_adder_node")([z_mean, z_log_var])
 
             print("[build_autoencoder] Single-step CVAE model assembled.")
             self.autoencoder_model.summary(line_length=150)
+
+            # === DEBUG PRINTS START ===
+            print("\n" + "="*30 + " DEBUG INFO " + "="*30)
+            print(f"DEBUG: autoencoder_model object: {self.autoencoder_model}")
+            if self.autoencoder_model is not None:
+                print(f"DEBUG: autoencoder_model.name: {self.autoencoder_model.name}")
+                print(f"DEBUG: autoencoder_model.inputs: {self.autoencoder_model.inputs}")
+                print(f"DEBUG: autoencoder_model.outputs: {self.autoencoder_model.outputs}")
+                try:
+                    print(f"DEBUG: autoencoder_model.output_names: {self.autoencoder_model.output_names}")
+                except Exception as e:
+                    print(f"DEBUG: Error accessing autoencoder_model.output_names: {e}")
+                
+                print(f"DEBUG: Tensors used in Model's outputs dict construction:")
+                print(f"DEBUG:   'reconstruction_output' tensor: {reconstruction}")
+                print(f"DEBUG:   'z_mean_output' tensor: {z_mean}")
+                print(f"DEBUG:   'z_log_var_output' tensor: {z_log_var}")
+                print(f"DEBUG:   KLDivergenceLayer call output tensor: {kl_div_layer_call_output}")
+
+            print("="*72 + "\n")
+            # === DEBUG PRINTS END ===
 
             adam_optimizer = Adam(
                 learning_rate=config.get('learning_rate', 0.0001),
@@ -167,18 +189,19 @@ class AutoencoderManager:
                 amsgrad=config.get('amsgrad', False)
             )
 
-            # get_metrics will now include kl_metric_fn again
             all_metrics = get_metrics(config=config)
+            print(f"DEBUG: Metrics to be used for 'reconstruction_output': {all_metrics}")
+
+
+            print(f"DEBUG: Compiling with loss: {{'reconstruction_output': {reconstruction_and_stats_loss_fn}}}")
+            print(f"DEBUG: Compiling with metrics: {{'reconstruction_output': {all_metrics}}}")
 
             self.autoencoder_model.compile(
                 optimizer=adam_optimizer,
                 loss={
                     'reconstruction_output': reconstruction_and_stats_loss_fn,
                 },
-                metrics={ # Provide metrics as a dictionary
-                    # All metrics, including KL, will be associated with reconstruction_output.
-                    # Keras passes the full y_true_dict and y_pred_dict to these metrics,
-                    # so kl_metric_fn can access z_mean_output and z_log_var_output.
+                metrics={ 
                     'reconstruction_output': all_metrics
                 },
                 run_eagerly=config.get('run_eagerly', False)
@@ -189,6 +212,17 @@ class AutoencoderManager:
             print(f"[build_autoencoder] Exception occurred: {e}")
             import traceback
             traceback.print_exc()
+            # === ADD MORE DEBUG ON EXCEPTION ===
+            if hasattr(self, 'autoencoder_model') and self.autoencoder_model is not None:
+                print("\n" + "="*30 + " DEBUG INFO ON EXCEPTION " + "="*30)
+                print(f"DEBUG (exception): autoencoder_model.name: {self.autoencoder_model.name}")
+                print(f"DEBUG (exception): autoencoder_model.outputs: {self.autoencoder_model.outputs}")
+                try:
+                    print(f"DEBUG (exception): autoencoder_model.output_names: {self.autoencoder_model.output_names}")
+                except Exception as e_inner:
+                    print(f"DEBUG (exception): Error accessing autoencoder_model.output_names: {e_inner}")
+                print("="*86 + "\n")
+            # === END DEBUG ON EXCEPTION ===
             raise
 
     def train_autoencoder(self, data_inputs, data_targets, epochs=100, batch_size=128, config=None):

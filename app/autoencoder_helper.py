@@ -12,8 +12,24 @@ kurtosis_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name
 covariance_loss_tracker = tf.Variable(0.0, dtype=tf.float32, trainable=False, name="covariance_loss_tracker")
 
 # Dummy implementations (User should have their actual implementations)
-def compute_mmd(x, y, sigma=1.0, sample_size=32): 
-    return tf.constant(0.0, dtype=tf.float32)
+def compute_mmd(x, y, sigma=1.0, sample_size=None): # Added sample_size, make it configurable
+    """
+    Placeholder for MMD calculation.
+    User needs to implement a proper MMD function.
+    Example: Gaussian RBF kernel MMD.
+    x, y: Tensors of shape (batch_size, feature_dim)
+    sigma: Kernel bandwidth
+    sample_size: If None, use all samples. Otherwise, take a random subset.
+                 (Consider performance implications for large batches if not sampling)
+    """
+    # THIS IS STILL A PLACEHOLDER - REPLACE WITH YOUR ACTUAL MMD IMPLEMENTATION
+    # For the MMD to be non-zero, this function must return a non-zero tensor
+    # when x and y are different.
+    print(f"[compute_mmd] Called with sigma={sigma}. X shape: {tf.shape(x)}, Y shape: {tf.shape(y)}. THIS IS A PLACEHOLDER.")
+    # Example of a very simple (and incorrect for MMD) difference, just to make it non-zero if x!=y:
+    # if not tf.reduce_all(tf.equal(x,y)):
+    #     return tf.abs(tf.reduce_mean(x) - tf.reduce_mean(y)) * 0.001 # Arbitrary small non-zero
+    return tf.constant(0.0, dtype=tf.float32) # Current placeholder
 
 def calculate_standardized_moment(data, order):
     mean = tf.reduce_mean(data)

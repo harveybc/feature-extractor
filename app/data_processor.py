@@ -196,10 +196,11 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     best_latent_dim = current_latent_dim
     best_autoencoder_manager = None
     
-    # This key should now be 'reconstruction_out_mae' due to tf.keras.metrics.MeanAbsoluteError(name='mae')
-    # Keras prepends the output name 'reconstruction_out' to the metric's given name 'mae'.
-    expected_mae_key = 'reconstruction_out_mae' 
-    expected_val_mae_key = f'val_{expected_mae_key}' # Keras prepends 'val_' for validation metrics
+    # This key should now be 'reconstruction_out_calculate_mae_for_reconstruction' 
+    # due to the renamed custom MAE function in autoencoder_helper.py.
+    # Keras prepends the output name 'reconstruction_out' to the metric's function name.
+    expected_mae_key = 'reconstruction_out_calculate_mae_for_reconstruction' # UPDATED EXPECTED KEY
+    expected_val_mae_key = f'val_{expected_mae_key}' # Keras prepends 'val_'
 
     while True:
         config['latent_dim'] = current_latent_dim 

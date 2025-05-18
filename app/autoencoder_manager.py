@@ -9,7 +9,7 @@ import json
 
 from app.autoencoder_helper import (
     get_reconstruction_and_stats_loss_fn, 
-    get_metrics, # MODIFIED: Uncomment this line
+    get_metrics, # Ensure this is imported and used
     EarlyStoppingWithPatienceCounter,
     ReduceLROnPlateauWithCounter,
     KLAnnealingCallback,
@@ -74,12 +74,14 @@ class AutoencoderManager:
         
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
-        # MODIFICATION: Provide the MeanAbsoluteError class directly.
-        # Keras will instantiate it. Its default name is 'mean_absolute_error'.
-        # Keras should then prepend the output name 'reconstruction_out'.
-        # reconstruction_metric_instance = tf.keras.metrics.MeanAbsoluteError(name='mae') # Previous attempt
-        reconstruction_metric_spec = tf.keras.metrics.MeanAbsoluteError 
-        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: tf.keras.metrics.MeanAbsoluteError (class), and pass-through metrics for KL components.")
+        # MODIFICATION: Use the MAE function from autoencoder_helper.get_metrics()
+        # get_metrics(config) returns a list like [mae_function]. We need the function itself.
+        helper_mae_functions = get_metrics(config)
+        if not helper_mae_functions:
+            raise ValueError("get_metrics(config) from autoencoder_helper returned an empty list or None.")
+        mae_fn_for_compile = helper_mae_functions[0] # Get the actual 'mae' function
+
+        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: a custom MAE function (name: {mae_fn_for_compile.__name__}), and pass-through metrics for KL components.")
 
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
@@ -104,7 +106,7 @@ class AutoencoderManager:
                 'kl_beta_out': 0.0
             },
             metrics={ 
-                'reconstruction_out': reconstruction_metric_spec, # Provide the class
+                'reconstruction_out': mae_fn_for_compile, # Use the MAE function
                 'kl_raw_out': pass_through_metric, 
                 'kl_weighted_out': pass_through_metric,
                 'kl_beta_out': pass_through_metric 

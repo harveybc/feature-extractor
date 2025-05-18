@@ -56,8 +56,63 @@ class AutoencoderManager:
         self.decoder_plugin = decoder_plugin
         self.autoencoder_model = None
         self.model = None 
-        self.kl_layer_instance_obj = None # To store the KLDivergenceLayer object
+        self.kl_layer_instance_obj = None 
         tf.print(f"[AutoencoderManager] Initialized for CVAE components.")
+
+    def _compile_model(self, config):
+        """Helper method to compile the autoencoder_model."""
+        if not self.autoencoder_model:
+            tf.print("Error: Model not available in _compile_model. Cannot compile.")
+            raise RuntimeError("Model not available for compilation in _compile_model.")
+
+        adam_optimizer = Adam(
+            learning_rate=config.get('learning_rate', 0.0001),
+            beta_1=config.get('adam_beta_1', 0.9),
+            beta_2=config.get('adam_beta_2', 0.999),
+            epsilon=config.get('adam_epsilon', 1e-07)
+        )
+        
+        # Get the loss function using the new wrapper that captures config
+        configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
+        # Get metrics (should now just be MAE)
+        reconstruction_metrics = get_metrics(config=config) 
+
+        tf.print(f"DEBUG: Compiling model. Expected output names for compile: {self.autoencoder_model.output_names}")
+
+
+        def pass_through_metric(y_true, y_pred): return y_pred # For non-loss outputs
+
+        # Using the explicitly defined names which should be the actual output names
+        self.autoencoder_model.compile(
+            optimizer=adam_optimizer,
+            loss={
+                'reconstruction_out': configured_loss_fn, 
+                # Other outputs don't contribute to loss directly unless KLDivergenceLayer adds its own
+                'z_mean_out': None, 
+                'z_log_var_out': None,
+                'kl_raw_out': None, 
+                'kl_weighted_out': None,
+                'kl_beta_out': None
+            },
+            loss_weights={ # Ensure only reconstruction_out has weight, KLDivergenceLayer handles its loss
+                'reconstruction_out': 1.0,
+                'z_mean_out': 0.0,
+                'z_log_var_out': 0.0,
+                'kl_raw_out': 0.0,
+                'kl_weighted_out': 0.0,
+                'kl_beta_out': 0.0
+            },
+            metrics={ 
+                'reconstruction_out': reconstruction_metrics, # Apply MAE here
+                # Pass-through metrics for other outputs if needed for monitoring (not strictly necessary)
+                'kl_raw_out': pass_through_metric, 
+                'kl_weighted_out': pass_through_metric,
+                'kl_beta_out': pass_through_metric
+            },
+            run_eagerly=config.get('run_eagerly', False) 
+        )
+        tf.print("[_compile_model] Model compiled successfully.")
+
 
     def build_autoencoder(self, config):
         try:
@@ -148,48 +203,8 @@ class AutoencoderManager:
             )
             self.model = self.autoencoder_model 
 
-            adam_optimizer = Adam(
-                learning_rate=config.get('learning_rate', 0.0001),
-                beta_1=config.get('adam_beta_1', 0.9),
-                beta_2=config.get('adam_beta_2', 0.999),
-                epsilon=config.get('adam_epsilon', 1e-07)
-            )
-            
-            configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
-            reconstruction_metrics = get_metrics(config=config) 
-
-            tf.print(f"DEBUG: autoencoder_model.output_names (actual names used by Keras): {self.autoencoder_model.output_names}")
-
-            def pass_through_metric(y_true, y_pred): return y_pred
-
-            # Use the explicitly defined names in compile
-            self.autoencoder_model.compile(
-                optimizer=adam_optimizer,
-                loss={
-                    'reconstruction_out': configured_loss_fn, 
-                    'z_mean_out': None, 
-                    'z_log_var_out': None,
-                    'kl_raw_out': None, 
-                    'kl_weighted_out': None,
-                    'kl_beta_out': None
-                },
-                loss_weights={ 
-                    'reconstruction_out': 1.0,
-                    'z_mean_out': 0.0,
-                    'z_log_var_out': 0.0,
-                    'kl_raw_out': 0.0,
-                    'kl_weighted_out': 0.0,
-                    'kl_beta_out': 0.0
-                },
-                metrics={ 
-                    'reconstruction_out': reconstruction_metrics,
-                    'kl_raw_out': pass_through_metric, 
-                    'kl_weighted_out': pass_through_metric,
-                    'kl_beta_out': pass_through_metric
-                },
-                run_eagerly=config.get('run_eagerly', False) 
-            )
-            tf.print("[build_autoencoder] Single-step CVAE model compiled successfully.")
+            self._compile_model(config) # Call the compilation helper
+            tf.print("[build_autoencoder] Single-step CVAE model built and compiled.")
 
         except Exception as e:
             tf.print(f"Error during CVAE model building: {e}")
@@ -200,6 +215,17 @@ class AutoencoderManager:
     def train_autoencoder(self, data_inputs, data_targets, epochs, batch_size, config):
         tf.print("[train_autoencoder] Starting CVAE training.")
         
+        # Ensure model is compiled before training, especially if loaded without compilation
+        if not self.autoencoder_model._is_compiled:
+            tf.print("[train_autoencoder] Model was not compiled. Compiling now.")
+            self._compile_model(config)
+        elif self.autoencoder_model.optimizer.learning_rate.numpy() != config.get('learning_rate', 0.0001):
+            # Optional: Re-compile if learning rate in config changed since last compile
+            # This might happen if config is reloaded or modified.
+            tf.print("[train_autoencoder] Learning rate in config differs. Re-compiling model.")
+            self._compile_model(config)
+
+
         train_inputs_dict = {
             'cvae_input_x_window': data_inputs[0],
             'cvae_input_h_context': data_inputs[1],
@@ -299,17 +325,24 @@ class AutoencoderManager:
            not (decoder_path and self.decoder_plugin and hasattr(self.decoder_plugin, 'save')):
             tf.print("No model or plugin components to save.")
 
-    def load_model(self, model_path, custom_objects=None):
+    def load_model(self, model_path, config, custom_objects=None): # Added config
         tf.print(f"Loading CVAE model from {model_path}")
         final_custom_objects = {'KLDivergenceLayer': KLDivergenceLayer}
         if custom_objects:
             final_custom_objects.update(custom_objects)
         
+        # Load model without compiling it here; compilation will be handled by _compile_model
         self.autoencoder_model = load_model(model_path, custom_objects=final_custom_objects, compile=False) 
         self.model = self.autoencoder_model
         
-        tf.print(f"Model {self.autoencoder_model.name} loaded. Re-compile if necessary.")
+        tf.print(f"Model {self.autoencoder_model.name} loaded.")
         
+        if config:
+            tf.print(f"Re-compiling loaded model with provided config...")
+            self._compile_model(config) # Re-compile the loaded model using the helper
+        else:
+            tf.print("Warning: Model loaded but no config provided for re-compilation. Evaluate/train might use defaults or fail if not compiled elsewhere.")
+
         try:
             self.kl_layer_instance_obj = self.autoencoder_model.get_layer("kl_loss_adder_node")
             tf.print(f"KL Divergence layer '{self.kl_layer_instance_obj.name}' found in loaded model.")
@@ -333,35 +366,41 @@ class AutoencoderManager:
 
     def evaluate(self, data_inputs, data_targets, dataset_name="Test", config=None):
         if not self.autoencoder_model:
-            tf.print("Model not built or loaded. Cannot evaluate.")
+            # Use standard print for critical errors/info not in a tight loop
+            print("Model not built or loaded. Cannot evaluate.")
             return None
+
+        # Ensure model is compiled before evaluation
+        if not self.autoencoder_model._is_compiled:
+            print(f"Warning: Model for evaluation on '{dataset_name}' was not compiled. Attempting to compile with provided config.")
+            if config:
+                self._compile_model(config)
+            else:
+                print("Error: Cannot compile model for evaluation as no config was provided.")
+                return None
         
-        tf.print(f"Evaluating model on {dataset_name} data...")
+        # Use standard print
+        print(f"Evaluating model on {dataset_name} data...")
         eval_inputs_dict = {
             'cvae_input_x_window': data_inputs[0],
             'cvae_input_h_context': data_inputs[1],
             'cvae_input_conditions_t': data_inputs[2]
         }
         
-        # Use the explicitly defined name for evaluation target
         eval_targets_dict = {
             'reconstruction_out': data_targets
         }
         
-        # Store metric names from the compiled model to match with results
-        metric_names = self.autoencoder_model.metrics_names
-        
-        results_list = self.autoencoder_model.evaluate(
+        results_dict = self.autoencoder_model.evaluate(
             eval_inputs_dict,
             eval_targets_dict,
             batch_size=config.get('batch_size', 128) if config else 128,
-            verbose=config.get('keras_verbose_level', 1) if config else 1,
-            return_dict=False # Ensure results are a list
+            verbose=0, # Set to 0 to suppress Keras's own verbose output for evaluate
+            return_dict=True # Keras returns a dictionary of metric results
         )
         
-        results_dict = dict(zip(metric_names, results_list))
-
-        tf.print(f"Evaluation results for {dataset_name} (as dict): {results_dict}")
+        # Use standard print
+        print(f"Evaluation results for {dataset_name} (from Keras return_dict=True): {results_dict}")
         return results_dict # Return dictionary for easier access by name
 
     def predict(self, data_inputs, config=None):

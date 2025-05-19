@@ -74,14 +74,14 @@ class AutoencoderManager:
         
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
-        # MODIFICATION: Revert to using the string 'mae' for reconstruction_out metric.
-        # helper_mae_functions = get_metrics(config)
-        # if not helper_mae_functions:
-        #     raise ValueError("get_metrics(config) from autoencoder_helper returned an empty list or None.")
-        # mae_fn_for_compile = helper_mae_functions[0] 
+        # Use the custom MAE function from autoencoder_helper
+        helper_mae_functions = get_metrics(config) # config is optional for current get_metrics
+        if not helper_mae_functions:
+            raise ValueError("get_metrics(config) from autoencoder_helper returned an empty list or None.")
+        mae_fn_for_compile = helper_mae_functions[0] 
 
-        # tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: a custom MAE function (name: {mae_fn_for_compile.__name__}), and pass-through metrics for KL components.")
-        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: 'mae' (string alias), and pass-through metrics for KL components.")
+        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: a custom MAE function (name: {mae_fn_for_compile.__name__}), and pass-through metrics for KL components.")
+        # tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: 'mae' (string alias), and pass-through metrics for KL components.")
 
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
@@ -106,7 +106,7 @@ class AutoencoderManager:
                 'kl_beta_out': 0.0
             },
             metrics={ 
-                'reconstruction_out': tf.keras.metrics.MeanAbsoluteError(), # Use MeanAbsoluteError instance
+                'reconstruction_out': mae_fn_for_compile, # Use the custom MAE function
                 'kl_raw_out': pass_through_metric, 
                 'kl_weighted_out': pass_through_metric,
                 'kl_beta_out': pass_through_metric 

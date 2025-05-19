@@ -337,7 +337,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         else: 
             raise RuntimeError("Autoencoder training loop did not run or failed to select a model.")
 
-    tf.print(f"Final selected latent_dim: {best_latent_dim} with Best Validation MAE: {best_val_mae:.4f if not np.isnan(best_val_mae) else 'N/A'}") # Handle NaN for print
+    best_val_mae_str = f"{best_val_mae:.4f}" if not np.isnan(best_val_mae) else "N/A"
+    tf.print(f"Final selected latent_dim: {best_latent_dim} with Best Validation MAE: {best_val_mae_str}")
     
     config['latent_dim'] = best_latent_dim 
 
@@ -387,18 +388,23 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         ]
         final_eval_val_targets_array = config['cvae_val_targets']
         final_val_eval_results = best_autoencoder_manager.evaluate(final_eval_val_inputs_list, final_eval_val_targets_array, "Final Validation", config)
-        if final_val_eval_results and expected_val_mae_key in final_val_eval_results:
-            final_validation_mae = final_val_eval_results[expected_val_mae_key]
+        # Use expected_mae_key for results from model.evaluate()
+        if final_val_eval_results and expected_mae_key in final_val_eval_results: # CHANGED: Use expected_mae_key
+            final_validation_mae = final_val_eval_results[expected_mae_key]       # CHANGED: Use expected_mae_key
         
         if np.isnan(final_validation_mae): # Check if NaN after attempting to extract
-            tf.print(f"CRITICAL ERROR: Final Validation MAE ('{expected_val_mae_key}') is NaN or key not found!")
+            # For the error message, expected_val_mae_key shows the pattern we'd expect from 'fit' logs
+            tf.print(f"CRITICAL ERROR: Final Validation MAE (expected key pattern from fit logs: '{expected_val_mae_key}', actual lookup key for evaluate: '{expected_mae_key}') is NaN or key not found!")
             tf.print(f"Final Validation Evaluation Results: {final_val_eval_results}")
             compiled_metrics_names_str = "N/A"
             if hasattr(best_autoencoder_manager, 'autoencoder_model') and best_autoencoder_manager.autoencoder_model and hasattr(best_autoencoder_manager.autoencoder_model, 'metrics_names'):
                 compiled_metrics_names_str = str(best_autoencoder_manager.autoencoder_model.metrics_names)
             tf.print(f"Model's compiled metrics names: {compiled_metrics_names_str}")
-            raise ValueError(f"Final Validation MAE ('{expected_val_mae_key}') is missing or NaN. Results: {final_val_eval_results}. Compiled metrics: {compiled_metrics_names_str}")
-    tf.print(f"Final Validation MAE (best model): {final_validation_mae:.4f if not np.isnan(final_validation_mae) else 'N/A'} (key: {expected_val_mae_key})") # Handle NaN for print
+            raise ValueError(f"Final Validation MAE (expected key pattern from fit logs: '{expected_val_mae_key}', actual lookup key for evaluate: '{expected_mae_key}') is missing or NaN. Results: {final_val_eval_results}. Compiled metrics: {compiled_metrics_names_str}")
+    
+    final_validation_mae_str = f"{final_validation_mae:.4f}" if not np.isnan(final_validation_mae) else "N/A"
+    # When printing, use the non-prefixed key for clarity as it's from evaluate()
+    tf.print(f"Final Validation MAE (best model): {final_validation_mae_str} (key from evaluate(): {expected_mae_key})")
 
 
     debug_info = {
@@ -406,8 +412,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         'best_latent_dim': best_latent_dim,
         'encoder_plugin_params': best_autoencoder_manager.encoder_plugin.get_debug_info() if best_autoencoder_manager.encoder_plugin and hasattr(best_autoencoder_manager.encoder_plugin, 'get_debug_info') else None,
         'decoder_plugin_params': best_autoencoder_manager.decoder_plugin.get_debug_info() if best_autoencoder_manager.decoder_plugin and hasattr(best_autoencoder_manager.decoder_plugin, 'get_debug_info') else None,
-        'final_validation_mae': final_validation_mae if not np.isnan(final_validation_mae) else None,
-        'final_training_mae': final_training_mae if not np.isnan(final_training_mae) else None,
+        'final_validation_mae': final_validation_mae if not np.isnan(final_validation_mae) else None, # Store the float or None
+        'final_training_mae': final_training_mae if not np.isnan(final_training_mae) else None, # Store the float or None
         'final_validation_metrics': final_val_eval_results,
         'final_training_metrics': final_train_eval_results,
         'config_used': {k: v for k, v in config.items() if not isinstance(v, np.ndarray)} 

@@ -243,19 +243,32 @@ class AutoencoderManager:
         for i, metric_obj in enumerate(self.autoencoder_model.metrics):
             tf.print(f"[train_autoencoder] PRE-FIT CHECK: Metric {i} - Name: {metric_obj.name}, Class: {metric_obj.__class__.__name__}")
 
-
         train_inputs_dict = {
             'cvae_input_x_window': data_inputs[0],
             'cvae_input_h_context': data_inputs[1],
             'cvae_input_conditions_t': data_inputs[2]
         }
         
-        # Ensure all model outputs have a corresponding key in targets
-        train_targets_dict = {output_name: None for output_name in self.autoencoder_model.output_names}
-        train_targets_dict['reconstruction_out'] = data_targets
-        train_targets_dict['reconstruction_out_for_mae_calc'] = data_targets
-        tf.print(f"[train_autoencoder] train_targets_dict keys: {list(train_targets_dict.keys())}")
+        num_samples_train = data_targets.shape[0]
+        latent_dim = config['latent_dim']
 
+        train_targets_dict = {}
+        for output_name in self.autoencoder_model.output_names:
+            if output_name == 'reconstruction_out':
+                train_targets_dict[output_name] = data_targets
+            elif output_name == 'reconstruction_out_for_mae_calc':
+                train_targets_dict[output_name] = data_targets
+            elif output_name in ['z_mean_out', 'z_log_var_out']:
+                train_targets_dict[output_name] = np.zeros((num_samples_train, latent_dim), dtype=np.float32)
+            elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
+                train_targets_dict[output_name] = np.zeros((num_samples_train, 1), dtype=np.float32)
+            else: # Should not happen if all outputs are covered
+                train_targets_dict[output_name] = np.zeros((num_samples_train, 1), dtype=np.float32) # Default dummy
+                tf.print(f"Warning: Unhandled output_name '{output_name}' in train_targets_dict. Using default dummy shape (num_samples, 1).")
+        
+        tf.print(f"[train_autoencoder] train_targets_dict keys: {list(train_targets_dict.keys())}")
+        for k, v in train_targets_dict.items():
+            tf.print(f"  Target '{k}' shape: {v.shape if hasattr(v, 'shape') else 'None'}")
 
         tf.print(f"Input data shapes: x_window: {data_inputs[0].shape}, h_context: {data_inputs[1].shape}, conditions_t: {data_inputs[2].shape}")
         tf.print(f"Target data shape for reconstruction_output: {data_targets.shape}")
@@ -313,11 +326,27 @@ class AutoencoderManager:
 
         if validation_data_prepared:
             val_inputs_dict_original, val_targets_dict_original = validation_data_prepared
-            # Ensure all model outputs have a corresponding key in validation targets
-            val_targets_dict_new = {output_name: None for output_name in self.autoencoder_model.output_names}
-            val_targets_dict_new['reconstruction_out'] = val_targets_dict_original['reconstruction_out']
-            val_targets_dict_new['reconstruction_out_for_mae_calc'] = val_targets_dict_original['reconstruction_out'] # Assuming same target for MAE calc
+            
+            # Assuming val_targets_dict_original['reconstruction_out'] is the primary validation target array
+            num_samples_val = val_targets_dict_original['reconstruction_out'].shape[0]
+
+            val_targets_dict_new = {}
+            for output_name in self.autoencoder_model.output_names:
+                if output_name == 'reconstruction_out':
+                    val_targets_dict_new[output_name] = val_targets_dict_original['reconstruction_out']
+                elif output_name == 'reconstruction_out_for_mae_calc':
+                    val_targets_dict_new[output_name] = val_targets_dict_original['reconstruction_out']
+                elif output_name in ['z_mean_out', 'z_log_var_out']:
+                    val_targets_dict_new[output_name] = np.zeros((num_samples_val, latent_dim), dtype=np.float32)
+                elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
+                    val_targets_dict_new[output_name] = np.zeros((num_samples_val, 1), dtype=np.float32)
+                else: # Should not happen
+                    val_targets_dict_new[output_name] = np.zeros((num_samples_val, 1), dtype=np.float32)
+                    tf.print(f"Warning: Unhandled output_name '{output_name}' in val_targets_dict_new. Using default dummy shape (num_samples, 1).")
+
             tf.print(f"[train_autoencoder] val_targets_dict_new keys: {list(val_targets_dict_new.keys())}")
+            for k, v in val_targets_dict_new.items():
+                tf.print(f"  Val Target '{k}' shape: {v.shape if hasattr(v, 'shape') else 'None'}")
             validation_data_prepared = (val_inputs_dict_original, val_targets_dict_new)
 
         history = self.autoencoder_model.fit(
@@ -422,12 +451,26 @@ class AutoencoderManager:
             'cvae_input_conditions_t': data_inputs[2]
         }
         
-        # Ensure all model outputs have a corresponding key in targets
-        eval_targets_dict = {output_name: None for output_name in self.autoencoder_model.output_names}
-        eval_targets_dict['reconstruction_out'] = data_targets
-        eval_targets_dict['reconstruction_out_for_mae_calc'] = data_targets
-        tf.print(f"[evaluate] eval_targets_dict keys for '{dataset_name}': {list(eval_targets_dict.keys())}")
+        num_samples_eval = data_targets.shape[0]
+        latent_dim = config['latent_dim']
 
+        eval_targets_dict = {}
+        for output_name in self.autoencoder_model.output_names:
+            if output_name == 'reconstruction_out':
+                eval_targets_dict[output_name] = data_targets
+            elif output_name == 'reconstruction_out_for_mae_calc':
+                eval_targets_dict[output_name] = data_targets
+            elif output_name in ['z_mean_out', 'z_log_var_out']:
+                eval_targets_dict[output_name] = np.zeros((num_samples_eval, latent_dim), dtype=np.float32)
+            elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
+                eval_targets_dict[output_name] = np.zeros((num_samples_eval, 1), dtype=np.float32)
+            else: # Should not happen
+                eval_targets_dict[output_name] = np.zeros((num_samples_eval, 1), dtype=np.float32)
+                tf.print(f"Warning: Unhandled output_name '{output_name}' in eval_targets_dict. Using default dummy shape (num_samples, 1).")
+
+        tf.print(f"[evaluate] eval_targets_dict keys for '{dataset_name}': {list(eval_targets_dict.keys())}")
+        for k, v in eval_targets_dict.items():
+            tf.print(f"  Eval Target '{k}' shape: {v.shape if hasattr(v, 'shape') else 'None'}")
 
         tf.print(f"[evaluate] Shapes for '{dataset_name}':")
         tf.print(f"  cvae_input_x_window: {tf.shape(data_inputs[0])}")
@@ -440,7 +483,7 @@ class AutoencoderManager:
         # Check for NaNs/Infs in evaluation targets
         tf.print(f"  Any NaNs in '{dataset_name}' targets (reconstruction_out):", tf.reduce_any(tf.math.is_nan(tf.cast(data_targets, tf.float32))))
         tf.print(f"  Any Infs in '{dataset_name}' targets (reconstruction_out):", tf.reduce_any(tf.math.is_inf(tf.cast(data_targets, tf.float32))))
-        
+
         results_dict = self.autoencoder_model.evaluate(
             eval_inputs_dict,
             eval_targets_dict,

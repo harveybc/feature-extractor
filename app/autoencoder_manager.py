@@ -74,21 +74,22 @@ class AutoencoderManager:
         
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
-        # Use the custom MAE function from autoencoder_helper
         helper_mae_functions = get_metrics(config) # config is optional for current get_metrics
         if not helper_mae_functions:
             raise ValueError("get_metrics(config) from autoencoder_helper returned an empty list or None.")
-        mae_fn_for_compile = helper_mae_functions[0] 
-        tf.print(f"DEBUG: MAE function available from get_metrics(): {mae_fn_for_compile.__name__}")
+        # We'll use a standard Keras MAE instance for the dedicated output
+        # mae_fn_for_compile = helper_mae_functions[0] 
+        # tf.print(f"DEBUG: MAE function available from get_metrics(): {mae_fn_for_compile.__name__}")
 
-        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: [tf.keras.metrics.MeanAbsoluteError()] (instance in a list), and pass-through metrics for KL components.")
-
+        tf.print(f"DEBUG: Compiling with dedicated output 'reconstruction_out_for_mae_calc' for MAE.")
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
         def pass_through_metric(y_true, y_pred): return y_pred 
 
         metrics_dict_for_compile = { 
-            'reconstruction_out': [tf.keras.metrics.MeanAbsoluteError()], # Use a direct instance INSIDE A LIST
+            # No explicit MAE metric on 'reconstruction_out' if it's causing issues with custom loss
+            # 'reconstruction_out': [tf.keras.metrics.MeanAbsoluteError()], # REMOVED/COMMENTED
+            'reconstruction_out_for_mae_calc': [tf.keras.metrics.MeanAbsoluteError()], # MAE on dedicated output
             'kl_raw_out': pass_through_metric, 
             'kl_weighted_out': pass_through_metric,
             'kl_beta_out': pass_through_metric 
@@ -99,6 +100,7 @@ class AutoencoderManager:
             optimizer=adam_optimizer,
             loss={
                 'reconstruction_out': configured_loss_fn, 
+                'reconstruction_out_for_mae_calc': None, # IMPORTANT: Loss is None for MAE-dedicated output
                 'z_mean_out': None, 
                 'z_log_var_out': None,
                 'kl_raw_out': None, 
@@ -107,6 +109,7 @@ class AutoencoderManager:
             },
             loss_weights={ 
                 'reconstruction_out': 1.0,
+                'reconstruction_out_for_mae_calc': 0.0, # IMPORTANT: No contribution to overall loss
                 'z_mean_out': 0.0,
                 'z_log_var_out': 0.0,
                 'kl_raw_out': 0.0,
@@ -192,8 +195,10 @@ class AutoencoderManager:
             )
 
             # --- Explicitly name all final output tensors using Lambda layers ---
-            # These names will be the definitive output names of the autoencoder_model.
             final_reconstruction_output = Lambda(lambda x: x, name='reconstruction_out')(intermediate_reconstruction_output)
+            # NEW: Duplicate reconstruction output for dedicated MAE calculation
+            final_reconstruction_for_mae = Lambda(lambda x: x, name='reconstruction_out_for_mae_calc')(intermediate_reconstruction_output)
+
             final_z_mean = Lambda(lambda x: x, name='z_mean_out')(encoder_z_mean) # Use original z_mean from encoder
             final_z_log_var = Lambda(lambda x: x, name='z_log_var_out')(encoder_z_log_var) # Use original z_log_var
             final_kl_raw = Lambda(lambda x: x, name='kl_raw_out')(inter_kl_raw)
@@ -202,6 +207,7 @@ class AutoencoderManager:
 
             outputs_for_model = {
                 'reconstruction_out': final_reconstruction_output,
+                'reconstruction_out_for_mae_calc': final_reconstruction_for_mae, # ADDED NEW OUTPUT
                 'z_mean_out': final_z_mean,
                 'z_log_var_out': final_z_log_var,
                 'kl_raw_out': final_kl_raw,
@@ -244,9 +250,9 @@ class AutoencoderManager:
             'cvae_input_conditions_t': data_inputs[2]
         }
         
-        # Use the explicitly defined name for the target
         train_targets_dict = {
             'reconstruction_out': data_targets,
+            'reconstruction_out_for_mae_calc': data_targets, # Provide same targets for MAE calc output
         }
 
         tf.print(f"Input data shapes: x_window: {data_inputs[0].shape}, h_context: {data_inputs[1].shape}, conditions_t: {data_inputs[2].shape}")
@@ -302,6 +308,14 @@ class AutoencoderManager:
             tf.print(f"[train_autoencoder] Using pre-defined validation data with target key: 'reconstruction_out'")
         else:
             tf.print("[train_autoencoder] No pre-defined validation_data.")
+
+        if validation_data_prepared:
+            val_inputs_dict_original, val_targets_dict_original = validation_data_prepared
+            val_targets_dict_new = {
+                'reconstruction_out': val_targets_dict_original['reconstruction_out'],
+                'reconstruction_out_for_mae_calc': val_targets_dict_original['reconstruction_out']
+            }
+            validation_data_prepared = (val_inputs_dict_original, val_targets_dict_new)
 
         history = self.autoencoder_model.fit(
             train_inputs_dict,
@@ -406,7 +420,8 @@ class AutoencoderManager:
         }
         
         eval_targets_dict = {
-            'reconstruction_out': data_targets
+            'reconstruction_out': data_targets,
+            'reconstruction_out_for_mae_calc': data_targets, # Provide same targets
         }
 
         tf.print(f"[evaluate] Shapes for '{dataset_name}':")

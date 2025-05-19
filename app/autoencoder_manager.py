@@ -79,16 +79,16 @@ class AutoencoderManager:
         if not helper_mae_functions:
             raise ValueError("get_metrics(config) from autoencoder_helper returned an empty list or None.")
         mae_fn_for_compile = helper_mae_functions[0] 
-        tf.print(f"DEBUG: MAE function to be used in compile (though we'll use string 'mae' now): {mae_fn_for_compile.__name__} from module {mae_fn_for_compile.__module__}")
+        tf.print(f"DEBUG: MAE function available from get_metrics(): {mae_fn_for_compile.__name__}")
 
-        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: tf.keras.metrics.MeanAbsoluteError() instance, and pass-through metrics for KL components.")
+        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: [tf.keras.metrics.MeanAbsoluteError()] (instance in a list), and pass-through metrics for KL components.")
 
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
         def pass_through_metric(y_true, y_pred): return y_pred 
 
         metrics_dict_for_compile = { 
-            'reconstruction_out': tf.keras.metrics.MeanAbsoluteError(), # Use a direct instance
+            'reconstruction_out': [tf.keras.metrics.MeanAbsoluteError()], # Use a direct instance INSIDE A LIST
             'kl_raw_out': pass_through_metric, 
             'kl_weighted_out': pass_through_metric,
             'kl_beta_out': pass_through_metric 

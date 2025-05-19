@@ -261,15 +261,20 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             
             val_eval_results = autoencoder_manager.evaluate(eval_val_inputs_list, eval_val_targets_array, "Validation", config)
             
-            if val_eval_results and expected_val_mae_key in val_eval_results:
-                validation_mae = val_eval_results[expected_val_mae_key]
+            # Use expected_mae_key directly, as model.evaluate() does not add 'val_' prefix to keys in its returned dict
+            if val_eval_results and expected_mae_key in val_eval_results: # CHANGED: Use expected_mae_key
+                validation_mae = val_eval_results[expected_mae_key]       # CHANGED: Use expected_mae_key
 
             if np.isnan(validation_mae):
-                tf.print(f"CRITICAL ERROR: Validation MAE ('{expected_val_mae_key}') is NaN or key not found in evaluation results!")
+                # The expected_val_mae_key is what we *would* look for if Keras prefixed it, 
+                # but for the error message, it's more informative to state what was attempted.
+                # However, the actual lookup should use expected_mae_key.
+                # For clarity in the error message if it still fails for other reasons, we can keep expected_val_mae_key here.
+                tf.print(f"CRITICAL ERROR: Validation MAE (expected key pattern: '{expected_val_mae_key}', actual lookup key: '{expected_mae_key}') is NaN or key not found in evaluation results!") # MODIFIED ERROR MSG
                 tf.print(f"Evaluation results for Validation (val_eval_results):")
                 if isinstance(val_eval_results, dict):
                     for k_iter, v_iter in val_eval_results.items():
-                        tf.print(f"  Key: '{k_iter}', Value: {v_iter}, Type: {type(v_iter)}")
+                        tf.print(f"  Key: '{k_iter}', Value: {v_iter}, Type: {type(v_iter)}") # Added print for value and type
                 else:
                     tf.print(f"  val_eval_results is not a dict: {val_eval_results}")
 
@@ -280,12 +285,13 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
                 tf.print(f"Model's actual metric objects (name and class):")
                 if hasattr(autoencoder_manager, 'autoencoder_model') and autoencoder_manager.autoencoder_model and hasattr(autoencoder_manager.autoencoder_model, 'metrics'):
                     for m_obj in autoencoder_manager.autoencoder_model.metrics:
-                        tf.print(f"  - {m_obj.name} ({m_obj.__class__.__name__})")
+                        tf.print(f"  - {m_obj.name} ({m_obj.__class__.__name__})") # Added print for metric object
                 else:
                     tf.print("  Could not retrieve model.metrics objects.")
-                raise ValueError(f"Validation MAE ('{expected_val_mae_key}') is missing or NaN. Stopping execution. Results: {val_eval_results}. Compiled metrics: {compiled_metrics_names_str}")
+                # The error message should reflect the key that was *intended* to be found for validation.
+                raise ValueError(f"Validation MAE ('{expected_val_mae_key}' pattern, actual lookup with '{expected_mae_key}') is missing or NaN. Stopping execution. Results: {val_eval_results}. Compiled metrics: {compiled_metrics_names_str}") # MODIFIED ERROR MSG
 
-            tf.print(f"Validation MAE with latent_dim {current_latent_dim}: {validation_mae:.4f} (extracted with key: {expected_val_mae_key})")
+            tf.print(f"Validation MAE with latent_dim {current_latent_dim}: {validation_mae:.4f} (extracted with key: {expected_mae_key})") # CHANGED: Use expected_mae_key
             tf.print(f"Full Validation Evaluation Results: {val_eval_results}")
         else:
             tf.print(f"Validation data not configured for latent_dim {current_latent_dim}. Skipping validation MAE comparison for search.")

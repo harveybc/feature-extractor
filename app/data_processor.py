@@ -200,9 +200,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     # because autoencoder_manager.py is using MeanAbsoluteError(name='custom_recon_mae').
     # Keras prepends the output name 'reconstruction_out'.
     # If 'mae' (string) is used in compile, key is 'reconstruction_out_mae'.
-    # If tf.keras.metrics.MeanAbsoluteError() instance is used, key is 'reconstruction_out_mean_absolute_error'.
-    # If custom function 'calculate_mae_for_reconstruction' is used (wrapped or not), the goal was 'reconstruction_out_calculate_mae_for_reconstruction'.
-    expected_mae_key = 'reconstruction_out_mae' # UPDATED EXPECTED KEY to use standard Keras naming for 'mae'
+    # If tf.keras.metrics.MeanAbsoluteError() instance is used (without name), key is 'reconstruction_out_mean_absolute_error'.
+    expected_mae_key = 'reconstruction_out_mean_absolute_error' # UPDATED EXPECTED KEY
     expected_val_mae_key = f'val_{expected_mae_key}' # Keras prepends 'val_'
 
     while True:
@@ -228,12 +227,23 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         
         if np.isnan(training_mae):
             tf.print(f"CRITICAL ERROR: Training MAE ('{expected_mae_key}') is NaN or key not found in evaluation results!")
-            tf.print(f"Evaluation results for Training: {train_eval_results}")
-            # Try to get compiled metric names from the manager if available
+            tf.print(f"Evaluation results for Training (train_eval_results):")
+            if isinstance(train_eval_results, dict):
+                for k_iter, v_iter in train_eval_results.items():
+                    tf.print(f"  Key: '{k_iter}', Value: {v_iter}, Type: {type(v_iter)}")
+            else:
+                tf.print(f"  train_eval_results is not a dict: {train_eval_results}")
+            
             compiled_metrics_names_str = "N/A"
             if hasattr(autoencoder_manager, 'autoencoder_model') and autoencoder_manager.autoencoder_model and hasattr(autoencoder_manager.autoencoder_model, 'metrics_names'):
                  compiled_metrics_names_str = str(autoencoder_manager.autoencoder_model.metrics_names)
-            tf.print(f"Model's compiled metrics names: {compiled_metrics_names_str}")
+            tf.print(f"Model's compiled metrics_names attribute: {compiled_metrics_names_str}")
+            tf.print(f"Model's actual metric objects (name and class):")
+            if hasattr(autoencoder_manager, 'autoencoder_model') and autoencoder_manager.autoencoder_model and hasattr(autoencoder_manager.autoencoder_model, 'metrics'):
+                for m_obj in autoencoder_manager.autoencoder_model.metrics:
+                    tf.print(f"  - {m_obj.name} ({m_obj.__class__.__name__})")
+            else:
+                tf.print("  Could not retrieve model.metrics objects.")
             raise ValueError(f"Training MAE ('{expected_mae_key}') is missing or NaN. Stopping execution. Results: {train_eval_results}. Compiled metrics: {compiled_metrics_names_str}")
         
         tf.print(f"Training MAE with latent_dim {current_latent_dim}: {training_mae:.4f} (extracted with key: {expected_mae_key})")
@@ -255,14 +265,26 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
 
             if np.isnan(validation_mae):
                 tf.print(f"CRITICAL ERROR: Validation MAE ('{expected_val_mae_key}') is NaN or key not found in evaluation results!")
-                tf.print(f"Evaluation results for Validation: {val_eval_results}")
+                tf.print(f"Evaluation results for Validation (val_eval_results):")
+                if isinstance(val_eval_results, dict):
+                    for k_iter, v_iter in val_eval_results.items():
+                        tf.print(f"  Key: '{k_iter}', Value: {v_iter}, Type: {type(v_iter)}")
+                else:
+                    tf.print(f"  val_eval_results is not a dict: {val_eval_results}")
+
                 compiled_metrics_names_str = "N/A"
                 if hasattr(autoencoder_manager, 'autoencoder_model') and autoencoder_manager.autoencoder_model and hasattr(autoencoder_manager.autoencoder_model, 'metrics_names'):
                     compiled_metrics_names_str = str(autoencoder_manager.autoencoder_model.metrics_names)
-                tf.print(f"Model's compiled metrics names: {compiled_metrics_names_str}")
+                tf.print(f"Model's compiled metrics_names attribute: {compiled_metrics_names_str}")
+                tf.print(f"Model's actual metric objects (name and class):")
+                if hasattr(autoencoder_manager, 'autoencoder_model') and autoencoder_manager.autoencoder_model and hasattr(autoencoder_manager.autoencoder_model, 'metrics'):
+                    for m_obj in autoencoder_manager.autoencoder_model.metrics:
+                        tf.print(f"  - {m_obj.name} ({m_obj.__class__.__name__})")
+                else:
+                    tf.print("  Could not retrieve model.metrics objects.")
                 raise ValueError(f"Validation MAE ('{expected_val_mae_key}') is missing or NaN. Stopping execution. Results: {val_eval_results}. Compiled metrics: {compiled_metrics_names_str}")
 
-            tf.print(f"Validation MAE with latent_dim {current_latent_dim}: {validation_mae:.4f} (extracted with key: {expected_val_mae_key})") # Corrected key
+            tf.print(f"Validation MAE with latent_dim {current_latent_dim}: {validation_mae:.4f} (extracted with key: {expected_val_mae_key})")
             tf.print(f"Full Validation Evaluation Results: {val_eval_results}")
         else:
             tf.print(f"Validation data not configured for latent_dim {current_latent_dim}. Skipping validation MAE comparison for search.")

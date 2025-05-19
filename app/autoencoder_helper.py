@@ -354,15 +354,15 @@ class EpochEndLogger(tf.keras.callbacks.Callback): # Changed to tf.keras
         # Standard Keras metrics from logs
         if 'loss' in logs: log_items.append(f"loss: {logs['loss']:.4f}")
         
-        # MAE: Keras should prepend output name 'reconstruction_out' to the metric name 'mae'.
-        mae_key = 'reconstruction_out_mae' # UPDATED EXPECTED KEY
+        # MAE: Keras should prepend output name 'reconstruction_out' to the metric class name 'mean_absolute_error'.
+        mae_key = 'reconstruction_out_mean_absolute_error' # UPDATED EXPECTED KEY
         if mae_key in logs: 
             log_items.append(f"mae: {logs[mae_key]:.4f}")
         # else: MAE not found in logs, will not be printed for this epoch
 
         if 'val_loss' in logs: log_items.append(f"val_loss: {logs['val_loss']:.4f}")
         
-        val_mae_key = f"val_{mae_key}" # Expected "val_reconstruction_out_mae"
+        val_mae_key = f"val_{mae_key}" # Expected "val_reconstruction_out_mean_absolute_error"
         if val_mae_key in logs:
             log_items.append(f"val_mae: {logs[val_mae_key]:.4f}")
         # else: Val_MAE not found in logs, will not be printed

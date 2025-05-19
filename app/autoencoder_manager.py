@@ -81,18 +81,14 @@ class AutoencoderManager:
         mae_fn_for_compile = helper_mae_functions[0] 
         tf.print(f"DEBUG: MAE function to be used in compile (though we'll use string 'mae' now): {mae_fn_for_compile.__name__} from module {mae_fn_for_compile.__module__}")
 
-        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: string alias 'mae', and pass-through metrics for KL components.")
-        
-        # Comment out or remove MeanMetricWrapper usage for 'mae'
-        # wrapped_mae_metric = tf.keras.metrics.MeanMetricWrapper(fn=mae_fn_for_compile, name=mae_fn_for_compile.__name__)
-        # tf.print(f"DEBUG: Wrapped MAE metric: {wrapped_mae_metric}")
+        tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: tf.keras.metrics.MeanAbsoluteError() instance, and pass-through metrics for KL components.")
 
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
         def pass_through_metric(y_true, y_pred): return y_pred 
 
         metrics_dict_for_compile = { 
-            'reconstruction_out': 'mae', # Use string alias 'mae'
+            'reconstruction_out': tf.keras.metrics.MeanAbsoluteError(), # Use a direct instance
             'kl_raw_out': pass_through_metric, 
             'kl_weighted_out': pass_through_metric,
             'kl_beta_out': pass_through_metric 
@@ -122,6 +118,13 @@ class AutoencoderManager:
         )
         tf.print("[_compile_model] Model compiled successfully.")
         tf.print(f"[_compile_model] Model metrics_names AFTER compile: {self.autoencoder_model.metrics_names}")
+        tf.print(f"[_compile_model] Model.metrics (metric objects) AFTER compile: Count: {len(self.autoencoder_model.metrics)}")
+        for i, metric_obj in enumerate(self.autoencoder_model.metrics):
+            try:
+                config_str = str(metric_obj.get_config()) if hasattr(metric_obj, 'get_config') else "N/A"
+                tf.print(f"[_compile_model] Metric object {i}: Name: {metric_obj.name}, Class: {metric_obj.__class__.__name__}, Dtype: {metric_obj.dtype}, Config: {config_str}")
+            except Exception as e:
+                tf.print(f"[_compile_model] Metric object {i}: Name: {metric_obj.name}, Class: {metric_obj.__class__.__name__}, Error inspecting: {e}")
 
 
     def build_autoencoder(self, config):
@@ -225,17 +228,15 @@ class AutoencoderManager:
     def train_autoencoder(self, data_inputs, data_targets, epochs, batch_size, config):
         tf.print("[train_autoencoder] Starting CVAE training.")
         
-        # Ensure model is compiled before training
-        # A model is considered compiled if it has an optimizer.
         if not self.autoencoder_model.optimizer:
             tf.print("[train_autoencoder] Model was not compiled (no optimizer found). Compiling now.")
             self._compile_model(config)
-        # Optional: Re-compile if learning rate in config changed since last compile
-        # This might happen if config is reloaded or modified.
-        # Note: Accessing self.autoencoder_model.optimizer.learning_rate might be complex if LR is a schedule.
-        # For simplicity, we'll assume if an optimizer exists, it's adequately configured or will be
-        # handled by callbacks like ReduceLROnPlateau.
-        # If you need to strictly enforce re-compilation on LR change, more detailed checks are needed.
+        
+        tf.print(f"[train_autoencoder] PRE-FIT CHECK: Model.metrics_names: {self.autoencoder_model.metrics_names}") 
+        tf.print(f"[train_autoencoder] PRE-FIT CHECK: Model.metrics (metric objects count): {len(self.autoencoder_model.metrics)}")
+        for i, metric_obj in enumerate(self.autoencoder_model.metrics):
+            tf.print(f"[train_autoencoder] PRE-FIT CHECK: Metric {i} - Name: {metric_obj.name}, Class: {metric_obj.__class__.__name__}")
+
 
         train_inputs_dict = {
             'cvae_input_x_window': data_inputs[0],
@@ -381,22 +382,22 @@ class AutoencoderManager:
 
     def evaluate(self, data_inputs, data_targets, dataset_name="Test", config=None):
         if not self.autoencoder_model:
-            # Use standard print for critical errors/info not in a tight loop
             print("Model not built or loaded. Cannot evaluate.")
             return None
 
-        # Ensure model is compiled before evaluation
         if not self.autoencoder_model.optimizer:
-            print(f"Warning: Model for evaluation on '{dataset_name}' was not compiled (no optimizer found). Attempting to compile with provided config.")
+            print(f"Warning: Model for evaluation on '{dataset_name}' was not compiled. Attempting to compile.")
             if config:
-                self._compile_model(config) # This will print metrics_names after compile
+                self._compile_model(config) 
             else:
-                print("Error: Cannot compile model for evaluation as no config was provided and model is not compiled.")
+                print("Error: Cannot compile model for evaluation as no config was provided.")
                 return None
         
-        tf.print(f"[evaluate] Model metrics_names BEFORE evaluate call on '{dataset_name}': {self.autoencoder_model.metrics_names}")
+        tf.print(f"[evaluate] PRE-EVALUATE CHECK on '{dataset_name}': Model.metrics_names: {self.autoencoder_model.metrics_names}") 
+        tf.print(f"[evaluate] PRE-EVALUATE CHECK on '{dataset_name}': Model.metrics (metric objects count): {len(self.autoencoder_model.metrics)}")
+        for i, metric_obj in enumerate(self.autoencoder_model.metrics):
+            tf.print(f"[evaluate] PRE-EVALUATE CHECK on '{dataset_name}': Metric {i} - Name: {metric_obj.name}, Class: {metric_obj.__class__.__name__}")
         
-        # Use standard print
         print(f"Evaluating model on {dataset_name} data...")
         eval_inputs_dict = {
             'cvae_input_x_window': data_inputs[0],
@@ -424,13 +425,15 @@ class AutoencoderManager:
             eval_inputs_dict,
             eval_targets_dict,
             batch_size=config.get('batch_size', 128) if config else 128,
-            verbose=0, # Set to 0 to suppress Keras's own verbose output for evaluate
-            return_dict=True # Keras returns a dictionary of metric results
+            verbose=0, 
+            return_dict=True 
         )
         
-        # Use standard print
         print(f"Evaluation results for {dataset_name} (from Keras return_dict=True): {results_dict}")
-        return results_dict # Return dictionary for easier access by name
+        tf.print(f"[evaluate DEBUG] ALL KEYS in results_dict for '{dataset_name}': {list(results_dict.keys())}") 
+        for key, value in results_dict.items(): 
+            tf.print(f"[evaluate DEBUG]    '{key}': {value} (type: {type(value)})")
+        return results_dict 
 
     def predict(self, data_inputs, config=None):
         if not self.autoencoder_model:

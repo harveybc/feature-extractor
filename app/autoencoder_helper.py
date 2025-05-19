@@ -218,11 +218,45 @@ def get_metrics(config=None):
     # as it's using the string 'mae'.
     # The function name here was 'calculate_mae_for_reconstruction'.
     def calculate_mae_for_reconstruction(y_true_tensor, y_pred_tensor): 
+        tf.print("[calculate_mae_for_reconstruction] Inside MAE metric function.")
+        tf.print("y_true_tensor shape:", tf.shape(y_true_tensor), "y_true_tensor dtype:", y_true_tensor.dtype)
+        tf.print("y_pred_tensor shape:", tf.shape(y_pred_tensor), "y_pred_tensor dtype:", y_pred_tensor.dtype)
+
+        # Print a few sample values
+        tf.print("y_true_tensor sample (first 5):", y_true_tensor[0,:5] if tf.shape(y_true_tensor)[0] > 0 else "N/A")
+        tf.print("y_pred_tensor sample (first 5):", y_pred_tensor[0,:5] if tf.shape(y_pred_tensor)[0] > 0 else "N/A")
+
         yt_recon = tf.cast(y_true_tensor, tf.float32)
         yp_recon = tf.cast(y_pred_tensor, tf.float32)
-        return tf.reduce_mean(tf.abs(yt_recon - yp_recon))
+        tf.print("Casted yt_recon dtype:", yt_recon.dtype, "Casted yp_recon dtype:", yp_recon.dtype)
+
+        # Check for NaNs/Infs in inputs
+        tf.print("Any NaNs in yt_recon:", tf.reduce_any(tf.math.is_nan(yt_recon)))
+        tf.print("Any Infs in yt_recon:", tf.reduce_any(tf.math.is_inf(yt_recon)))
+        tf.print("Any NaNs in yp_recon:", tf.reduce_any(tf.math.is_nan(yp_recon)))
+        tf.print("Any Infs in yp_recon:", tf.reduce_any(tf.math.is_inf(yp_recon)))
+
+        abs_diff = tf.abs(yt_recon - yp_recon)
+        tf.print("abs_diff shape:", tf.shape(abs_diff))
+        tf.print("abs_diff sample (first 5):", abs_diff[0,:5] if tf.shape(abs_diff)[0] > 0 else "N/A")
+        
+        # Check for NaNs/Infs in abs_diff
+        tf.print("Any NaNs in abs_diff:", tf.reduce_any(tf.math.is_nan(abs_diff)))
+        tf.print("Any Infs in abs_diff:", tf.reduce_any(tf.math.is_inf(abs_diff)))
+
+        mae_value = tf.reduce_mean(abs_diff)
+        tf.print("Calculated MAE value:", mae_value)
+        
+        # Check for NaNs/Infs in final MAE
+        tf.print("Is MAE value NaN:", tf.math.is_nan(mae_value))
+        tf.print("Is MAE value Inf:", tf.math.is_inf(mae_value))
+        
+        # Defensive return if MAE is NaN to avoid issues down the line, though Keras might handle it.
+        # return tf.where(tf.math.is_nan(mae_value), tf.constant(0.0, dtype=tf.float32), mae_value)
+        return mae_value
     
     metrics_to_return = [calculate_mae_for_reconstruction] 
+    tf.print("[get_metrics] Returning MAE function:", metrics_to_return[0].__name__)
     return metrics_to_return
 
 class EarlyStoppingWithPatienceCounter(tf.keras.callbacks.EarlyStopping): # Changed to tf.keras

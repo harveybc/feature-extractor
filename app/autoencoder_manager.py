@@ -79,6 +79,7 @@ class AutoencoderManager:
         if not helper_mae_functions:
             raise ValueError("get_metrics(config) from autoencoder_helper returned an empty list or None.")
         mae_fn_for_compile = helper_mae_functions[0] 
+        tf.print(f"DEBUG: MAE function to be used in compile: {mae_fn_for_compile.__name__} from module {mae_fn_for_compile.__module__}")
 
         tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: a custom MAE function (name: {mae_fn_for_compile.__name__}), and pass-through metrics for KL components.")
         # tf.print(f"DEBUG: Attempting to compile with 'reconstruction_out' metric: 'mae' (string alias), and pass-through metrics for KL components.")
@@ -86,6 +87,14 @@ class AutoencoderManager:
         tf.print(f"DEBUG: Compiling model. Output names for compile: {self.autoencoder_model.output_names}")
 
         def pass_through_metric(y_true, y_pred): return y_pred 
+
+        metrics_dict_for_compile = { 
+            'reconstruction_out': mae_fn_for_compile, # Use the custom MAE function
+            'kl_raw_out': pass_through_metric, 
+            'kl_weighted_out': pass_through_metric,
+            'kl_beta_out': pass_through_metric 
+        }
+        tf.print(f"DEBUG: Metrics dictionary for compile: {metrics_dict_for_compile}")
 
         self.autoencoder_model.compile(
             optimizer=adam_optimizer,
@@ -105,15 +114,11 @@ class AutoencoderManager:
                 'kl_weighted_out': 0.0,
                 'kl_beta_out': 0.0
             },
-            metrics={ 
-                'reconstruction_out': mae_fn_for_compile, # Use the custom MAE function
-                'kl_raw_out': pass_through_metric, 
-                'kl_weighted_out': pass_through_metric,
-                'kl_beta_out': pass_through_metric 
-            },
+            metrics=metrics_dict_for_compile,
             run_eagerly=config.get('run_eagerly', False) 
         )
         tf.print("[_compile_model] Model compiled successfully.")
+        tf.print(f"[_compile_model] Model metrics_names AFTER compile: {self.autoencoder_model.metrics_names}")
 
 
     def build_autoencoder(self, config):
@@ -381,10 +386,12 @@ class AutoencoderManager:
         if not self.autoencoder_model.optimizer:
             print(f"Warning: Model for evaluation on '{dataset_name}' was not compiled (no optimizer found). Attempting to compile with provided config.")
             if config:
-                self._compile_model(config)
+                self._compile_model(config) # This will print metrics_names after compile
             else:
                 print("Error: Cannot compile model for evaluation as no config was provided and model is not compiled.")
                 return None
+        
+        tf.print(f"[evaluate] Model metrics_names BEFORE evaluate call on '{dataset_name}': {self.autoencoder_model.metrics_names}")
         
         # Use standard print
         print(f"Evaluating model on {dataset_name} data...")
@@ -397,6 +404,18 @@ class AutoencoderManager:
         eval_targets_dict = {
             'reconstruction_out': data_targets
         }
+
+        tf.print(f"[evaluate] Shapes for '{dataset_name}':")
+        tf.print(f"  cvae_input_x_window: {tf.shape(data_inputs[0])}")
+        tf.print(f"  cvae_input_h_context: {tf.shape(data_inputs[1])}")
+        tf.print(f"  cvae_input_conditions_t: {tf.shape(data_inputs[2])}")
+        tf.print(f"  reconstruction_out (targets): {tf.shape(data_targets)}")
+        
+        # Print a few sample values from targets for evaluation
+        tf.print(f"  reconstruction_out (targets) sample (first 5 of first batch):", data_targets[0,:5] if tf.shape(data_targets)[0] > 0 else "N/A")
+        # Check for NaNs/Infs in evaluation targets
+        tf.print(f"  Any NaNs in '{dataset_name}' targets (reconstruction_out):", tf.reduce_any(tf.math.is_nan(tf.cast(data_targets, tf.float32))))
+        tf.print(f"  Any Infs in '{dataset_name}' targets (reconstruction_out):", tf.reduce_any(tf.math.is_inf(tf.cast(data_targets, tf.float32))))
         
         results_dict = self.autoencoder_model.evaluate(
             eval_inputs_dict,

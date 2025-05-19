@@ -250,10 +250,12 @@ class AutoencoderManager:
             'cvae_input_conditions_t': data_inputs[2]
         }
         
-        train_targets_dict = {
-            'reconstruction_out': data_targets,
-            'reconstruction_out_for_mae_calc': data_targets, # Provide same targets for MAE calc output
-        }
+        # Ensure all model outputs have a corresponding key in targets
+        train_targets_dict = {output_name: None for output_name in self.autoencoder_model.output_names}
+        train_targets_dict['reconstruction_out'] = data_targets
+        train_targets_dict['reconstruction_out_for_mae_calc'] = data_targets
+        tf.print(f"[train_autoencoder] train_targets_dict keys: {list(train_targets_dict.keys())}")
+
 
         tf.print(f"Input data shapes: x_window: {data_inputs[0].shape}, h_context: {data_inputs[1].shape}, conditions_t: {data_inputs[2].shape}")
         tf.print(f"Target data shape for reconstruction_output: {data_targets.shape}")
@@ -311,10 +313,11 @@ class AutoencoderManager:
 
         if validation_data_prepared:
             val_inputs_dict_original, val_targets_dict_original = validation_data_prepared
-            val_targets_dict_new = {
-                'reconstruction_out': val_targets_dict_original['reconstruction_out'],
-                'reconstruction_out_for_mae_calc': val_targets_dict_original['reconstruction_out']
-            }
+            # Ensure all model outputs have a corresponding key in validation targets
+            val_targets_dict_new = {output_name: None for output_name in self.autoencoder_model.output_names}
+            val_targets_dict_new['reconstruction_out'] = val_targets_dict_original['reconstruction_out']
+            val_targets_dict_new['reconstruction_out_for_mae_calc'] = val_targets_dict_original['reconstruction_out'] # Assuming same target for MAE calc
+            tf.print(f"[train_autoencoder] val_targets_dict_new keys: {list(val_targets_dict_new.keys())}")
             validation_data_prepared = (val_inputs_dict_original, val_targets_dict_new)
 
         history = self.autoencoder_model.fit(
@@ -419,10 +422,12 @@ class AutoencoderManager:
             'cvae_input_conditions_t': data_inputs[2]
         }
         
-        eval_targets_dict = {
-            'reconstruction_out': data_targets,
-            'reconstruction_out_for_mae_calc': data_targets, # Provide same targets
-        }
+        # Ensure all model outputs have a corresponding key in targets
+        eval_targets_dict = {output_name: None for output_name in self.autoencoder_model.output_names}
+        eval_targets_dict['reconstruction_out'] = data_targets
+        eval_targets_dict['reconstruction_out_for_mae_calc'] = data_targets
+        tf.print(f"[evaluate] eval_targets_dict keys for '{dataset_name}': {list(eval_targets_dict.keys())}")
+
 
         tf.print(f"[evaluate] Shapes for '{dataset_name}':")
         tf.print(f"  cvae_input_x_window: {tf.shape(data_inputs[0])}")

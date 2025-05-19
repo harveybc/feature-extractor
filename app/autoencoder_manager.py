@@ -106,7 +106,7 @@ class AutoencoderManager:
                 'kl_beta_out': 0.0
             },
             metrics={ 
-                'reconstruction_out': 'mae', # Use string 'mae'
+                'reconstruction_out': tf.keras.metrics.MeanAbsoluteError(name='mae'), # Use explicit instance with name
                 'kl_raw_out': pass_through_metric, 
                 'kl_weighted_out': pass_through_metric,
                 'kl_beta_out': pass_through_metric 
@@ -114,7 +114,6 @@ class AutoencoderManager:
             run_eagerly=config.get('run_eagerly', False) 
         )
         tf.print("[_compile_model] Model compiled successfully.")
-        tf.print(f"DEBUG: Model compiled. Optimizer: {self.autoencoder_model.optimizer}, Metrics names: {self.autoencoder_model.metrics_names}")
 
 
     def build_autoencoder(self, config):

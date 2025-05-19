@@ -106,7 +106,7 @@ class AutoencoderManager:
                 'kl_beta_out': 0.0
             },
             metrics={ 
-                'reconstruction_out': 'mae', # Use string 'mae'
+                'reconstruction_out': tf.keras.metrics.MeanAbsoluteError(), # Use MeanAbsoluteError instance
                 'kl_raw_out': pass_through_metric, 
                 'kl_weighted_out': pass_through_metric,
                 'kl_beta_out': pass_through_metric 

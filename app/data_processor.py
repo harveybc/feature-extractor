@@ -200,7 +200,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     # because autoencoder_manager.py is using MeanAbsoluteError(name='custom_recon_mae').
     # Keras prepends the output name 'reconstruction_out'.
     # If 'mae' (string) is used in compile, key is 'reconstruction_out_mae'.
-    expected_mae_key = 'reconstruction_out_mae' # UPDATED EXPECTED KEY
+    # If tf.keras.metrics.MeanAbsoluteError() instance is used, key is 'reconstruction_out_mean_absolute_error'.
+    expected_mae_key = 'reconstruction_out_mean_absolute_error' # UPDATED EXPECTED KEY
     expected_val_mae_key = f'val_{expected_mae_key}' # Keras prepends 'val_'
 
     while True:

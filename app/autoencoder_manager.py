@@ -217,10 +217,12 @@ class AutoencoderManager:
 
             final_z_mean = Lambda(lambda x: x, name='z_mean_out')(encoder_z_mean) # Use original z_mean from encoder
             final_z_log_var = Lambda(lambda x: x, name='z_log_var_out')(encoder_z_log_var) # Use original z_log_var
-            # FIXED: Reshape scalar outputs to (batch, 1) to match dummy targets
-            final_kl_raw = Lambda(lambda x: tf.expand_dims(x, axis=-1), name='kl_raw_out')(inter_kl_raw)
-            final_kl_weighted = Lambda(lambda x: tf.expand_dims(x, axis=-1), name='kl_weighted_out')(inter_kl_weighted)
-            final_kl_beta = Lambda(lambda x: tf.expand_dims(x, axis=-1), name='kl_beta_out')(inter_kl_beta)
+            # CRITICAL FIX: Reshape ALL outputs to (batch, 1) to match dummy targets
+            final_z_mean = Lambda(lambda x: tf.reduce_mean(x, axis=[1, 2], keepdims=True), name='z_mean_out')(encoder_z_mean)  # (batch, 18, 32) -> (batch, 1)
+            final_z_log_var = Lambda(lambda x: tf.reduce_mean(x, axis=[1, 2], keepdims=True), name='z_log_var_out')(encoder_z_log_var)  # (batch, 18, 32) -> (batch, 1)
+            final_kl_raw = Lambda(lambda x: tf.expand_dims(x, axis=-1), name='kl_raw_out')(inter_kl_raw)  # scalar -> (batch, 1)
+            final_kl_weighted = Lambda(lambda x: tf.expand_dims(x, axis=-1), name='kl_weighted_out')(inter_kl_weighted)  # scalar -> (batch, 1)
+            final_kl_beta = Lambda(lambda x: tf.expand_dims(x, axis=-1), name='kl_beta_out')(inter_kl_beta)  # scalar -> (batch, 1)
 
             outputs_for_model = {
                 'reconstruction_out': final_reconstruction_output,
@@ -294,7 +296,7 @@ class AutoencoderManager:
                 # Same logic as reconstruction_out
                 train_targets_dict[output_name] = data_targets
             elif output_name in ['z_mean_out', 'z_log_var_out']:
-                # MODIFIED: Create 3D targets for latent outputs (batch, window_size, latent_dim)
+                # FIXED: Use minimal dummy targets - these have 0 loss weight anyway
                 train_targets_dict[output_name] = np.zeros((num_samples_train, 1), dtype=np.float32)
             elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
                 train_targets_dict[output_name] = np.zeros((num_samples_train, 1), dtype=np.float32)
@@ -389,7 +391,7 @@ class AutoencoderManager:
                 elif output_name == 'reconstruction_out_for_mae_calc':
                     val_targets_dict_new[output_name] = val_target_array
                 elif output_name in ['z_mean_out', 'z_log_var_out']:
-                    # MODIFIED: Create 3D targets for validation latent outputs
+                    # FIXED: Use minimal dummy targets
                     val_targets_dict_new[output_name] = np.zeros((num_samples_val, 1), dtype=np.float32)
                 elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
                     val_targets_dict_new[output_name] = np.zeros((num_samples_val, 1), dtype=np.float32)
@@ -521,7 +523,7 @@ class AutoencoderManager:
             elif output_name == 'reconstruction_out_for_mae_calc':
                 eval_targets_dict[output_name] = data_targets
             elif output_name in ['z_mean_out', 'z_log_var_out']:
-                # MODIFIED: Create 3D targets for evaluation latent outputs
+                # FIXED: Use minimal dummy targets
                 eval_targets_dict[output_name] = np.zeros((num_samples_eval, 1), dtype=np.float32)
             elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
                 eval_targets_dict[output_name] = np.zeros((num_samples_eval, 1), dtype=np.float32)

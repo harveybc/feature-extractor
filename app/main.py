@@ -10,9 +10,28 @@ from app.config import DEFAULT_VALUES
 from app.plugin_loader import load_plugin
 from config_merger import merge_config, process_unknown_args
 from typing import Any, Dict
+import tensorflow as tf
+
+
+# CRITICAL: Configure GPU memory growth to prevent OOM
+def configure_gpu_memory():
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Enable memory growth for all GPUs
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            print(f"Configured memory growth for {len(gpus)} GPU(s)")
+        except RuntimeError as e:
+            print(f"GPU memory configuration error: {e}")
+    else:
+        print("No GPUs found")
 
 
 def main():
+    # Configure GPU memory first
+    configure_gpu_memory()
+    
     """
     Orquesta la ejecución completa del sistema, incluyendo la optimización (si se configura)
     y la ejecución del pipeline completo (preprocesamiento, entrenamiento, predicción y evaluación).

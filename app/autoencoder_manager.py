@@ -265,9 +265,22 @@ class AutoencoderManager:
         train_targets_dict = {}
         for output_name in self.autoencoder_model.output_names:
             if output_name == 'reconstruction_out':
-                train_targets_dict[output_name] = data_targets
+                # CRITICAL FIX: data_targets needs to be 3D (batch, time, features) to match decoder output
+                if len(data_targets.shape) == 2:
+                    # If data_targets is 2D (batch, features), we need to expand it to 3D
+                    # This assumes data_targets represents the final time step of each sequence
+                    # We need to create full sequences - this is the fundamental issue
+                    tf.print(f"ERROR: data_targets has shape {data_targets.shape} but decoder outputs {config['window_size']} time steps")
+                    tf.print("The training data preparation needs to provide full sequences, not just final values")
+                    raise ValueError(f"data_targets shape {data_targets.shape} incompatible with sequence decoder output (batch, {config['window_size']}, {config['num_features_output']})")
+                else:
+                    train_targets_dict[output_name] = data_targets
             elif output_name == 'reconstruction_out_for_mae_calc':
-                train_targets_dict[output_name] = data_targets
+                if len(data_targets.shape) == 2:
+                    tf.print(f"ERROR: data_targets has shape {data_targets.shape} but decoder outputs {config['window_size']} time steps")
+                    raise ValueError(f"data_targets shape {data_targets.shape} incompatible with sequence decoder output (batch, {config['window_size']}, {config['num_features_output']})")
+                else:
+                    train_targets_dict[output_name] = data_targets
             elif output_name in ['z_mean_out', 'z_log_var_out']:
                 # MODIFIED: Create 3D targets for latent outputs (batch, window_size, latent_dim)
                 train_targets_dict[output_name] = np.zeros((num_samples_train, config['window_size'], latent_dim), dtype=np.float32)
@@ -347,14 +360,20 @@ class AutoencoderManager:
             val_inputs_dict_original, val_targets_dict_original = validation_data_prepared
             
             # Assuming val_targets_dict_original['reconstruction_out'] is the primary validation target array
-            num_samples_val = val_targets_dict_original['reconstruction_out'].shape[0]
+            val_target_array = val_targets_dict_original['reconstruction_out']
+            num_samples_val = val_target_array.shape[0]
+            
+            # CRITICAL FIX: Check validation target shape
+            if len(val_target_array.shape) == 2:
+                tf.print(f"ERROR: Validation targets have shape {val_target_array.shape} but decoder outputs {config['window_size']} time steps")
+                raise ValueError(f"Validation target shape {val_target_array.shape} incompatible with sequence decoder output")
 
             val_targets_dict_new = {}
             for output_name in self.autoencoder_model.output_names:
                 if output_name == 'reconstruction_out':
-                    val_targets_dict_new[output_name] = val_targets_dict_original['reconstruction_out']
+                    val_targets_dict_new[output_name] = val_target_array
                 elif output_name == 'reconstruction_out_for_mae_calc':
-                    val_targets_dict_new[output_name] = val_targets_dict_original['reconstruction_out']
+                    val_targets_dict_new[output_name] = val_target_array
                 elif output_name in ['z_mean_out', 'z_log_var_out']:
                     # MODIFIED: Create 3D targets for validation latent outputs
                     val_targets_dict_new[output_name] = np.zeros((num_samples_val, config['window_size'], latent_dim), dtype=np.float32)
@@ -471,11 +490,15 @@ class AutoencoderManager:
             'cvae_input_conditions_t': data_inputs[2]
         }
         
-        num_samples_eval = data_targets.shape[0]
-        latent_dim = config['latent_dim']
-
         # MODIFIED: Update evaluation targets for 3D outputs
         eval_targets_dict = {}
+        num_samples_eval = data_targets.shape[0]
+        
+        # CRITICAL FIX: Check evaluation target shape
+        if len(data_targets.shape) == 2:
+            tf.print(f"ERROR: Evaluation targets have shape {data_targets.shape} but decoder outputs {config['window_size']} time steps")
+            raise ValueError(f"Evaluation target shape {data_targets.shape} incompatible with sequence decoder output")
+            
         for output_name in self.autoencoder_model.output_names:
             if output_name == 'reconstruction_out':
                 eval_targets_dict[output_name] = data_targets

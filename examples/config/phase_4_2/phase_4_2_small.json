@@ -63,7 +63,7 @@
     "intermediate_layers": 5,
     "initial_layer_size": 64,
     "layer_size_divisor": 2,
-    "learning_rate": 1e-4,
+    "learning_rate": 1e-5,
     "activation": "tanh",
     "l2_reg": 1e-5,
     "early_patience": 80,

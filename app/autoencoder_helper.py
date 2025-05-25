@@ -265,15 +265,23 @@ class EarlyStoppingWithPatienceCounter(tf.keras.callbacks.EarlyStopping): # Chan
         # Store configured patience in the global tracker when callback is initialized
         if hasattr(self, 'patience'):
              es_patience_config_tracker.assign(self.patience)
+        # Initialize best value based on mode
+        if self.monitor_op == np.greater:
+            es_best_value_tracker.assign(-np.inf)
+        else:
+            es_best_value_tracker.assign(np.inf)
+
 
     def on_epoch_end(self, epoch, logs=None):
         super().on_epoch_end(epoch, logs) # Original EarlyStopping logic
         # Update global trackers with current state
-        if hasattr(self, 'wait'):
+        if hasattr(self, 'wait'): # wait is the counter for patience
             es_wait_tracker.assign(self.wait)
-        if self.best is not None and np.isfinite(self.best):
+        if self.best is not None and np.isfinite(self.best): # self.best is the best monitored quantity
             es_best_value_tracker.assign(self.best)
-        # Original print statement is removed; EpochEndLogger will handle display
+        # else:
+            # tf.print(f"DEBUG ES: epoch {epoch}, self.best: {self.best}, self.wait: {self.wait if hasattr(self, 'wait') else 'N/A'}")
+
 
 class ReduceLROnPlateauWithCounter(tf.keras.callbacks.ReduceLROnPlateau): # Changed to tf.keras
     def __init__(self, **kwargs):
@@ -283,17 +291,13 @@ class ReduceLROnPlateauWithCounter(tf.keras.callbacks.ReduceLROnPlateau): # Chan
             rlrop_patience_config_tracker.assign(self.patience)
 
     def on_epoch_end(self, epoch, logs=None):
-        # It's important to get LR *before* super().on_epoch_end might change it
-        # However, logs['lr'] will contain the LR for the *next* epoch if it changed.
-        # For current epoch's LR, it's better to read it directly or rely on logs['lr']
-        # if Keras guarantees it's the one used for the ended epoch or start of next.
-        # Let's assume logs['lr'] (added by ReduceLROnPlateau base class) is sufficient.
         super().on_epoch_end(epoch, logs) # Original ReduceLROnPlateau logic
         # Update global trackers
-        if hasattr(self, 'wait'):
+        if hasattr(self, 'wait'): # wait is the counter for patience
             rlrop_wait_tracker.assign(self.wait)
-        # LR is typically added to logs by the base ReduceLROnPlateau callback as 'lr'
-        # Original print statement is removed
+        # else:
+            # tf.print(f"DEBUG RLROP: epoch {epoch}, self.wait: {self.wait if hasattr(self, 'wait') else 'N/A'}")
+
 
 class KLAnnealingCallback(tf.keras.callbacks.Callback): # Changed to tf.keras
     def __init__(self, kl_beta_start, kl_beta_end, anneal_epochs, 
@@ -349,65 +353,60 @@ class KLAnnealingCallback(tf.keras.callbacks.Callback): # Changed to tf.keras
 class EpochEndLogger(tf.keras.callbacks.Callback): # Changed to tf.keras
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        log_items = [f"Epoch {epoch+1}"]
+        log_items = [f"Epoch {epoch+1}/{self.params.get('epochs', 'N/A')}"] # Add total epochs
 
         # Standard Keras metrics from logs
-        if 'loss' in logs: log_items.append(f"loss: {logs['loss']:.4f}")
+        if 'loss' in logs: log_items.append(f"loss: {logs['loss']:.5f}") # Increased precision
         
         # MAE: from the dedicated output
-        mae_key = 'reconstruction_out_for_mae_calc_mean_absolute_error' # UPDATED EXPECTED KEY
+        mae_key = 'reconstruction_out_for_mae_calc_mean_absolute_error' 
         if mae_key in logs: 
-            log_items.append(f"mae: {logs[mae_key]:.4f}")
-        # else: MAE not found in logs, will not be printed for this epoch
-
-        if 'val_loss' in logs: log_items.append(f"val_loss: {logs['val_loss']:.4f}")
+            log_items.append(f"mae: {logs[mae_key]:.5f}") # Increased precision
+        
+        if 'val_loss' in logs: log_items.append(f"val_loss: {logs['val_loss']:.5f}") # Increased precision
         
         val_mae_key = f"val_{mae_key}" 
         if val_mae_key in logs:
-            log_items.append(f"val_mae: {logs[val_mae_key]:.4f}")
-        # else: Val_MAE not found in logs, will not be printed
+            log_items.append(f"val_mae: {logs[val_mae_key]:.5f}") # Increased precision
 
         # Learning rate
         current_lr_val_str = "N/A"
-        if 'lr' in logs: # ReduceLROnPlateau adds 'lr' to logs
+        if 'lr' in logs: 
             current_lr_val_str = f"{logs['lr']:.7f}"
         elif hasattr(self.model, 'optimizer') and hasattr(self.model.optimizer, 'learning_rate'):
             try: 
                 lr_val_obj = self.model.optimizer.learning_rate
                 if isinstance(lr_val_obj, tf.Variable):
                     current_lr_val_str = f"{lr_val_obj.numpy():.7f}"
-                elif callable(lr_val_obj): # If it's a LearningRateSchedule
-                     # Get current step, might need a global step counter if not using iterations_per_epoch
-                    current_step = self.model.optimizer.iterations.numpy() # Get current iterations
+                elif callable(lr_val_obj): 
+                    current_step = self.model.optimizer.iterations.numpy() 
                     current_lr_val_str = f"{lr_val_obj(current_step).numpy():.7f}"
-                else: # Assuming it's a direct float value
+                else: 
                     current_lr_val_str = f"{tf.keras.backend.get_value(lr_val_obj):.7f}"
-            except Exception as e:
-                # print(f"Debug: Could not retrieve LR directly: {e}") # Optional debug
-                pass # Keep N/A
+            except Exception:
+                pass 
         log_items.append(f"lr: {current_lr_val_str}")
 
-        # KL Beta (from global tracker, updated by KLAnnealingCallback)
-        log_items.append(f"kl_beta: {kl_beta_callback_tracker.numpy():.6f}")
+        # KL Beta
+        log_items.append(f"kl_b: {kl_beta_callback_tracker.numpy():.6f}") # Shorter key
         
-        # Log other tracked components directly from global tf.Variables (using RENAMED trackers)
-        log_items.append(f"huber_c: {huber_loss_component_tracker.numpy():.4f}")
-        log_items.append(f"mmd_c: {mmd_total_tracker.numpy():.4f}") # RENAMED
-        log_items.append(f"skew_c: {skew_loss_component_tracker.numpy():.4f}") # RENAMED
-        log_items.append(f"kurt_c: {kurtosis_loss_component_tracker.numpy():.4f}") # RENAMED
-        # covariance_loss_component_tracker is also available if needed
+        # Log other tracked components
+        log_items.append(f"huber: {huber_loss_component_tracker.numpy():.5f}") # Shorter key
+        if mmd_total_tracker.numpy() != 0.0 : log_items.append(f"mmd: {mmd_total_tracker.numpy():.5f}") # Shorter key, conditional
+        if skew_loss_component_tracker.numpy() != 0.0 : log_items.append(f"skew: {skew_loss_component_tracker.numpy():.5f}") # Shorter key, conditional
+        if kurtosis_loss_component_tracker.numpy() != 0.0 : log_items.append(f"kurt: {kurtosis_loss_component_tracker.numpy():.5f}") # Shorter key, conditional
 
         # Early Stopping Info
         es_patience_val = es_patience_config_tracker.numpy()
-        if es_patience_val > 0: # Only print if ES is active (patience configured)
+        if es_patience_val > 0: 
             best_val_np = es_best_value_tracker.numpy()
-            best_val_str = f"{best_val_np:.4f}" if np.isfinite(best_val_np) else "N/A"
+            best_val_str = f"{best_val_np:.5f}" if np.isfinite(best_val_np) else "N/A" # Increased precision
             log_items.append(f"ES_wait: {es_wait_tracker.numpy()}/{es_patience_val}")
             log_items.append(f"ES_best: {best_val_str}")
 
         # Reduce LR Info
         rlrop_patience_val = rlrop_patience_config_tracker.numpy()
-        if rlrop_patience_val > 0: # Only print if RLROP is active (patience configured)
+        if rlrop_patience_val > 0: 
             log_items.append(f"RLROP_wait: {rlrop_wait_tracker.numpy()}/{rlrop_patience_val}")
         
-        print(" - ".join(log_items)) # Standard Python print
+        tf.print(" - ".join(log_items), output_stream=sys.stdout) # Use tf.print and stdout

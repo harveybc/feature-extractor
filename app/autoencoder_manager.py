@@ -69,7 +69,8 @@ class AutoencoderManager:
             learning_rate=config.get('learning_rate', 0.0001),
             beta_1=config.get('adam_beta_1', 0.9),
             beta_2=config.get('adam_beta_2', 0.999),
-            epsilon=config.get('adam_epsilon', 1e-07)
+            epsilon=config.get('adam_epsilon', 1e-07),
+            clipnorm=config.get('adam_clipnorm', None) # ADDED: Gradient Clipping
         )
         
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
@@ -275,25 +276,29 @@ class AutoencoderManager:
 
         callbacks_list = []
         
-        # Add EpochEndLogger: This will print consolidated info at epoch end
-        callbacks_list.append(EpochEndLogger())
-
-        if config.get('early_stopping_patience', 0) > 0:
+        # Add other callbacks first
+        if config.get('early_patience', 0) > 0: # MODIFIED: Check 'early_patience' from main config
             callbacks_list.append(EarlyStoppingWithPatienceCounter(
                 monitor=config.get('early_stopping_monitor', 'val_loss'),
-                patience=config.get('early_stopping_patience'),
-                verbose=0, # MODIFIED: Set to 0 to let EpochEndLogger handle printing
-                restore_best_weights=config.get('early_stopping_restore_best_weights', True)
+                patience=config.get('early_patience'), # Use 'early_patience'
+                verbose=0, 
+                restore_best_weights=config.get('early_stopping_restore_best_weights', True),
+                min_delta=config.get('min_delta', 1e-7) # Pass min_delta
             ))
+            tf.print(f"[train_autoencoder] EarlyStopping configured with patience: {config.get('early_patience')}, monitor: {config.get('early_stopping_monitor', 'val_loss')}")
+
 
         if config.get('reduce_lr_patience', 0) > 0:
             callbacks_list.append(ReduceLROnPlateauWithCounter(
                 monitor=config.get('reduce_lr_monitor', 'val_loss'),
                 factor=config.get('reduce_lr_factor', 0.2),
                 patience=config.get('reduce_lr_patience'),
-                min_lr=config.get('reduce_lr_min_lr', 0.00001),
-                verbose=0 # MODIFIED: Set to 0 to let EpochEndLogger handle printing
+                min_lr=config.get('reduce_lr_min_lr', 1e-6), # Corrected default
+                verbose=0, 
+                min_delta=config.get('min_delta', 1e-7) # Pass min_delta
             ))
+            tf.print(f"[train_autoencoder] ReduceLROnPlateau configured with patience: {config.get('reduce_lr_patience')}")
+
         
         if self.kl_layer_instance_obj and config.get('kl_anneal_epochs', 0) > 0:
             kl_annealing = KLAnnealingCallback(
@@ -309,6 +314,10 @@ class AutoencoderManager:
              tf.print("[train_autoencoder] KL Annealing specified in config, but KLDivergenceLayer object not found/stored. Skipping KLAnnealingCallback.")
         else:
             tf.print("[train_autoencoder] KL Annealing not configured (kl_anneal_epochs is 0).")
+
+        # Add EpochEndLogger LAST to ensure it reads updated states from other callbacks
+        callbacks_list.append(EpochEndLogger())
+        tf.print("[train_autoencoder] EpochEndLogger added as the last callback.")
 
         validation_data_prepared = None
         if 'cvae_val_inputs' in config and 'cvae_val_targets' in config:

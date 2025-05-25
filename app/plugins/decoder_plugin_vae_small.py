@@ -88,12 +88,6 @@ class Plugin:
         
         print(f"[DEBUG DecoderPlugin] Calculated encoder output temporal dim: {encoder_output_temporal_dim}")
         
-        # Calculate expected final temporal dimension after decoder upsampling
-        decoder_final_temporal_dim = encoder_output_temporal_dim
-        for i in range(enc_num_conv_layers):
-            decoder_final_temporal_dim = decoder_final_temporal_dim * 2
-        print(f"[DEBUG DecoderPlugin] Expected decoder final temporal dim: {decoder_final_temporal_dim}")
-        
         # Calculate encoder filter progression to mirror it
         encoder_actual_output_filters = []
         encoder_actual_strides = []
@@ -143,15 +137,41 @@ class Plugin:
                 activation=conv_activation_name,
                 name=f"decoder_conv1d_transpose_{i+1}"
             )(x)
-            print(f"[DEBUG DecoderPlugin] After Conv1DTranspose_{i+1}: expected shape (None, {x.shape[1] if hasattr(x.shape[1], '__int__') else 'dynamic'}, {filters})")
+            
+            # Debug: Print actual shape after each layer
+            current_temporal_dim = encoder_output_temporal_dim * (2 ** (i + 1))
+            print(f"[DEBUG DecoderPlugin] After Conv1DTranspose_{i+1}: stride={stride}, filters={filters}, expected temporal dim={current_temporal_dim}")
+
+        # CRITICAL FIX: Ensure final output matches original window_size
+        current_temporal_dim = encoder_output_temporal_dim * (2 ** len(decoder_convt_output_filters))
+        if current_temporal_dim != window_size:
+            print(f"[WARNING DecoderPlugin] Final temporal dim {current_temporal_dim} != window_size {window_size}")
+            print(f"[WARNING DecoderPlugin] This will cause shape mismatch in training!")
+            
+            # Add additional upsampling layer if needed
+            missing_factor = window_size // current_temporal_dim
+            if missing_factor > 1 and (missing_factor & (missing_factor - 1)) == 0:  # Check if power of 2
+                print(f"[FIX DecoderPlugin] Adding extra Conv1DTranspose with stride={missing_factor}")
+                x = Conv1DTranspose(
+                    filters=decoder_convt_output_filters[-1],  # Use same filters as last layer
+                    kernel_size=3,
+                    strides=missing_factor,
+                    padding='same',
+                    activation=conv_activation_name,
+                    name=f"decoder_conv1d_transpose_extra"
+                )(x)
 
         # MODIFIED: Final output layer using TimeDistributed
         output_seq = TimeDistributed(
             Dense(output_feature_dim, activation=output_activation_name, name="final_dense"),
             name="decoder_output_seq"
-        )(x)  # shape: (batch, window_size, output_feature_dim) - after upsampling back to original size
+        )(x)  # shape: (batch, window_size, output_feature_dim)
 
-        print(f"[DEBUG DecoderPlugin] Final output shape should be: (batch, {decoder_final_temporal_dim}, {output_feature_dim})")
+        # CRITICAL: Verify final output shape
+        print(f"[DEBUG DecoderPlugin] Final output symbolic shape: {output_seq.shape}")
+        expected_shape = (None, window_size, output_feature_dim)
+        if output_seq.shape[1] != window_size:
+            raise ValueError(f"Decoder output temporal dimension {output_seq.shape[1]} does not match expected window_size {window_size}")
         
         self.generative_network_model = Model(
             inputs=[input_z_seq, input_h_context, input_conditions],
@@ -159,7 +179,7 @@ class Plugin:
             name="sequence_conv_transpose_cvae_decoder"
         )
         
-        print(f"[DEBUG DecoderPlugin] Sequence decoder model built.")
+        print(f"[DEBUG DecoderPlugin] Sequence decoder model built successfully.")
         self.generative_network_model.summary(line_length=120)
 
     def train(self, *args, **kwargs):

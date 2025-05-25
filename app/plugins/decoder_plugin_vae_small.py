@@ -80,6 +80,14 @@ class Plugin:
         conv_kernel_size = config.get("conv_kernel_size", self.params.get("conv_kernel_size", 5))
         window_size = config.get("window_size", 288)  # Get window size from config
 
+        # Calculate the actual temporal dimension after encoder's conv layers
+        encoder_output_temporal_dim = window_size
+        for i in range(enc_num_conv_layers):
+            stride = 2  # Each layer has stride=2
+            encoder_output_temporal_dim = encoder_output_temporal_dim // stride
+        
+        print(f"[DEBUG DecoderPlugin] Calculated encoder output temporal dim: {encoder_output_temporal_dim}")
+        
         # Calculate encoder filter progression to mirror it
         encoder_actual_output_filters = []
         encoder_actual_strides = []
@@ -98,23 +106,23 @@ class Plugin:
         decoder_strides = encoder_actual_strides[::-1]
 
         print(f"[DEBUG DecoderPlugin] Configuring with: z_dim={latent_dim}, h_dim={rnn_hidden_dim}, cond_dim={conditioning_dim}, out_dim={output_feature_dim}")
-        print(f"[DEBUG DecoderPlugin] Window size: {window_size}")
+        print(f"[DEBUG DecoderPlugin] Original window size: {window_size}, Encoder output temporal dim: {encoder_output_temporal_dim}")
         print(f"[DEBUG DecoderPlugin] Encoder structure ref: initial_filters={enc_initial_filters}, num_layers={enc_num_conv_layers}, num_strided={enc_num_strided_layers}")
         print(f"[DEBUG DecoderPlugin] Decoder ConvT output filters: {decoder_convt_output_filters}")
         print(f"[DEBUG DecoderPlugin] Decoder strides: {decoder_strides}")
 
-        # MODIFIED: Define inputs for sequence processing instead of single time step
-        input_z_seq = Input(shape=(window_size, latent_dim), name="decoder_input_z_seq")
+        # MODIFIED: Define inputs for sequence processing using encoder's output temporal dimension
+        input_z_seq = Input(shape=(encoder_output_temporal_dim, latent_dim), name="decoder_input_z_seq")
         input_h_context = Input(shape=(rnn_hidden_dim,), name="decoder_input_h_context") 
         input_conditions = Input(shape=(conditioning_dim,), name="decoder_input_conditions")
 
-        # MODIFIED: Expand context and conditions to match sequence length
-        h_context_expanded = RepeatVector(window_size, name="h_context_repeated")(input_h_context)
-        conditions_expanded = RepeatVector(window_size, name="conditions_repeated")(input_conditions)
+        # MODIFIED: Expand context and conditions to match encoder's output sequence length
+        h_context_expanded = RepeatVector(encoder_output_temporal_dim, name="h_context_repeated")(input_h_context)
+        conditions_expanded = RepeatVector(encoder_output_temporal_dim, name="conditions_repeated")(input_conditions)
 
         # MODIFIED: Concatenate all sequence inputs
         x = Concatenate(axis=-1, name="decoder_concat_seq")([input_z_seq, h_context_expanded, conditions_expanded])
-        # x shape: (batch, window_size, latent_dim + rnn_hidden_dim + conditioning_dim)
+        # x shape: (batch, encoder_output_temporal_dim, latent_dim + rnn_hidden_dim + conditioning_dim)
 
         # MODIFIED: Use Conv1DTranspose layers to mirror encoder's Conv1D layers
         for i in range(len(decoder_convt_output_filters)):
@@ -134,7 +142,7 @@ class Plugin:
         output_seq = TimeDistributed(
             Dense(output_feature_dim, activation=output_activation_name, name="final_dense"),
             name="decoder_output_seq"
-        )(x)  # shape: (batch, window_size, output_feature_dim)
+        )(x)  # shape: (batch, window_size, output_feature_dim) - after upsampling back to original size
 
         self.generative_network_model = Model(
             inputs=[input_z_seq, input_h_context, input_conditions],

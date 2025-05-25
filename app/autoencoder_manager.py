@@ -28,9 +28,16 @@ class KLDivergenceLayer(tf.keras.layers.Layer): # Changed
         # MODIFIED: Handle 3D tensors (batch, time, latent_dim)
         # Sum over latent_dim (axis=-1), then sum over time (axis=1), then mean over batch (axis=0)
         kl_term = 1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)
-        kl_loss_raw = -0.5 * tf.reduce_mean(
-            tf.reduce_sum(kl_term, axis=[1, 2])  # Sum over time and latent dimensions
-        )
+        if len(z_mean.shape) == 3:
+            # 3D case: (batch, time, latent_dim)
+            kl_loss_raw = -0.5 * tf.reduce_mean(
+                tf.reduce_sum(kl_term, axis=[1, 2])  # Sum over time and latent dimensions
+            )
+        else:
+            # 2D case: (batch, latent_dim)
+            kl_loss_raw = -0.5 * tf.reduce_mean(
+                tf.reduce_sum(kl_term, axis=1)  # Sum over latent dimensions only
+            )
         
         weighted_kl_loss = self.kl_beta * kl_loss_raw
         self.add_loss(weighted_kl_loss) # This adds the loss to the model
@@ -210,9 +217,10 @@ class AutoencoderManager:
 
             final_z_mean = Lambda(lambda x: x, name='z_mean_out')(encoder_z_mean) # Use original z_mean from encoder
             final_z_log_var = Lambda(lambda x: x, name='z_log_var_out')(encoder_z_log_var) # Use original z_log_var
-            final_kl_raw = Lambda(lambda x: x, name='kl_raw_out')(inter_kl_raw)
-            final_kl_weighted = Lambda(lambda x: x, name='kl_weighted_out')(inter_kl_weighted)
-            final_kl_beta = Lambda(lambda x: x, name='kl_beta_out')(inter_kl_beta)
+            # FIXED: Reshape scalar outputs to (batch, 1) to match dummy targets
+            final_kl_raw = Lambda(lambda x: tf.expand_dims(x, axis=-1), name='kl_raw_out')(inter_kl_raw)
+            final_kl_weighted = Lambda(lambda x: tf.expand_dims(x, axis=-1), name='kl_weighted_out')(inter_kl_weighted)
+            final_kl_beta = Lambda(lambda x: tf.expand_dims(x, axis=-1), name='kl_beta_out')(inter_kl_beta)
 
             outputs_for_model = {
                 'reconstruction_out': final_reconstruction_output,
@@ -287,7 +295,7 @@ class AutoencoderManager:
                 train_targets_dict[output_name] = data_targets
             elif output_name in ['z_mean_out', 'z_log_var_out']:
                 # MODIFIED: Create 3D targets for latent outputs (batch, window_size, latent_dim)
-                train_targets_dict[output_name] = np.zeros((num_samples_train, config['window_size'], latent_dim), dtype=np.float32)
+                train_targets_dict[output_name] = np.zeros((num_samples_train, 1), dtype=np.float32)
             elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
                 train_targets_dict[output_name] = np.zeros((num_samples_train, 1), dtype=np.float32)
             else: # Should not happen if all outputs are covered
@@ -382,7 +390,7 @@ class AutoencoderManager:
                     val_targets_dict_new[output_name] = val_target_array
                 elif output_name in ['z_mean_out', 'z_log_var_out']:
                     # MODIFIED: Create 3D targets for validation latent outputs
-                    val_targets_dict_new[output_name] = np.zeros((num_samples_val, config['window_size'], latent_dim), dtype=np.float32)
+                    val_targets_dict_new[output_name] = np.zeros((num_samples_val, 1), dtype=np.float32)
                 elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
                     val_targets_dict_new[output_name] = np.zeros((num_samples_val, 1), dtype=np.float32)
                 else: # Should not happen
@@ -514,7 +522,7 @@ class AutoencoderManager:
                 eval_targets_dict[output_name] = data_targets
             elif output_name in ['z_mean_out', 'z_log_var_out']:
                 # MODIFIED: Create 3D targets for evaluation latent outputs
-                eval_targets_dict[output_name] = np.zeros((num_samples_eval, config['window_size'], latent_dim), dtype=np.float32)
+                eval_targets_dict[output_name] = np.zeros((num_samples_eval, 1), dtype=np.float32)
             elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
                 eval_targets_dict[output_name] = np.zeros((num_samples_eval, 1), dtype=np.float32)
             else: # Should not happen

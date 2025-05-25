@@ -161,14 +161,19 @@ class Plugin:
                     name=f"decoder_conv1d_transpose_extra"
                 )(x)
 
-        # MODIFIED: Final output layer using TimeDistributed
-        full_sequence = TimeDistributed(
-            Dense(output_feature_dim, activation=output_activation_name, name="final_dense"),
-            name="decoder_full_sequence"
+        # SIMPLIFIED: Direct Conv1D output to final features, then extract last time step
+        # Add final conv layer to get the right number of output features
+        x = Conv1D(
+            filters=output_feature_dim,
+            kernel_size=1,  # 1x1 conv for feature transformation
+            strides=1,
+            padding='same',
+            activation=output_activation_name,
+            name="final_conv_features"
         )(x)  # shape: (batch, window_size, output_feature_dim)
-
-        # CRITICAL FIX: Extract only the final time step to match 2D targets
-        output_seq = Lambda(lambda x: x[:, -1, :], name="decoder_output_seq")(full_sequence)
+        
+        # Extract only the final time step to match 2D targets
+        output_seq = Lambda(lambda x: x[:, -1, :], name="decoder_output_seq")(x)
         # output_seq shape: (batch, output_feature_dim) - matches your 2D targets
         
         print(f"[DEBUG DecoderPlugin] Final output symbolic shape: {output_seq.shape}")

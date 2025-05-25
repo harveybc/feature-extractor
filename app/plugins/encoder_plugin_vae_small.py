@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Concatenate, Conv1D, Flatten, LSTM, Bidirectional, RepeatVector # ADDED RepeatVector
+from keras.layers import Dense, Input, Concatenate, Conv1D, Flatten, LSTM, Bidirectional, RepeatVector, TimeDistributed, MultiHeadAttention # ADDED RepeatVector, TimeDistributed, MultiHeadAttention
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal 
 from keras.regularizers import l2
@@ -124,15 +124,35 @@ class Plugin:
                 else: # Not downsampled, gentler reduction or hold
                     current_layer_filters = max(min_conv_filters_cfg, int(current_layer_filters * 0.8)) # e.g., reduce by 20%
 
-        
-        # --- MODIFIED: Remove previous concatenation here, BiLSTM output directly to Dense layers ---
-        # concatenated_features = Concatenate(name="concat_features")([bilstm_output, input_h_prev, input_conditions_t]) # REMOVED
-        # z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(concatenated_features) # OLD
-        # z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(concatenated_features) # OLD
+        bilstm_output = Bidirectional(
+            LSTM(units=lstm_units_cfg,
+                 activation='tanh',
+                 recurrent_activation='sigmoid',
+                 return_sequences=True,
+                 kernel_regularizer=l2(l2_reg_val),
+                 recurrent_regularizer=l2(l2_reg_val)),
+            name="bilstm_layer"
+        )(x_conv)  # shape (batch, window_size, 2*lstm_units_cfg)
 
-        z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(x_conv) # NEW
-        z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(x_conv) # NEW
-        # --- END MODIFICATION ---
+        # self-attention over time
+        attn = MultiHeadAttention(
+            num_heads=4,
+            key_dim=2*lstm_units_cfg // 4,
+            name="self_attention"
+        )(bilstm_output, bilstm_output)  # (batch, window_size, 2*lstm_units_cfg)
+
+        # project to latent sequence
+        z_mean_seq = TimeDistributed(
+            Dense(latent_dim, kernel_regularizer=l2(l2_reg_val)),
+            name="z_mean_seq"
+        )(attn)
+        z_log_var_seq = TimeDistributed(
+            Dense(latent_dim, kernel_regularizer=l2(l2_reg_val)),
+            name="z_log_var_seq"
+        )(attn)
+
+        # final 3D outputs
+        z_mean, z_log_var = z_mean_seq, z_log_var_seq
 
         self.inference_network_model = Model(
             inputs=[input_x_window, input_h_prev, input_conditions_t],

@@ -87,13 +87,11 @@ class Plugin:
         
         for i in range(enc_num_conv_layers):
             encoder_actual_output_filters.append(current_filters)
-            stride = 2 if i < enc_num_strided_layers else 1
+            stride = 2  # FIXED: Always stride=2 to match encoder
             encoder_actual_strides.append(stride)
             if i < enc_num_conv_layers - 1:
-                if stride == 2:
-                    current_filters = max(enc_min_filters, current_filters // 2)
-                else:
-                    current_filters = max(enc_min_filters, int(current_filters * 0.8))
+                # Always halve filters to match encoder progression
+                current_filters = max(enc_min_filters, current_filters // 2)
 
         # Reverse for decoder (transpose convolutions go from last to first)
         decoder_convt_output_filters = encoder_actual_output_filters[::-1]
@@ -125,11 +123,10 @@ class Plugin:
             
             x = Conv1DTranspose(
                 filters=filters,
-                kernel_size=conv_kernel_size,
+                kernel_size=3,  # FIXED: Use kernel_size=3 to match encoder
                 strides=stride,
                 padding='same',
                 activation=conv_activation_name,
-                # NO kernel_regularizer as requested
                 name=f"decoder_conv1d_transpose_{i+1}"
             )(x)
 

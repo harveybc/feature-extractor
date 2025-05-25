@@ -105,11 +105,11 @@ class Plugin:
         current_layer_filters = initial_conv_filters
 
         for i in range(num_conv_layers_cfg):
-            strides_for_layer = 2 if i < num_strided_conv_layers_cfg else 1
+            strides_for_layer = 2  # FIXED: Always use stride=2 to halve temporal dimension
             
             x_conv = Conv1D(
                 filters=current_layer_filters,
-                kernel_size=conv_kernel_size,
+                kernel_size=3,  # FIXED: Use kernel_size=3 as you specified
                 strides=strides_for_layer,
                 padding=conv_padding,
                 activation=conv_activation_str,
@@ -119,10 +119,8 @@ class Plugin:
             
             # Determine filter count for the next layer
             if i < num_conv_layers_cfg - 1: # No reduction after the last conv layer
-                if strides_for_layer == 2: # Downsampled, reduce filters more
-                    current_layer_filters = max(min_conv_filters_cfg, current_layer_filters // 2)
-                else: # Not downsampled, gentler reduction or hold
-                    current_layer_filters = max(min_conv_filters_cfg, int(current_layer_filters * 0.8)) # e.g., reduce by 20%
+                # Always halve the filters since we always downsample temporally
+                current_layer_filters = max(min_conv_filters_cfg, current_layer_filters // 2)
 
         bilstm_output = Bidirectional(
             LSTM(units=lstm_units_cfg,

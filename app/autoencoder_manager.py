@@ -265,22 +265,26 @@ class AutoencoderManager:
         train_targets_dict = {}
         for output_name in self.autoencoder_model.output_names:
             if output_name == 'reconstruction_out':
-                # CRITICAL FIX: data_targets needs to be 3D (batch, time, features) to match decoder output
-                if len(data_targets.shape) == 2:
-                    # If data_targets is 2D (batch, features), we need to expand it to 3D
-                    # This assumes data_targets represents the final time step of each sequence
-                    # We need to create full sequences - this is the fundamental issue
-                    tf.print(f"ERROR: data_targets has shape {data_targets.shape} but decoder outputs {config['window_size']} time steps")
-                    tf.print("The training data preparation needs to provide full sequences, not just final values")
-                    raise ValueError(f"data_targets shape {data_targets.shape} incompatible with sequence decoder output (batch, {config['window_size']}, {config['num_features_output']})")
-                else:
+                # FIXED: Check actual decoder output shape, not expected shape
+                decoder_output_shape = self.decoder_plugin.generative_network_model.output_shape
+                tf.print(f"[DEBUG] Decoder actual output shape: {decoder_output_shape}")
+                tf.print(f"[DEBUG] data_targets shape: {data_targets.shape}")
+                
+                # If decoder outputs 2D (batch, features), targets should be 2D
+                if len(decoder_output_shape) == 2:
+                    if len(data_targets.shape) != 2:
+                        raise ValueError(f"data_targets shape {data_targets.shape} incompatible with 2D decoder output {decoder_output_shape}")
                     train_targets_dict[output_name] = data_targets
+                # If decoder outputs 3D (batch, time, features), targets should be 3D  
+                elif len(decoder_output_shape) == 3:
+                    if len(data_targets.shape) != 3:
+                        raise ValueError(f"data_targets shape {data_targets.shape} incompatible with 3D decoder output {decoder_output_shape}")
+                    train_targets_dict[output_name] = data_targets
+                else:
+                    raise ValueError(f"Unexpected decoder output shape: {decoder_output_shape}")
             elif output_name == 'reconstruction_out_for_mae_calc':
-                if len(data_targets.shape) == 2:
-                    tf.print(f"ERROR: data_targets has shape {data_targets.shape} but decoder outputs {config['window_size']} time steps")
-                    raise ValueError(f"data_targets shape {data_targets.shape} incompatible with sequence decoder output (batch, {config['window_size']}, {config['num_features_output']})")
-                else:
-                    train_targets_dict[output_name] = data_targets
+                # Same logic as reconstruction_out
+                train_targets_dict[output_name] = data_targets
             elif output_name in ['z_mean_out', 'z_log_var_out']:
                 # MODIFIED: Create 3D targets for latent outputs (batch, window_size, latent_dim)
                 train_targets_dict[output_name] = np.zeros((num_samples_train, config['window_size'], latent_dim), dtype=np.float32)
@@ -363,10 +367,12 @@ class AutoencoderManager:
             val_target_array = val_targets_dict_original['reconstruction_out']
             num_samples_val = val_target_array.shape[0]
             
-            # CRITICAL FIX: Check validation target shape
-            if len(val_target_array.shape) == 2:
-                tf.print(f"ERROR: Validation targets have shape {val_target_array.shape} but decoder outputs {config['window_size']} time steps")
-                raise ValueError(f"Validation target shape {val_target_array.shape} incompatible with sequence decoder output")
+            # FIXED: Check validation target shape against actual decoder output
+            decoder_output_shape = self.decoder_plugin.generative_network_model.output_shape
+            if len(decoder_output_shape) == 2 and len(val_target_array.shape) != 2:
+                raise ValueError(f"Validation target shape {val_target_array.shape} incompatible with 2D decoder output {decoder_output_shape}")
+            elif len(decoder_output_shape) == 3 and len(val_target_array.shape) != 3:
+                raise ValueError(f"Validation target shape {val_target_array.shape} incompatible with 3D decoder output {decoder_output_shape}")
 
             val_targets_dict_new = {}
             for output_name in self.autoencoder_model.output_names:
@@ -494,10 +500,12 @@ class AutoencoderManager:
         eval_targets_dict = {}
         num_samples_eval = data_targets.shape[0]
         
-        # CRITICAL FIX: Check evaluation target shape
-        if len(data_targets.shape) == 2:
-            tf.print(f"ERROR: Evaluation targets have shape {data_targets.shape} but decoder outputs {config['window_size']} time steps")
-            raise ValueError(f"Evaluation target shape {data_targets.shape} incompatible with sequence decoder output")
+        # FIXED: Check evaluation target shape against actual decoder output  
+        decoder_output_shape = self.decoder_plugin.generative_network_model.output_shape
+        if len(decoder_output_shape) == 2 and len(data_targets.shape) != 2:
+            raise ValueError(f"Evaluation target shape {data_targets.shape} incompatible with 2D decoder output {decoder_output_shape}")
+        elif len(decoder_output_shape) == 3 and len(data_targets.shape) != 3:
+            raise ValueError(f"Evaluation target shape {data_targets.shape} incompatible with 3D decoder output {decoder_output_shape}")
             
         for output_name in self.autoencoder_model.output_names:
             if output_name == 'reconstruction_out':

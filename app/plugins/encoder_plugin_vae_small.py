@@ -124,23 +124,14 @@ class Plugin:
                 else: # Not downsampled, gentler reduction or hold
                     current_layer_filters = max(min_conv_filters_cfg, int(current_layer_filters * 0.8)) # e.g., reduce by 20%
 
-        bilstm_output = Bidirectional(
-            LSTM(units=lstm_units_cfg, 
-                 activation='tanh',
-                 recurrent_activation='sigmoid',
-                 kernel_regularizer=l2(l2_reg_val),
-                 recurrent_regularizer=l2(l2_reg_val),
-                 return_sequences=False), # Output only the final state
-            name="bilstm_layer"
-        )(x_conv)
-
+        
         # --- MODIFIED: Remove previous concatenation here, BiLSTM output directly to Dense layers ---
         # concatenated_features = Concatenate(name="concat_features")([bilstm_output, input_h_prev, input_conditions_t]) # REMOVED
         # z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(concatenated_features) # OLD
         # z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(concatenated_features) # OLD
 
-        z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(bilstm_output) # NEW
-        z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(bilstm_output) # NEW
+        z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(x_conv) # NEW
+        z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(x_conv) # NEW
         # --- END MODIFICATION ---
 
         self.inference_network_model = Model(

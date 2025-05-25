@@ -343,97 +343,82 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     
     config['latent_dim'] = best_latent_dim 
 
-    # Create a filtered version of the config for logging in debug_info
-    config_for_log = {}
-    for k, v in config.items():
-        # Exclude keys known to hold large numpy arrays or dictionaries of numpy arrays
-        if k in ['cvae_val_inputs', 'cvae_val_targets', 
-                 'cvae_train_inputs', 'cvae_train_targets', # Though not typically stored in config dict by data_processor
-                 'x_train', 'x_val', 'x_test', 'y_train', 'y_val', 'y_test']: # If preprocessor might add them
-            config_for_log[k] = f"Data of type {type(v).__name__} (potentially large) was here, removed for log brevity."
-        elif isinstance(v, np.ndarray):
-            config_for_log[k] = f"Numpy array of shape {v.shape}, removed for log brevity."
-        # Add other specific complex object types to exclude if necessary
-        # elif isinstance(v, pd.DataFrame): # Example if DataFrames were in config
-        #    config_for_log[k] = f"DataFrame of shape {v.shape}, removed for log brevity."
+    # --- Prepare for debug_info ---
+
+    def _filter_metrics_dict_for_log(metrics_dict):
+        if not isinstance(metrics_dict, dict):
+            return {"error": "Metrics data was not a dictionary."}
+        filtered = {}
+        for k, v in metrics_dict.items():
+            if isinstance(v, (int, float, np.integer, np.floating, str)): # Allow numbers and strings
+                try:
+                    # Attempt to convert to basic Python types if they are numpy types
+                    if isinstance(v, (np.integer, np.floating)):
+                        filtered[k] = v.item() 
+                    else:
+                        filtered[k] = v
+                except Exception as e:
+                    filtered[k] = f"Error converting metric value for key '{k}': {str(e)}"
+            else:
+                filtered[k] = f"Non-scalar/string metric value of type {type(v).__name__} for key '{k}', removed."
+        return filtered
+
+    def _filter_plugin_params_for_log(params):
+        if not isinstance(params, dict):
+            return "Plugin params not available or not a dict."
+        filtered_params = {}
+        for k, v in params.items():
+            if isinstance(v, (str, int, float, bool, type(None))):
+                filtered_params[k] = v
+            elif isinstance(v, list) and all(isinstance(i, (str, int, float, bool, type(None))) for i in v):
+                filtered_params[k] = v # Allow lists of simple types
+            else:
+                filtered_params[k] = f"Value for '{k}' (type: {type(v).__name__}) removed/simplified for log."
+        return filtered_params
+
+    # Select only a few key configuration parameters to log
+    minimal_config_keys_to_log = [
+        'learning_rate', 'batch_size', 'epochs', 
+        'window_size', 'num_features_input', 'num_features_output',
+        'rnn_hidden_dim', 'conditioning_dim', 'latent_dim', 'best_latent_dim', # 'latent_dim' is current, 'best_latent_dim' is selected
+        'kl_beta', 'kl_anneal_epochs', 'loss_function', 'reconstruction_loss_type',
+        'cvae_target_feature_names', 'preprocessor_plugin', 'encoder_plugin', 'decoder_plugin',
+        'x_train_file', 'x_validation_file', # Just file names, not content
+        'save_encoder', 'save_decoder', 'model_save_path' # Just file names
+    ]
+    config_for_log_minimal = {}
+    for k in minimal_config_keys_to_log:
+        val = config.get(k)
+        if isinstance(val, (str, int, float, bool, type(None))):
+            config_for_log_minimal[k] = val
+        elif isinstance(val, list) and all(isinstance(i, (str, int, float, bool, type(None))) for i in val):
+             config_for_log_minimal[k] = val # Allow list of simple types (e.g. cvae_target_feature_names)
         else:
-            config_for_log[k] = v
-
-    encoder_model_filename = config.get('save_encoder', 'encoder_model.keras').replace(".keras", f"_ld{best_latent_dim}.keras").replace(".h5", f"_ld{best_latent_dim}.keras")
-    decoder_model_filename = config.get('save_decoder', 'decoder_model.keras').replace(".keras", f"_ld{best_latent_dim}.keras").replace(".h5", f"_ld{best_latent_dim}.keras")
-    
-    if best_autoencoder_manager.encoder_plugin:
-        best_autoencoder_manager.save_encoder(encoder_model_filename) 
-        tf.print(f"Saved best encoder component model to {encoder_model_filename}")
-    if best_autoencoder_manager.decoder_plugin:
-        best_autoencoder_manager.save_decoder(decoder_model_filename) 
-        tf.print(f"Saved best decoder component model to {decoder_model_filename}")
-    
-    full_model_save_path_template = config.get('model_save_path', None)
-    if full_model_save_path_template:
-        full_model_filename = full_model_save_path_template.replace(".keras", f"_ld{best_latent_dim}.keras").replace(".h5", f"_ld{best_latent_dim}.keras")
-        best_autoencoder_manager.save_model(full_model_filename) 
-        tf.print(f"Saved best full CVAE model to {full_model_filename}")
+            config_for_log_minimal[k] = f"Value for '{k}' (type: {type(val).__name__}) not logged due to complexity."
 
 
-    end_time = time.time()
-    execution_time = end_time - start_time
-    
-    final_train_eval_results = best_autoencoder_manager.evaluate(cvae_train_inputs, cvae_train_targets, "Final Training", config)
-    final_training_mae = float('nan')
-    if final_train_eval_results and expected_mae_key in final_train_eval_results:
-        final_training_mae = final_train_eval_results[expected_mae_key]
-    
-    if np.isnan(final_training_mae):
-        tf.print(f"CRITICAL ERROR: Final Training MAE ('{expected_mae_key}') is NaN or key not found!")
-        tf.print(f"Final Training Evaluation Results: {final_train_eval_results}")
-        compiled_metrics_names_str = "N/A"
-        if hasattr(best_autoencoder_manager, 'autoencoder_model') and best_autoencoder_manager.autoencoder_model and hasattr(best_autoencoder_manager.autoencoder_model, 'metrics_names'):
-            compiled_metrics_names_str = str(best_autoencoder_manager.autoencoder_model.metrics_names)
-        tf.print(f"Model's compiled metrics names: {compiled_metrics_names_str}")
-        raise ValueError(f"Final Training MAE ('{expected_mae_key}') is missing or NaN. Results: {final_train_eval_results}. Compiled metrics: {compiled_metrics_names_str}")
-    tf.print(f"Final Training MAE (best model): {final_training_mae:.4f} (key: {expected_mae_key})")
+    encoder_params_for_log = _filter_plugin_params_for_log(
+        best_autoencoder_manager.encoder_plugin.get_debug_info()
+        if best_autoencoder_manager.encoder_plugin and hasattr(best_autoencoder_manager.encoder_plugin, 'get_debug_info') else {}
+    )
+    decoder_params_for_log = _filter_plugin_params_for_log(
+        best_autoencoder_manager.decoder_plugin.get_debug_info()
+        if best_autoencoder_manager.decoder_plugin and hasattr(best_autoencoder_manager.decoder_plugin, 'get_debug_info') else {}
+    )
 
-
-    final_val_eval_results = None
-    final_validation_mae = float('nan')
-    if config.get('cvae_val_inputs') and config.get('cvae_val_targets') is not None:
-        final_eval_val_inputs_list = [
-            config['cvae_val_inputs']['x_window'],
-            config['cvae_val_inputs']['h_context'],
-            config['cvae_val_inputs']['conditions_t']
-        ]
-        final_eval_val_targets_array = config['cvae_val_targets']
-        final_val_eval_results = best_autoencoder_manager.evaluate(final_eval_val_inputs_list, final_eval_val_targets_array, "Final Validation", config)
-        # Use expected_mae_key for results from model.evaluate()
-        if final_val_eval_results and expected_mae_key in final_val_eval_results: # CHANGED: Use expected_mae_key
-            final_validation_mae = final_val_eval_results[expected_mae_key]       # CHANGED: Use expected_mae_key
-        
-        if np.isnan(final_validation_mae): # Check if NaN after attempting to extract
-            # For the error message, expected_val_mae_key shows the pattern we'd expect from 'fit' logs
-            tf.print(f"CRITICAL ERROR: Final Validation MAE (expected key pattern from fit logs: '{expected_val_mae_key}', actual lookup key for evaluate: '{expected_mae_key}') is NaN or key not found!")
-            tf.print(f"Final Validation Evaluation Results: {final_val_eval_results}")
-            compiled_metrics_names_str = "N/A"
-            if hasattr(best_autoencoder_manager, 'autoencoder_model') and best_autoencoder_manager.autoencoder_model and hasattr(best_autoencoder_manager.autoencoder_model, 'metrics_names'):
-                compiled_metrics_names_str = str(best_autoencoder_manager.autoencoder_model.metrics_names)
-            tf.print(f"Model's compiled metrics names: {compiled_metrics_names_str}")
-            raise ValueError(f"Final Validation MAE (expected key pattern from fit logs: '{expected_val_mae_key}', actual lookup key for evaluate: '{expected_mae_key}') is missing or NaN. Results: {final_val_eval_results}. Compiled metrics: {compiled_metrics_names_str}")
-    
-    final_validation_mae_str = f"{final_validation_mae:.4f}" if not np.isnan(final_validation_mae) else "N/A"
-    # When printing, use the non-prefixed key for clarity as it's from evaluate()
-    tf.print(f"Final Validation MAE (best model): {final_validation_mae_str} (key from evaluate(): {expected_mae_key})")
-
+    final_training_metrics_for_log = _filter_metrics_dict_for_log(final_train_eval_results if final_train_eval_results is not None else {})
+    final_validation_metrics_for_log = _filter_metrics_dict_for_log(final_val_eval_results if final_val_eval_results is not None else {})
 
     debug_info = {
         'execution_time_seconds': execution_time,
-        'best_latent_dim': best_latent_dim,
-        'encoder_plugin_params': best_autoencoder_manager.encoder_plugin.get_debug_info() if best_autoencoder_manager.encoder_plugin and hasattr(best_autoencoder_manager.encoder_plugin, 'get_debug_info') else None,
-        'decoder_plugin_params': best_autoencoder_manager.decoder_plugin.get_debug_info() if best_autoencoder_manager.decoder_plugin and hasattr(best_autoencoder_manager.decoder_plugin, 'get_debug_info') else None,
-        'final_validation_mae': final_validation_mae if not np.isnan(final_validation_mae) else None, 
-        'final_training_mae': final_training_mae if not np.isnan(final_training_mae) else None, 
-        'final_validation_metrics': final_val_eval_results, # Should be a dict of scalars
-        'final_training_metrics': final_train_eval_results, # Should be a dict of scalars
-        'config_used': config_for_log # Use the more aggressively filtered config
+        'best_latent_dim_selected': best_latent_dim,
+        'final_training_mae': final_training_mae if not np.isnan(final_training_mae) else None,
+        'final_validation_mae': final_validation_mae if not np.isnan(final_validation_mae) else None,
+        'final_training_metrics_logged': final_training_metrics_for_log,
+        'final_validation_metrics_logged': final_validation_metrics_for_log,
+        'encoder_plugin_params_logged': encoder_params_for_log,
+        'decoder_plugin_params_logged': decoder_params_for_log,
+        'key_config_parameters_logged': config_for_log_minimal
     }
 
     if 'save_log' in config and config['save_log']:

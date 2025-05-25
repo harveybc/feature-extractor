@@ -56,6 +56,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
 
     target_feature_names = config.get('cvae_target_feature_names', ['OPEN', 'LOW', 'HIGH', 'vix_close', 'BC-BO', 'BH-BL'])
     tf.print(f"Using CVAE target features: {target_feature_names}")
+    tf.print(f"Number of CVAE target features: {len(target_feature_names)}") # ADDED: Print count
     
     try:
         target_indices = [feature_names_all.index(name) for name in target_feature_names]
@@ -69,34 +70,34 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     if x_train_data.ndim != 3: # Expect 3D (samples, window_size, features)
         raise ValueError(f"x_train_data is expected to be 3D (samples, window, features), but got shape {x_train_data.shape}")
     
-    y_train_targets_6_features = x_train_data[:, -1, target_indices] # Extract last step of target features
-    tf.print(f"Constructed y_train_targets_6_features with shape: {y_train_targets_6_features.shape}")
+    y_train_targets = x_train_data[:, -1, target_indices] # RENAMED: from y_train_targets_6_features
+    tf.print(f"Constructed y_train_targets with shape: {y_train_targets.shape}") # MODIFIED: Print statement
 
-    y_val_targets_6_features = None
+    y_val_targets = None # RENAMED: from y_val_targets_6_features
     if x_val_data is not None:
         if x_val_data.ndim != 3: # Expect 3D
             raise ValueError(f"x_val_data is expected to be 3D (samples, window, features), but got shape {x_val_data.shape}")
-        y_val_targets_6_features = x_val_data[:, -1, target_indices] # Extract last step
-        tf.print(f"Constructed y_val_targets_6_features with shape: {y_val_targets_6_features.shape}")
-        if x_val_data.shape[0] != y_val_targets_6_features.shape[0]:
-            raise ValueError(f"Sample count mismatch between x_val_data ({x_val_data.shape[0]}) and y_val_targets_6_features ({y_val_targets_6_features.shape[0]})")
+        y_val_targets = x_val_data[:, -1, target_indices] # RENAMED & Extract last step
+        tf.print(f"Constructed y_val_targets with shape: {y_val_targets.shape}") # MODIFIED: Print statement
+        if x_val_data.shape[0] != y_val_targets.shape[0]: # MODIFIED: Variable name
+            raise ValueError(f"Sample count mismatch between x_val_data ({x_val_data.shape[0]}) and y_val_targets ({y_val_targets.shape[0]})") # MODIFIED
     else:
         tf.print("No x_val_data provided by preprocessor. Validation will be skipped if not set in config later.")
 
 
-    if not isinstance(y_train_targets_6_features, np.ndarray):
-        raise TypeError(f"y_train_targets_6_features is type {type(y_train_targets_6_features)}, expected np.ndarray.")
-    if y_val_targets_6_features is not None and not isinstance(y_val_targets_6_features, np.ndarray):
-        raise TypeError(f"y_val_targets_6_features is type {type(y_val_targets_6_features)}, expected np.ndarray.")
+    if not isinstance(y_train_targets, np.ndarray): # MODIFIED: Variable name
+        raise TypeError(f"y_train_targets is type {type(y_train_targets)}, expected np.ndarray.") # MODIFIED
+    if y_val_targets is not None and not isinstance(y_val_targets, np.ndarray): # MODIFIED: Variable name
+        raise TypeError(f"y_val_targets is type {type(y_val_targets)}, expected np.ndarray.") # MODIFIED
 
     # y_targets should be 2D (samples, num_target_features)
-    if y_train_targets_6_features.ndim != 2 or y_train_targets_6_features.shape[-1] != len(target_feature_names):
-        raise ValueError(f"y_train_targets_6_features should be 2D with {len(target_feature_names)} features, but got shape {y_train_targets_6_features.shape}")
-    if y_val_targets_6_features is not None and (y_val_targets_6_features.ndim != 2 or y_val_targets_6_features.shape[-1] != len(target_feature_names)):
-        raise ValueError(f"y_val_targets_6_features should be 2D with {len(target_feature_names)} features, but got shape {y_val_targets_6_features.shape}")
+    if y_train_targets.ndim != 2 or y_train_targets.shape[-1] != len(target_feature_names): # MODIFIED: Variable name
+        raise ValueError(f"y_train_targets should be 2D with {len(target_feature_names)} features, but got shape {y_train_targets.shape}") # MODIFIED
+    if y_val_targets is not None and (y_val_targets.ndim != 2 or y_val_targets.shape[-1] != len(target_feature_names)): # MODIFIED: Variable name
+        raise ValueError(f"y_val_targets should be 2D with {len(target_feature_names)} features, but got shape {y_val_targets.shape}") # MODIFIED
     
-    if x_train_data.shape[0] != y_train_targets_6_features.shape[0]:
-        raise ValueError(f"Sample count mismatch between x_train_data ({x_train_data.shape[0]}) and y_train_targets_6_features ({y_train_targets_6_features.shape[0]})")
+    if x_train_data.shape[0] != y_train_targets.shape[0]: # MODIFIED: Variable name
+        raise ValueError(f"Sample count mismatch between x_train_data ({x_train_data.shape[0]}) and y_train_targets ({y_train_targets.shape[0]})") # MODIFIED
 
     # --- Populate necessary dimensions in config ---
     if 'window_size' not in config or not isinstance(config.get('window_size'), int) or config.get('window_size') <= 0:
@@ -121,8 +122,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         raise ValueError(f"Cannot determine 'num_features_input'. x_train_data has unexpected shape: {x_train_data.shape}")
     tf.print(f"[DataPrep] Automatically set 'num_features_input': {config['num_features_input']}")
 
-    config['num_features_output'] = y_train_targets_6_features.shape[1] # num_features_output is from the target
-    tf.print(f"[DataPrep] Automatically set 'num_features_output': {config['num_features_output']} from y_train_targets_6_features.shape[1]")
+    config['num_features_output'] = y_train_targets.shape[1] # MODIFIED: num_features_output is from the target
+    tf.print(f"[DataPrep] Automatically set 'num_features_output': {config['num_features_output']} from y_train_targets.shape[1]") # MODIFIED
 
     required_dims = {
         'rnn_hidden_dim': "RNN hidden state dimension for CVAE components.",
@@ -149,10 +150,10 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         raise ValueError(f"Shape mismatch for conditions_t_train. Expected ({num_train_samples}, {config['conditioning_dim']}), got {conditions_t_train.shape}")
 
     cvae_train_inputs = [x_train_data, h_context_train, conditions_t_train]
-    cvae_train_targets = y_train_targets_6_features
+    cvae_train_targets = y_train_targets # MODIFIED: Variable name
 
     # Validation data setup
-    if x_val_data is not None and y_val_targets_6_features is not None:
+    if x_val_data is not None and y_val_targets is not None: # MODIFIED: Variable name
         num_val_samples = x_val_data.shape[0]
         h_context_val = datasets.get("h_val")
         if h_context_val is None:
@@ -173,10 +174,10 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             'h_context': h_context_val,
             'conditions_t': conditions_t_val
         }
-        config['cvae_val_targets'] = y_val_targets_6_features
+        config['cvae_val_targets'] = y_val_targets # MODIFIED: Variable name
         tf.print(f"[data_processor] Added cvae_val_inputs and cvae_val_targets to config from preprocessor output.")
     else:
-        tf.print("[data_processor] Validation data (x_val_data or y_val_targets_6_features from preprocessor) is None. "
+        tf.print("[data_processor] Validation data (x_val_data or y_val_targets from preprocessor) is None. " # MODIFIED
                  "Training will proceed without validation unless 'cvae_val_inputs' and 'cvae_val_targets' are already in config.")
         if 'cvae_val_inputs' not in config or 'cvae_val_targets' not in config:
             config.pop('cvae_val_inputs', None) 
@@ -564,7 +565,7 @@ def load_and_evaluate_decoder(config):
         output_filename = config['evaluate_decoder']
         decoded_df = pd.DataFrame(decoded_data)
         
-        target_feature_names_eval = config.get('cvae_target_feature_names', ['OPEN', 'LOW', 'HIGH', 'vix_close', 'BC-BO', 'BH-BL'])
+        target_feature_names_eval = config.get('cvae_target_feature_names', ['OPEN', 'LOW', 'HIGH', 'vix_close', 'BC-BO', 'BH-BL']) # Default might need update if used often
         if len(target_feature_names_eval) == decoded_data.shape[1]:
             decoded_df.columns = target_feature_names_eval
         else:

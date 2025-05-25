@@ -28,7 +28,7 @@ class Plugin:
         "latent_dim": None,
         "rnn_hidden_dim": None,
         "conditioning_dim": None,
-        "output_feature_dim": 6, # Fixed
+        "output_feature_dim": None, # MODIFIED: No longer fixed to 6, will be set by configure_model_architecture
     }
 
     plugin_debug_vars = [
@@ -59,17 +59,18 @@ class Plugin:
                                      conditioning_dim: int, output_feature_dim: int, 
                                      config: dict = None):
         """
-        Configures the per-step generative network with Conv1DTranspose. output_feature_dim will be forced to 6.
+        Configures the per-step generative network with Conv1DTranspose.
         """
         if config is None: config = {}
 
         self.params['latent_dim'] = latent_dim
         self.params['rnn_hidden_dim'] = rnn_hidden_dim
         self.params['conditioning_dim'] = conditioning_dim
-        self.params['output_feature_dim'] = 6 # Enforce 6 output features
+        self.params['output_feature_dim'] = output_feature_dim # MODIFIED: Use the passed output_feature_dim
 
-        if output_feature_dim != 6:
-            print(f"WARNING: Decoder output_feature_dim passed as {output_feature_dim}, but overridden to 6.")
+        # REMOVED: Warning about overriding to 6, as it's now configurable.
+        # if output_feature_dim != 6:
+        #     print(f"WARNING: Decoder output_feature_dim passed as {output_feature_dim}, but overridden to 6.")
 
         # Get parameters, prioritizing external config, then self.params
         conv_activation_name = config.get("conv_activation", self.params.get("conv_activation", "relu"))
@@ -185,7 +186,7 @@ class Plugin:
         # Flatten the output of Conv1DTranspose layers
         x = Flatten(name="decoder_flatten_upsampled")(x)
 
-        # Output layer for x'_t (6 features)
+        # Output layer for x'_t (now uses configured output_feature_dim)
         output_x_prime_t = Dense(
             self.params['output_feature_dim'], 
             activation=output_activation_name, 
@@ -208,12 +209,12 @@ class Plugin:
 
     def decode(self, per_step_inputs: list):
         """
-        Processes the inputs (z_t, h_t, conditions_t) to produce the generated 6-feature output.
+        Processes the inputs (z_t, h_t, conditions_t) to produce the generated output.
 
         Args:
             per_step_inputs (list): A list containing [z_t_batch, h_t_batch, conditions_t_batch].
         Returns:
-            np.ndarray: The generated data x'_t_batch (batch_size, 6).
+            np.ndarray: The generated data x'_t_batch (batch_size, output_feature_dim).
         """
         if not self.generative_network_model:
             raise ValueError("Decoder model is not configured or loaded.")
@@ -243,13 +244,14 @@ class Plugin:
             self.params['conditioning_dim'] = input_layers[2].shape[-1]
             
             output_layer = self.generative_network_model.outputs[0]
-            self.params['output_feature_dim'] = output_layer.shape[-1] # Should be 6
+            self.params['output_feature_dim'] = output_layer.shape[-1] # This will now reflect the actual loaded model's output dim
             
             print(f"[DEBUG DecoderPlugin Load] Reconstructed params from model: "
                   f"z_dim={self.params['latent_dim']}, h_dim={self.params['rnn_hidden_dim']}, "
                   f"cond_dim={self.params['conditioning_dim']}, out_dim={self.params['output_feature_dim']}")
-            if self.params['output_feature_dim'] != 6:
-                 print(f"WARNING: Loaded decoder model has output_dim={self.params['output_feature_dim']}, expected 6.")
+            # REMOVED: Warning about output_dim not being 6, as it's now configurable.
+            # if self.params['output_feature_dim'] != 6:
+            #      print(f"WARNING: Loaded decoder model has output_dim={self.params['output_feature_dim']}, expected 6.")
         except Exception as e:
             print(f"[WARNING DecoderPlugin Load] Could not fully reconstruct params from loaded model. Error: {e}.")
 
@@ -260,7 +262,7 @@ if __name__ == "__main__":
     _latent_dim = 32
     _h_dim = 64
     _cond_dim = 6 # Example: previous 6 target features for autoregression
-    _output_dim_expected = 6 
+    _output_dim_expected = 23 # MODIFIED for testing with new feature count
     
     # Example config override for testing
     test_config = {
@@ -276,11 +278,11 @@ if __name__ == "__main__":
         latent_dim=_latent_dim,
         rnn_hidden_dim=_h_dim,
         conditioning_dim=_cond_dim,
-        output_feature_dim=_output_dim_expected, 
+        output_feature_dim=_output_dim_expected, # Pass the new expected output dim
         config=test_config
     )
     
-    assert plugin.params['output_feature_dim'] == 6
+    assert plugin.params['output_feature_dim'] == _output_dim_expected # MODIFIED assertion
 
     batch_size = 4
     dummy_z_t = np.random.rand(batch_size, _latent_dim).astype(np.float32)
@@ -290,7 +292,7 @@ if __name__ == "__main__":
     x_prime_t = plugin.decode([dummy_z_t, dummy_h_t, dummy_conditions_t])
     
     print(f"\nTest decode output shape: x_prime_t: {x_prime_t.shape}")
-    assert x_prime_t.shape == (batch_size, 6)
+    assert x_prime_t.shape == (batch_size, _output_dim_expected) # MODIFIED assertion
 
     model_path = "temp_cvae_decoder_network.keras"
     plugin.save(model_path)
@@ -300,9 +302,9 @@ if __name__ == "__main__":
     
     x_prime_t_loaded = loaded_plugin.decode([dummy_z_t, dummy_h_t, dummy_conditions_t])
     print(f"Test loaded decode output shape: x_prime_t: {x_prime_t_loaded.shape}")
-    assert x_prime_t_loaded.shape == (batch_size, 6)
+    assert x_prime_t_loaded.shape == (batch_size, _output_dim_expected) # MODIFIED assertion
     np.testing.assert_array_almost_equal(x_prime_t, x_prime_t_loaded)
-    print("\nSave, load, and re-decode test successful for 6-feature output.")
+    print(f"\nSave, load, and re-decode test successful for {_output_dim_expected}-feature output.") # MODIFIED print
     
     import os
     if os.path.exists(model_path):

@@ -343,6 +343,22 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     
     config['latent_dim'] = best_latent_dim 
 
+    # Create a filtered version of the config for logging in debug_info
+    config_for_log = {}
+    for k, v in config.items():
+        # Exclude keys known to hold large numpy arrays or dictionaries of numpy arrays
+        if k in ['cvae_val_inputs', 'cvae_val_targets', 
+                 'cvae_train_inputs', 'cvae_train_targets', # Though not typically stored in config dict by data_processor
+                 'x_train', 'x_val', 'x_test', 'y_train', 'y_val', 'y_test']: # If preprocessor might add them
+            config_for_log[k] = f"Data of type {type(v).__name__} (potentially large) was here, removed for log brevity."
+        elif isinstance(v, np.ndarray):
+            config_for_log[k] = f"Numpy array of shape {v.shape}, removed for log brevity."
+        # Add other specific complex object types to exclude if necessary
+        # elif isinstance(v, pd.DataFrame): # Example if DataFrames were in config
+        #    config_for_log[k] = f"DataFrame of shape {v.shape}, removed for log brevity."
+        else:
+            config_for_log[k] = v
+
     encoder_model_filename = config.get('save_encoder', 'encoder_model.keras').replace(".keras", f"_ld{best_latent_dim}.keras").replace(".h5", f"_ld{best_latent_dim}.keras")
     decoder_model_filename = config.get('save_decoder', 'decoder_model.keras').replace(".keras", f"_ld{best_latent_dim}.keras").replace(".h5", f"_ld{best_latent_dim}.keras")
     
@@ -413,11 +429,11 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         'best_latent_dim': best_latent_dim,
         'encoder_plugin_params': best_autoencoder_manager.encoder_plugin.get_debug_info() if best_autoencoder_manager.encoder_plugin and hasattr(best_autoencoder_manager.encoder_plugin, 'get_debug_info') else None,
         'decoder_plugin_params': best_autoencoder_manager.decoder_plugin.get_debug_info() if best_autoencoder_manager.decoder_plugin and hasattr(best_autoencoder_manager.decoder_plugin, 'get_debug_info') else None,
-        'final_validation_mae': final_validation_mae if not np.isnan(final_validation_mae) else None, # Store the float or None
-        'final_training_mae': final_training_mae if not np.isnan(final_training_mae) else None, # Store the float or None
-        'final_validation_metrics': final_val_eval_results,
-        'final_training_metrics': final_train_eval_results,
-        'config_used': {k: v for k, v in config.items() if not isinstance(v, np.ndarray)} 
+        'final_validation_mae': final_validation_mae if not np.isnan(final_validation_mae) else None, 
+        'final_training_mae': final_training_mae if not np.isnan(final_training_mae) else None, 
+        'final_validation_metrics': final_val_eval_results, # Should be a dict of scalars
+        'final_training_metrics': final_train_eval_results, # Should be a dict of scalars
+        'config_used': config_for_log # Use the more aggressively filtered config
     }
 
     if 'save_log' in config and config['save_log']:

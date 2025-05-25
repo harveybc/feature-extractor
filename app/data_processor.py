@@ -9,6 +9,7 @@ from app.config_handler import save_debug_info, remote_log
 import os # Add os import for load_and_evaluate_encoder/decoder path checks
 from tensorflow.keras.models import load_model # Changed
 from tensorflow.keras.utils import plot_model # Changed
+import matplotlib.pyplot as plt # ADDED for plotting loss
 
 
 # This utility function might still be useful for a preprocessor plugin,
@@ -196,6 +197,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     best_val_mae = float('inf')
     best_latent_dim = current_latent_dim
     best_autoencoder_manager = None
+    best_history = None # ADDED: To store history of the best model
     
     # This key should now be 'reconstruction_out_custom_recon_mae' 
     # because autoencoder_manager.py is using MeanAbsoluteError(name='custom_recon_mae').
@@ -213,7 +215,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         autoencoder_manager = AutoencoderManager(encoder_plugin, decoder_plugin)
         autoencoder_manager.build_autoencoder(config) 
         
-        autoencoder_manager.train_autoencoder(
+        history = autoencoder_manager.train_autoencoder( # MODIFIED: Capture history
             data_inputs=cvae_train_inputs,
             data_targets=cvae_train_targets,
             epochs=epochs,
@@ -301,16 +303,20 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             best_val_mae = validation_mae
             best_latent_dim = current_latent_dim
             best_autoencoder_manager = autoencoder_manager 
+            best_history = history # ADDED: Store history of best model
             tf.print(f"New best Validation MAE: {best_val_mae:.4f} with latent_dim: {best_latent_dim}")
         elif np.isnan(validation_mae) and best_autoencoder_manager is None: 
             best_latent_dim = current_latent_dim
             best_autoencoder_manager = autoencoder_manager
+            best_history = history # ADDED: Store history if no validation but it's the first/only model
             tf.print(f"No validation MAE. Storing model for latent_dim: {current_latent_dim} as current best.")
 
 
         if not incremental_search:
             tf.print("Incremental search disabled. Completing after one iteration.")
-            if best_autoencoder_manager is None: best_autoencoder_manager = autoencoder_manager 
+            if best_autoencoder_manager is None: 
+                best_autoencoder_manager = autoencoder_manager 
+                best_history = history # ADDED: Ensure history is captured
             break 
         
         if not np.isnan(validation_mae) and validation_mae <= threshold_error:
@@ -319,7 +325,9 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         else: # Check if validation_mae is NaN before deciding to increment latent_dim
             if np.isnan(validation_mae) and not config.get('allow_search_without_val_mae', False): # Add a config flag if you want to allow search without val_mae
                 tf.print(f"Validation MAE is NaN and search without val_mae is not allowed. Stopping search at latent_dim {current_latent_dim}.")
-                if best_autoencoder_manager is None: best_autoencoder_manager = autoencoder_manager # Ensure a model is selected
+                if best_autoencoder_manager is None: 
+                    best_autoencoder_manager = autoencoder_manager # Ensure a model is selected
+                    best_history = history # ADDED: Ensure history is captured
                 break
 
             current_latent_dim += step_size_latent
@@ -335,6 +343,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             tf.print("Warning: best_autoencoder_manager was not set. Using the last trained model.")
             best_autoencoder_manager = autoencoder_manager
             best_latent_dim = config.get('latent_dim') 
+            best_history = history # ADDED: Ensure history from last model is used if no "best" was set
         else: 
             raise RuntimeError("Autoencoder training loop did not run or failed to select a model.")
 
@@ -342,6 +351,51 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     tf.print(f"Final selected latent_dim: {best_latent_dim} with Best Validation MAE: {best_val_mae_str}")
     
     config['latent_dim'] = best_latent_dim 
+
+    # --- Plotting Training History ---
+    loss_plot_file_template = config.get('loss_plot_file', None)
+    if loss_plot_file_template and best_history is not None:
+        loss_plot_filename = loss_plot_file_template.replace(".png", f"_ld{best_latent_dim}.png")
+        try:
+            plt.figure(figsize=(12, 8))
+            
+            # Plot Loss
+            plt.subplot(2, 1, 1)
+            plt.plot(best_history.history['loss'], label='Training Loss')
+            if 'val_loss' in best_history.history:
+                plt.plot(best_history.history['val_loss'], label='Validation Loss')
+            plt.title(f'Model Loss (Latent Dim: {best_latent_dim})')
+            plt.ylabel('Loss')
+            plt.xlabel('Epoch')
+            plt.legend(loc='upper right')
+            
+            # Plot MAE
+            # The key for MAE is 'reconstruction_out_for_mae_calc_mean_absolute_error'
+            # and for validation it's 'val_reconstruction_out_for_mae_calc_mean_absolute_error'
+            mae_metric_key = 'reconstruction_out_for_mae_calc_mean_absolute_error'
+            val_mae_metric_key = f'val_{mae_metric_key}'
+
+            plt.subplot(2, 1, 2)
+            if mae_metric_key in best_history.history:
+                plt.plot(best_history.history[mae_metric_key], label='Training MAE')
+            if val_mae_metric_key in best_history.history:
+                plt.plot(best_history.history[val_mae_metric_key], label='Validation MAE')
+            plt.title(f'Model MAE (Latent Dim: {best_latent_dim})')
+            plt.ylabel('Mean Absolute Error')
+            plt.xlabel('Epoch')
+            plt.legend(loc='upper right')
+            
+            plt.tight_layout()
+            plt.savefig(loss_plot_filename)
+            plt.close() # Close the figure to free memory
+            tf.print(f"Training history plot saved to {loss_plot_filename}")
+        except Exception as e:
+            tf.print(f"Could not plot training history: {e}")
+            import traceback
+            tf.print(traceback.format_exc())
+    elif loss_plot_file_template and best_history is None:
+        tf.print(f"Loss plot file specified ({loss_plot_file_template}), but no training history available to plot.")
+
 
     # --- Prepare for debug_info ---
 

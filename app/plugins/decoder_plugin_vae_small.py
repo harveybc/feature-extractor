@@ -3,6 +3,8 @@ from keras.models import Model, load_model, save_model
 from keras.layers import Dense, Input, Concatenate, Conv1DTranspose, Reshape, LSTM, RepeatVector, TimeDistributed, Lambda # ADDED RepeatVector, TimeDistributed, Lambda
 from keras.optimizers import Adam 
 from keras.regularizers import l2
+#Conv1D
+from keras.layers import Conv1D
 
 class Plugin:
     """

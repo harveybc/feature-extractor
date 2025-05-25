@@ -101,100 +101,6 @@ def pairwise_sq_distances(a, b):
     return tf.maximum(dist_sq, 0.0)  # Ensure non-negative due to numerical issues
 
 
-def compute_mmd(x, y, sigma=1.0, sample_size=None):
-    """
-    MMD calculation using a Gaussian kernel (biased estimator for MMD^2).
-    x, y: Tensors of shape (batch_size, feature_dim)
-    sigma: Kernel bandwidth
-    """
-    # This sigma check can remain as it's likely evaluated during graph construction or eagerly if possible
-    if isinstance(sigma, (float, int)) and sigma <= 1e-6: 
-       # tf.print("[compute_mmd] Warning: sigma is very small or zero. Setting to 1.0.")
-        sigma = 1.0
-    elif tf.is_tensor(sigma): # If sigma is a tensor, use tf.cond for the check
-        sigma = tf.cond(
-            tf.less_equal(sigma, 1e-6),
-            lambda: tf.constant(1.0, dtype=sigma.dtype),
-            lambda: sigma
-        )
-
-
-    x_sample = x
-    y_sample = y
-    if sample_size is not None:
-        batch_size_x = tf.shape(x)[0]
-        batch_size_y = tf.shape(y)[0]
-        
-        current_sample_size_x = tf.minimum(sample_size, batch_size_x)
-        current_sample_size_y = tf.minimum(sample_size, batch_size_y)
-
-        # Use tf.cond for conditional sampling
-        x_sample = tf.cond(
-            tf.greater(current_sample_size_x, 0),
-            lambda: tf.gather(x, tf.random.shuffle(tf.range(batch_size_x))[:current_sample_size_x]),
-            lambda: tf.zeros([0, tf.shape(x)[-1]], dtype=x.dtype)
-        )
-
-        y_sample = tf.cond(
-            tf.greater(current_sample_size_y, 0),
-            lambda: tf.gather(y, tf.random.shuffle(tf.range(batch_size_y))[:current_sample_size_y]),
-            lambda: tf.zeros([0, tf.shape(y)[-1]], dtype=y.dtype)
-        )
-    
-    # --- MODIFIED EMPTY CHECK ---
-    # Define functions for tf.cond
-    def calculate_mmd_core():
-        def pairwise_sq_distances(a, b):
-            a_sum_sq = tf.reduce_sum(tf.square(a), axis=1, keepdims=True)
-            b_sum_sq = tf.reduce_sum(tf.square(b), axis=1, keepdims=True)
-            ab_dot = tf.matmul(a, b, transpose_b=True)
-            dist_sq = a_sum_sq + tf.transpose(b_sum_sq) - 2 * ab_dot
-            return tf.maximum(0.0, dist_sq)
-
-        k_xx_dist = pairwise_sq_distances(x_sample, x_sample)
-        k_yy_dist = pairwise_sq_distances(y_sample, y_sample)
-        k_xy_dist = pairwise_sq_distances(x_sample, y_sample)
-
-        # Ensure sigma is not zero before division
-        safe_sigma_sq = tf.maximum(sigma**2, 1e-9) # Prevent division by zero if sigma is extremely small
-
-        k_xx = tf.exp(-k_xx_dist / (2.0 * safe_sigma_sq))
-        k_yy = tf.exp(-k_yy_dist / (2.0 * safe_sigma_sq))
-        k_xy = tf.exp(-k_xy_dist / (2.0 * safe_sigma_sq))
-        
-        mean_k_xx = tf.reduce_mean(k_xx)
-        mean_k_yy = tf.reduce_mean(k_yy)
-        mean_k_xy = tf.reduce_mean(k_xy)
-        
-        mmd_sq_val = mean_k_xx + mean_k_yy - 2 * mean_k_xy # Renamed to mmd_sq_val
-        mmd_val_calc = tf.sqrt(tf.maximum(1e-9, mmd_sq_val)) # Renamed to mmd_val_calc
-
-       # tf.print("[compute_mmd_TF_PRINT_CORE] Sigma:", sigma, "Shapes X_s, Y_s:", tf.shape(x_sample), tf.shape(y_sample),
-       #          "means k_xx, k_yy, k_xy:", mean_k_xx, mean_k_yy, mean_k_xy,
-       #          "mmd_sq:", mmd_sq_val, "MMD_val:", mmd_val_calc, summarize=-1)
-        
-        # Check for NaN within the lambda to ensure it's handled in graph mode
-        return tf.cond(
-            tf.math.is_nan(mmd_val_calc),
-            lambda: tf.constant(0.0, dtype=tf.float32),
-            lambda: mmd_val_calc
-        )
-
-    def return_zero_mmd():
-       # tf.print("[compute_mmd] Warning: Samples for MMD are empty. Returning 0.")
-        return tf.constant(0.0, dtype=tf.float32)
-
-    # Use tf.cond for the empty check
-    mmd_final_val = tf.cond(
-        tf.logical_or(tf.equal(tf.shape(x_sample)[0], 0), tf.equal(tf.shape(y_sample)[0], 0)),
-        true_fn=return_zero_mmd,
-        false_fn=calculate_mmd_core
-    )
-    # --- END MODIFIED EMPTY CHECK ---
-    
-    return mmd_final_val
-
-
 def calculate_standardized_moment(data, order):
     mean = tf.reduce_mean(data)
     std_dev = tf.math.reduce_std(data)
@@ -226,10 +132,13 @@ def get_reconstruction_and_stats_loss_fn(outer_config):
     Wrapper function that captures the configuration and returns the actual loss function
     to be used by Keras.
     """
-    def reconstruction_and_stats_loss_fn_inner(actual_reconstruction_target, recon_pred, config):
+    def reconstruction_and_stats_loss_fn_inner(actual_reconstruction_target, recon_pred):
         """
         Inner reconstruction loss function that handles both 2D and 3D tensors.
+        Uses the captured outer_config instead of requiring config as a parameter.
         """
+        config = outer_config  # Use the captured config from the wrapper
+        
         # MODIFIED: Handle 3D tensors by computing loss across all time steps
         if len(recon_pred.shape) == 3:
             # For 3D tensors (batch, time, features), compute MAE across time and features

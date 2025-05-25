@@ -1,9 +1,10 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Concatenate, Conv1D, Flatten, LSTM, Bidirectional 
+from keras.layers import Dense, Input, Concatenate, Conv1D, Flatten, LSTM, Bidirectional, RepeatVector # ADDED RepeatVector
 from keras.optimizers import Adam
-from tensorflow.keras.initializers import GlorotUniform, HeNormal # Kept for potential future use
+from tensorflow.keras.initializers import GlorotUniform, HeNormal 
 from keras.regularizers import l2
+import tensorflow as tf 
 
 class Plugin:
     """
@@ -88,7 +89,19 @@ class Plugin:
         input_h_prev = Input(shape=(rnn_hidden_dim,), name="input_h_prev")
         input_conditions_t = Input(shape=(conditioning_dim,), name="input_conditions_t")
 
-        x_conv = input_x_window
+        # --- MODIFIED: Concatenate context and conditions with input_x_window ---
+        # Expand h_prev and conditions_t to match the window_size dimension
+        h_prev_expanded = RepeatVector(window_size, name="h_prev_repeated")(input_h_prev)
+        conditions_t_expanded = RepeatVector(window_size, name="conditions_t_repeated")(input_conditions_t)
+
+        # Concatenate along the feature axis
+        concatenated_input_for_conv = Concatenate(axis=-1, name="concat_input_with_context_conditions")(
+            [input_x_window, h_prev_expanded, conditions_t_expanded]
+        )
+        
+        x_conv = concatenated_input_for_conv # Use the new concatenated input for convolutions
+        # --- END MODIFICATION ---
+        
         current_layer_filters = initial_conv_filters
 
         for i in range(num_conv_layers_cfg):
@@ -121,10 +134,14 @@ class Plugin:
             name="bilstm_layer"
         )(x_conv)
 
-        concatenated_features = Concatenate(name="concat_features")([bilstm_output, input_h_prev, input_conditions_t])
+        # --- MODIFIED: Remove previous concatenation here, BiLSTM output directly to Dense layers ---
+        # concatenated_features = Concatenate(name="concat_features")([bilstm_output, input_h_prev, input_conditions_t]) # REMOVED
+        # z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(concatenated_features) # OLD
+        # z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(concatenated_features) # OLD
 
-        z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(concatenated_features)
-        z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(concatenated_features)
+        z_mean = Dense(latent_dim, name='z_mean_t', kernel_regularizer=l2(l2_reg_val))(bilstm_output) # NEW
+        z_log_var = Dense(latent_dim, name='z_log_var_t', kernel_regularizer=l2(l2_reg_val))(bilstm_output) # NEW
+        # --- END MODIFICATION ---
 
         self.inference_network_model = Model(
             inputs=[input_x_window, input_h_prev, input_conditions_t],

@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Concatenate, Conv1DTranspose, Reshape, LSTM, RepeatVector, TimeDistributed # ADDED RepeatVector, TimeDistributed
+from keras.layers import Dense, Input, Concatenate, Conv1DTranspose, Reshape, LSTM, RepeatVector, TimeDistributed, Lambda # ADDED RepeatVector, TimeDistributed, Lambda
 from keras.optimizers import Adam 
 from keras.regularizers import l2
 
@@ -162,16 +162,19 @@ class Plugin:
                 )(x)
 
         # MODIFIED: Final output layer using TimeDistributed
-        output_seq = TimeDistributed(
+        full_sequence = TimeDistributed(
             Dense(output_feature_dim, activation=output_activation_name, name="final_dense"),
-            name="decoder_output_seq"
+            name="decoder_full_sequence"
         )(x)  # shape: (batch, window_size, output_feature_dim)
 
-        # CRITICAL: Verify final output shape
+        # CRITICAL FIX: Extract only the final time step to match 2D targets
+        output_seq = Lambda(lambda x: x[:, -1, :], name="decoder_output_seq")(full_sequence)
+        # output_seq shape: (batch, output_feature_dim) - matches your 2D targets
+        
         print(f"[DEBUG DecoderPlugin] Final output symbolic shape: {output_seq.shape}")
-        expected_shape = (None, window_size, output_feature_dim)
-        if output_seq.shape[1] != window_size:
-            raise ValueError(f"Decoder output temporal dimension {output_seq.shape[1]} does not match expected window_size {window_size}")
+        expected_shape = (None, output_feature_dim)
+        if output_seq.shape[1] != output_feature_dim:
+            raise ValueError(f"Decoder output feature dimension {output_seq.shape[1]} does not match expected {output_feature_dim}")
         
         self.generative_network_model = Model(
             inputs=[input_z_seq, input_h_context, input_conditions],

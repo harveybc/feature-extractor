@@ -396,6 +396,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     elif loss_plot_file_template and best_history is None:
         tf.print(f"Loss plot file specified ({loss_plot_file_template}), but no training history available to plot.")
 
+    end_time = time.time() # MOVED: Calculate end_time here
+    execution_time = end_time - start_time # MOVED: Calculate execution_time here
 
     # --- Prepare for debug_info ---
 

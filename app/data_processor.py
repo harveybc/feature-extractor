@@ -460,8 +460,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         if best_autoencoder_manager.decoder_plugin and hasattr(best_autoencoder_manager.decoder_plugin, 'get_debug_info') else {}
     )
 
-    final_training_metrics_for_log = _filter_metrics_dict_for_log(final_train_eval_results if final_train_eval_results is not None else {})
-    final_validation_metrics_for_log = _filter_metrics_dict_for_log(final_val_eval_results if final_val_eval_results is not None else {})
+    final_training_metrics_for_log = _filter_metrics_dict_for_log(train_eval_results if train_eval_results is not None else {}) # MODIFIED: Was final_train_eval_results
+    final_validation_metrics_for_log = _filter_metrics_dict_for_log(val_eval_results if val_eval_results is not None else {}) # MODIFIED: Was final_val_eval_results
 
     debug_info = {
         'execution_time_seconds': execution_time,

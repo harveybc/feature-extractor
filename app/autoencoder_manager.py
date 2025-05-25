@@ -139,7 +139,7 @@ class AutoencoderManager:
             rnn_hidden_dim = config['rnn_hidden_dim'] 
             conditioning_dim = config['conditioning_dim'] 
             latent_dim = config['latent_dim']
-            num_features_output = config['num_features_output']
+            num_features_output = config['num_features_output'] # This will now be the length of cvae_target_feature_names (e.g., 23)
 
             # 1. Configure Encoder Plugin
             self.encoder_plugin.configure_model_architecture(
@@ -158,7 +158,7 @@ class AutoencoderManager:
                 latent_dim=latent_dim,
                 rnn_hidden_dim=rnn_hidden_dim, 
                 conditioning_dim=conditioning_dim,
-                output_feature_dim=num_features_output, # Decoder plugin will force this to 6
+                output_feature_dim=num_features_output, # MODIFIED: Comment updated. Decoder plugin now uses this value.
                 config=config
             )
             if not hasattr(self.decoder_plugin, 'generative_network_model') or self.decoder_plugin.generative_network_model is None:
@@ -218,7 +218,7 @@ class AutoencoderManager:
             self.autoencoder_model = Model(
                 inputs=[cvae_input_x_window, cvae_input_h_context, cvae_input_conditions_t],
                 outputs=outputs_for_model,
-                name=f"windowed_input_cvae_{num_features_output}_features_out"
+                name=f"windowed_input_cvae_{num_features_output}_features_out" # Name dynamically reflects num_features_output
             )
             self.model = self.autoencoder_model 
 

@@ -138,7 +138,7 @@ class Plugin:
         x = Dense(
             units=dense_upsample_units,
             activation=conv_activation_name,
-            kernel_regularizer=l2(l2_reg_val),
+            #kernel_regularizer=l2(l2_reg_val),
             name="decoder_dense_upsample_prep"
         )(concatenated_inputs)
 
@@ -179,7 +179,7 @@ class Plugin:
                 strides=current_convt_stride,
                 padding='same',
                 activation=conv_activation_name,
-                kernel_regularizer=l2(l2_reg_val),
+                #kernel_regularizer=l2(l2_reg_val),
                 name=f"decoder_conv_transpose_{i+1}"
             )(x)
         
@@ -191,7 +191,7 @@ class Plugin:
             self.params['output_feature_dim'], 
             activation=output_activation_name, 
             name='decoder_output_x_prime_t', 
-            kernel_regularizer=l2(l2_reg_val)
+            #kernel_regularizer=l2(l2_reg_val)
         )(x)
 
         self.generative_network_model = Model(

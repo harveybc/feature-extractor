@@ -468,8 +468,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     debug_info = {
         'execution_time_seconds': execution_time,
         'best_latent_dim_selected': best_latent_dim,
-        'final_training_mae': final_training_mae if not np.isnan(final_training_mae) else None,
-        'final_validation_mae': final_validation_mae if not np.isnan(final_validation_mae) else None,
+        'final_training_mae': training_mae if not np.isnan(training_mae) else None, # MODIFIED: Use training_mae
+        'final_validation_mae': validation_mae if not np.isnan(validation_mae) else None, # MODIFIED: Use validation_mae
         'final_training_metrics_logged': final_training_metrics_for_log,
         'final_validation_metrics_logged': final_validation_metrics_for_log,
         'encoder_plugin_params_logged': encoder_params_for_log,

@@ -71,7 +71,6 @@ class Plugin:
 
         conv_activation_name = config.get("conv_activation", self.params.get("conv_activation", "relu"))
         output_activation_name = config.get("output_activation", self.params.get("output_activation", "linear"))
-        l2_reg_val = config.get("l2_reg", self.params.get("l2_reg", 1e-5))
         
         # Get encoder structure to mirror it
         enc_initial_filters = config.get("initial_conv_filters", self.params.get("initial_conv_filters", 128))

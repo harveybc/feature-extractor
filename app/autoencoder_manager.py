@@ -25,12 +25,13 @@ class KLDivergenceLayer(tf.keras.layers.Layer): # Changed
 
     def call(self, inputs):
         z_mean, z_log_var = inputs
-        # sum over latent_dim, then sum over time, then mean over batch
-        term = 1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)
+        # MODIFIED: Handle 3D tensors (batch, time, latent_dim)
+        # Sum over latent_dim (axis=-1), then sum over time (axis=1), then mean over batch (axis=0)
+        kl_term = 1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)
         kl_loss_raw = -0.5 * tf.reduce_mean(
-            tf.reduce_sum(term, axis=[1,2])
-        )  # scalar
-
+            tf.reduce_sum(kl_term, axis=[1, 2])  # Sum over time and latent dimensions
+        )
+        
         weighted_kl_loss = self.kl_beta * kl_loss_raw
         self.add_loss(weighted_kl_loss) # This adds the loss to the model
         
@@ -179,6 +180,7 @@ class AutoencoderManager:
             kl_processed_z_mean, inter_kl_raw, inter_kl_weighted, inter_kl_beta = \
                 self.kl_layer_instance_obj([encoder_z_mean, encoder_z_log_var]) # Ensure this is called
             
+            # MODIFIED: Update sampling function for 3D tensors
             def sampling(args):
                 z_mean_sampling, z_log_var_sampling = args
                 # Generate epsilon with the same shape as z_mean (now 3D: batch, time, latent_dim)
@@ -254,6 +256,7 @@ class AutoencoderManager:
         num_samples_train = data_targets.shape[0]
         latent_dim = config['latent_dim']
 
+        # MODIFIED: Update target creation for 3D outputs
         train_targets_dict = {}
         for output_name in self.autoencoder_model.output_names:
             if output_name == 'reconstruction_out':
@@ -261,7 +264,8 @@ class AutoencoderManager:
             elif output_name == 'reconstruction_out_for_mae_calc':
                 train_targets_dict[output_name] = data_targets
             elif output_name in ['z_mean_out', 'z_log_var_out']:
-                train_targets_dict[output_name] = np.zeros((num_samples_train, latent_dim), dtype=np.float32)
+                # MODIFIED: Create 3D targets for latent outputs (batch, window_size, latent_dim)
+                train_targets_dict[output_name] = np.zeros((num_samples_train, config['window_size'], latent_dim), dtype=np.float32)
             elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
                 train_targets_dict[output_name] = np.zeros((num_samples_train, 1), dtype=np.float32)
             else: # Should not happen if all outputs are covered
@@ -347,7 +351,8 @@ class AutoencoderManager:
                 elif output_name == 'reconstruction_out_for_mae_calc':
                     val_targets_dict_new[output_name] = val_targets_dict_original['reconstruction_out']
                 elif output_name in ['z_mean_out', 'z_log_var_out']:
-                    val_targets_dict_new[output_name] = np.zeros((num_samples_val, latent_dim), dtype=np.float32)
+                    # MODIFIED: Create 3D targets for validation latent outputs
+                    val_targets_dict_new[output_name] = np.zeros((num_samples_val, config['window_size'], latent_dim), dtype=np.float32)
                 elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
                     val_targets_dict_new[output_name] = np.zeros((num_samples_val, 1), dtype=np.float32)
                 else: # Should not happen
@@ -464,6 +469,7 @@ class AutoencoderManager:
         num_samples_eval = data_targets.shape[0]
         latent_dim = config['latent_dim']
 
+        # MODIFIED: Update evaluation targets for 3D outputs
         eval_targets_dict = {}
         for output_name in self.autoencoder_model.output_names:
             if output_name == 'reconstruction_out':
@@ -471,7 +477,8 @@ class AutoencoderManager:
             elif output_name == 'reconstruction_out_for_mae_calc':
                 eval_targets_dict[output_name] = data_targets
             elif output_name in ['z_mean_out', 'z_log_var_out']:
-                eval_targets_dict[output_name] = np.zeros((num_samples_eval, latent_dim), dtype=np.float32)
+                # MODIFIED: Create 3D targets for evaluation latent outputs
+                eval_targets_dict[output_name] = np.zeros((num_samples_eval, config['window_size'], latent_dim), dtype=np.float32)
             elif output_name in ['kl_raw_out', 'kl_weighted_out', 'kl_beta_out']:
                 eval_targets_dict[output_name] = np.zeros((num_samples_eval, 1), dtype=np.float32)
             else: # Should not happen

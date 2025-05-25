@@ -25,13 +25,11 @@ class KLDivergenceLayer(tf.keras.layers.Layer): # Changed
 
     def call(self, inputs):
         z_mean, z_log_var = inputs
-        # tf.reduce_sum(..., axis=1) reduces over features, result shape (batch_size,)
-        # tf.reduce_mean(...) then averages over the batch, resulting in a scalar.
-        kl_loss_raw = -0.5 * tf.reduce_mean( 
-            tf.reduce_sum(1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var), axis=1)
-        )
-        # The check 'if tf.rank(kl_loss_raw) != 0:' is removed as kl_loss_raw should be scalar.
-        # If it wasn't, the tf.reduce_mean above would make it so.
+        # sum over latent_dim, then sum over time, then mean over batch
+        term = 1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)
+        kl_loss_raw = -0.5 * tf.reduce_mean(
+            tf.reduce_sum(term, axis=[1,2])
+        )  # scalar
 
         weighted_kl_loss = self.kl_beta * kl_loss_raw
         self.add_loss(weighted_kl_loss) # This adds the loss to the model
@@ -183,22 +181,25 @@ class AutoencoderManager:
             
             def sampling(args):
                 z_mean_sampling, z_log_var_sampling = args
-                batch = tf.shape(z_mean_sampling)[0]
-                dim = tf.shape(z_mean_sampling)[1]
-                epsilon = tf.random.normal(shape=(batch, dim))
+                # Generate epsilon with the same shape as z_mean (now 3D: batch, time, latent_dim)
+                epsilon = tf.random.normal(shape=tf.shape(z_mean_sampling))
                 return z_mean_sampling + tf.exp(0.5 * z_log_var_sampling) * epsilon
 
-            z_sampled = Lambda(sampling, name='z_sampling_lambda')([kl_processed_z_mean, encoder_z_log_var])
+            z_sampled = Lambda(sampling, name='z_sampling')(
+                [kl_processed_z_mean, encoder_z_log_var]
+            )  # shape: (batch, window_size, latent_dim)
 
-            # Decoder plugin's model outputs reconstruction (intermediate tensor)
+            # MODIFIED: Pass the full 3D sequence to decoder
             intermediate_reconstruction_output = self.decoder_plugin.generative_network_model(
                 [z_sampled, cvae_input_h_context, cvae_input_conditions_t]
-            )
+            )  # shape: (batch, window_size, num_features_output)
 
-            # --- Explicitly name all final output tensors using Lambda layers ---
-            final_reconstruction_output = Lambda(lambda x: x, name='reconstruction_out')(intermediate_reconstruction_output)
-            # NEW: Duplicate reconstruction output for dedicated MAE calculation
-            final_reconstruction_for_mae = Lambda(lambda x: x, name='reconstruction_out_for_mae_calc')(intermediate_reconstruction_output)
+            final_reconstruction_output = Lambda(lambda x: x, name='reconstruction_out')(
+                intermediate_reconstruction_output
+            )
+            final_reconstruction_for_mae = Lambda(lambda x: x, name='reconstruction_out_for_mae_calc')(
+                intermediate_reconstruction_output
+            )
 
             final_z_mean = Lambda(lambda x: x, name='z_mean_out')(encoder_z_mean) # Use original z_mean from encoder
             final_z_log_var = Lambda(lambda x: x, name='z_log_var_out')(encoder_z_log_var) # Use original z_log_var

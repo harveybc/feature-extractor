@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Concatenate, Reshape, Conv1DTranspose, Flatten
+from keras.layers import Dense, Input, Concatenate, Conv1DTranspose, Reshape, LSTM, RepeatVector, TimeDistributed # ADDED RepeatVector, TimeDistributed
 from keras.optimizers import Adam 
 from keras.regularizers import l2
 
@@ -61,146 +61,92 @@ class Plugin:
         """
         Configures the per-step generative network with Conv1DTranspose.
         """
-        if config is None: config = {}
+        if config is None:
+            config = {}
 
         self.params['latent_dim'] = latent_dim
         self.params['rnn_hidden_dim'] = rnn_hidden_dim
         self.params['conditioning_dim'] = conditioning_dim
-        self.params['output_feature_dim'] = output_feature_dim # MODIFIED: Use the passed output_feature_dim
+        self.params['output_feature_dim'] = output_feature_dim
 
-        # REMOVED: Warning about overriding to 6, as it's now configurable.
-        # if output_feature_dim != 6:
-        #     print(f"WARNING: Decoder output_feature_dim passed as {output_feature_dim}, but overridden to 6.")
-
-        # Get parameters, prioritizing external config, then self.params
         conv_activation_name = config.get("conv_activation", self.params.get("conv_activation", "relu"))
-        l2_reg_val = config.get("l2_reg", self.params.get("l2_reg", 1e-5))
-        conv_kernel_size_val = config.get("conv_kernel_size", self.params.get("conv_kernel_size", 5))
-        decoder_initial_seq_len_val = config.get("decoder_initial_seq_len", self.params.get("decoder_initial_seq_len", 4))
         output_activation_name = config.get("output_activation", self.params.get("output_activation", "linear"))
+        l2_reg_val = config.get("l2_reg", self.params.get("l2_reg", 1e-5))
         
-        # Get encoder's structural parameters from the main config
-        enc_initial_filters = config.get("initial_conv_filters", self.params.get("encoder_ref_initial_conv_filters"))
-        enc_num_conv_layers = config.get("num_conv_layers", self.params.get("encoder_ref_num_conv_layers"))
-        enc_num_strided_layers = config.get("num_strided_conv_layers", self.params.get("encoder_ref_num_strided_conv_layers"))
-        enc_min_filters = config.get("min_conv_filters", self.params.get("encoder_ref_min_conv_filters"))
+        # Get encoder structure to mirror it
+        enc_initial_filters = config.get("initial_conv_filters", self.params.get("initial_conv_filters", 128))
+        enc_num_conv_layers = config.get("num_conv_layers", self.params.get("num_conv_layers", 4))
+        enc_num_strided_layers = config.get("num_strided_conv_layers", self.params.get("num_strided_conv_layers", 2))
+        enc_min_filters = config.get("min_conv_filters", self.params.get("min_conv_filters", 16))
+        conv_kernel_size = config.get("conv_kernel_size", self.params.get("conv_kernel_size", 5))
+        window_size = config.get("window_size", 288)  # Get window size from config
 
-        # 1. Calculate encoder's actual output filter sizes and strides per layer
+        # Calculate encoder filter progression to mirror it
         encoder_actual_output_filters = []
         encoder_actual_strides = []
-        current_enc_filters = enc_initial_filters
+        current_filters = enc_initial_filters
+        
         for i in range(enc_num_conv_layers):
-            encoder_actual_output_filters.append(current_enc_filters)
-            is_strided_encoder_layer = (i < enc_num_strided_layers)
-            encoder_actual_strides.append(2 if is_strided_encoder_layer else 1)
-            
+            encoder_actual_output_filters.append(current_filters)
+            stride = 2 if i < enc_num_strided_layers else 1
+            encoder_actual_strides.append(stride)
             if i < enc_num_conv_layers - 1:
-                if is_strided_encoder_layer:
-                    current_enc_filters = max(enc_min_filters, current_enc_filters // 2)
+                if stride == 2:
+                    current_filters = max(enc_min_filters, current_filters // 2)
                 else:
-                    current_enc_filters = max(enc_min_filters, int(current_enc_filters * 0.8))
-        
-        # 2. Define Decoder's ConvT output filter progression (reversed from encoder's output filters)
-        # Example: Encoder outputs [128, 64, 32, 16]. Decoder ConvT aims for [16, 32, 64, 128] as output filters.
-        decoder_convt_output_filters = list(reversed(encoder_actual_output_filters))
-        
-        # The last ConvT layer's filters might be different (e.g., smaller, or related to output_feature_dim)
-        # For now, let's keep it symmetric, so decoder_convt_output_filters[-1] would be enc_initial_filters.
-        # Or, we can introduce a 'decoder_last_convt_filters' if needed.
-        # Let's assume the last layer of decoder_convt_output_filters is the target.
+                    current_filters = max(enc_min_filters, int(current_filters * 0.8))
 
-        if not decoder_convt_output_filters:
-            raise ValueError("Could not determine decoder ConvT filter progression. Check encoder parameters.")
+        # Reverse for decoder (transpose convolutions go from last to first)
+        decoder_convt_output_filters = encoder_actual_output_filters[::-1]
+        decoder_strides = encoder_actual_strides[::-1]
 
-        # 3. Initial Dense and Reshape
-        # The first ConvT layer will take `decoder_convt_output_filters[0]` as its *input* channels.
-        # This means the Reshape layer must output `decoder_convt_output_filters[0]` channels.
-        first_convt_input_channels = decoder_convt_output_filters[0] # This is encoder_actual_output_filters[-1]
-        
-        dense_upsample_units = decoder_initial_seq_len_val * first_convt_input_channels
-
-        print(f"[DEBUG DecoderPlugin] Configuring with: z_dim={latent_dim}, h_dim={rnn_hidden_dim}, cond_dim={conditioning_dim}, out_dim={self.params['output_feature_dim']}")
+        print(f"[DEBUG DecoderPlugin] Configuring with: z_dim={latent_dim}, h_dim={rnn_hidden_dim}, cond_dim={conditioning_dim}, out_dim={output_feature_dim}")
+        print(f"[DEBUG DecoderPlugin] Window size: {window_size}")
         print(f"[DEBUG DecoderPlugin] Encoder structure ref: initial_filters={enc_initial_filters}, num_layers={enc_num_conv_layers}, num_strided={enc_num_strided_layers}")
-        print(f"[DEBUG DecoderPlugin] Encoder calculated output filters: {encoder_actual_output_filters}")
-        print(f"[DEBUG DecoderPlugin] Encoder calculated strides: {encoder_actual_strides}")
-        print(f"[DEBUG DecoderPlugin] Decoder ConvT target output filters: {decoder_convt_output_filters}")
-        print(f"[DEBUG DecoderPlugin] Initial Dense units: {dense_upsample_units}, Reshape to: ({decoder_initial_seq_len_val}, {first_convt_input_channels})")
+        print(f"[DEBUG DecoderPlugin] Decoder ConvT output filters: {decoder_convt_output_filters}")
+        print(f"[DEBUG DecoderPlugin] Decoder strides: {decoder_strides}")
 
-        # Define inputs for a single time step
-        input_z_t = Input(shape=(latent_dim,), name="decoder_input_z_t")
-        input_h_t = Input(shape=(rnn_hidden_dim,), name="decoder_input_h_t")
-        input_conditions_t = Input(shape=(conditioning_dim,), name="decoder_input_conditions_t")
+        # MODIFIED: Define inputs for sequence processing instead of single time step
+        input_z_seq = Input(shape=(window_size, latent_dim), name="decoder_input_z_seq")
+        input_h_context = Input(shape=(rnn_hidden_dim,), name="decoder_input_h_context") 
+        input_conditions = Input(shape=(conditioning_dim,), name="decoder_input_conditions")
 
-        # Concatenate all inputs
-        concatenated_inputs = Concatenate(name="decoder_concat_inputs")([input_z_t, input_h_t, input_conditions_t])
+        # MODIFIED: Expand context and conditions to match sequence length
+        h_context_expanded = RepeatVector(window_size, name="h_context_repeated")(input_h_context)
+        conditions_expanded = RepeatVector(window_size, name="conditions_repeated")(input_conditions)
 
-        # Dense layer to prepare for reshaping
-        x = Dense(
-            units=dense_upsample_units,
-            activation=conv_activation_name,
-            #kernel_regularizer=l2(l2_reg_val),
-            name="decoder_dense_upsample_prep"
-        )(concatenated_inputs)
+        # MODIFIED: Concatenate all sequence inputs
+        x = Concatenate(axis=-1, name="decoder_concat_seq")([input_z_seq, h_context_expanded, conditions_expanded])
+        # x shape: (batch, window_size, latent_dim + rnn_hidden_dim + conditioning_dim)
 
-        # Reshape for Conv1DTranspose
-        x = Reshape(
-            (decoder_initial_seq_len_val, first_convt_input_channels),
-            name="decoder_reshape_for_conv"
-        )(x)
-
-        # Conv1DTranspose layers
-        num_decoder_convt_layers = enc_num_conv_layers
-        for i in range(num_decoder_convt_layers):
-            # Output filters for this ConvT layer:
-            # If decoder_convt_output_filters = [16, 32, 64, 128] (derived from encoder)
-            # Layer 0 ConvT outputs 16 filters (already input shape)
-            # Layer 1 ConvT outputs 32 filters
-            # Layer 2 ConvT outputs 64 filters
-            # Layer 3 ConvT outputs 128 filters
-            # The `filters` param for Conv1DTranspose is its output channels.
-            # The input channels for ConvT[i] is the output channels of ConvT[i-1]
-            # (or from Reshape for i=0).
-            
-            # For ConvT layer `i`, its output filter count should be `decoder_convt_output_filters[i]`.
-            # However, the list `decoder_convt_output_filters` was defined as `list(reversed(encoder_actual_output_filters))`.
-            # So, `decoder_convt_output_filters[0]` is `encoder_actual_output_filters[-1]`.
-            # `decoder_convt_output_filters[1]` is `encoder_actual_output_filters[-2]`.
-            # This means the target output filters for ConvT[i] should be `decoder_convt_output_filters[i]` if we want to build up.
-            # Let's use `target_output_filters_for_this_convT = decoder_convt_output_filters[i]`
-
-            target_output_filters_for_this_convT = decoder_convt_output_filters[i]
-            
-            # Strides are reversed from encoder's strides
-            current_convt_stride = encoder_actual_strides[enc_num_conv_layers - 1 - i]
+        # MODIFIED: Use Conv1DTranspose layers to mirror encoder's Conv1D layers
+        for i in range(len(decoder_convt_output_filters)):
+            stride = decoder_strides[i]
+            filters = decoder_convt_output_filters[i]
             
             x = Conv1DTranspose(
-                filters=target_output_filters_for_this_convT,
-                kernel_size=conv_kernel_size_val,
-                strides=current_convt_stride,
+                filters=filters,
+                kernel_size=conv_kernel_size,
+                strides=stride,
                 padding='same',
                 activation=conv_activation_name,
-                #kernel_regularizer=l2(l2_reg_val),
-                name=f"decoder_conv_transpose_{i+1}"
+                # NO kernel_regularizer as requested
+                name=f"decoder_conv1d_transpose_{i+1}"
             )(x)
-        
-        # Flatten the output of Conv1DTranspose layers
-        x = Flatten(name="decoder_flatten_upsampled")(x)
 
-        # Output layer for x'_t (now uses configured output_feature_dim)
-        output_x_prime_t = Dense(
-            self.params['output_feature_dim'], 
-            activation=output_activation_name, 
-            name='decoder_output_x_prime_t', 
-            #kernel_regularizer=l2(l2_reg_val)
-        )(x)
+        # MODIFIED: Final output layer using TimeDistributed
+        output_seq = TimeDistributed(
+            Dense(output_feature_dim, activation=output_activation_name, name="final_dense"),
+            name="decoder_output_seq"
+        )(x)  # shape: (batch, window_size, output_feature_dim)
 
         self.generative_network_model = Model(
-            inputs=[input_z_t, input_h_t, input_conditions_t],
-            outputs=output_x_prime_t,
-            name="dynamic_conv_transpose_cvae_decoder"
+            inputs=[input_z_seq, input_h_context, input_conditions],
+            outputs=output_seq,
+            name="sequence_conv_transpose_cvae_decoder"
         )
         
-        print(f"[DEBUG DecoderPlugin] Model built.")
+        print(f"[DEBUG DecoderPlugin] Sequence decoder model built.")
         self.generative_network_model.summary(line_length=120)
 
     def train(self, *args, **kwargs):

@@ -196,6 +196,11 @@ class AutoencoderManager:
                 [z_sampled, cvae_input_h_context, cvae_input_conditions_t]
             )  # shape: (batch, window_size, num_features_output)
 
+            # DEBUG: Add shape checking
+            tf.print(f"[build_autoencoder] z_sampled shape: {tf.shape(z_sampled)}")
+            tf.print(f"[build_autoencoder] intermediate_reconstruction_output shape: {tf.shape(intermediate_reconstruction_output)}")
+            tf.print(f"[build_autoencoder] Expected target shape: (batch, {window_size}, {num_features_output})")
+            
             final_reconstruction_output = Lambda(lambda x: x, name='reconstruction_out')(
                 intermediate_reconstruction_output
             )

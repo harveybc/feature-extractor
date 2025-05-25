@@ -88,6 +88,12 @@ class Plugin:
         
         print(f"[DEBUG DecoderPlugin] Calculated encoder output temporal dim: {encoder_output_temporal_dim}")
         
+        # Calculate expected final temporal dimension after decoder upsampling
+        decoder_final_temporal_dim = encoder_output_temporal_dim
+        for i in range(enc_num_conv_layers):
+            decoder_final_temporal_dim = decoder_final_temporal_dim * 2
+        print(f"[DEBUG DecoderPlugin] Expected decoder final temporal dim: {decoder_final_temporal_dim}")
+        
         # Calculate encoder filter progression to mirror it
         encoder_actual_output_filters = []
         encoder_actual_strides = []
@@ -137,6 +143,7 @@ class Plugin:
                 activation=conv_activation_name,
                 name=f"decoder_conv1d_transpose_{i+1}"
             )(x)
+            print(f"[DEBUG DecoderPlugin] After Conv1DTranspose_{i+1}: expected shape (None, {x.shape[1] if hasattr(x.shape[1], '__int__') else 'dynamic'}, {filters})")
 
         # MODIFIED: Final output layer using TimeDistributed
         output_seq = TimeDistributed(
@@ -144,6 +151,8 @@ class Plugin:
             name="decoder_output_seq"
         )(x)  # shape: (batch, window_size, output_feature_dim) - after upsampling back to original size
 
+        print(f"[DEBUG DecoderPlugin] Final output shape should be: (batch, {decoder_final_temporal_dim}, {output_feature_dim})")
+        
         self.generative_network_model = Model(
             inputs=[input_z_seq, input_h_context, input_conditions],
             outputs=output_seq,

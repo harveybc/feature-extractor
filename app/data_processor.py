@@ -5,11 +5,12 @@ import tensorflow as tf # Added for tf.print consistency
 from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import load_csv, write_csv
 # from app.reconstruction import unwindow_data 
-from app.config_handler import save_debug_info, remote_log
+from app.config_handler import save_debug_info, remote_log, sanitize_dict_for_json
 import os # Add os import for load_and_evaluate_encoder/decoder path checks
 from tensorflow.keras.models import load_model # Changed
 from tensorflow.keras.utils import plot_model # Changed
-import matplotlib.pyplot as plt # ADDED for plotting loss
+import matplotlib.pyplot as plt
+import traceback # Ensure traceback is imported for detailed error printing
 
 
 # This utility function might still be useful for a preprocessor plugin,
@@ -339,47 +340,67 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
                 break
     
     if best_autoencoder_manager is None: 
-        if autoencoder_manager: 
-            tf.print("Warning: best_autoencoder_manager was not set. Using the last trained model.")
+        if autoencoder_manager: # if loop ran at least once
+            tf.print("Warning: best_autoencoder_manager was not set (e.g. incremental search off, or no validation improvement). Using the last trained model.")
             best_autoencoder_manager = autoencoder_manager
-            best_latent_dim = config.get('latent_dim') 
-            best_history = history # ADDED: Ensure history from last model is used if no "best" was set
+            # best_latent_dim is already config['latent_dim'] from the last iteration
+            # best_history is already 'history' from the last iteration
+            if best_history is None: # Should be set if autoencoder_manager exists
+                 best_history = history # Ensure it's set from the very last 'history'
+            if np.isnan(best_val_mae): # If no validation, best_val_mae might be inf
+                best_val_mae = validation_mae # Log the last validation_mae (even if NaN)
         else: 
-            raise RuntimeError("Autoencoder training loop did not run or failed to select a model.")
+            raise RuntimeError("Autoencoder training loop did not run or failed to select/produce a model.")
 
-    best_val_mae_str = f"{best_val_mae:.4f}" if not np.isnan(best_val_mae) else "N/A"
-    tf.print(f"Final selected latent_dim: {best_latent_dim} with Best Validation MAE: {best_val_mae_str}")
+
+    best_val_mae_str = f"{best_val_mae:.4f}" if best_val_mae is not None and not np.isnan(best_val_mae) else "N/A"
+    tf.print(f"Final selected latent_dim: {best_latent_dim} with Best/Final Validation MAE: {best_val_mae_str}")
     
-    config['latent_dim'] = best_latent_dim 
+    # config['latent_dim'] should already be best_latent_dim if search happened,
+    # or the current_latent_dim from the last run.
+    # For clarity, explicitly set it to best_latent_dim for saving.
+    config['best_latent_dim_selected'] = best_latent_dim # Add this for clarity in saved config
+    # The 'latent_dim' in config will be the one used for the selected model.
 
     # --- Plotting Training History ---
     loss_plot_file_template = config.get('loss_plot_file', None)
     if loss_plot_file_template and best_history is not None:
+        # Ensure the directory exists
+        plot_dir = os.path.dirname(loss_plot_file_template)
+        if plot_dir: # If path includes a directory
+            os.makedirs(plot_dir, exist_ok=True)
+            
         loss_plot_filename = loss_plot_file_template.replace(".png", f"_ld{best_latent_dim}.png")
+        tf.print(f"DEBUG: Attempting to plot. best_history.history keys: {list(best_history.history.keys())}")
         try:
             plt.figure(figsize=(12, 8))
             
-            # Plot Loss
             plt.subplot(2, 1, 1)
-            plt.plot(best_history.history['loss'], label='Training Loss')
+            if 'loss' in best_history.history:
+                plt.plot(best_history.history['loss'], label='Training Loss')
+            else:
+                tf.print("Warning: 'loss' key not found in best_history for plotting.")
             if 'val_loss' in best_history.history:
                 plt.plot(best_history.history['val_loss'], label='Validation Loss')
+            elif config.get('cvae_val_inputs'): # If validation was attempted
+                tf.print("Warning: 'val_loss' key not found in best_history for plotting, but validation data was present.")
             plt.title(f'Model Loss (Latent Dim: {best_latent_dim})')
             plt.ylabel('Loss')
             plt.xlabel('Epoch')
             plt.legend(loc='upper right')
             
-            # Plot MAE
-            # The key for MAE is 'reconstruction_out_for_mae_calc_mean_absolute_error'
-            # and for validation it's 'val_reconstruction_out_for_mae_calc_mean_absolute_error'
             mae_metric_key = 'reconstruction_out_for_mae_calc_mean_absolute_error'
             val_mae_metric_key = f'val_{mae_metric_key}'
 
             plt.subplot(2, 1, 2)
             if mae_metric_key in best_history.history:
                 plt.plot(best_history.history[mae_metric_key], label='Training MAE')
+            else:
+                tf.print(f"Warning: Training MAE key '{mae_metric_key}' not found in best_history for plotting.")
             if val_mae_metric_key in best_history.history:
                 plt.plot(best_history.history[val_mae_metric_key], label='Validation MAE')
+            elif config.get('cvae_val_inputs'): # If validation was attempted
+                tf.print(f"Warning: Validation MAE key '{val_mae_metric_key}' not found in best_history for plotting, but validation data was present.")
             plt.title(f'Model MAE (Latent Dim: {best_latent_dim})')
             plt.ylabel('Mean Absolute Error')
             plt.xlabel('Epoch')
@@ -387,103 +408,118 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             
             plt.tight_layout()
             plt.savefig(loss_plot_filename)
-            plt.close() # Close the figure to free memory
+            plt.close() 
             tf.print(f"Training history plot saved to {loss_plot_filename}")
         except Exception as e:
             tf.print(f"Could not plot training history: {e}")
-            import traceback
             tf.print(traceback.format_exc())
     elif loss_plot_file_template and best_history is None:
         tf.print(f"Loss plot file specified ({loss_plot_file_template}), but no training history available to plot.")
 
-    end_time = time.time() # MOVED: Calculate end_time here
-    execution_time = end_time - start_time # MOVED: Calculate execution_time here
+    end_time = time.time()
+    execution_time = end_time - start_time
 
     # --- Prepare for debug_info ---
-
+    # These _filter functions are okay for their specific purpose (extracting scalars from dicts)
     def _filter_metrics_dict_for_log(metrics_dict):
-        if not isinstance(metrics_dict, dict):
-            return {"error": "Metrics data was not a dictionary."}
+        # ... (your existing _filter_metrics_dict_for_log is likely fine, ensure it handles None robustly)
+        if not isinstance(metrics_dict, dict): return {"error": "Metrics data was not a dictionary."}
         filtered = {}
-        for k, v in metrics_dict.items():
-            if isinstance(v, (int, float, np.integer, np.floating, str)): # Allow numbers and strings
+        for k, v_metric in metrics_dict.items():
+            if isinstance(v_metric, (int, float, np.integer, np.floating, str)):
                 try:
-                    # Attempt to convert to basic Python types if they are numpy types
-                    if isinstance(v, (np.integer, np.floating)):
-                        filtered[k] = v.item() 
-                    else:
-                        filtered[k] = v
-                except Exception as e:
-                    filtered[k] = f"Error converting metric value for key '{k}': {str(e)}"
+                    filtered[k] = v_metric.item() if hasattr(v_metric, 'item') else v_metric
+                except Exception as e_filter:
+                    filtered[k] = f"Error converting metric '{k}': {str(e_filter)}"
             else:
-                filtered[k] = f"Non-scalar/string metric value of type {type(v).__name__} for key '{k}', removed."
+                filtered[k] = f"<metric '{k}' type:{type(v_metric).__name__} removed>"
         return filtered
 
     def _filter_plugin_params_for_log(params):
-        if not isinstance(params, dict):
-            return "Plugin params not available or not a dict."
-        filtered_params = {}
-        for k, v in params.items():
-            if isinstance(v, (str, int, float, bool, type(None))):
-                filtered_params[k] = v
-            elif isinstance(v, list) and all(isinstance(i, (str, int, float, bool, type(None))) for i in v):
-                filtered_params[k] = v # Allow lists of simple types
-            else:
-                filtered_params[k] = f"Value for '{k}' (type: {type(v).__name__}) removed/simplified for log."
-        return filtered_params
+        # ... (your existing _filter_plugin_params_for_log is likely fine)
+        if not isinstance(params, dict): return "Plugin params not available or not a dict."
+        return sanitize_dict_for_json(params) # Use the main sanitizer for consistency
 
-    # Select only a few key configuration parameters to log
-    minimal_config_keys_to_log = [
-        'learning_rate', 'batch_size', 'epochs', 
-        'window_size', 'num_features_input', 'num_features_output',
-        'rnn_hidden_dim', 'conditioning_dim', 'latent_dim', 'best_latent_dim', # 'latent_dim' is current, 'best_latent_dim' is selected
-        'kl_beta', 'kl_anneal_epochs', 'loss_function', 'reconstruction_loss_type',
-        'cvae_target_feature_names', 'preprocessor_plugin', 'encoder_plugin', 'decoder_plugin',
-        'x_train_file', 'x_validation_file', # Just file names, not content
-        'save_encoder', 'save_decoder', 'model_save_path' # Just file names
+
+    # For the config part of debug_info, select only essential keys.
+    # The values will be taken from the 'config' dict which might still hold some complex objects
+    # if not careful, but sanitize_dict_for_json applied to the whole debug_info later will catch them.
+    # Or, build config_for_log_minimal by taking values and immediately sanitizing them.
+    
+    keys_for_debug_config = [
+        'learning_rate', 'batch_size', 'epochs', 'window_size', 
+        'num_features_input', 'num_features_output', 'rnn_hidden_dim', 
+        'conditioning_dim', 'latent_dim', 'best_latent_dim_selected', # Use the one we added
+        'kl_beta', 'kl_anneal_epochs', 'loss_function', 
+        'reconstruction_loss_type', 'cvae_target_feature_names',
+        'preprocessor_plugin', 'encoder_plugin', 'decoder_plugin',
+        'x_train_file', 'x_validation_file', # Filenames are fine
+        'save_encoder', 'save_decoder', 'model_save_path', 'loss_plot_file'
     ]
-    config_for_log_minimal = {}
-    for k in minimal_config_keys_to_log:
-        val = config.get(k)
-        if isinstance(val, (str, int, float, bool, type(None))):
-            config_for_log_minimal[k] = val
-        elif isinstance(val, list) and all(isinstance(i, (str, int, float, bool, type(None))) for i in val):
-             config_for_log_minimal[k] = val # Allow list of simple types (e.g. cvae_target_feature_names)
-        else:
-            config_for_log_minimal[k] = f"Value for '{k}' (type: {type(val).__name__}) not logged due to complexity."
+    config_subset_for_debug = {k: config.get(k) for k in keys_for_debug_config if k in config}
+    # This config_subset_for_debug will be part of debug_info, which then gets sanitized.
 
+    # Use MAE values from the best/last model run
+    # 'training_mae' and 'validation_mae' should be from the scope of the selected best_autoencoder_manager
+    # If incremental search was off, these are from the last run.
+    # If incremental search was on, these should correspond to the 'best_val_mae' iteration.
+    # This logic needs to ensure 'training_mae' and 'validation_mae' reflect the chosen model.
+    
+    # Re-evaluate the best model to get its specific training_mae if necessary,
+    # or ensure 'training_mae' and 'validation_mae' from the loop correspond to 'best_autoencoder_manager'
+    final_logged_training_mae = float('nan')
+    final_logged_validation_mae = best_val_mae # This is already the best/final validation MAE
 
-    encoder_params_for_log = _filter_plugin_params_for_log(
-        best_autoencoder_manager.encoder_plugin.get_debug_info()
-        if best_autoencoder_manager.encoder_plugin and hasattr(best_autoencoder_manager.encoder_plugin, 'get_debug_info') else {}
-    )
-    decoder_params_for_log = _filter_plugin_params_for_log(
-        best_autoencoder_manager.decoder_plugin.get_debug_info()
-        if best_autoencoder_manager.decoder_plugin and hasattr(best_autoencoder_manager.decoder_plugin, 'get_debug_info') else {}
-    )
+    # It's safer to re-evaluate the best model for its training MAE if incremental search was on
+    # and best_autoencoder_manager is not the last 'autoencoder_manager' instance.
+    # For simplicity now, we'll assume 'training_mae' from the loop's last relevant iteration is sufficient.
+    # If 'best_autoencoder_manager' was chosen from an earlier iteration, 'training_mae' variable
+    # from the end of the loop might not correspond to it.
+    # Let's use the 'train_eval_results' and 'val_eval_results' that correspond to the 'best_history'.
+    
+    # If best_history exists, its last epoch contains the relevant metrics for that run.
+    logged_train_metrics_from_history = {}
+    logged_val_metrics_from_history = {}
 
-    final_training_metrics_for_log = _filter_metrics_dict_for_log(train_eval_results if train_eval_results is not None else {}) # MODIFIED: Was final_train_eval_results
-    final_validation_metrics_for_log = _filter_metrics_dict_for_log(val_eval_results if val_eval_results is not None else {}) # MODIFIED: Was final_val_eval_results
+    if best_history:
+        for key_hist in best_history.history.keys():
+            if not key_hist.startswith('val_'):
+                logged_train_metrics_from_history[key_hist] = best_history.history[key_hist][-1] # Last epoch value
+            else:
+                logged_val_metrics_from_history[key_hist] = best_history.history[key_hist][-1] # Last epoch value
+    
+    # Extract MAE from these history-based metrics if available
+    mae_key_from_history = 'reconstruction_out_for_mae_calc_mean_absolute_error'
+    val_mae_key_from_history = f'val_{mae_key_from_history}'
+
+    final_logged_training_mae = logged_train_metrics_from_history.get(mae_key_from_history, float('nan'))
+    # final_logged_validation_mae is already best_val_mae
 
     debug_info = {
         'execution_time_seconds': execution_time,
         'best_latent_dim_selected': best_latent_dim,
-        'final_training_mae': training_mae if not np.isnan(training_mae) else None, # MODIFIED: Use training_mae
-        'final_validation_mae': validation_mae if not np.isnan(validation_mae) else None, # MODIFIED: Use validation_mae
-        'final_training_metrics_logged': final_training_metrics_for_log,
-        'final_validation_metrics_logged': final_validation_metrics_for_log,
-        'encoder_plugin_params_logged': encoder_params_for_log,
-        'decoder_plugin_params_logged': decoder_params_for_log,
-        'key_config_parameters_logged': config_for_log_minimal
+        'final_training_mae_logged': final_logged_training_mae if not np.isnan(final_logged_training_mae) else None,
+        'final_validation_mae_logged': final_logged_validation_mae if final_logged_validation_mae is not None and not np.isnan(final_logged_validation_mae) else None,
+        'final_training_metrics_from_history_last_epoch': _filter_metrics_dict_for_log(logged_train_metrics_from_history),
+        'final_validation_metrics_from_history_last_epoch': _filter_metrics_dict_for_log(logged_val_metrics_from_history),
+        'encoder_plugin_params_logged': _filter_plugin_params_for_log(
+            best_autoencoder_manager.encoder_plugin.get_debug_info()
+            if best_autoencoder_manager and best_autoencoder_manager.encoder_plugin and hasattr(best_autoencoder_manager.encoder_plugin, 'get_debug_info') else {}
+        ),
+        'decoder_plugin_params_logged': _filter_plugin_params_for_log(
+            best_autoencoder_manager.decoder_plugin.get_debug_info()
+            if best_autoencoder_manager and best_autoencoder_manager.decoder_plugin and hasattr(best_autoencoder_manager.decoder_plugin, 'get_debug_info') else {}
+        ),
+        'key_config_parameters_logged': config_subset_for_debug # This subset will be sanitized by save_debug_info
     }
 
     if 'save_log' in config and config['save_log']:
+        # save_debug_info now applies sanitize_dict_for_json internally
         save_debug_info(debug_info, config['save_log'])
-        tf.print(f"Debug info saved to {config['save_log']}.")
     
     if 'remote_log' in config and config['remote_log']:
+        # remote_log also applies sanitize_dict_for_json to its config_arg
         remote_log(config, debug_info, config['remote_log'], config['username'], config['password'])
-        tf.print(f"Debug info saved to {config['remote_log']}.")
     
     model_plot_file_template = config.get('model_plot_file', None)
     if model_plot_file_template and best_autoencoder_manager.autoencoder_model:

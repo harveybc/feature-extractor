@@ -31,7 +31,15 @@ DEFAULT_VALUES = {
     'decoder_plugin': 'cnn', # Default decoder plugin
 
     # --- Data and Model Structure ---
-    "target_column": "CLOSE",
+    "target_column": "CLOSE", # Primary target for some preprocessing steps, CVAE targets are separate
+    'cvae_target_feature_names': [ # ADDED/UPDATED: Extended list of CVAE target features
+        'OPEN', 'LOW', 'HIGH', 'vix_close', 'BC-BO', 'BH-BL', # Original 6
+        'S&P500_Close',                                      # S&P500
+        'CLOSE_15m_tick_1', 'CLOSE_15m_tick_2', 'CLOSE_15m_tick_3', 'CLOSE_15m_tick_4', # 15-min ticks
+        'CLOSE_15m_tick_5', 'CLOSE_15m_tick_6', 'CLOSE_15m_tick_7', 'CLOSE_15m_tick_8',
+        'CLOSE_30m_tick_1', 'CLOSE_30m_tick_2', 'CLOSE_30m_tick_3', 'CLOSE_30m_tick_4', # 30-min ticks
+        'CLOSE_30m_tick_5', 'CLOSE_30m_tick_6', 'CLOSE_30m_tick_7', 'CLOSE_30m_tick_8'
+    ],
     'input_offset': 0,
     'window_size': 288,  # Kept later definition
     'l2_reg': 1e-6,          # Kept later definition (smaller L2)

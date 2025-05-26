@@ -106,7 +106,7 @@ class Plugin:
         # --- END MODIFICATION ---
         
         current_layer_filters = initial_conv_filters
-
+        strides_for_layer = 2  # FIXED: Always use stride=2 to halve temporal dimension
         x_conv = Conv1D(
             filters=current_layer_filters,
             kernel_size=3,  # FIXED: Use kernel_size=3 as you specified
@@ -118,7 +118,7 @@ class Plugin:
         )(x_conv)
 
         for i in range(num_conv_layers_cfg-1):
-            strides_for_layer = 2  # FIXED: Always use stride=2 to halve temporal dimension
+
             
             x_conv = Conv1D(
                 filters=current_layer_filters,

@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Concatenate, Conv1DTranspose, Reshape, LSTM, RepeatVector, TimeDistributed, Lambda # ADDED RepeatVector, TimeDistributed, Lambda
+from keras.layers import Dense, Input, Concatenate, Conv1DTranspose, Reshape, LSTM, RepeatVector, TimeDistributed, Lambda, MultiHeadAttention # ADDED MultiHeadAttention
 from keras.optimizers import Adam 
 from keras.regularizers import l2
 #Conv1D
@@ -154,25 +154,41 @@ class Plugin:
             missing_factor = window_size // current_temporal_dim
             if missing_factor > 1 and (missing_factor & (missing_factor - 1)) == 0:  # Check if power of 2
                 print(f"[FIX DecoderPlugin] Adding extra Conv1DTranspose with stride={missing_factor}")
+                extra_layer_filters = decoder_convt_output_filters[-1] 
                 x = Conv1DTranspose(
-                    filters=decoder_convt_output_filters[-1],  # Use same filters as last layer
+                    filters=extra_layer_filters,
                     kernel_size=3,
                     strides=missing_factor,
                     padding='same',
-                    activation=conv_activation_name,
+                    activation=None, # CHANGED: Consistent with other ConvT layers
+                    kernel_initializer=HeNormal(), # ADDED: Consistent with other ConvT layers
                     name=f"decoder_conv1d_transpose_extra"
                 )(x)
+                x = LeakyReLU(alpha=0.2, name=f"decoder_conv1d_transpose_extra_leaky")(x) # ADDED: Consistent LeakyReLU
+
+        # --- NEW: Late MultiHeadAttention ---
+        # Input to MHA is x (output of ConvT stack). Its feature dimension is enc_initial_filters.
+        late_attn_key_dim = max(1, enc_initial_filters // 4) # Assuming num_heads=2
+
+        attn_late_output = MultiHeadAttention(
+            num_heads=2,
+            key_dim=late_attn_key_dim,
+            name="late_self_attention"
+        )(x, x)
+        # --- END NEW Late MultiHeadAttention ---
 
         # SIMPLIFIED: Direct Conv1D output to final features, then extract last time step
         # Add final conv layer to get the right number of output features
+        # Input to this layer is now attn_late_output
         x = Conv1D(
             filters=output_feature_dim,
             kernel_size=1,  # 1x1 conv for feature transformation
             strides=1,
             padding='same',
             activation=output_activation_name,
+            kernel_initializer=HeNormal(), # ADDED: Consistent with other layers
             name="final_conv_features"
-        )(x)  # shape: (batch, window_size, output_feature_dim)
+        )(attn_late_output)  # CHANGED: Input is now attn_late_output
         
         # Extract only the final time step to match 2D targets
         output_seq = Lambda(lambda x: x[:, -1, :], name="decoder_output_seq")(x)

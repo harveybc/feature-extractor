@@ -102,8 +102,20 @@ class Plugin:
             [input_x_window, h_prev_expanded, conditions_t_expanded]
         )
         
-        x_conv = concatenated_input_for_conv # Use the new concatenated input for convolutions
-        # --- END MODIFICATION ---
+        # --- NEW: Early MultiHeadAttention ---
+        # Calculate key_dim for MHA based on the feature dimension of concatenated_input_for_conv
+        # These params are set at the start of this function.
+        d_concat_features = self.params['input_features_per_step'] + self.params['rnn_hidden_dim'] + self.params['conditioning_dim']
+        early_attn_key_dim = max(1, d_concat_features // 4) # Assuming num_heads=2, this aims to halve feature dim
+
+        attn_early_output = MultiHeadAttention(
+            num_heads=2, 
+            key_dim=early_attn_key_dim,
+            name="early_self_attention"
+        )(concatenated_input_for_conv, concatenated_input_for_conv)
+        
+        x_conv = attn_early_output # Input to Conv1D stack is now the output of early attention
+        # --- END NEW Early MultiHeadAttention ---
         
         current_layer_filters = initial_conv_filters
         strides_for_layer = 2  # FIXED: Always use stride=2 to halve temporal dimension
@@ -143,22 +155,22 @@ class Plugin:
             name="bilstm_layer"
         )(x_conv)  # shape (batch, window_size, 2*lstm_units_cfg)
 
-        # self-attention over time
-        attn = MultiHeadAttention(
-            num_heads=2,
-            key_dim=2*lstm_units_cfg // 4,
-            name="self_attention"
-        )(bilstm_output, bilstm_output)  # (batch, window_size, 2*lstm_units_cfg)
+        # self-attention over time - THIS IS NOW DONE EARLIER
+        # attn = MultiHeadAttention(
+        #     num_heads=2,
+        #     key_dim=2*lstm_units_cfg // 4,
+        #     name="self_attention"
+        # )(bilstm_output, bilstm_output)  # (batch, window_size, 2*lstm_units_cfg)
 
-        # project to latent sequence
+        # project to latent sequence - TAKES INPUT FROM BILSTM DIRECTLY NOW
         z_mean_seq = TimeDistributed(
             Dense(latent_dim, kernel_regularizer=l2(l2_reg_val)),
             name="z_mean_seq"
-        )(attn)
+        )(bilstm_output) # CHANGED: Input is bilstm_output
         z_log_var_seq = TimeDistributed(
             Dense(latent_dim, kernel_regularizer=l2(l2_reg_val)),
             name="z_log_var_seq"
-        )(attn)
+        )(bilstm_output) # CHANGED: Input is bilstm_output
 
         # final 3D outputs
         z_mean, z_log_var = z_mean_seq, z_log_var_seq

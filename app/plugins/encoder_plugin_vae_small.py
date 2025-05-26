@@ -10,6 +10,8 @@ from keras.initializers import HeNormal
 from tensorflow.keras import backend as K
 #add
 from keras.layers import LayerNormalization, Add
+#batch normalization
+from keras.layers import BatchNormalization
 
 
 def get_angles(pos, i, d_model):
@@ -177,6 +179,9 @@ class Plugin:
             )(x_conv)
             x_conv = LeakyReLU(alpha=0.2, name=f"conv1d_layer_{i+1}_leaky")(x_conv)
             current_layer_filters = max(min_conv_filters_cfg, current_layer_filters // 2)  # Halve filters each layer, but not below min
+
+        #batch normalization
+        x_conv = BatchNormalization(name="conv1d_batch_norm")(x_conv) 
 
         bilstm_output = Bidirectional(
             LSTM(units=lstm_units_cfg,

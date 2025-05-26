@@ -419,7 +419,11 @@ class AutoencoderManager:
     def save_model(self, model_path, encoder_path=None, decoder_path=None):
         if self.autoencoder_model:
             tf.print(f"Saving full CVAE model to {model_path}")
-            self.autoencoder_model.save(model_path) 
+            # Use native Keras format (.keras) to avoid legacy HDF5 warnings
+            if model_path.endswith('.h5'):
+                tf.print(f"Warning: Converting legacy .h5 path to modern .keras format")
+                model_path = model_path.replace('.h5', '.keras')
+            self.autoencoder_model.save(model_path, save_format='keras') 
             
         if encoder_path and self.encoder_plugin and hasattr(self.encoder_plugin, 'save'):
             tf.print(f"Saving encoder plugin's internal model to {encoder_path}")
@@ -438,17 +442,18 @@ class AutoencoderManager:
            not (decoder_path and self.decoder_plugin and hasattr(self.decoder_plugin, 'save')):
             tf.print("No model or plugin components to save.")
 
-    def load_model(self, model_path, config, custom_objects=None): # Added config
+    def load_model(self, model_path, config, custom_objects=None):
         tf.print(f"Loading CVAE model from {model_path}")
         # Ensure KLDivergenceLayer is passed if it's a custom layer in the saved model
         final_custom_objects = {'KLDivergenceLayer': KLDivergenceLayer}
         if custom_objects:
-            final_custom_objects.update(custom_objects) # Merge with any other custom objects
+            final_custom_objects.update(custom_objects)
         
-        self.autoencoder_model = tf.keras.models.load_model( # Changed
+        # Handle both legacy .h5 and modern .keras formats
+        self.autoencoder_model = tf.keras.models.load_model(
             model_path, 
             custom_objects=final_custom_objects, 
-            compile=False # Compile will be handled by _compile_model
+            compile=False
         ) 
         self.model = self.autoencoder_model
         

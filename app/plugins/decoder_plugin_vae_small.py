@@ -217,13 +217,18 @@ class Plugin:
 
     def save(self, file_path):
         if self.generative_network_model:
-            save_model(self.generative_network_model, file_path)
+            # Use native Keras format (.keras) to avoid legacy HDF5 warnings
+            if file_path.endswith('.h5'):
+                tf.print(f"Warning: Converting legacy .h5 path to modern .keras format")
+                file_path = file_path.replace('.h5', '.keras')
+            self.generative_network_model.save(file_path, save_format='keras')
             print(f"Decoder model saved to {file_path}")
         else:
             print("Decoder model not available to save.")
 
-    def load(self, file_path, compile_model=False): # Keras models are often loaded with compile=False if part of a larger system
-        self.generative_network_model = load_model(file_path, compile=compile_model)
+    def load(self, file_path, compile_model=False):
+        # Handle both legacy .h5 and modern .keras formats
+        self.generative_network_model = tf.keras.models.load_model(file_path, compile=compile_model)
         print(f"Decoder model loaded from {file_path}")
         
         try: # Attempt to reconstruct key params from loaded model structure

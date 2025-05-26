@@ -176,13 +176,18 @@ class Plugin:
 
     def save(self, file_path):
         if self.inference_network_model:
-            save_model(self.inference_network_model, file_path)
+            # Use native Keras format (.keras) to avoid legacy HDF5 warnings
+            if file_path.endswith('.h5'):
+                tf.print(f"Warning: Converting legacy .h5 path to modern .keras format")
+                file_path = file_path.replace('.h5', '.keras')
+            self.inference_network_model.save(file_path, save_format='keras')
             print(f"Encoder model saved to {file_path}")
         else:
             print("Encoder model not available to save.")
 
     def load(self, file_path, compile_model=False):
-        self.inference_network_model = load_model(file_path, compile=compile_model)
+        # Handle both legacy .h5 and modern .keras formats
+        self.inference_network_model = tf.keras.models.load_model(file_path, compile=compile_model)
         print(f"Encoder model loaded from {file_path}")
         
         try:

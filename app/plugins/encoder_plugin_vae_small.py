@@ -131,6 +131,7 @@ class Plugin:
                 name=f"conv1d_layer_{i+1}"
             )(x_conv)
             x_conv = LeakyReLU(alpha=0.2, name=f"conv1d_layer_{i+1}_leaky")(x_conv)
+            current_layer_filters = max(min_conv_filters_cfg, current_layer_filters // 2)  # Halve filters each layer, but not below min
 
         bilstm_output = Bidirectional(
             LSTM(units=lstm_units_cfg,

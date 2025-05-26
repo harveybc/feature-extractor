@@ -79,7 +79,7 @@ class AutoencoderManager:
         #    clipnorm=config.get('adam_clipnorm', None) # ADDED: Gradient Clipping
         #)
         
-        optimizer = AdamW(learning_rate=config.get("learning_rate", config.get("learning_rate", 0.001)))
+        adam_optimizer = AdamW(learning_rate=config.get("learning_rate", config.get("learning_rate", 0.001)))
 
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         

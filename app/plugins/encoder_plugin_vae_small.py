@@ -114,7 +114,7 @@ class Plugin:
             padding=conv_padding,
             activation=output_activation_name,
             kernel_initializer=HeNormal(),
-            name=f"conv1d_layer_{i+1}"
+            name=f"conv1d_layer_initial"
         )(x_conv)
 
         for i in range(num_conv_layers_cfg-1):

@@ -7,7 +7,26 @@ from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from keras.regularizers import l2
 import tensorflow as tf 
 from keras.initializers import HeNormal
+from tensorflow.keras import backend as K
+#add
+from keras.layers import LayerNormalization, Add
 
+
+def get_angles(pos, i, d_model):
+    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+    return pos * angle_rates
+
+def positional_encoding(position, d_model):
+    angle_rads = get_angles(np.arange(position)[:, np.newaxis],
+                            np.arange(d_model)[np.newaxis, :],
+                            d_model)
+    # Apply sin to even indices; cos to odd indices
+    sines = np.sin(angle_rads[:, 0::2])
+    cosines = np.cos(angle_rads[:, 1::2])
+    pos_encoding = np.concatenate([sines, cosines], axis=-1)
+    pos_encoding = pos_encoding[np.newaxis, ...]  # Shape: (1, position, d_model)
+    return tf.cast(pos_encoding, dtype=tf.float32)
+    
 class Plugin:
     """
     Plugin to define and manage a per-step inference network (encoder-like component)
@@ -106,30 +125,44 @@ class Plugin:
         # Calculate key_dim for MHA based on the feature dimension of concatenated_input_for_conv
         # These params are set at the start of this function.
         d_concat_features = self.params['input_features_per_step'] + self.params['rnn_hidden_dim'] + self.params['conditioning_dim']
-        early_attn_key_dim = max(1, d_concat_features // 4) # Assuming num_heads=2, this aims to halve feature dim
+        #early_attn_key_dim = max(1, d_concat_features // 4) # Assuming num_heads=2, this aims to halve feature dim
 
-        attn_early_output = MultiHeadAttention(
-            num_heads=2, 
-            key_dim=early_attn_key_dim,
-            name="early_self_attention"
-        )(concatenated_input_for_conv, concatenated_input_for_conv)
+
+        x=concatenated_input_for_conv
+        # Add positional encoding to capture temporal order
+        # get static shape tuple via Keras backend
+        last_layer_shape = K.int_shape(x)
+        feature_dim = last_layer_shape[-1]
+        # get the sequence length from the last layer shape
+        seq_length = last_layer_shape[1]
+        pos_enc = positional_encoding(seq_length, feature_dim)
+        x = x + pos_enc
+
+        # --- Self-Attention Block 1 ---
+        num_attention_heads = 2
+        # get the last layer shape from the merged tensor
+        last_layer_shape = K.int_shape(x)
+        # get the feature dimension from the last layer shape as the last component of the shape tuple
+        feature_dim = last_layer_shape[-1]
+        # define key dimension for attention    
+        attention_key_dim = feature_dim//num_attention_heads
+        # Apply MultiHeadAttention
+        attention_output = MultiHeadAttention(
+            num_heads=num_attention_heads, # Assumed to be defined
+            key_dim=attention_key_dim,      # Assumed to be defined
+            kernel_regularizer=l2(l2_reg_val),
+            name=f"multihead_attention_1"
+        )(query=x, value=x, key=x)
+        x = Add()([x, attention_output])
+        x = LayerNormalization()(x)
         
-        x_conv = attn_early_output # Input to Conv1D stack is now the output of early attention
+        x_conv = x # Input to Conv1D stack is now the output of early attention
         # --- END NEW Early MultiHeadAttention ---
         
         current_layer_filters = initial_conv_filters
         strides_for_layer = 2  # FIXED: Always use stride=2 to halve temporal dimension
-        x_conv = Conv1D(
-            filters=current_layer_filters,
-            kernel_size=3,  # FIXED: Use kernel_size=3 as you specified
-            strides=strides_for_layer,
-            padding=conv_padding,
-            activation=output_activation_name,
-            kernel_initializer=HeNormal(),
-            name=f"conv1d_layer_initial"
-        )(x_conv)
 
-        for i in range(num_conv_layers_cfg-1):
+        for i in range(num_conv_layers_cfg):
 
             
             x_conv = Conv1D(

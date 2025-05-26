@@ -362,6 +362,39 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     config['best_latent_dim_selected'] = best_latent_dim # Add this for clarity in saved config
     # The 'latent_dim' in config will be the one used for the selected model.
 
+    # CRITICAL FIX: Save the trained encoder and decoder models
+    if config.get('save_encoder') and best_autoencoder_manager:
+        try:
+            # Ensure directory exists
+            encoder_save_path = config['save_encoder']
+            encoder_dir = os.path.dirname(encoder_save_path)
+            if encoder_dir:
+                os.makedirs(encoder_dir, exist_ok=True)
+            
+            best_autoencoder_manager.save_encoder(encoder_save_path)
+            tf.print(f"✅ Trained encoder saved to: {encoder_save_path}")
+        except Exception as e:
+            tf.print(f"❌ Failed to save encoder: {e}")
+            tf.print(traceback.format_exc())
+    elif config.get('save_encoder'):
+        tf.print(f"⚠️  save_encoder specified ({config['save_encoder']}) but no trained model available")
+
+    if config.get('save_decoder') and best_autoencoder_manager:
+        try:
+            # Ensure directory exists
+            decoder_save_path = config['save_decoder']
+            decoder_dir = os.path.dirname(decoder_save_path)
+            if decoder_dir:
+                os.makedirs(decoder_dir, exist_ok=True)
+            
+            best_autoencoder_manager.save_decoder(decoder_save_path)
+            tf.print(f"✅ Trained decoder saved to: {decoder_save_path}")
+        except Exception as e:
+            tf.print(f"❌ Failed to save decoder: {e}")
+            tf.print(traceback.format_exc())
+    elif config.get('save_decoder'):
+        tf.print(f"⚠️  save_decoder specified ({config['save_decoder']}) but no trained model available")
+
     # --- Plotting Training History ---
     loss_plot_file_template = config.get('loss_plot_file', None)
     if loss_plot_file_template and best_history is not None:

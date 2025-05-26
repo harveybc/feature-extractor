@@ -6,6 +6,7 @@ from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal 
 from keras.regularizers import l2
 import tensorflow as tf 
+from keras.initializers import HeNormal
 
 class Plugin:
     """
@@ -115,6 +116,7 @@ class Plugin:
                 padding=conv_padding,
                 activation=None,
                 kernel_regularizer=l2(l2_reg_val),
+                kernel_initializer=HeNormal(),
                 name=f"conv1d_layer_{i+1}"
             )(x_conv)
             x_conv = LeakyReLU(alpha=0.2, name=f"conv1d_layer_{i+1}_leaky")(x_conv)

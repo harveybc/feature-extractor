@@ -6,6 +6,7 @@ from keras.regularizers import l2
 #Conv1D
 from keras.layers import Conv1D
 from keras.layers import LeakyReLU
+from keras.initializers import HeNormal
 
 class Plugin:
     """
@@ -138,6 +139,7 @@ class Plugin:
                 strides=stride,
                 padding='same',
                 activation=None,
+                kernel_initializer=HeNormal(),
                 name=f"decoder_conv1d_transpose_{i+1}"
             )(x)
             x = LeakyReLU(alpha=0.2, name=f"decoder_conv1d_transpose_{i+1}_leaky")(x)

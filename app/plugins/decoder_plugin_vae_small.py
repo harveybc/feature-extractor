@@ -7,6 +7,26 @@ from keras.regularizers import l2
 from keras.layers import Conv1D
 from keras.layers import LeakyReLU
 from keras.initializers import HeNormal
+# ADD: Imports for Positional Encoding, MHA block, and K backend
+import tensorflow as tf
+from tensorflow.keras import backend as K
+from keras.layers import LayerNormalization, Add 
+import numpy as np # Already present, but ensure it's used for positional encoding helpers
+
+# ADD: Positional Encoding helper functions (mirrored from encoder)
+def get_angles(pos, i, d_model):
+    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+    return pos * angle_rates
+
+def positional_encoding(position, d_model):
+    angle_rads = get_angles(np.arange(position)[:, np.newaxis],
+                            np.arange(d_model)[np.newaxis, :],
+                            d_model)
+    sines = np.sin(angle_rads[:, 0::2])
+    cosines = np.cos(angle_rads[:, 1::2])
+    pos_encoding = np.concatenate([sines, cosines], axis=-1)
+    pos_encoding = pos_encoding[np.newaxis, ...]
+    return tf.cast(pos_encoding, dtype=tf.float32)
 
 class Plugin:
     """
@@ -129,13 +149,18 @@ class Plugin:
         # x shape: (batch, encoder_output_temporal_dim, latent_dim + rnn_hidden_dim + conditioning_dim)
 
         # MODIFIED: Use Conv1DTranspose layers to mirror encoder's Conv1D layers
+        # Let x be the output of the initial concatenation of z_seq, h_context_expanded, conditions_expanded
+        # x shape: (batch, encoder_output_temporal_dim, L+H+C)
+        
+        # This loop upsamples x to (batch, window_size, enc_initial_filters)
+        # and applies LeakyReLU
         for i in range(len(decoder_convt_output_filters)):
             stride = decoder_strides[i]
             filters = decoder_convt_output_filters[i]
             
             x = Conv1DTranspose(
                 filters=filters,
-                kernel_size=3,  # FIXED: Use kernel_size=3 to match encoder
+                kernel_size=3,
                 strides=stride,
                 padding='same',
                 activation=None,
@@ -143,55 +168,76 @@ class Plugin:
                 name=f"decoder_conv1d_transpose_{i+1}"
             )(x)
             x = LeakyReLU(alpha=0.2, name=f"decoder_conv1d_transpose_{i+1}_leaky")(x)
+            # The feature dimension of x after this loop is decoder_convt_output_filters[-1],
+            # which is enc_initial_filters.
+            # The temporal dimension is window_size (after potential extra upsampling).
 
-        # CRITICAL FIX: Ensure final output matches original window_size
-        current_temporal_dim = encoder_output_temporal_dim * (2 ** len(decoder_convt_output_filters))
-        if current_temporal_dim != window_size:
-            print(f"[WARNING DecoderPlugin] Final temporal dim {current_temporal_dim} != window_size {window_size}")
-            print(f"[WARNING DecoderPlugin] This will cause shape mismatch in training!")
-            
-            # Add additional upsampling layer if needed
-            missing_factor = window_size // current_temporal_dim
-            if missing_factor > 1 and (missing_factor & (missing_factor - 1)) == 0:  # Check if power of 2
-                print(f"[FIX DecoderPlugin] Adding extra Conv1DTranspose with stride={missing_factor}")
-                extra_layer_filters = decoder_convt_output_filters[-1] 
+        current_temporal_dim_after_conv_t = encoder_output_temporal_dim * (2 ** len(decoder_convt_output_filters))
+        
+        if current_temporal_dim_after_conv_t != window_size:
+            missing_factor = window_size // current_temporal_dim_after_conv_t
+            if missing_factor > 1 and (missing_factor & (missing_factor - 1)) == 0:
+                extra_layer_filters = decoder_convt_output_filters[-1] # Should be enc_initial_filters
                 x = Conv1DTranspose(
                     filters=extra_layer_filters,
                     kernel_size=3,
                     strides=missing_factor,
                     padding='same',
-                    activation=None, # CHANGED: Consistent with other ConvT layers
-                    kernel_initializer=HeNormal(), # ADDED: Consistent with other ConvT layers
+                    activation=None, 
+                    kernel_initializer=HeNormal(),
                     name=f"decoder_conv1d_transpose_extra"
                 )(x)
-                x = LeakyReLU(alpha=0.2, name=f"decoder_conv1d_transpose_extra_leaky")(x) # ADDED: Consistent LeakyReLU
+                x = LeakyReLU(alpha=0.2, name=f"decoder_conv1d_transpose_extra_leaky")(x)
+        # At this point, x has shape (batch, window_size, enc_initial_filters)
 
-        # --- NEW: Late MultiHeadAttention ---
-        # Input to MHA is x (output of ConvT stack). Its feature dimension is enc_initial_filters.
-        late_attn_key_dim = max(1, enc_initial_filters // 4) # Assuming num_heads=2
+        # --- ADD Positional Encoding before Late MultiHeadAttention ---
+        # Get sequence length (window_size) and feature dimension (enc_initial_filters) for pos encoding
+        # Using K.int_shape(x) is safer for symbolic tensors
+        shape_x_before_mha = K.int_shape(x)
+        seq_length_for_pos_enc = shape_x_before_mha[1] # Should be window_size
+        feature_dim_for_pos_enc = shape_x_before_mha[2] # Should be enc_initial_filters
+        
+        if seq_length_for_pos_enc is None or feature_dim_for_pos_enc is None:
+            # Fallback if symbolic shape is not fully defined, though it should be
+            tf.print(f"[WARNING DecoderPlugin] Could not infer shape for positional encoding dynamically. Using configured window_size: {window_size} and enc_initial_filters: {enc_initial_filters}")
+            seq_length_for_pos_enc = window_size
+            feature_dim_for_pos_enc = enc_initial_filters
 
-        attn_late_output = MultiHeadAttention(
-            num_heads=2,
+        pos_enc_decoder = positional_encoding(seq_length_for_pos_enc, feature_dim_for_pos_enc)
+        x_pos_encoded = x + pos_enc_decoder
+        # --- END Positional Encoding ---
+
+        # --- Late MultiHeadAttention Block (mirrors encoder's MHA block structure) ---
+        num_attention_heads_decoder = 2 # Consistent with encoder
+        # Feature dimension of x_pos_encoded is feature_dim_for_pos_enc (enc_initial_filters)
+        late_attn_key_dim = max(1, feature_dim_for_pos_enc // num_attention_heads_decoder)
+
+        attention_output_decoder = MultiHeadAttention(
+            num_heads=num_attention_heads_decoder,
             key_dim=late_attn_key_dim,
+            kernel_regularizer=l2(l2_reg_val), # Added regularizer
             name="late_self_attention"
-        )(x, x)
-        # --- END NEW Late MultiHeadAttention ---
-
-        # SIMPLIFIED: Direct Conv1D output to final features, then extract last time step
-        # Add final conv layer to get the right number of output features
-        # Input to this layer is now attn_late_output
-        x = Conv1D(
+        )(query=x_pos_encoded, value=x_pos_encoded, key=x_pos_encoded) # Use x_pos_encoded for Q, K, V
+        
+        # Add & Norm
+        x_after_mha = Add(name="late_mha_add")([x_pos_encoded, attention_output_decoder])
+        x_after_mha = LayerNormalization(name="late_mha_layernorm")(x_after_mha)
+        # --- END Late MultiHeadAttention Block ---
+        
+        # Final Conv1D projection layer
+        # Input to this layer is now x_after_mha
+        final_projection_out = Conv1D(
             filters=output_feature_dim,
-            kernel_size=1,  # 1x1 conv for feature transformation
+            kernel_size=1,
             strides=1,
             padding='same',
             activation=output_activation_name,
-            kernel_initializer=HeNormal(), # ADDED: Consistent with other layers
+            kernel_initializer=HeNormal(),
             name="final_conv_features"
-        )(attn_late_output)  # CHANGED: Input is now attn_late_output
+        )(x_after_mha) # CHANGED: Input is now x_after_mha
         
         # Extract only the final time step to match 2D targets
-        output_seq = Lambda(lambda x: x[:, -1, :], name="decoder_output_seq")(x)
+        output_seq = Lambda(lambda t: t[:, -1, :], name="decoder_output_seq")(final_projection_out) # Input is final_projection_out
         # output_seq shape: (batch, output_feature_dim) - matches your 2D targets
         
         print(f"[DEBUG DecoderPlugin] Final output symbolic shape: {output_seq.shape}")

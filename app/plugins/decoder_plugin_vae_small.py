@@ -2,7 +2,7 @@ import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import Dense, Input, Concatenate, Conv1DTranspose, Reshape, LSTM, RepeatVector, TimeDistributed, Lambda, MultiHeadAttention # ADDED MultiHeadAttention
 from keras.optimizers import Adam 
-from keras.regularizers import l2
+
 #Conv1D
 from keras.layers import Conv1D
 from keras.layers import LeakyReLU
@@ -40,7 +40,6 @@ class Plugin:
     plugin_params = {
         "conv_activation": "relu",
         'learning_rate': 0.0001, 
-        "l2_reg": 1e-5,
         # Reference to encoder's parameters, will be overridden by config from AutoencoderManager
         "encoder_ref_initial_conv_filters": 128, 
         "encoder_ref_num_conv_layers": 4,
@@ -60,7 +59,7 @@ class Plugin:
         'encoder_ref_initial_conv_filters', 'encoder_ref_num_conv_layers', 
         'encoder_ref_num_strided_conv_layers', 'encoder_ref_min_conv_filters',
         'conv_kernel_size', 'decoder_initial_seq_len',
-        'conv_activation', 'l2_reg', 'output_activation'
+        'conv_activation', 'output_activation'
     ]
 
     def __init__(self):
@@ -215,7 +214,7 @@ class Plugin:
         attention_output_decoder = MultiHeadAttention(
             num_heads=num_attention_heads_decoder,
             key_dim=late_attn_key_dim,
-            kernel_regularizer=l2(l2_reg_val), # Added regularizer
+            
             name="late_self_attention"
         )(query=x_pos_encoded, value=x_pos_encoded, key=x_pos_encoded) # Use x_pos_encoded for Q, K, V
         
@@ -326,8 +325,7 @@ if __name__ == "__main__":
         "conv_kernel_size": 5,
         "decoder_initial_seq_len": 4, # Example starting sequence length for upsampling
         "conv_activation": "relu", 
-        "output_activation": "linear",
-        "l2_reg": 1e-5
+        "output_activation": "linear"
     }
 
     plugin.configure_model_architecture(

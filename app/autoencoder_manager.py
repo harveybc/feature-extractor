@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.models import Model, load_model # Changed
 from tensorflow.keras.layers import Input, Dense, LSTM, RepeatVector, TimeDistributed, Concatenate, Layer, GRU, Lambda # Changed
-from tensorflow.keras.optimizers import Adam # Changed
+from tensorflow.keras.optimizers import Adam, AdamW 
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau # Changed
 import numpy as np
 import os
@@ -71,14 +71,16 @@ class AutoencoderManager:
             tf.print("Error: Model not available in _compile_model. Cannot compile.")
             raise RuntimeError("Model not available for compilation in _compile_model.")
 
-        adam_optimizer = tf.keras.optimizers.Adam(
-            learning_rate=config.get('learning_rate', 0.0001),
-            beta_1=config.get('adam_beta_1', 0.9),
-            beta_2=config.get('adam_beta_2', 0.999),
-            epsilon=config.get('adam_epsilon', 1e-07),
-            clipnorm=config.get('adam_clipnorm', None) # ADDED: Gradient Clipping
-        )
+        #adam_optimizer = tf.keras.optimizers.Adam(
+        #    learning_rate=config.get('learning_rate', 0.0001),
+        #    beta_1=config.get('adam_beta_1', 0.9),
+        #    beta_2=config.get('adam_beta_2', 0.999),
+        #    epsilon=config.get('adam_epsilon', 1e-07),
+        #    clipnorm=config.get('adam_clipnorm', None) # ADDED: Gradient Clipping
+        #)
         
+        optimizer = AdamW(learning_rate=config.get("learning_rate", self.params.get("learning_rate", 0.001)))
+
         configured_loss_fn = get_reconstruction_and_stats_loss_fn(config) 
         
         helper_mae_functions = get_metrics(config) # config is optional for current get_metrics

@@ -1,6 +1,7 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Concatenate, Conv1D, Flatten, LSTM, Bidirectional, RepeatVector, TimeDistributed, MultiHeadAttention # ADDED RepeatVector, TimeDistributed, MultiHeadAttention
+from keras.layers import Dense, Input, Concatenate, Conv1D, Flatten, LSTM, Bidirectional, RepeatVector, TimeDistributed, MultiHeadAttention
+from keras.layers import LeakyReLU
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal 
 from keras.regularizers import l2
@@ -112,15 +113,11 @@ class Plugin:
                 kernel_size=3,  # FIXED: Use kernel_size=3 as you specified
                 strides=strides_for_layer,
                 padding=conv_padding,
-                activation=conv_activation_str,
+                activation=None,
                 kernel_regularizer=l2(l2_reg_val),
                 name=f"conv1d_layer_{i+1}"
             )(x_conv)
-            
-            # Determine filter count for the next layer
-            if i < num_conv_layers_cfg - 1: # No reduction after the last conv layer
-                # Always halve the filters since we always downsample temporally
-                current_layer_filters = max(min_conv_filters_cfg, current_layer_filters // 2)
+            x_conv = LeakyReLU(alpha=0.2, name=f"conv1d_layer_{i+1}_leaky")(x_conv)
 
         bilstm_output = Bidirectional(
             LSTM(units=lstm_units_cfg,

@@ -5,6 +5,7 @@ from keras.optimizers import Adam
 from keras.regularizers import l2
 #Conv1D
 from keras.layers import Conv1D
+from keras.layers import LeakyReLU
 
 class Plugin:
     """
@@ -136,13 +137,10 @@ class Plugin:
                 kernel_size=3,  # FIXED: Use kernel_size=3 to match encoder
                 strides=stride,
                 padding='same',
-                activation=conv_activation_name,
+                activation=None,
                 name=f"decoder_conv1d_transpose_{i+1}"
             )(x)
-            
-            # Debug: Print actual shape after each layer
-            current_temporal_dim = encoder_output_temporal_dim * (2 ** (i + 1))
-            print(f"[DEBUG DecoderPlugin] After Conv1DTranspose_{i+1}: stride={stride}, filters={filters}, expected temporal dim={current_temporal_dim}")
+            x = LeakyReLU(alpha=0.2, name=f"decoder_conv1d_transpose_{i+1}_leaky")(x)
 
         # CRITICAL FIX: Ensure final output matches original window_size
         current_temporal_dim = encoder_output_temporal_dim * (2 ** len(decoder_convt_output_filters))

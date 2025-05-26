@@ -318,21 +318,22 @@ class AutoencoderManager:
             callbacks_list.append(EarlyStoppingWithPatienceCounter(
                 monitor=config.get('early_stopping_monitor', 'val_loss'),
                 patience=config.get('early_patience'), # Use 'early_patience'
-                verbose=0, 
+                verbose=1, 
                 restore_best_weights=config.get('early_stopping_restore_best_weights', True),
-                min_delta=config.get('min_delta', 1e-7) # Pass min_delta
+                min_delta=config.get('min_delta', 1e-8) # Pass min_delta
             ))
             tf.print(f"[train_autoencoder] EarlyStopping configured with patience: {config.get('early_patience')}, monitor: {config.get('early_stopping_monitor', 'val_loss')}")
 
 
         if config.get('reduce_lr_patience', 0) > 0:
             callbacks_list.append(ReduceLROnPlateauWithCounter(
-                monitor=config.get('reduce_lr_monitor', 'val_loss'),
-                factor=config.get('reduce_lr_factor', 0.2),
+                monitor='val_loss',
+                factor=0.5,
                 patience=config.get('reduce_lr_patience'),
-                min_lr=config.get('reduce_lr_min_lr', 1e-6), # Corrected default
-                verbose=0, 
-                min_delta=config.get('min_delta', 1e-7) # Pass min_delta
+                min_lr= 1e-8, 
+                verbose=1, 
+                cooldown=5,
+                min_delta=config.get('min_delta', 1e-8) # Pass min_delta
             ))
             tf.print(f"[train_autoencoder] ReduceLROnPlateau configured with patience: {config.get('reduce_lr_patience')}")
 
@@ -349,8 +350,7 @@ class AutoencoderManager:
             tf.print("[train_autoencoder] KL Annealing callback configured with layer object.")
         elif config.get('kl_anneal_epochs', 0) > 0:
              tf.print("[train_autoencoder] KL Annealing specified in config, but KLDivergenceLayer object not found/stored. Skipping KLAnnealingCallback.")
-        else:
-            tf.print("[train_autoencoder] KL Annealing not configured (kl_anneal_epochs is 0).")
+        else:            tf.print("[train_autoencoder] KL Annealing not configured (kl_anneal_epochs is 0).")
 
         # Add EpochEndLogger LAST to ensure it reads updated states from other callbacks
         callbacks_list.append(EpochEndLogger())

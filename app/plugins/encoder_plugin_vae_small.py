@@ -79,6 +79,7 @@ class Plugin:
         num_strided_conv_layers_cfg = config.get("num_strided_conv_layers", self.params.get("num_strided_conv_layers", 2))
         min_conv_filters_cfg = config.get("min_conv_filters", self.params.get("min_conv_filters", 16))
         lstm_units_cfg = config.get("lstm_units", self.params.get("lstm_units", 64))
+        output_activation_name = config.get("output_activation", self.params.get("output_activation", "linear"))
         
         print(f"[DEBUG EncoderPlugin] Configuring with: window_size={window_size}, input_features={input_features_per_step}, "
               f"h_dim={rnn_hidden_dim}, cond_dim={conditioning_dim}, z_dim={latent_dim}")
@@ -106,7 +107,17 @@ class Plugin:
         
         current_layer_filters = initial_conv_filters
 
-        for i in range(num_conv_layers_cfg):
+        x_conv = Conv1D(
+            filters=current_layer_filters,
+            kernel_size=3,  # FIXED: Use kernel_size=3 as you specified
+            strides=strides_for_layer,
+            padding=conv_padding,
+            activation=output_activation_name,
+            kernel_initializer=HeNormal(),
+            name=f"conv1d_layer_{i+1}"
+        )(x_conv)
+
+        for i in range(num_conv_layers_cfg-1):
             strides_for_layer = 2  # FIXED: Always use stride=2 to halve temporal dimension
             
             x_conv = Conv1D(
@@ -114,7 +125,7 @@ class Plugin:
                 kernel_size=3,  # FIXED: Use kernel_size=3 as you specified
                 strides=strides_for_layer,
                 padding=conv_padding,
-                activation=None,
+                activation=None,  # Use LeakyReLU separately
                 kernel_regularizer=l2(l2_reg_val),
                 kernel_initializer=HeNormal(),
                 name=f"conv1d_layer_{i+1}"
@@ -133,7 +144,7 @@ class Plugin:
 
         # self-attention over time
         attn = MultiHeadAttention(
-            num_heads=4,
+            num_heads=2,
             key_dim=2*lstm_units_cfg // 4,
             name="self_attention"
         )(bilstm_output, bilstm_output)  # (batch, window_size, 2*lstm_units_cfg)

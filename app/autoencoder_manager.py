@@ -326,11 +326,11 @@ class AutoencoderManager:
             ))
             tf.print(f"[train_autoencoder] EarlyStopping configured with patience: {config.get('early_patience')}, monitor: {config.get('early_stopping_monitor', 'val_loss')}")
 
-
+        reduce_lr_factor = config.get('reduce_lr_factor', 0.6) # Default factor if not specified
         if config.get('reduce_lr_patience', 0) > 0:
             callbacks_list.append(ReduceLROnPlateauWithCounter(
                 monitor='val_loss',
-                factor=0.5,
+                factor=reduce_lr_factor,
                 patience=config.get('reduce_lr_patience'),
                 min_lr= 1e-8, 
                 verbose=1, 

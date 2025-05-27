@@ -62,7 +62,7 @@
     "max_steps_train": 25200,
     "max_steps_test": 6300,
     "initial_conv_filters": 128,
-    "num_conv_layers": 5,
+    "num_conv_layers": 4,
     "num_strided_conv_layers": 1,
     "min_conv_filters": 8,
     "lstm_units": 8,

@@ -73,7 +73,7 @@
     "l2_reg": 0.0009,
     "adam_clipnorm": 1.0,
     "early_patience": 140,
-    "reduce_lr_patience": 60,
+    "reduce_lr_patience": 10,
     "reduce_lr_factor": 0.5,
     "start_from_epoch": 10,
     "use_returns": true,

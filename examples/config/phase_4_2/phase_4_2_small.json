@@ -70,7 +70,7 @@
     "output_activation": "linear",
     "learning_rate": 5e-4,
     "activation": "relu",
-    "l2_reg": 1e-3,
+    "l2_reg": 2e-3,
     "adam_clipnorm": 1.0,
     "early_patience": 140,
     "reduce_lr_patience": 35,

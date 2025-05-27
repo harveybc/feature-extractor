@@ -80,7 +80,7 @@
     "plotted_horizon": 6,
     "mmd_lambda": 1e-2,
     "window_size": 144,
-    "batch_size": 128,
+    "batch_size": 32,
     "plot_color_predicted": "red",
     "plot_color_true": "blue",
     "plot_color_uncertainty": "green",

@@ -165,8 +165,7 @@ class Plugin:
         strides_for_layer = 2  # FIXED: Always use stride=2 to halve temporal dimension
 
         for i in range(num_conv_layers_cfg):
-
-            
+    
             x_conv = Conv1D(
                 filters=current_layer_filters,
                 kernel_size=3,  # FIXED: Use kernel_size=3 as you specified
@@ -187,9 +186,9 @@ class Plugin:
             LSTM(units=lstm_units_cfg,
                  activation='tanh',
                  recurrent_activation='sigmoid',
-                 return_sequences=True,
-                 kernel_regularizer=l2(l2_reg_val),
-                 recurrent_regularizer=l2(l2_reg_val)),
+                 return_sequences=True),
+                 #kernel_regularizer=l2(l2_reg_val),
+                 #recurrent_regularizer=l2(l2_reg_val)),
             name="bilstm_layer"
         )(x_conv)  # shape (batch, window_size, 2*lstm_units_cfg)
 
@@ -202,11 +201,13 @@ class Plugin:
 
         # project to latent sequence - TAKES INPUT FROM BILSTM DIRECTLY NOW
         z_mean_seq = TimeDistributed(
-            Dense(latent_dim, kernel_regularizer=l2(l2_reg_val)),
+            #Dense(latent_dim, kernel_regularizer=l2(l2_reg_val)),
+            Dense(latent_dim),
             name="z_mean_seq"
         )(bilstm_output) # CHANGED: Input is bilstm_output
         z_log_var_seq = TimeDistributed(
-            Dense(latent_dim, kernel_regularizer=l2(l2_reg_val)),
+            #Dense(latent_dim, kernel_regularizer=l2(l2_reg_val)),
+            Dense(latent_dim),
             name="z_log_var_seq"
         )(bilstm_output) # CHANGED: Input is bilstm_output
 

@@ -90,7 +90,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     if not isinstance(y_train_targets, np.ndarray): # MODIFIED: Variable name
         raise TypeError(f"y_train_targets is type {type(y_train_targets)}, expected np.ndarray.") # MODIFIED
     if y_val_targets is not None and not isinstance(y_val_targets, np.ndarray): # MODIFIED: Variable name
-        raise TypeError(f"y_val_targets is type {type(y_val_targets)}, expected np.ndarray.") # MODIFIED
+
+
 
     # y_targets should be 2D (samples, num_target_features)
     if y_train_targets.ndim != 2 or y_train_targets.shape[-1] != len(target_feature_names): # MODIFIED: Variable name
@@ -98,6 +99,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     if y_val_targets is not None and (y_val_targets.ndim != 2 or y_val_targets.shape[-1] != len(target_feature_names)): # MODIFIED: Variable name
         raise ValueError(f"y_val_targets should be 2D with {len(target_feature_names)} features, but got shape {y_val_targets.shape}") # MODIFIED
     
+
     if x_train_data.shape[0] != y_train_targets.shape[0]: # MODIFIED: Variable name
         raise ValueError(f"Sample count mismatch between x_train_data ({x_train_data.shape[0]}) and y_train_targets ({y_train_targets.shape[0]})") # MODIFIED
 
@@ -178,6 +180,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         }
         config['cvae_val_targets'] = y_val_targets # MODIFIED: Variable name
         tf.print(f"[data_processor] Added cvae_val_inputs and cvae_val_targets to config from preprocessor output.")
+
     else:
         tf.print("[data_processor] Validation data (x_val_data or y_val_targets from preprocessor) is None. " # MODIFIED
                  "Training will proceed without validation unless 'cvae_val_inputs' and 'cvae_val_targets' are already in config.")

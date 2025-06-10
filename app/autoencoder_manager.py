@@ -181,6 +181,7 @@ class AutoencoderManager:
             # These are intermediate tensors before explicit naming for model output
             encoder_z_mean, encoder_z_log_var = self.encoder_plugin.inference_network_model(
                 [cvae_input_x_window, cvae_input_h_context, cvae_input_conditions_t]
+
             )
             
             kl_beta_start_from_config = config.get('kl_beta_start', 0.0001)

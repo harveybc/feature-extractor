@@ -1,4 +1,5 @@
 DEFAULT_VALUES = {
+
     # --- File Paths ---
     "use_normalization_json": "examples/data/phase_3/phase_3_debug_out.json", # Kept phase_3 specific
     "x_train_file": "examples/data/phase_3/normalized_d1.csv",
@@ -119,11 +120,13 @@ DEFAULT_VALUES = {
     
     # --- Logging and Config Management ---
     'save_log': './debug_out.json',
+
     'remote_log': None,
     'remote_load_config': None,
     'remote_save_config': None,
     'username': None,
     'password': None, 
+
     'load_config': None,          # Path to load a full config.json from
     'save_config': './config_out.json', # Path to save the current config to
     'quiet_mode': False,          # Controls verbosity (later definition was False)
@@ -143,6 +146,7 @@ DEFAULT_VALUES = {
     'reduce_lr_patience': 15,           # Patience for ReduceLROnPlateau
     'reduce_lr_factor': 0.2,            # Factor for ReduceLROnPlateau
     'reduce_lr_min_lr': 1e-6,           # Min LR for ReduceLROnPlateau
+
 }
 
 # ... rest of your config.py file (load_config_from_file, get_config, etc.)

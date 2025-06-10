@@ -1,24 +1,24 @@
 import numpy as np
-from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten, Conv1DTranspose,Dropout
+from keras.models import Model, load_model, save_model
+from keras.layers import Dense, Conv1D, UpSampling1D, BatchNormalization, Reshape, Concatenate, Flatten, Input
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
 from keras.models import Model, load_model, save_model
 from keras.regularizers import l2
-from keras.callbacks import EarlyStopping
-from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU,Input
-import math
-from tensorflow.keras.layers import ZeroPadding1D
+
 
 class Plugin:
     plugin_params = {
-        'intermediate_layers': 3, 
-        'learning_rate': 0.00002,
-        'dropout_rate': 0.001,
+        'batch_size': 128,
+        'intermediate_layers': 3,
+        'initial_layer_size': 128,
+        'layer_size_divisor': 2,
+        'learning_rate': 0.0001,
+        'l2_reg': 1e-4,
+        'activation': 'tanh'
     }
-
     plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
 
     def __init__(self):
@@ -28,26 +28,23 @@ class Plugin:
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
             if key in self.params:
-                self.params[key] = value 
+                self.params[key] = value
 
     def get_debug_info(self):
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
-        plugin_debug_info = self.get_debug_info()
-        debug_info.update(plugin_debug_info)
+        debug_info.update(self.get_debug_info())
 
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, config=None):
         print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
+
         
-        self.params['interface_size'] = interface_size
-        self.params['output_shape'] = output_shape
-
-        sequence_length, num_filters = encoder_output_shape
-        print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
-
-        num_intermediate_layers = self.params['intermediate_layers']
-        print(f"[DEBUG] Number of intermediate layers={num_intermediate_layers}")
+        Args:
+            latent_input: Keras tensor for the latent vector (shape: (None, interface_size)).
+            skip_tensors: List of skip connection tensors from the encoder (ordered from first to last).
+            output_shape (tuple): Original input shape, e.g. (window_size, original_features).
+            encoder_output_shape (tuple): Encoder pre-flatten shape (T, F).
         
         layers = [output_shape*2]
         current_size = output_shape*2
@@ -111,6 +108,7 @@ class Plugin:
 
         merged = x
 
+
         # Output batch normalization layer
         #outputs = BatchNormalization()(x)
         outputs = merged
@@ -126,6 +124,7 @@ class Plugin:
             epsilon=1e-2,
             amsgrad=False
         )
+
 
         self.model.compile(
             optimizer=adam_optimizer,
@@ -175,3 +174,4 @@ if __name__ == "__main__":
     plugin.configure_size(interface_size=4, output_shape=128)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")
+

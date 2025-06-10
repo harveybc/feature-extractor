@@ -1,20 +1,21 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input, BatchNormalization
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
-
-from keras.regularizers import l2
-from keras.callbacks import EarlyStopping
-from keras.layers import BatchNormalization, LeakyReLU, Reshape
+from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.losses import Huber
+from tensorflow.keras.regularizers import l2
+import tensorflow as tf
 
 class Plugin:
     """
-    An encoder plugin using a convolutional neural network (CNN) based on Keras, with dynamically configurable size.
+    A CNN-based encoder plugin for feature extraction using Keras.
+    This architecture is adapted from a CNN predictor and outputs a latent vector
+    of dimension equal to the desired interface size.
     """
-
     plugin_params = {
+
         "activation": "tanh",
         'intermediate_layers': 3, 
         'learning_rate': 0.00002,
@@ -23,13 +24,15 @@ class Plugin:
         "initial_layer_size": 48,
         "layer_size_divisor": 2,
         "l2_reg": 5e-5
-    }
 
-    plugin_debug_vars = ['input_shape', 'intermediate_layers']
+    }
+    plugin_debug_vars = ['epochs', 'batch_size', 'input_shape', 'intermediate_layers', 'initial_layer_size', 'time_horizon']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
         self.encoder_model = None
+        self.pre_flatten_shape = None  # Stores shape before flattening
+        self.skip_connections = []     # Stores outputs before each pooling
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
@@ -39,8 +42,7 @@ class Plugin:
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
-        plugin_debug_info = self.get_debug_info()
-        debug_info.update(plugin_debug_info)
+        debug_info.update(self.get_debug_info())
 
     def configure_size(self, input_shape, interface_size, num_channels, use_sliding_windows, config=None):
         """
@@ -161,17 +163,11 @@ class Plugin:
         print(f"Encoded data shape: {encoded_data.shape}")
         return encoded_data
 
+
     def save(self, file_path):
         save_model(self.encoder_model, file_path)
-        print(f"Encoder model saved to {file_path}")
+        print(f"[save] Encoder model saved to {file_path}")
 
     def load(self, file_path):
         self.encoder_model = load_model(file_path)
-        print(f"Encoder model loaded from {file_path}")
-
-# Debugging usage example
-if __name__ == "__main__":
-    plugin = Plugin()
-    plugin.configure_size(input_shape=128, interface_size=4)
-    debug_info = plugin.get_debug_info()
-    print(f"Debug Info: {debug_info}")
+        print(f"[load] Encoder model loaded from {file_path}")

@@ -1,26 +1,30 @@
 import numpy as np
-from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, BatchNormalization, LeakyReLU
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Conv1D, UpSampling1D, Reshape, Flatten, Conv1DTranspose,Dropout
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from tensorflow.keras.losses import Huber
+from tensorflow.keras.regularizers import l2
+from keras.models import Model, load_model, save_model
 from keras.regularizers import l2
+from keras.callbacks import EarlyStopping
+from keras.layers import BatchNormalization, MaxPooling1D, Cropping1D, LeakyReLU,Input
+import math
+from tensorflow.keras.layers import ZeroPadding1D
+import math
+import tensorflow as tf
+import tensorflow.keras.backend as K
+from tensorflow.keras.layers import Input, Dense, Reshape, Flatten, Lambda, Concatenate
+# Add any other necessary imports (like l2 if uncommenting regularizers)
 
 class Plugin:
-    """
-    A decoder plugin using a dense neural network based on Keras.
-    This model is built as the exact mirror of the encoder model.
-    """
-
     plugin_params = {
-        # Training parameters (if training decoder standalone)
-        # Architecture parameters (must mirror the encoder's design)
-        'intermediate_layers': 4,       # Number of dense layers before the final projection
-        'initial_layer_size': 128,       # Base number of hidden units (from encoder)
-        'layer_size_divisor': 2,        # Divisor to compute subsequent layer sizes
-        'l2_reg': 1e-5,                 # L2 regularization factor
+        'intermediate_layers': 3, 
+        'learning_rate': 0.00002,
+        'dropout_rate': 0.001,
     }
 
-    plugin_debug_vars = ['input_shape', 'interface_size']
+    plugin_debug_vars = ['interface_size', 'output_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
@@ -28,7 +32,8 @@ class Plugin:
 
     def set_params(self, **kwargs):
         for key, value in kwargs.items():
-            self.params[key] = value
+            if key in self.params:
+                self.params[key] = value 
 
     def get_debug_info(self):
         return {var: self.params[var] for var in self.plugin_debug_vars}
@@ -37,165 +42,173 @@ class Plugin:
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, interface_size, input_shape, num_channels, encoder_output_shape, use_sliding_windows):
-        """
-        Configures the decoder model.
+    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, config=None):
+        print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
         
-        Args:
-            interface_size (int): The latent space dimension (decoder input size).
-            input_shape (int or tuple): Original input shape fed to the encoder.
-            num_channels (int): Number of input features/channels.
-            encoder_output_shape (tuple): Output shape of the encoder (excluding batch size).
-            use_sliding_windows (bool): Whether sliding windows are used.
-        """
         self.params['interface_size'] = interface_size
-        self.params['input_shape'] = input_shape
+        self.params['output_shape'] = output_shape
 
-        # Retrieve architecture parameters
-        intermediate_layers = self.params.get('intermediate_layers', 3)
-        initial_layer_size = self.params.get('initial_layer_size', 32)
-        layer_size_divisor = self.params.get('layer_size_divisor', 2)
-        l2_reg = self.params.get('l2_reg', 1e-2)
-        learning_rate = self.params.get('learning_rate', 0.0001)
+        sequence_length, num_filters = encoder_output_shape
+        print(f"[DEBUG] Extracted sequence_length={sequence_length}, num_filters={num_filters} from encoder_output_shape.")
 
-        # Recompute the encoder's layer sizes using the same logic as in the encoder
-        # For the encoder, the layers were built as:
-        #    [initial_layer_size, initial_layer_size//div, ..., interface_size]
-        encoder_layers = []
-        current_size = initial_layer_size
-        for i in range(intermediate_layers):
-            encoder_layers.append(current_size)
-            current_size = max(current_size // layer_size_divisor, 1)
-        encoder_layers.append(interface_size)  # Final encoder layer equals latent dimension
+        num_intermediate_layers = self.params['intermediate_layers']
+        print(f"[DEBUG] Number of intermediate layers={num_intermediate_layers}")
+        
+        layers = [output_shape*2]
+        current_size = output_shape*2
+        l2_reg = 1e-2
+        for i in range(num_intermediate_layers-1):
+            next_size = current_size // 2
+            if next_size < interface_size:
+                next_size = interface_size
+            layers.append(next_size)
+            current_size = next_size
 
-        # For the decoder, mirror the encoder by reversing the intermediate layers.
-        # (Do not include the latent layer itself in the reversal.)
-        decoder_intermediate_layers = encoder_layers[:-1][::-1]
+        layers.append(interface_size)
 
-        print(f"[configure_size] Encoder layer sizes: {encoder_layers}")
-        print(f"[configure_size] Decoder intermediate layer sizes: {decoder_intermediate_layers}")
-        print(f"[configure_size] Original input shape: {input_shape}")
+        layer_sizes = layers[::-1]
+        print(f"[DEBUG] Calculated decoder layer sizes: {layer_sizes}")
 
-        # Determine final output units.
-        # If sliding windows are used and input_shape is a tuple, output units = product(input_shape).
-        if use_sliding_windows:
-            if isinstance(input_shape, tuple):
-                final_output_units = int(np.prod(input_shape))
-            else:
-                final_output_units = input_shape
-        else:
-            final_output_units = input_shape  # For non-sliding windows, input_shape is an integer
+        window_size =config.get("window_size", 288)
+        merged_units = config.get("initial_layer_size", 128)
+        branch_units = merged_units//config.get("layer_size_divisor", 2)
+        activation = config.get("activation", "tanh")
+        l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
 
-        # Build the decoder model.
-        # The decoder input is the latent vector of size (interface_size,)
-        decoder_input = Input(shape=(interface_size,), name="decoder_input")
-        x = decoder_input
+        # --- Decoder input (latent) ---
+        # Assume the following variables are defined in the outer scope:
+        # window_size, num_channels, feature_units (== merged_units from encoder),
+        # num_intermediate_layers, activation, l2_reg (if used)
+        feature_units = merged_units
 
-        # Add intermediate dense layers in the mirrored order.
-        layer_idx = 0
-        for size in decoder_intermediate_layers:
-            layer_idx += 1
-            x = Dense(
-                units=size,
-                activation=LeakyReLU(alpha=0.1),
-                kernel_initializer=HeNormal(),
-                kernel_regularizer=l2(l2_reg),
-                name=f"decoder_dense_layer_{layer_idx}"
-            )(x)
-        #x = BatchNormalization(name=f"decoder_batch_norm_{layer_idx}")(x)
 
-        # Final projection to reconstruct the original input.
-        x = Dense(
-            units=final_output_units,
-            activation='linear',
-            kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg),
-            name="decoder_output"
-        )(x)
-        outputs = x
-        #outputs = BatchNormalization(name="decoder_last_batch_norm")(x)
+        # --- Calculate Encoder Output Shape ---
+        latent_seq_len = feature_units # Time dimension corresponds to feature_units
+        latent_feature_dim = num_channels # Channel dimension corresponds to original channels
+        encoder_output_shape = (latent_seq_len, latent_feature_dim)
+        print(f"[DEBUG] Calculated Encoder Output Shape (Decoder Input): {encoder_output_shape}")
 
+        # --- Decoder input (latent) ---
+        decoder_input = Input(
+            shape=encoder_output_shape,
+            name="decoder_input"
+        )
+
+        # --- Feature Decoder: Parallel Isolated Processing Branches ---
+        reconstructed_feature_branches = []
+
+        # Split the latent input back into individual channel representations
+        # Input shape: (batch, feature_units, num_channels)
+        split_inputs = []
+        for c in range(num_channels):
+            # Lambda layer to slice along the channel axis (axis=2)
+            channel_slice = Lambda(
+                lambda x, channel=c: x[:, :, channel:channel+1],
+                name=f"decoder_split_channel_{c+1}"
+            )(decoder_input) # Output shape: (batch, feature_units, 1)
+            split_inputs.append(channel_slice)
+
+        # Process each branch to reconstruct the original time series for that channel
+        for c in range(num_channels):
+            # Current branch input shape: (batch, feature_units, 1)
+            x = split_inputs[c]
+
+            # Inverse of Reshape: Flatten the feature_units dimension
+            # Input: (batch, feature_units, 1) -> Output: (batch, feature_units)
+            x = Flatten(name=f"decoder_feature_{c+1}_flatten")(x)
+
+            # Inverse of Dense Layers
+            # Apply Dense layers in reverse order conceptually
+            # The final layer must output window_size features
+            for i in range(num_intermediate_layers -1): # Apply intermediate layers first
+                x = Dense(feature_units, activation=activation, # kernel_regularizer=l2(l2_reg), # Uncomment if used
+                        name=f"decoder_feature_{c+1}_dense_{i+1}")(x)
+                print(f"[DEBUG] Decoder Branch {c+1} shape after Dense_{i+1}: {K.int_shape(x)}")
+
+            # The last dense layer maps back to the original flattened window size
+            x = Dense(window_size, activation='linear', # Use linear activation for reconstruction output
+                    # kernel_regularizer=l2(l2_reg), # Uncomment if used
+                    name=f"decoder_feature_{c+1}_dense_final_towindow")(x) # Output shape: (batch, window_size)
+            print(f"[DEBUG] Decoder Branch {c+1} shape after Dense_final: {K.int_shape(x)}")
+
+
+            # Inverse of Flatten: Reshape back to (window_size, 1)
+            # Input: (batch, window_size) -> Output: (batch, window_size, 1)
+            x = Reshape((window_size, 1), name=f"decoder_feature_{c+1}_reshape")(x)
+            print(f"[DEBUG] Decoder Branch {c+1} shape after Reshape: {K.int_shape(x)}")
+
+            reconstructed_feature_branches.append(x)
+
+        # --- Concatenate reconstructed branches ---
+        # Merge the reconstructed channels (each shape: (batch, window_size, 1))
+        # back into a single tensor (batch, window_size, num_channels)
+        merged_reconstruction = Concatenate(axis=2, name="decoder_merged_reconstruction")(reconstructed_feature_branches)
+
+        # --- Final Output ---
+        decoder_output = merged_reconstruction
+        print(f"[DEBUG] Final Decoder Output shape: {K.int_shape(decoder_output)}") # Target: (batch, window_size, num_channels)
+
+        # Output batch normalization layer
+        #outputs = BatchNormalization()(x)
+        outputs = merged_reconstruction
+        print(f"[DEBUG] Final Output shape: {outputs.shape}")
+
+        # Build the encoder model
         self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder")
+        
         adam_optimizer = Adam(
-            learning_rate=learning_rate,
+            learning_rate=self.params['learning_rate'],
             beta_1=0.9,
             beta_2=0.999,
-            epsilon=1e-7,
+            epsilon=1e-2,
+            amsgrad=False
         )
-        self.model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
 
-        print("[configure_size] Decoder Model Summary:")
-        self.model.summary()
-
-    def train(self, data, validation_data):
-        """
-        Trains the decoder model (if standalone training is needed).
-        Typically, the decoder is trained as part of the autoencoder.
-        
-        Args:
-            data (np.ndarray): Training data (latent vectors) of shape (batch_size, interface_size).
-            validation_data (np.ndarray): Validation data (same shape).
-        """
-        if self.model is None:
-            raise ValueError("[train] Decoder model is not yet configured. Call configure_size first.")
-
-        print(f"[train] Starting training with data shape={data.shape}, validation shape={validation_data.shape}")
-        epochs = self.params['epochs']
-        batch_size = self.params['batch_size']
-
-        history = self.model.fit(
-            data, data,
-            epochs=epochs,
-            batch_size=batch_size,
-            validation_data=(validation_data, validation_data),
-            verbose=1
+        self.model.compile(
+            optimizer=adam_optimizer,
+            loss=Huber(),
+            metrics=['mse', 'mae'],
+            run_eagerly=False
         )
-        print("[train] Training completed.")
-        return history
+        print(f"[DEBUG] Model compiled successfully.")
 
-    def decode(self, encoded_data):
-        """
-        Runs a forward pass through the decoder to reconstruct the original signal.
-        
-        Args:
-            encoded_data (np.ndarray): Latent vectors of shape (batch_size, interface_size).
-        
-        Returns:
-            np.ndarray: Reconstructed data (flattened output if sliding windows are not used).
-        """
-        if self.model is None:
-            raise ValueError("[decode] Decoder model is not configured.")
+
+
+
+    def train(self, encoded_data, original_data,config):
+        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
+        original_data = original_data.reshape((original_data.shape[0], -1))
+        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True, verbose=1)
+        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=config.get("batch_size"), verbose=1, callbacks=[early_stopping],validation_split = 0.2)
+
+    def decode(self, encoded_data, use_sliding_windows, original_feature_size):
         print(f"[decode] Decoding data with shape: {encoded_data.shape}")
+        decoded_data = self.model.predict(encoded_data)
 
-        decoded_data = self.model.predict(encoded_data, verbose=1)
-        print(f"[decode] Decoded output shape: {decoded_data.shape}")
+        if not use_sliding_windows:
+            # Reshape to match the original feature size if not using sliding windows
+            decoded_data = decoded_data.reshape((decoded_data.shape[0], original_feature_size))
+            print(f"[decode] Reshaped decoded data to match original feature size: {decoded_data.shape}")
+        else:
+            print(f"[decode] Decoded data shape: {decoded_data.shape}")
+
         return decoded_data
 
     def save(self, file_path):
-        """
-        Saves the decoder model to the specified file path.
-        """
-        if self.model is None:
-            raise ValueError("[save] Decoder model is not configured.")
-        save_model(self.model, file_path)
-        print(f"[save] Decoder model saved to {file_path}")
+        self.model.save(file_path)
 
     def load(self, file_path):
-        """
-        Loads a pre-trained decoder model from the specified file path.
-        """
         self.model = load_model(file_path)
-        print(f"[load] Decoder model loaded from {file_path}")
+
+    def calculate_mse(self, original_data, reconstructed_data):
+        original_data = original_data.reshape((original_data.shape[0], -1))
+        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))
+        mse = np.mean(np.square(original_data - reconstructed_data))
+        return mse
 
 # Debugging usage example
 if __name__ == "__main__":
-    # For testing purposes, assume:
-    #   - interface_size (latent dim) = 4,
-    #   - input_shape = 128 (or a tuple like (window_size, num_channels) if sliding windows are used),
-    #   - num_channels = 1,
-    #   - encoder_output_shape = (4,), and
-    #   - use_sliding_windows = False.
     plugin = Plugin()
-    plugin.configure_size(interface_size=4, input_shape=128, num_channels=1, encoder_output_shape=(4,), use_sliding_windows=False)
+    plugin.configure_size(interface_size=4, output_shape=128)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

@@ -1,0 +1,14 @@
+{
+    "execution_time": 5017.303230047226,
+    "encoder": {
+        "input_shape": 144,
+        "intermediate_layers": 2
+    },
+    "decoder": {
+        "interface_size": 48,
+        "output_shape": 144,
+        "intermediate_layers": 2
+    },
+    "val_mae": 0.017829937860369682,
+    "train_mae": 0.016827821731567383
+}

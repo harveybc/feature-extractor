@@ -1,106 +1,229 @@
 import numpy as np
-import tensorflow as tf
-from keras.models import Model
-from keras.layers import Input, Dense, Flatten, LayerNormalization, Add, Lambda, Reshape
+from keras.models import Model, load_model, save_model
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
 from keras.optimizers import Adam
-from keras_multi_head import MultiHeadAttention
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 
-# Set global precision to float32.
-tf.keras.mixed_precision.set_global_policy('float32')
+from keras.regularizers import l2
+from keras.callbacks import EarlyStopping
+from keras.layers import BatchNormalization, LeakyReLU, Reshape
+from tensorflow.keras.losses import Huber
+from keras.layers import Add, LayerNormalization, AveragePooling1D, Bidirectional, LSTM
+from tensorflow.keras.layers import MultiHeadAttention
+from tensorflow.keras.losses import Huber
+from tensorflow.keras import backend as K
+from keras.layers import Input
+import tensorflow as tf
 
-def positional_encoding(seq_len, d_model):
-    d_model_float = tf.cast(d_model, tf.float32)
-    pos = tf.cast(tf.range(seq_len), tf.float32)[:, tf.newaxis]
-    i = tf.cast(tf.range(d_model), tf.float32)[tf.newaxis, :]
-    angle_rates = 1 / tf.pow(10000.0, (2 * (tf.floor(i / 2)) / d_model_float))
-    angle_rads = pos * angle_rates
-    even_mask = tf.cast(tf.equal(tf.math.floormod(tf.range(d_model), 2), 0), tf.float32)
-    even_mask = tf.reshape(even_mask, [1, d_model])
-    pos_encoding = even_mask * tf.sin(angle_rads) + (1 - even_mask) * tf.cos(angle_rads)
-    return pos_encoding
 
-def add_positional_encoding(x):
-    seq_len = tf.shape(x)[1]
-    d_model = tf.shape(x)[2]
-    pos_enc = positional_encoding(seq_len, d_model)
-    pos_enc = tf.cast(pos_enc, tf.float32)
-    return x + pos_enc
+def get_angles(pos, i, d_model):
+    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+    return pos * angle_rates
+
+def positional_encoding(position, d_model):
+    angle_rads = get_angles(np.arange(position)[:, np.newaxis],
+                            np.arange(d_model)[np.newaxis, :],
+                            d_model)
+    # Apply sin to even indices; cos to odd indices
+    sines = np.sin(angle_rads[:, 0::2])
+    cosines = np.cos(angle_rads[:, 1::2])
+    pos_encoding = np.concatenate([sines, cosines], axis=-1)
+    pos_encoding = pos_encoding[np.newaxis, ...]  # Shape: (1, position, d_model)
+    return tf.cast(pos_encoding, dtype=tf.float32)
+
 
 class Plugin:
-    # Interface: configure_size(self, input_shape, encoding_dim, num_channels=None, use_sliding_windows=False)
+    """
+    An encoder plugin using a convolutional neural network (CNN) based on Keras, with dynamically configurable size.
+    """
+
     plugin_params = {
-        'intermediate_layers': 1,
-        'layer_size_divisor': 2,
-        'ff_dim_divisor': 2,
-        'learning_rate': 1e-5,
-        'dropout_rate': 0.0,  # No dropout
-        'initial_layer_size': 128,
+        "activation": "tanh",
+        'intermediate_layers': 3, 
+        'learning_rate': 0.00002,
+        'dropout_rate': 0.001,
+        "intermediate_layers": 2,
+        "initial_layer_size": 48,
+        "layer_size_divisor": 2,
+        "l2_reg": 5e-5
     }
-    plugin_debug_vars = ['encoding_dim', 'input_shape', 'intermediate_layers']
+
+    plugin_debug_vars = ['input_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
         self.encoder_model = None
 
     def set_params(self, **kwargs):
-        self.params.update(kwargs)
+        for key, value in kwargs.items():
+            self.params[key] = value
 
     def get_debug_info(self):
-        return {k: self.params.get(k) for k in self.plugin_debug_vars}
+        return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
-        debug_info.update(self.get_debug_info())
+        plugin_debug_info = self.get_debug_info()
+        debug_info.update(plugin_debug_info)
 
-    def configure_size(self, input_shape, encoding_dim, num_channels=None, use_sliding_windows=False):
-        # If not using sliding windows, assume one timestep.
-        if num_channels is None:
-            num_channels = 1
-        time_steps = input_shape if use_sliding_windows else 1
-        self.params['input_shape'] = time_steps
-        self.params['encoding_dim'] = encoding_dim
-        self.params['num_channels'] = num_channels
+    def configure_size(self, input_shape, interface_size, num_channels, use_sliding_windows, config=None):
+        """
+        Configure the encoder based on input shape, interface size, and channel dimensions.
+        
+        Args:
+            input_shape (int): Length of the sequence or row.
+            interface_size (int): Dimension of the bottleneck layer.
+            num_channels (int): Number of input channels.
+            use_sliding_windows (bool): Whether sliding windows are being used.
+        """
+        print(f"[DEBUG] Starting encoder configuration with input_shape={input_shape}, interface_size={interface_size}, num_channels={num_channels}, use_sliding_windows={use_sliding_windows}")
 
-        inter_layers = self.params.get('intermediate_layers', 1)
-        init_size = self.params.get('initial_layer_size', 128)
-        layer_div = self.params.get('layer_size_divisor', 2)
-        ff_div = self.params.get('ff_dim_divisor', 2)
-        lr = self.params.get('learning_rate', 1e-5)
+        self.params['input_shape'] = input_shape
 
-        # Compute transformer block sizes.
-        sizes = []
-        current = init_size
-        for _ in range(inter_layers):
-            sizes.append(current)
-            current = max(current // layer_div, encoding_dim)
-        sizes.append(encoding_dim)
-        print(f"[configure_size] Transformer Encoder Layer sizes: {sizes}")
-        print(f"[configure_size] Input sequence length: {time_steps}, Channels: {num_channels}")
+        # Determine the input shape for the first Conv1D layer
+        adjusted_channels = num_channels 
 
-        # Build model.
-        inp = Input(shape=(time_steps, num_channels), dtype=tf.float32)
-        x = Lambda(add_positional_encoding)(inp)
-        for size in sizes[:-1]:
-            ff_dim = max(size // ff_div, 1)
-            num_heads = 2 if size < 64 else (4 if size < 128 else 8)
-            x = Dense(size)(x)
-            x = MultiHeadAttention(head_num=num_heads)(x)
-            x = LayerNormalization(epsilon=1e-6)(x)
-            ffn = Dense(ff_dim, activation='tanh', kernel_initializer=HeNormal())(x)
-            ffn = Dense(size)(ffn)
-            x = Add()([x, ffn])
-            x = LayerNormalization(epsilon=1e-6)(x)
-        x = Flatten()(x)
-        out = Dense(encoding_dim, activation='linear', kernel_initializer=GlorotUniform())(x)
+        # Initialize layers array with input_shape
+        layers = [adjusted_channels]  # First layer matches the number of input channels
+        num_intermediate_layers = self.params['intermediate_layers']
 
-        self.encoder_model = Model(inputs=inp, outputs=out)
-        optimizer = Adam(learning_rate=lr, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
-        self.encoder_model.compile(optimizer=optimizer, loss='mean_squared_error')
-        print("[configure_size] Encoder Model Summary:")
-        self.encoder_model.summary()
+        # Calculate sizes of intermediate layers based on downscaling by 2
+        current_size = adjusted_channels
+        for i in range(num_intermediate_layers - 1):
+            next_size = current_size // 2  # Scale down by half
+            if next_size < interface_size:
+                next_size = interface_size  # Ensure we don't go below the interface_size
+            layers.append(next_size)
+            current_size = next_size
 
+        # Append the final layer which is the interface size
+        layers.append(interface_size)
+        print(f"[DEBUG] Encoder Layer sizes: {layers}")
+        
+        window_size = config.get("window_size", 288)
+        merged_units = config.get("initial_layer_size", 128)
+        branch_units = merged_units//config.get("layer_size_divisor", 2)
+        lstm_units = branch_units//config.get("layer_size_divisor", 2)
+        activation = config.get("activation", "tanh")
+        l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
+
+        # --- Input Layer ---
+        inputs = Input(shape=(window_size, num_channels), name="input_layer")
+        
+        x = inputs
+        
+        # Add positional encoding to capture temporal order
+        # get static shape tuple via Keras backend
+        last_layer_shape = K.int_shape(x)
+        feature_dim = last_layer_shape[-1]
+        # get the sequence length from the last layer shape
+        seq_length = last_layer_shape[1]
+        pos_enc = positional_encoding(seq_length, feature_dim)
+        x = x + pos_enc
+
+        # --- Self-Attention Block 1 ---
+        num_attention_heads = 2
+        # get the last layer shape from the merged tensor
+        last_layer_shape = K.int_shape(x)
+        # get the feature dimension from the last layer shape as the last component of the shape tuple
+        feature_dim = last_layer_shape[-1]
+        # define key dimension for attention    
+        attention_key_dim = feature_dim//num_attention_heads
+        # Apply MultiHeadAttention
+        attention_output = MultiHeadAttention(
+            num_heads=num_attention_heads, # Assumed to be defined
+            key_dim=attention_key_dim,      # Assumed to be defined
+            #kernel_regularizer=l2(l2_reg),
+            name=f"multihead_attention_1"
+        )(query=x, value=x, key=x)
+        x = Add()([x, attention_output])
+        x = LayerNormalization()(x)
+        
+        
+        # --- Convolutional Layer 1 ---
+        x = Conv1D(
+            filters=merged_units,
+            kernel_size=3,
+            strides=2, 
+            padding='same',
+            activation=activation,
+            name="conv_merged_features_1",
+            #kernel_regularizer=l2(l2_reg)
+        )(x)
+        
+                # conv1d 2
+        x = Conv1D(
+            filters=branch_units,
+            kernel_size=3,
+            strides=2, 
+            padding='same',
+            activation=activation,
+            name="conv_merged_features_2",
+            #kernel_regularizer=l2(l2_reg)
+        )(x)
+        outputs = x
+        print(f"[DEBUG] Final Output shape: {outputs.shape}")
+
+        # Build the encoder model
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
+
+        # Define the Adam optimizer with custom parameters
+        adam_optimizer = Adam(
+            learning_rate=self.params['learning_rate'],  # Set the learning rate
+            beta_1=0.9,  # Default value
+            beta_2=0.999,  # Default value
+            epsilon=1e-7,  # Default value
+            amsgrad=False  # Default value
+        )
+
+        self.encoder_model.compile(
+            optimizer=adam_optimizer,
+            loss=Huber(),
+            metrics=['mse', 'mae'],
+            run_eagerly=False  # Set to False for better performance unless debugging
+        )
+        print(f"[DEBUG] Encoder model compiled successfully.")
+
+
+
+
+
+    def train(self, data):
+        num_channels = data.shape[-1] if len(data.shape) > 2 else 1  # Get number of channels
+        input_shape = data.shape[1]  # Get the input sequence length
+        interface_size = self.params.get('interface_size', 4)  # Assuming interface size is in params
+
+        # Reshape 2D data to 3D if necessary
+        if len(data.shape) == 2:
+            data = np.expand_dims(data, axis=-1)  # Add a channel dimension
+
+        # Rebuild the model with dynamic channel size
+        self.configure_size(input_shape, interface_size, num_channels)
+
+        # Now proceed with training
+        print(f"Training encoder with data shape: {data.shape}")
+        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True)
+        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping], validation_split = 0.2)
+        print("Training completed.")
+
+
+
+    def encode(self, data):
+        print(f"Encoding data with shape: {data.shape}")
+        encoded_data = self.encoder_model.predict(data)
+        print(f"Encoded data shape: {encoded_data.shape}")
+        return encoded_data
+
+    def save(self, file_path):
+        save_model(self.encoder_model, file_path)
+        print(f"Encoder model saved to {file_path}")
+
+    def load(self, file_path):
+        self.encoder_model = load_model(file_path)
+        print(f"Encoder model loaded from {file_path}")
+
+# Debugging usage example
 if __name__ == "__main__":
-    # For example, sliding windows with 256 timesteps and 8 channels.
     plugin = Plugin()
-    plugin.configure_size(input_shape=256, encoding_dim=16, num_channels=8, use_sliding_windows=True)
-    print("Debug Info:", plugin.get_debug_info())
+    plugin.configure_size(input_shape=128, interface_size=4)
+    debug_info = plugin.get_debug_info()
+    print(f"Debug Info: {debug_info}")

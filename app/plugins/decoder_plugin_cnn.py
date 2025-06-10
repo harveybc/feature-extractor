@@ -5,7 +5,9 @@ from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.regularizers import l2
-from keras.callbacks import EarlyStopping
+from keras.models import Model, load_model, save_model
+from keras.regularizers import l2
+
 
 class Plugin:
     plugin_params = {
@@ -34,10 +36,9 @@ class Plugin:
     def add_debug_info(self, debug_info):
         debug_info.update(self.get_debug_info())
 
-    def build_decoder(self, latent_input, skip_tensors, output_shape, encoder_output_shape):
-        """
-        Builds the decoder model (as a Functional submodel) by expanding the latent vector
-        and mirroring the encoder blocks.
+    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, config=None):
+        print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
+
         
         Args:
             latent_input: Keras tensor for the latent vector (shape: (None, interface_size)).
@@ -45,92 +46,77 @@ class Plugin:
             output_shape (tuple): Original input shape, e.g. (window_size, original_features).
             encoder_output_shape (tuple): Encoder pre-flatten shape (T, F).
         
-        Returns:
-            Keras tensor for the decoder output.
-        """
-        # Extract window size and original feature count.
-        if isinstance(output_shape, tuple):
-            window_size, orig_features = output_shape
-        else:
-            window_size = output_shape
-            orig_features = None  # Should not occur
-        T, F = encoder_output_shape  # e.g., (16, 32)
-        flat_dim = T * F
+        layers = [output_shape*2]
+        current_size = output_shape*2
+        l2_reg = 1e-2
+        for i in range(num_intermediate_layers-1):
+            next_size = current_size // 2
+            if next_size < interface_size:
+                next_size = interface_size
+            layers.append(next_size)
+            current_size = next_size
 
-        # Expand latent vector to flat_dim and reshape to (T, F)
-        x = Dense(units=flat_dim,
-                  activation=self.params['activation'],
-                  kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(self.params['l2_reg']))(latent_input)
-        x = Reshape((T, F), name="reshape")(x)
+        layers.append(interface_size)
 
-        # Recompute encoder layer sizes as in the encoder.
-        enc_layers = []
-        current = self.params['initial_layer_size']
-        for i in range(self.params['intermediate_layers']):
-            enc_layers.append(current)
-            current = max(current // self.params['layer_size_divisor'], self.params['interface_size'])
-        enc_layers.append(self.params['interface_size'])
-        # Mirror conv filter sizes from encoder conv blocks
-        mirror_filters = enc_layers[:-1][::-1]  # e.g., if enc_layers = [128, 64, 32, 32] then mirror_filters = [32, 64, 128]
+        layer_sizes = layers[::-1]
+        print(f"[DEBUG] Calculated decoder layer sizes: {layer_sizes}")
+
+        window_size =config.get("window_size", 288)
+        merged_units = config.get("initial_layer_size", 128)
+        branch_units = merged_units//config.get("layer_size_divisor", 2)
+        activation = config.get("activation", "tanh")
+        l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
+
+        # --- Decoder input (latent) ---
+        # latent shape: window_size // 4  by merged_units
+        decoder_input = Input(
+            shape=(window_size // 4, branch_units),
+            name="decoder_input"
+        )
+        x= decoder_input
+
         
-        # For each intermediate layer, upsample, concatenate the corresponding skip tensor, then apply Conv1D + BN with tanh.
-        for idx in range(self.params['intermediate_layers']):
-            x = UpSampling1D(size=2, name=f"upsample_{idx+1}")(x)
-            if skip_tensors and idx < len(skip_tensors):
-                skip = skip_tensors[-(idx+1)]
-                x = Concatenate(axis=-1, name=f"skip_concat_{idx+1}")([x, skip])
-            filt = mirror_filters[idx] if idx < len(mirror_filters) else mirror_filters[-1]
-            x = Conv1D(filters=filt,
-                       kernel_size=3,
-                       padding='same',
-                       activation='tanh',  # using tanh here
-                       kernel_initializer=HeNormal(),
-                       kernel_regularizer=l2(self.params['l2_reg']),
-                       name=f"conv1d_mirror_{idx+1}")(x)
-            #x = BatchNormalization(name=f"bn_decoder_{idx+1}")(x)
-        # Final mapping: flatten then Dense layer with linear activation, then reshape to (window_size, orig_features)
-        x = Flatten(name="decoder_flatten")(x)
-        x = Dense(units=window_size * orig_features,
-                  activation='linear',
-                  kernel_initializer=GlorotUniform(),
-                  kernel_regularizer=l2(self.params['l2_reg']),
-                  name="decoder_dense_output")(x)
-        output = Reshape((window_size, orig_features), name="decoder_output")(x)
-        return output
 
-    def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, encoder_skip_connections):
-        """
-        Configures and builds the decoder model as the mirror of the encoder using skip connections.
+        # invert 2nd conv (encoder’s 2nd conv mapped to merged_units)
+        # so first deconv should map back to branch_units
+        x = Conv1DTranspose(
+            filters=branch_units,
+            kernel_size=3,
+            strides=2,
+            padding='same',
+            activation=activation,
+            name="deconv_branch_units",
+            #kernel_regularizer=l2(l2_reg)
+        )(x)
+
+        # invert 1st conv (encoder’s 1st conv mapped to branch_units)
+        # so next deconv maps back to num_channels
+        x = Conv1DTranspose(
+            filters=num_channels,
+            kernel_size=3,
+            strides=2,
+            padding='same',
+            activation='linear',
+            name="deconv_output_channels",
+            #kernel_regularizer=l2(l2_reg)
+        )(x)
+
+        # if we overshot the exact window_size, crop back
+        if x.shape[1] != window_size:
+            crop = x.shape[1] - window_size
+            x = Cropping1D((0, crop))(x)
+
+        merged = x
+
+
+        # Output batch normalization layer
+        #outputs = BatchNormalization()(x)
+        outputs = merged
+        print(f"[DEBUG] Final Output shape: {outputs.shape}")
+
+        # Build the encoder model
+        self.model = Model(inputs=decoder_input, outputs=outputs, name="decoder")
         
-        Args:
-            interface_size (int): The latent dimension.
-            output_shape (int or tuple): Original input shape; if tuple, first element is window size, second is feature count.
-            num_channels (int): Number of channels in the original input.
-            encoder_output_shape (tuple): Encoder pre-flatten shape (T, F).
-            use_sliding_windows (bool): Whether sliding windows are used.
-            encoder_skip_connections (list): List of skip connection tensors from the encoder.
-        """
-        self.params['interface_size'] = interface_size
-
-        if isinstance(output_shape, tuple):
-            window_size, orig_features = output_shape
-        else:
-            window_size = output_shape
-            orig_features = num_channels
-        self.params['output_shape'] = window_size
-
-        if isinstance(encoder_output_shape, tuple) and len(encoder_output_shape) == 1:
-            encoder_output_shape = (1, encoder_output_shape[0])
-        T, F = encoder_output_shape
-        print(f"[DEBUG] Using encoder pre-flatten shape: T={T}, F={F}")
-        print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
-
-        latent_input = Input(shape=(interface_size,), name="decoder_latent")
-        output = self.build_decoder(latent_input, encoder_skip_connections, output_shape, encoder_output_shape)
-        self.model = Model(inputs=[latent_input] + encoder_skip_connections, outputs=output, name="decoder_cnn_model")
-        print(f"[DEBUG] Final Output Shape: {self.model.output_shape}")
-
         adam_optimizer = Adam(
             learning_rate=self.params['learning_rate'],
             beta_1=0.9,
@@ -138,8 +124,54 @@ class Plugin:
             epsilon=1e-2,
             amsgrad=False
         )
-        self.model.compile(optimizer=adam_optimizer,
-                           loss=Huber(),
-                           metrics=['mse', 'mae'],
-                           run_eagerly=False)
+
+
+        self.model.compile(
+            optimizer=adam_optimizer,
+            loss=Huber(),
+            metrics=['mse', 'mae'],
+            run_eagerly=False
+        )
         print(f"[DEBUG] Model compiled successfully.")
+
+
+
+
+    def train(self, encoded_data, original_data,config):
+        encoded_data = encoded_data.reshape((encoded_data.shape[0], -1))
+        original_data = original_data.reshape((original_data.shape[0], -1))
+        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True, verbose=1)
+        self.model.fit(encoded_data, original_data, epochs=self.params['epochs'], batch_size=config.get("batch_size"), verbose=1, callbacks=[early_stopping],validation_split = 0.2)
+
+    def decode(self, encoded_data, use_sliding_windows, original_feature_size):
+        print(f"[decode] Decoding data with shape: {encoded_data.shape}")
+        decoded_data = self.model.predict(encoded_data)
+
+        if not use_sliding_windows:
+            # Reshape to match the original feature size if not using sliding windows
+            decoded_data = decoded_data.reshape((decoded_data.shape[0], original_feature_size))
+            print(f"[decode] Reshaped decoded data to match original feature size: {decoded_data.shape}")
+        else:
+            print(f"[decode] Decoded data shape: {decoded_data.shape}")
+
+        return decoded_data
+
+    def save(self, file_path):
+        self.model.save(file_path)
+
+    def load(self, file_path):
+        self.model = load_model(file_path)
+
+    def calculate_mse(self, original_data, reconstructed_data):
+        original_data = original_data.reshape((original_data.shape[0], -1))
+        reconstructed_data = reconstructed_data.reshape((original_data.shape[0], -1))
+        mse = np.mean(np.square(original_data - reconstructed_data))
+        return mse
+
+# Debugging usage example
+if __name__ == "__main__":
+    plugin = Plugin()
+    plugin.configure_size(interface_size=4, output_shape=128)
+    debug_info = plugin.get_debug_info()
+    print(f"Debug Info: {debug_info}")
+

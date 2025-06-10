@@ -1,191 +1,174 @@
 import numpy as np
 from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, BatchNormalization, LeakyReLU
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
 from keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform, HeNormal
+
 from keras.regularizers import l2
 from keras.callbacks import EarlyStopping
+from keras.layers import BatchNormalization, LeakyReLU, Reshape
+from tensorflow.keras.losses import Huber
+# Lambda
+from keras.layers import Lambda, Concatenate
 
 class Plugin:
     """
-    An encoder plugin using a dense neural network based on Keras, updated to use
-    the same layer sizing system and architectural ideas as the LSTM encoder plugin.
+    An encoder plugin using a convolutional neural network (CNN) based on Keras, with dynamically configurable size.
     """
 
     plugin_params = {
-        # Training parameter
-        # Architecture parameters
-        'intermediate_layers': 4,       # Number of dense layers before the final projection
-        'initial_layer_size': 128,       # Base number of hidden units in the first dense layer
-        'layer_size_divisor': 2,        # Divisor for subsequent layer sizes
-        'l2_reg': 1e-5,                 # L2 regularization factor
+        "activation": "tanh",
+        'intermediate_layers': 3, 
+        'learning_rate': 0.00002,
+        'dropout_rate': 0.001,
+        "intermediate_layers": 2,
+        "initial_layer_size": 48,
+        "layer_size_divisor": 2,
+        "l2_reg": 5e-5
     }
 
-    plugin_debug_vars = ['input_dim', 'encoding_dim']
+    plugin_debug_vars = ['input_shape', 'intermediate_layers']
 
     def __init__(self):
         self.params = self.plugin_params.copy()
         self.encoder_model = None
 
     def set_params(self, **kwargs):
-        """
-        Update plugin parameters with provided keyword arguments.
-        """
         for key, value in kwargs.items():
             self.params[key] = value
 
     def get_debug_info(self):
-        """
-        Returns a subset of parameters for debugging/tracking.
-        """
         return {var: self.params[var] for var in self.plugin_debug_vars}
 
     def add_debug_info(self, debug_info):
-        """
-        Extends an existing debug dictionary with the plugin's debug info.
-        """
         plugin_debug_info = self.get_debug_info()
         debug_info.update(plugin_debug_info)
 
-    def configure_size(self, input_dim, encoding_dim, num_channels=None, use_sliding_windows=False):
+    def configure_size(self, input_shape, interface_size, num_channels, use_sliding_windows, config=None):
         """
-        Configures the encoder model with the specified input dimension and latent space size.
-        The intermediate layer sizes are calculated using the same system as in the LSTM plugin.
-
+        Configure the encoder based on input shape, interface size, and channel dimensions.
+        
         Args:
-            input_dim (int): Dimensionality of the input features.
-            encoding_dim (int): Size of the latent space (output dimension).
+            input_shape (int): Length of the sequence or row.
+            interface_size (int): Dimension of the bottleneck layer.
+            num_channels (int): Number of input channels.
+            use_sliding_windows (bool): Whether sliding windows are being used.
         """
-        self.params['input_dim'] = input_dim
-        self.params['encoding_dim'] = encoding_dim
+        print(f"[DEBUG] Starting encoder configuration with input_shape={input_shape}, interface_size={interface_size}, num_channels={num_channels}, use_sliding_windows={use_sliding_windows}")
 
-        # Extract parameters
-        intermediate_layers = self.params.get('intermediate_layers', 3)
-        initial_layer_size = self.params.get('initial_layer_size', 32)
-        layer_size_divisor = self.params.get('layer_size_divisor', 2)
-        l2_reg = self.params.get('l2_reg', 1e-2)
-        learning_rate = self.params.get('learning_rate', 0.0001)
+        self.params['input_shape'] = input_shape
 
-        # Build the list of dense layer sizes following the LSTM plugin's logic.
-        # Start with the initial_layer_size and divide successively, then append the encoding_dim.
-        layers = []
-        current_size = initial_layer_size
-        for i in range(intermediate_layers):
-            layers.append(current_size)
-            current_size = max(current_size // layer_size_divisor, 1)  # Lower bound is 1
-        layers.append(encoding_dim)  # Final output layer matches the latent dimension
+        # Determine the input shape for the first Conv1D layer
+        adjusted_channels = num_channels 
 
-        print(f"[configure_size] Dense Layer sizes: {layers}")
-        print(f"[configure_size] Input dimension: {input_dim}")
+        # Initialize layers array with input_shape
+        layers = [adjusted_channels]  # First layer matches the number of input channels
+        num_intermediate_layers = self.params['intermediate_layers']
 
-        # Input layer
-        inputs = Input(shape=(input_dim,), name="encoder_input")
-        x = inputs
+        # Calculate sizes of intermediate layers based on downscaling by 2
+        current_size = adjusted_channels
+        for i in range(num_intermediate_layers - 1):
+            next_size = current_size // 2  # Scale down by half
+            if next_size < interface_size:
+                next_size = interface_size  # Ensure we don't go below the interface_size
+            layers.append(next_size)
+            current_size = next_size
 
-        # Add intermediate dense layers
-        layer_idx = 0
-        for size in layers[:-1]:
-            layer_idx += 1
-            x = Dense(
-                units=size,
-                activation=LeakyReLU(alpha=0.1),
-                kernel_initializer=HeNormal(),
-                kernel_regularizer=l2(l2_reg),
-                name=f"dense_layer_{layer_idx}"
-            )(x)
-        x = BatchNormalization(name=f"batch_norm_{layer_idx}")(x)
+        # Append the final layer which is the interface size
+        layers.append(interface_size)
+        print(f"[DEBUG] Encoder Layer sizes: {layers}")
+        
+        window_size = config.get("window_size", 288)
+        merged_units = config.get("initial_layer_size", 128)
+        branch_units = merged_units//config.get("layer_size_divisor", 2)
+        activation = config.get("activation", "tanh")
+        l2_reg = config.get("l2_reg", self.params.get("l2_reg", 1e-6))
+        # --- Input Layer ---
+        inputs = Input(shape=(window_size, num_channels), name="input_layer")
+        feature_units = merged_units
+        # --- Feature Extractor: Parallel Isolated Preprocessing Branches ---
+        feature_branch_outputs = []
+        for c in range(num_channels):
+            feature_input = Lambda(lambda x, channel=c: x[:, :, channel:channel+1],
+                                   name=f"feature_{c+1}_input")(inputs)
+            x = Flatten(name=f"feature_{c+1}_flatten")(feature_input)
+            for i in range(num_intermediate_layers):
+                x = Dense(feature_units, activation=activation, kernel_regularizer=l2(l2_reg),
+                          name=f"feature_{c+1}_dense_{i+1}")(x)
+            # reshape each branch’s 2D output (batch, branch_units)
+            # into a 3D tensor (batch, timesteps=branch_units, channels=1)
+            x = Reshape((feature_units, 1), name=f"feature_{c+1}_reshape")(x)
+            feature_branch_outputs.append(x)
+        # Stack the raw feature_inputs along channel axis for Conv1D
+        merged = Concatenate(axis=2, name="extracted_features")(feature_branch_outputs)
 
-        # Final Dense layer to project into the latent space with linear activation
-        x = Dense(
-            units=layers[-1],
-            activation='linear',
-            kernel_initializer=GlorotUniform(),
-            kernel_regularizer=l2(l2_reg),
-            name="encoder_output"
-        )(x)
-        outputs = x
-        #outputs = BatchNormalization(name="encoder_last_batch_norm")(x)
 
-        # Create and compile the model
-        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder_dense")
+        # Output batch normalization layer
+        #outputs = BatchNormalization()(merged)
+        outputs = merged
+        print(f"[DEBUG] Final Output shape: {outputs.shape}")
+
+        # Build the encoder model
+        self.encoder_model = Model(inputs=inputs, outputs=outputs, name="encoder")
+
+        # Define the Adam optimizer with custom parameters
         adam_optimizer = Adam(
-            learning_rate=learning_rate,
-            beta_1=0.9,
-            beta_2=0.999,
-            epsilon=1e-7,
-        )
-        self.encoder_model.compile(optimizer=adam_optimizer, loss='mean_squared_error')
-
-        print("[configure_size] Encoder Model Summary:")
-        self.encoder_model.summary()
-
-    def train(self, data, validation_data):
-        """
-        Trains the encoder model on the provided data in a self-reconstruction fashion.
-
-        Args:
-            data (np.ndarray): Training data of shape (batch_size, input_dim).
-            validation_data (np.ndarray): Validation data of the same shape.
-        """
-        if self.encoder_model is None:
-            raise ValueError("[train] Encoder model is not yet configured. Call configure_size first.")
-
-        print(f"[train] Starting training with data shape={data.shape}, validation shape={validation_data.shape}")
-        epochs = self.params['epochs']
-        batch_size = self.params['batch_size']
-
-        # Early stopping callback
-        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-
-        history = self.encoder_model.fit(
-            data, data,
-            epochs=epochs,
-            batch_size=batch_size,
-            validation_data=(validation_data, validation_data),
-            callbacks=[early_stopping],
-            verbose=1
+            learning_rate=self.params['learning_rate'],  # Set the learning rate
+            beta_1=0.9,  # Default value
+            beta_2=0.999,  # Default value
+            epsilon=1e-7,  # Default value
+            amsgrad=False  # Default value
         )
 
-        print("[train] Training completed.")
-        return history
+        self.encoder_model.compile(
+            optimizer=adam_optimizer,
+            loss=Huber(),
+            metrics=['mse', 'mae'],
+            run_eagerly=False  # Set to False for better performance unless debugging
+        )
+        print(f"[DEBUG] Encoder model compiled successfully.")
+
+
+
+
+
+    def train(self, data):
+        num_channels = data.shape[-1] if len(data.shape) > 2 else 1  # Get number of channels
+        input_shape = data.shape[1]  # Get the input sequence length
+        interface_size = self.params.get('interface_size', 4)  # Assuming interface size is in params
+
+        # Reshape 2D data to 3D if necessary
+        if len(data.shape) == 2:
+            data = np.expand_dims(data, axis=-1)  # Add a channel dimension
+
+        # Rebuild the model with dynamic channel size
+        self.configure_size(input_shape, interface_size, num_channels)
+
+        # Now proceed with training
+        print(f"Training encoder with data shape: {data.shape}")
+        early_stopping = EarlyStopping(monitor='val_mae', patience=25, restore_best_weights=True)
+        self.encoder_model.fit(data, data, epochs=self.params['epochs'], batch_size=self.params['batch_size'], verbose=1, callbacks=[early_stopping], validation_split = 0.2)
+        print("Training completed.")
+
+
 
     def encode(self, data):
-        """
-        Runs a forward pass through the encoder to map data to latent vectors.
-
-        Args:
-            data (np.ndarray): Input data of shape (batch_size, input_dim).
-
-        Returns:
-            np.ndarray: Encoded latent vectors of shape (batch_size, encoding_dim).
-        """
-        if self.encoder_model is None:
-            raise ValueError("[encode] Encoder model is not configured.")
-        print(f"[encode] Encoding data with shape: {data.shape}")
-
-        encoded_data = self.encoder_model.predict(data, verbose=1)
-        print(f"[encode] Encoded output shape: {encoded_data.shape}")
+        print(f"Encoding data with shape: {data.shape}")
+        encoded_data = self.encoder_model.predict(data)
+        print(f"Encoded data shape: {encoded_data.shape}")
         return encoded_data
 
     def save(self, file_path):
-        """
-        Saves the encoder model to the specified file path.
-        """
-        if self.encoder_model is None:
-            raise ValueError("[save] Encoder model is not configured.")
         save_model(self.encoder_model, file_path)
-        print(f"[save] Encoder model saved to {file_path}")
+        print(f"Encoder model saved to {file_path}")
 
     def load(self, file_path):
-        """
-        Loads a pre-trained encoder model from the specified file path.
-        """
         self.encoder_model = load_model(file_path)
-        print(f"[load] Encoder model loaded from {file_path}")
+        print(f"Encoder model loaded from {file_path}")
 
 # Debugging usage example
 if __name__ == "__main__":
     plugin = Plugin()
-    plugin.configure_size(input_dim=128, encoding_dim=4)
+    plugin.configure_size(input_shape=128, interface_size=4)
     debug_info = plugin.get_debug_info()
     print(f"Debug Info: {debug_info}")

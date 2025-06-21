@@ -38,6 +38,33 @@ def create_sliding_windows(data, window_size):
     return windows
 
 
+def calculate_datetime_features(timestamps):
+    """
+    Calculate the 10 cyclical/seasonal features for each timestamp.
+    Args:
+        timestamps (pd.Series or DatetimeIndex): Timestamps for each sample.
+    Returns:
+        np.ndarray: (num_samples, 10) array of cyclical features.
+    """
+    hours = timestamps.hour
+    days_of_week = timestamps.dayofweek
+    days_of_month = timestamps.day
+    months = timestamps.month
+    days_of_year = timestamps.dayofyear
+    return np.stack([
+        np.sin(2 * np.pi * hours / 24),
+        np.cos(2 * np.pi * hours / 24),
+        np.sin(2 * np.pi * days_of_week / 7),
+        np.cos(2 * np.pi * days_of_week / 7),
+        np.sin(2 * np.pi * days_of_month / 31),
+        np.cos(2 * np.pi * days_of_month / 31),
+        np.sin(2 * np.pi * months / 12),
+        np.cos(2 * np.pi * months / 12),
+        np.sin(2 * np.pi * days_of_year / 366),
+        np.cos(2 * np.pi * days_of_year / 366),
+    ], axis=-1).T
+
+
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin):
     start_time = time.time()
     
@@ -90,14 +117,14 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     if not isinstance(y_train_targets, np.ndarray): # MODIFIED: Variable name
         raise TypeError(f"y_train_targets is type {type(y_train_targets)}, expected np.ndarray.") # MODIFIED
     if y_val_targets is not None and not isinstance(y_val_targets, np.ndarray): # MODIFIED: Variable name
-
+        raise TypeError(f"y_val_targets is type {type(y_val_targets)}, expected np.ndarray.") # MODIFIED
 
 
     # y_targets should be 2D (samples, num_target_features)
-    if y_train_targets.ndim != 2 or y_train_targets.shape[-1] != len(target_feature_names): # MODIFIED: Variable name
-        raise ValueError(f"y_train_targets should be 2D with {len(target_feature_names)} features, but got shape {y_train_targets.shape}") # MODIFIED
-    if y_val_targets is not None and (y_val_targets.ndim != 2 or y_val_targets.shape[-1] != len(target_feature_names)): # MODIFIED: Variable name
-        raise ValueError(f"y_val_targets should be 2D with {len(target_feature_names)} features, but got shape {y_val_targets.shape}") # MODIFIED
+    if y_train_targets.ndim != 2 or y_train_targets.shape[-1] != len(target_feature_names):
+        raise ValueError(f"y_train_targets should be 2D with {len(target_feature_names)} features, but got shape {y_train_targets.shape}")
+    if y_val_targets is not None and (y_val_targets.ndim != 2 or y_val_targets.shape[-1] != len(target_feature_names)):
+        raise ValueError(f"y_val_targets should be 2D with {len(target_feature_names)} features, but got shape {y_val_targets.shape}")
     
 
     if x_train_data.shape[0] != y_train_targets.shape[0]: # MODIFIED: Variable name
@@ -139,19 +166,27 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             raise ValueError(f"'{dim_key}' not found in config or is not a positive integer. {description} It's required.")
 
     num_train_samples = x_train_data.shape[0]
-    h_context_train = datasets.get("h_train")
-    if h_context_train is None:
-        tf.print(f"Warning: 'h_train' not found in datasets. Generating zeros for h_context_train (shape: ({num_train_samples}, {config['rnn_hidden_dim']})).")
-        h_context_train = np.zeros((num_train_samples, config['rnn_hidden_dim']), dtype=np.float32)
-    elif h_context_train.shape != (num_train_samples, config['rnn_hidden_dim']):
-        raise ValueError(f"Shape mismatch for h_context_train. Expected ({num_train_samples}, {config['rnn_hidden_dim']}), got {h_context_train.shape}")
+    # --- PATCH: Build h_context_train from previous tick values ---
+    # x_train_data: (num_samples, window_size, num_features)
+    # Use the last step of each window as the current tick
+    # For context, use previous tick (shifted by 1), first row is zeros
+    base_features = x_train_data[:, -1, :23]  # (num_samples, 23)
+    h_context_train = np.zeros_like(base_features)
+    h_context_train[1:] = base_features[:-1]
+    # First row remains zeros (no previous tick)
 
-    conditions_t_train = datasets.get("cond_train")
-    if conditions_t_train is None:
-        tf.print(f"Warning: 'cond_train' not found in datasets. Generating zeros for conditions_t_train (shape: ({num_train_samples}, {config['conditioning_dim']})).")
-        conditions_t_train = np.zeros((num_train_samples, config['conditioning_dim']), dtype=np.float32)
-    elif conditions_t_train.shape != (num_train_samples, config['conditioning_dim']):
-        raise ValueError(f"Shape mismatch for conditions_t_train. Expected ({num_train_samples}, {config['conditioning_dim']}), got {conditions_t_train.shape}")
+    # --- PATCH: Build conditions_t_train from timestamps ---
+    # Try to get timestamps from datasets, else from config
+    timestamps = None
+    if 'x_train_dates' in datasets:
+        timestamps = pd.to_datetime(datasets['x_train_dates'])
+    elif 'timestamps' in datasets:
+        timestamps = pd.to_datetime(datasets['timestamps'])
+    elif 'timestamps' in config:
+        timestamps = pd.to_datetime(config['timestamps'])
+    if timestamps is None or len(timestamps) != num_train_samples:
+        raise ValueError("Timestamps required to build conditions_t_train were not found or length mismatch.")
+    conditions_t_train = calculate_datetime_features(timestamps)
 
     cvae_train_inputs = [x_train_data, h_context_train, conditions_t_train]
     cvae_train_targets = y_train_targets # MODIFIED: Variable name

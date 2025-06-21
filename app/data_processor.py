@@ -38,6 +38,33 @@ def create_sliding_windows(data, window_size):
     return windows
 
 
+def calculate_datetime_features(timestamps):
+    """
+    Calculate the 10 cyclical/seasonal features for each timestamp.
+    Args:
+        timestamps (pd.Series or DatetimeIndex): Timestamps for each sample.
+    Returns:
+        np.ndarray: (num_samples, 10) array of cyclical features.
+    """
+    hours = timestamps.hour
+    days_of_week = timestamps.dayofweek
+    days_of_month = timestamps.day
+    months = timestamps.month
+    days_of_year = timestamps.dayofyear
+    return np.stack([
+        np.sin(2 * np.pi * hours / 24),
+        np.cos(2 * np.pi * hours / 24),
+        np.sin(2 * np.pi * days_of_week / 7),
+        np.cos(2 * np.pi * days_of_week / 7),
+        np.sin(2 * np.pi * days_of_month / 31),
+        np.cos(2 * np.pi * days_of_month / 31),
+        np.sin(2 * np.pi * months / 12),
+        np.cos(2 * np.pi * months / 12),
+        np.sin(2 * np.pi * days_of_year / 366),
+        np.cos(2 * np.pi * days_of_year / 366),
+    ], axis=1)
+
+
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin):
     start_time = time.time()
     
@@ -90,14 +117,14 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     if not isinstance(y_train_targets, np.ndarray): # MODIFIED: Variable name
         raise TypeError(f"y_train_targets is type {type(y_train_targets)}, expected np.ndarray.") # MODIFIED
     if y_val_targets is not None and not isinstance(y_val_targets, np.ndarray): # MODIFIED: Variable name
-
+        raise TypeError(f"y_val_targets is type {type(y_val_targets)}, expected np.ndarray.") # MODIFIED
 
 
     # y_targets should be 2D (samples, num_target_features)
-    if y_train_targets.ndim != 2 or y_train_targets.shape[-1] != len(target_feature_names): # MODIFIED: Variable name
-        raise ValueError(f"y_train_targets should be 2D with {len(target_feature_names)} features, but got shape {y_train_targets.shape}") # MODIFIED
-    if y_val_targets is not None and (y_val_targets.ndim != 2 or y_val_targets.shape[-1] != len(target_feature_names)): # MODIFIED: Variable name
-        raise ValueError(f"y_val_targets should be 2D with {len(target_feature_names)} features, but got shape {y_val_targets.shape}") # MODIFIED
+    if y_train_targets.ndim != 2 or y_train_targets.shape[-1] != len(target_feature_names):
+        raise ValueError(f"y_train_targets should be 2D with {len(target_feature_names)} features, but got shape {y_train_targets.shape}")
+    if y_val_targets is not None and (y_val_targets.ndim != 2 or y_val_targets.shape[-1] != len(target_feature_names)):
+        raise ValueError(f"y_val_targets should be 2D with {len(target_feature_names)} features, but got shape {y_val_targets.shape}")
     
 
     if x_train_data.shape[0] != y_train_targets.shape[0]: # MODIFIED: Variable name
@@ -139,19 +166,22 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             raise ValueError(f"'{dim_key}' not found in config or is not a positive integer. {description} It's required.")
 
     num_train_samples = x_train_data.shape[0]
-    h_context_train = datasets.get("h_train")
-    if h_context_train is None:
-        tf.print(f"Warning: 'h_train' not found in datasets. Generating zeros for h_context_train (shape: ({num_train_samples}, {config['rnn_hidden_dim']})).")
-        h_context_train = np.zeros((num_train_samples, config['rnn_hidden_dim']), dtype=np.float32)
-    elif h_context_train.shape != (num_train_samples, config['rnn_hidden_dim']):
-        raise ValueError(f"Shape mismatch for h_context_train. Expected ({num_train_samples}, {config['rnn_hidden_dim']}), got {h_context_train.shape}")
+    # --- PATCH: Build h_context_train as zeros of shape (num_samples, rnn_hidden_dim) ---
+    h_context_train = np.zeros((num_train_samples, config['rnn_hidden_dim']), dtype=np.float32)
+    # This matches the model's context input expectation and does not touch any other data or features.
 
-    conditions_t_train = datasets.get("cond_train")
-    if conditions_t_train is None:
-        tf.print(f"Warning: 'cond_train' not found in datasets. Generating zeros for conditions_t_train (shape: ({num_train_samples}, {config['conditioning_dim']})).")
-        conditions_t_train = np.zeros((num_train_samples, config['conditioning_dim']), dtype=np.float32)
-    elif conditions_t_train.shape != (num_train_samples, config['conditioning_dim']):
-        raise ValueError(f"Shape mismatch for conditions_t_train. Expected ({num_train_samples}, {config['conditioning_dim']}), got {conditions_t_train.shape}")
+    # --- PATCH: Build conditions_t_train from timestamps ---
+    # Try to get timestamps from datasets, else from config
+    timestamps = None
+    if 'x_train_dates' in datasets:
+        timestamps = pd.to_datetime(datasets['x_train_dates'])
+    elif 'timestamps' in datasets:
+        timestamps = pd.to_datetime(datasets['timestamps'])
+    elif 'timestamps' in config:
+        timestamps = pd.to_datetime(config['timestamps'])
+    if timestamps is None or len(timestamps) != num_train_samples:
+        raise ValueError("Timestamps required to build conditions_t_train were not found or length mismatch.")
+    conditions_t_train = calculate_datetime_features(timestamps)
 
     cvae_train_inputs = [x_train_data, h_context_train, conditions_t_train]
     cvae_train_targets = y_train_targets # MODIFIED: Variable name
@@ -166,26 +196,31 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         elif h_context_val.shape != (num_val_samples, config['rnn_hidden_dim']):
             raise ValueError(f"Shape mismatch for h_context_val. Expected ({num_val_samples}, {config['rnn_hidden_dim']}), got {h_context_val.shape}")
 
-        conditions_t_val = datasets.get("cond_val")
-        if conditions_t_val is None:
-            tf.print(f"Warning: 'cond_val' not found in datasets. Generating zeros for conditions_t_val (shape: ({num_val_samples}, {config['conditioning_dim']})).")
-            conditions_t_val = np.zeros((num_val_samples, config['conditioning_dim']), dtype=np.float32)
-        elif conditions_t_val.shape != (num_val_samples, config['conditioning_dim']):
-            raise ValueError(f"Shape mismatch for conditions_t_val. Expected ({num_val_samples}, {config['conditioning_dim']}), got {conditions_t_val.shape}")
+        # --- PATCH: Always compute conditions_t_val from validation timestamps if available ---
+        val_timestamps = None
+        if 'x_val_dates' in datasets:
+            val_timestamps = pd.to_datetime(datasets['x_val_dates'])
+        elif 'val_timestamps' in datasets:
+            val_timestamps = pd.to_datetime(datasets['val_timestamps'])
+        elif 'val_timestamps' in config:
+            val_timestamps = pd.to_datetime(config['val_timestamps'])
+        if val_timestamps is not None and len(val_timestamps) == num_val_samples:
+            conditions_t_val = calculate_datetime_features(val_timestamps)
+        else:
+            raise ValueError("Timestamps required to build conditions_t_val for validation were not found or length mismatch.")
 
         config['cvae_val_inputs'] = {
             'x_window': x_val_data,
             'h_context': h_context_val,
             'conditions_t': conditions_t_val
         }
-        config['cvae_val_targets'] = y_val_targets # MODIFIED: Variable name
+        config['cvae_val_targets'] = y_val_targets
         tf.print(f"[data_processor] Added cvae_val_inputs and cvae_val_targets to config from preprocessor output.")
-
     else:
-        tf.print("[data_processor] Validation data (x_val_data or y_val_targets from preprocessor) is None. " # MODIFIED
+        tf.print("[data_processor] Validation data (x_val_data or y_val_targets from preprocessor) is None. "
                  "Training will proceed without validation unless 'cvae_val_inputs' and 'cvae_val_targets' are already in config.")
         if 'cvae_val_inputs' not in config or 'cvae_val_targets' not in config:
-            config.pop('cvae_val_inputs', None) 
+            config.pop('cvae_val_inputs', None)
             config.pop('cvae_val_targets', None)
             tf.print("[data_processor] No validation data found in preprocessor output or existing config.")
 

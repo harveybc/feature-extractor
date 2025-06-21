@@ -39,13 +39,7 @@ class Plugin:
     def configure_size(self, interface_size, output_shape, num_channels, encoder_output_shape, use_sliding_windows, config=None):
         print(f"[DEBUG] Starting decoder configuration with interface_size={interface_size}, output_shape={output_shape}, num_channels={num_channels}, encoder_output_shape={encoder_output_shape}, use_sliding_windows={use_sliding_windows}")
 
-        
-        Args:
-            latent_input: Keras tensor for the latent vector (shape: (None, interface_size)).
-            skip_tensors: List of skip connection tensors from the encoder (ordered from first to last).
-            output_shape (tuple): Original input shape, e.g. (window_size, original_features).
-            encoder_output_shape (tuple): Encoder pre-flatten shape (T, F).
-        
+
         layers = [output_shape*2]
         current_size = output_shape*2
         l2_reg = 1e-2

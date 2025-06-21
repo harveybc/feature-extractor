@@ -1,17 +1,15 @@
 import numpy as np
-from keras.models import Model, load_model, save_model
-from keras.layers import Dense, Input, Concatenate, Conv1D, Flatten, LSTM, Bidirectional, RepeatVector, TimeDistributed, MultiHeadAttention
-from keras.layers import LeakyReLU
-from keras.optimizers import Adam
-from tensorflow.keras.initializers import GlorotUniform, HeNormal 
-from keras.regularizers import l2
-import tensorflow as tf 
-from keras.initializers import HeNormal
+import tensorflow as tf
+from tensorflow.keras.models import Model, load_model, save_model
+from tensorflow.keras.layers import Dense, Input, Concatenate, Conv1D, Flatten, LSTM, Bidirectional, RepeatVector, TimeDistributed, MultiHeadAttention
+from tensorflow.keras.layers import LeakyReLU, LayerNormalization, Add, BatchNormalization
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.initializers import GlorotUniform, HeNormal
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras import backend as K
-#add
-from keras.layers import LayerNormalization, Add
-#batch normalization
-from keras.layers import BatchNormalization
+
+
+
 
 
 def get_angles(pos, i, d_model):
@@ -81,7 +79,7 @@ class Plugin:
 
     def configure_model_architecture(self, window_size: int, input_features_per_step: int, 
                                      rnn_hidden_dim: int, conditioning_dim: int, latent_dim: int, 
-                                     config: dict = None):
+                                     config= None):
         if config is None:
             config = {}
 
@@ -249,7 +247,7 @@ class Plugin:
 
     def load(self, file_path, compile_model=False):
         # Handle both legacy .h5 and modern .keras formats
-        self.inference_network_model = tf.keras.models.load_model(file_path, compile=compile_model)
+        self.inference_network_model = load_model(file_path, compile=compile_model)
         print(f"Encoder model loaded from {file_path}")
         
         try:

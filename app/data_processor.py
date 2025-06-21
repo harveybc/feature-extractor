@@ -171,7 +171,7 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     # Use the last step of each window as the current tick
     # For context, use previous tick (shifted by 1), first row is zeros
     base_features = x_train_data[:, -1, :23]  # (num_samples, 23)
-    h_context_train = np.zeros_like(base_features)
+    h_context_train = np.zeros((num_train_samples, config['rnn_hidden_dim']), dtype=np.float32)
     h_context_train[1:] = base_features[:-1]
     # First row remains zeros (no previous tick)
 

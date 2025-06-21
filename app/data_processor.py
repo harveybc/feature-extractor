@@ -62,7 +62,7 @@ def calculate_datetime_features(timestamps):
         np.cos(2 * np.pi * months / 12),
         np.sin(2 * np.pi * days_of_year / 366),
         np.cos(2 * np.pi * days_of_year / 366),
-    ], axis=-1).T
+    ], axis=1)
 
 
 def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin):

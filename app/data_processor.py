@@ -196,26 +196,31 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         elif h_context_val.shape != (num_val_samples, config['rnn_hidden_dim']):
             raise ValueError(f"Shape mismatch for h_context_val. Expected ({num_val_samples}, {config['rnn_hidden_dim']}), got {h_context_val.shape}")
 
-        conditions_t_val = datasets.get("cond_val")
-        if conditions_t_val is None:
-            tf.print(f"Warning: 'cond_val' not found in datasets. Generating zeros for conditions_t_val (shape: ({num_val_samples}, {config['conditioning_dim']})).")
-            conditions_t_val = np.zeros((num_val_samples, config['conditioning_dim']), dtype=np.float32)
-        elif conditions_t_val.shape != (num_val_samples, config['conditioning_dim']):
-            raise ValueError(f"Shape mismatch for conditions_t_val. Expected ({num_val_samples}, {config['conditioning_dim']}), got {conditions_t_val.shape}")
+        # --- PATCH: Always compute conditions_t_val from validation timestamps if available ---
+        val_timestamps = None
+        if 'x_val_dates' in datasets:
+            val_timestamps = pd.to_datetime(datasets['x_val_dates'])
+        elif 'val_timestamps' in datasets:
+            val_timestamps = pd.to_datetime(datasets['val_timestamps'])
+        elif 'val_timestamps' in config:
+            val_timestamps = pd.to_datetime(config['val_timestamps'])
+        if val_timestamps is not None and len(val_timestamps) == num_val_samples:
+            conditions_t_val = calculate_datetime_features(val_timestamps)
+        else:
+            raise ValueError("Timestamps required to build conditions_t_val for validation were not found or length mismatch.")
 
         config['cvae_val_inputs'] = {
             'x_window': x_val_data,
             'h_context': h_context_val,
             'conditions_t': conditions_t_val
         }
-        config['cvae_val_targets'] = y_val_targets # MODIFIED: Variable name
+        config['cvae_val_targets'] = y_val_targets
         tf.print(f"[data_processor] Added cvae_val_inputs and cvae_val_targets to config from preprocessor output.")
-
     else:
-        tf.print("[data_processor] Validation data (x_val_data or y_val_targets from preprocessor) is None. " # MODIFIED
+        tf.print("[data_processor] Validation data (x_val_data or y_val_targets from preprocessor) is None. "
                  "Training will proceed without validation unless 'cvae_val_inputs' and 'cvae_val_targets' are already in config.")
         if 'cvae_val_inputs' not in config or 'cvae_val_targets' not in config:
-            config.pop('cvae_val_inputs', None) 
+            config.pop('cvae_val_inputs', None)
             config.pop('cvae_val_targets', None)
             tf.print("[data_processor] No validation data found in preprocessor output or existing config.")
 

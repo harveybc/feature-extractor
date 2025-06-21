@@ -166,14 +166,9 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
             raise ValueError(f"'{dim_key}' not found in config or is not a positive integer. {description} It's required.")
 
     num_train_samples = x_train_data.shape[0]
-    # --- PATCH: Build h_context_train from previous tick values ---
-    # x_train_data: (num_samples, window_size, num_features)
-    # Use the last step of each window as the current tick
-    # For context, use previous tick (shifted by 1), first row is zeros
-    base_features = x_train_data[:, -1, :23]  # (num_samples, 23)
+    # --- PATCH: Build h_context_train as zeros of shape (num_samples, rnn_hidden_dim) ---
     h_context_train = np.zeros((num_train_samples, config['rnn_hidden_dim']), dtype=np.float32)
-    h_context_train[1:] = base_features[:-1]
-    # First row remains zeros (no previous tick)
+    # This matches the model's context input expectation and does not touch any other data or features.
 
     # --- PATCH: Build conditions_t_train from timestamps ---
     # Try to get timestamps from datasets, else from config

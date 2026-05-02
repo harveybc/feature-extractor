@@ -8,7 +8,7 @@ from app.cli import parse_args
 from app.data_processor import run_autoencoder_pipeline, load_and_evaluate_encoder, load_and_evaluate_decoder
 from app.config import DEFAULT_VALUES
 from app.plugin_loader import load_plugin
-from config_merger import merge_config, process_unknown_args
+from app.config_merger import merge_config, process_unknown_args
 from typing import Any, Dict
 import tensorflow as tf
 

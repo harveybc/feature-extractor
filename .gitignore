@@ -141,3 +141,6 @@ logs/
 # Others
 secrets.py
 credentials.ini
+
+# Agent quickstart output directory (see AGENTS.md)
+quickstart_out/

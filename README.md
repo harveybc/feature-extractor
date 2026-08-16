@@ -16,6 +16,14 @@ data-engineering pipeline.
 `feature-extractor` 0.1.0). Maintained as the representation-learning stage
 between preprocessing and predictor training.
 
+## Run this with an AI agent
+
+Paste this into Claude Code, Cursor, Codex, GitHub Copilot or any coding agent with shell access:
+
+> Read `AGENTS.md` in this repository and follow the **Agent quickstart** section end to end: set up the environment, run the smoke test, execute the example encoding run, then tell me the exact file paths or URL where I can see the results and one analysis I should try first.
+
+`AGENTS.md` is the [agents.md](https://agents.md) convention, read natively by most coding agents.
+
 ## Role and non-responsibilities
 
 `feature-extractor` trains and evaluates autoencoders and exports encoder /
@@ -109,7 +117,11 @@ reads training/validation/test CSVs from
 [`examples/data/phase_3/`](examples/data/phase_3) and writes models, metrics
 and plots under `examples/results/`. Full training is long-running and was not
 executed for this README; `--help` and plugin imports were verified as listed
-above. Additional configs cover `phase_3_2_daily`, `phase_4_1` and `phase_4_2`
+above.
+
+Without the predictor package installed alongside, the pipeline stops before
+training (verified): after loading the encoder and decoder plugins it prints
+`Plugin stl_preprocessor not found in group preprocessor.plugins` and exits 1. Additional configs cover `phase_3_2_daily`, `phase_4_1` and `phase_4_2`
 under [`examples/config/`](examples/config), with matching driver scripts in
 [`examples/scripts/`](examples/scripts).
 
@@ -127,11 +139,12 @@ Its `.keras`/`.h5` artifacts are plain files consumed by other repositories.
 ## Tests
 
 ```bash
-python -m pytest -q --collect-only
+python -m pytest tests -q --continue-on-collection-errors
 ```
 
-Observed result (2026-08-10, Python 3.12.13): `12 tests collected, 6 errors` —
-part of the suite under [`tests/`](tests) fails to collect. Treat the test
+Observed result (Python 3.12.13, TensorFlow 2.21.0): `10 failed, 2 passed,
+6 errors` — part of the suite under [`tests/`](tests) fails to collect, and most
+of what does collect is written against an older plugin API. Treat the test
 suite as needing repair; the import and `--help` checks above are the current
 smoke validation.
 

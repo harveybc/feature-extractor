@@ -12,6 +12,20 @@ data-engineering pipeline.
 
 ## Status
 
+**Publication update (2026-09-14):** this branch includes the
+[governed-run adapter](tools/governed_run.py), profile test and agent setup
+guide. The adapter delegates to [data-gov](https://github.com/harveybc/data-gov);
+set `DATA_GOV_CHECKOUT` when the checkouts are not siblings. A passing profile
+test is not a completed autoencoder training run. The external preprocessor
+dependency and incomplete artifact coverage remain integration limitations.
+
+This autoencoder implementation is an antecedent of the
+[doctoral proposal on modular temporal representations](https://github.com/harveybc/predictor/blob/master/docs/propuesta_doctoral_representaciones_temporales_modulares.pdf),
+not an implementation of all its proposed experiments. Reconstruction quality
+alone does not establish downstream forecasting or RL performance.
+See the [repository map](https://github.com/harveybc/predictor/blob/master/docs/RESEARCH_STACK.md)
+for the separation between feature engineering, learned representations and training.
+
 **Active component** of the harveybc trading stack (package
 `feature-extractor` 0.1.0). Maintained as the representation-learning stage
 between preprocessing and predictor training.
@@ -20,7 +34,10 @@ between preprocessing and predictor training.
 
 Paste this into Claude Code, Cursor, Codex, GitHub Copilot or any coding agent with shell access:
 
-> Read `AGENTS.md` in this repository and follow the **Agent quickstart** section end to end: set up the environment, run the smoke test, execute the example encoding run, then tell me the exact file paths or URL where I can see the results and one analysis I should try first.
+> Read `AGENTS.md`, inspect the documented preprocessor dependency, and run the
+> import/CLI checks first. Attempt a bounded CPU encoding example only when
+> those dependencies are satisfied. Report actual outputs or the exact blocker;
+> do not describe a configured plugin as a completed training run.
 
 `AGENTS.md` is the [agents.md](https://agents.md) convention, read natively by most coding agents.
 

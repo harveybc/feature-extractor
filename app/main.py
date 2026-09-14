@@ -8,6 +8,7 @@ from app.cli import parse_args
 from app.data_processor import run_autoencoder_pipeline, load_and_evaluate_encoder, load_and_evaluate_decoder
 from app.config import DEFAULT_VALUES
 from app.plugin_loader import load_plugin
+from app.preprocessing_api import takes_target_plugin
 from app.config_merger import merge_config, process_unknown_args
 from typing import Any, Dict
 import tensorflow as tf
@@ -99,6 +100,21 @@ def main():
             print(f"Failed to load or initialize Preprocessor Plugin: {e}")
             sys.exit(1)
 
+        # The preprocessor of predictor takes a target plugin since predictor 9b7d611:
+        # run_preprocessing(self, target_plugin, config). It is loaded here, from the
+        # shared 'target.plugins' group, only when the preprocessor actually asks for one.
+        target_plugin = None
+        if takes_target_plugin(preprocessor_plugin.run_preprocessing):
+            target_plugin_name = config.get('target_plugin', 'default_target')
+            print(f"Loading Target Plugin ..{target_plugin_name}")
+            try:
+                target_class, _ = load_plugin('target.plugins', target_plugin_name)
+                target_plugin = target_class()
+                target_plugin.set_params(**config)
+            except Exception as e:
+                print(f"Failed to load or initialize Target Plugin '{target_plugin_name}': {e}")
+                sys.exit(1)
+
 
         # fusión de configuración, integrando parámetros específicos de plugin predictor
         print("Merging configuration with CLI arguments and unknown args (second pass, with plugin params)...")
@@ -107,6 +123,9 @@ def main():
         config = merge_config(config, decoder_plugin.plugin_params, {}, file_config, cli_args, unknown_args_dict)
         # fusión de configuración, integrando parámetros específicos de plugin pipeline
         config = merge_config(config, preprocessor_plugin.plugin_params, {}, file_config, cli_args, unknown_args_dict)
+        if target_plugin is not None:
+            config = merge_config(config, getattr(target_plugin, 'plugin_params', {}) or {}, {},
+                                  file_config, cli_args, unknown_args_dict)
         
 
         #encoder_plugin.set_params(**config)
@@ -114,7 +133,8 @@ def main():
         #preprocessor_plugin.set_params(**config)
 
         print("Processing and running autoencoder pipeline...")
-        run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin)
+        run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin,
+                                 target_plugin)
 
         if 'save_config' in config:
             if config['save_config'] != None:

@@ -28,6 +28,9 @@ DEFAULT_VALUES = {
 
     # --- Plugin Configuration ---
     "preprocessor_plugin": "stl_preprocessor",
+    # predictor's stl_preprocessor takes a target plugin since 9b7d611; named here, loaded
+    # from the shared "target.plugins" entry-point group only when the preprocessor asks.
+    "target_plugin": "default_target",
     'encoder_plugin': 'cnn', # Default encoder plugin
     'decoder_plugin': 'cnn', # Default decoder plugin
 

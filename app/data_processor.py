@@ -11,6 +11,8 @@ from tensorflow.keras.models import load_model # Changed
 from tensorflow.keras.utils import plot_model # Changed
 import matplotlib.pyplot as plt
 import traceback # Ensure traceback is imported for detailed error printing
+from app.preprocessing_api import align_timestamps
+from app.preprocessing_api import run_preprocessing as call_run_preprocessing
 
 
 # This utility function might still be useful for a preprocessor plugin,
@@ -65,11 +67,12 @@ def calculate_datetime_features(timestamps):
     ], axis=1)
 
 
-def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin):
+def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin,
+                             target_plugin=None):
     start_time = time.time()
-    
+
     tf.print("Loading/processing datasets via PreprocessorPlugin...")
-    datasets = preprocessor_plugin.run_preprocessing(config)
+    datasets = call_run_preprocessing(preprocessor_plugin, config, target_plugin)
     tf.print("PreprocessorPlugin finished.")
 
     x_train_data = datasets.get("x_train") 
@@ -174,7 +177,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     # Try to get timestamps from datasets, else from config
     timestamps = None
     if 'x_train_dates' in datasets:
-        timestamps = pd.to_datetime(datasets['x_train_dates'])
+        timestamps = pd.to_datetime(
+            align_timestamps(datasets['x_train_dates'], num_train_samples, split='train'))
     elif 'timestamps' in datasets:
         timestamps = pd.to_datetime(datasets['timestamps'])
     elif 'timestamps' in config:
@@ -199,7 +203,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         # --- PATCH: Always compute conditions_t_val from validation timestamps if available ---
         val_timestamps = None
         if 'x_val_dates' in datasets:
-            val_timestamps = pd.to_datetime(datasets['x_val_dates'])
+            val_timestamps = pd.to_datetime(
+                align_timestamps(datasets['x_val_dates'], num_val_samples, split='validation'))
         elif 'val_timestamps' in datasets:
             val_timestamps = pd.to_datetime(datasets['val_timestamps'])
         elif 'val_timestamps' in config:

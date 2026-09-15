@@ -4,6 +4,7 @@ import time # Added for execution_time
 import tensorflow as tf # Added for tf.print consistency
 from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import load_csv, write_csv
+from app.column_roles import contract_for
 # from app.reconstruction import unwindow_data 
 from app.config_handler import save_debug_info, remote_log, sanitize_dict_for_json
 import os # Add os import for load_and_evaluate_encoder/decoder path checks
@@ -708,7 +709,15 @@ def load_and_evaluate_decoder(config):
     if not os.path.exists(z_t_input_file):
         raise FileNotFoundError(f"Input file for z_t samples not found: {z_t_input_file}")
 
-    z_t_df = load_csv(file_path=z_t_input_file, headers=True, force_date=False) 
+    # `force_date=False` was passed to a function that has no such parameter, so this path
+    # raised TypeError before reading a byte (R1). The contract travels instead: these are
+    # latent samples, not the main series, so they carry their own roles under
+    # `column_roles_by_file` keyed by the configuration entry that names the file.
+    z_t_key = ("evaluate_encoder_output_for_decoder" if config.get(
+        "evaluate_encoder_output_for_decoder") else
+        "evaluate_encoder" if config.get("evaluate_encoder") else "x_test_file_for_z_samples")
+    z_t_df = load_csv(file_path=z_t_input_file, headers=True,
+                      config=contract_for(config, z_t_key))
     z_t_data = z_t_df.to_numpy()
 
     num_samples_eval = z_t_data.shape[0]

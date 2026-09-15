@@ -104,3 +104,69 @@ def test_the_declared_legacy_migration_still_loads_everything(tmp_path):
     assert list(data.columns) == ["OPEN", "CLOSE"]
     assert config["column_roles_applied"]["input_file"]["migration"] == (
         "LEGACY_ALL_COLUMNS_ARE_FEATURES")
+
+
+# --- R1: the callers, and the per-file contract they carry -------------------------------
+
+def test_no_caller_passes_a_parameter_the_loader_does_not_have():
+    """`load_csv(..., force_date=False)` raised TypeError before reading a byte.
+
+    The rule is not "that one line": it is that every call in the application binds against
+    the real signature. `inspect.Signature.bind` is that check, applied to each call site.
+    """
+    import ast
+    import inspect
+    from pathlib import Path
+
+    from app import data_handler
+
+    signature = inspect.signature(data_handler.load_csv)
+    app = Path(__file__).resolve().parents[1] / "app"
+    checked = 0
+    for module in sorted(app.glob("*.py")):
+        tree = ast.parse(module.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            name = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
+            if name != "load_csv":
+                continue
+            keywords = {kw.arg for kw in node.keywords if kw.arg}
+            positional = len(node.args)
+            checked += 1
+            signature.bind_partial(*([None] * positional),
+                                   **{key: None for key in keywords})
+    assert checked, "no load_csv call site was found to check"
+
+
+def test_a_second_input_file_carries_its_own_roles(tmp_path):
+    """Latent samples are not the main series: the main contract must not be forced on them."""
+    from app.column_roles import contract_for
+
+    config = {"column_roles": CONTRACT,
+              "column_roles_by_file": {"x_test_file_for_z_samples": {"features": ["z_0",
+                                                                                  "z_1"]}}}
+    path = tmp_path / "z.csv"
+    pd.DataFrame({"z_0": [0.1, 0.2], "z_1": [0.3, 0.4]}).to_csv(path, index=False)
+    data = load_csv(str(path), headers=True,
+                    config=contract_for(config, "x_test_file_for_z_samples"))
+    assert list(data.columns) == ["z_0", "z_1"]
+
+
+def test_a_second_file_without_its_own_roles_is_refused_by_name(tmp_path):
+    """Silence must not become "every column is a feature" through the side door."""
+    from app.column_roles import contract_for
+
+    config = {"column_roles": CONTRACT}
+    path = tmp_path / "z.csv"
+    pd.DataFrame({"z_0": [0.1, 0.2]}).to_csv(path, index=False)
+    with pytest.raises(ColumnRoleError, match="x_test_file_for_z_samples"):
+        contract_for(config, "x_test_file_for_z_samples")
+
+
+def test_the_declared_migration_still_covers_every_file():
+    from app.column_roles import contract_for
+
+    config = {"column_roles_migration": "LEGACY_ALL_COLUMNS_ARE_FEATURES"}
+    assert contract_for(config, "anything") == {
+        "column_roles_migration": "LEGACY_ALL_COLUMNS_ARE_FEATURES"}

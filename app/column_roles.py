@@ -204,6 +204,37 @@ def select_features(frame, plan: RolePlan):
     return selected
 
 
+def contract_for(config: dict, file_key: str) -> dict:
+    """The configuration slice that describes **one** input file.
+
+    A run reads more than one file and they do not share a schema: the main series is OHLC,
+    the latent samples handed to a decoder are `z_0..z_n`. Applying the main contract to both
+    would refuse the second for carrying undeclared columns, and applying none would bring the
+    old "every column is a feature" behaviour back through the side door. So a per-file
+    contract is declared under `column_roles_by_file`, keyed by the configuration key that
+    names the file:
+
+        "column_roles_by_file": {"x_test_file_for_z_samples": {"features": ["z_0", "z_1"]}}
+
+    Falling back, in order: the per-file contract, the run's own `column_roles` (for the main
+    input), the explicit legacy migration, and otherwise the configuration unchanged — which
+    refuses and says what to declare.
+    """
+    config = config or {}
+    by_file = config.get("column_roles_by_file") or {}
+    if isinstance(by_file, dict) and by_file.get(file_key):
+        return {"column_roles": by_file[file_key]}
+    if config.get("column_roles_migration"):
+        return {"column_roles_migration": config["column_roles_migration"]}
+    if config.get("column_roles"):
+        raise ColumnRoleError(
+            f"this run declares column_roles for its main input but nothing for {file_key!r}. "
+            "A second file is not covered by the first file's contract: declare its roles "
+            f"under column_roles_by_file[{file_key!r}], or declare "
+            f"column_roles_migration: {LEGACY!r} to read it the old way on purpose")
+    return config
+
+
 def record_of(config: dict, columns) -> dict:
     """Convenience for callers that only want the receipt entry."""
     return resolve(config, columns).as_record()

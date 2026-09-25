@@ -1,3 +1,5 @@
+"""LSTM encoder plugin: attention and two bidirectional LSTM layers."""
+
 import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
@@ -33,8 +35,11 @@ def positional_encoding(position, d_model):
 
 
 class Plugin:
-    """
-    An encoder plugin using a convolutional neural network (CNN) based on Keras, with dynamically configurable size.
+    """Encoder: positional encoding, attention, two BiLSTM layers.
+
+    The window gets a sinusoidal positional encoding and one multi-head self-attention block with a residual
+    and layer normalization, then average pooling, two bidirectional LSTM layers and a second pooling, so the
+    sequence is reduced by four and carries `2 x lstm_units` features.
     """
 
     plugin_params = {

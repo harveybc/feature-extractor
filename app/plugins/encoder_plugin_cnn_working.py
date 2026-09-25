@@ -1,3 +1,5 @@
+"""Unregistered CNN spare: Conv1D stack ending in a Dense latent vector."""
+
 import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input, BatchNormalization
@@ -9,10 +11,10 @@ from tensorflow.keras.regularizers import l2
 import tensorflow as tf
 
 class Plugin:
-    """
-    A CNN-based encoder plugin for feature extraction using Keras.
-    This architecture is adapted from a CNN predictor and outputs a latent vector
-    of dimension equal to the desired interface size.
+    """Unregistered spare: a Conv1D stack ending in a Dense latent vector.
+
+    Declared in no entry-point group, so nothing can select it by name. Unlike the registered `cnn` encoder
+    it flattens and projects to `interface_size`, returning a flat latent vector.
     """
     plugin_params = {
         'batch_size': 128,

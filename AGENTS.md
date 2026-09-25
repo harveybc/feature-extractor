@@ -167,7 +167,7 @@ on GitHub was not checked. No formatter is configured.
 | `app/autoencoder_manager.py`, `app/autoencoder_helper.py` | Model assembly and training loop |
 | `app/data_processor.py` | Pipeline: preprocessing call, training, prediction, evaluation |
 | `app/reconstruction.py`, `app/data_handler.py` | Reconstruction and CSV IO |
-| `app/plugins/` | Encoder/decoder plugins: `ann`, `cnn`, `lstm`, `transformer`, `vae`, `vae_small` (plus unregistered `*_working.py` spares) |
+| `app/plugins/` | Encoder/decoder plugins: `ann`, `cnn`, `lstm`, `rnn`, `transformer`, `vae`, `vae_small` (plus unregistered `*_working.py` spares) |
 | `examples/config/` | Phase 3.2 / 4.1 / 4.2 JSON configs |
 | `examples/data/phase_3/` | Committed normalized `base_d1..d6` / `normalized_d1..d6` CSVs |
 | `examples/results/` | Committed model artifacts, metrics and plots from historical runs |
@@ -185,10 +185,23 @@ on GitHub was not checked. No formatter is configured.
   `setup.py`; the preprocessing stage comes from the external
   `preprocessor.plugins` group. A plugin implements `plugin_params`,
   `set_params`, `configure_size`, `train`, `encode`/`decode`, `save`, `load`.
-- **Broken entry points**: `rnn` and `cnn_signed` are registered in `setup.py`
-  but the modules do not exist; selecting them fails with `ModuleNotFoundError`.
-  Do not "fix" them by pointing at the `*_working.py` files without checking
-  what those actually implement.
+- **Entry points and their modules must match**: every name in
+  `feature_extractor.encoders` / `.decoders` must resolve to a module in
+  `app/plugins/`. Registries in this stack are read by name from outside the
+  repository (M5PHET's `catalog_extractors()` parses `setup.py` and labels each
+  option with the plugin's own docstring first line), so a declaration without a
+  module is a broken option, and a copy-pasted docstring is a wrong label. As of
+  2026-09-25 `rnn` is implemented (`encoder_plugin_rnn.py`,
+  `decoder_plugin_rnn.py`, tests in `tests/unit_tests/test_encoder_plugin_rnn.py`)
+  and `cnn_signed` has been removed from `setup.py` — its modules never existed
+  here and nothing records what "signed" meant. Do not "fix" a missing plugin by
+  pointing at the `*_working.py` files without checking what those implement.
+- **One truthful docstring line per plugin**: the first line of each plugin
+  module and of its `Plugin` class is the label an external chooser shows. Write
+  what that plugin does, read from its own code (`vae`, for instance, builds the
+  same two strided Conv1D layers as `cnn` and performs no sampling; `vae_small`
+  is the one with mean/log-variance). Keep it under ~60 characters: longer lines
+  are truncated by the reader.
 - **Data contract**: input CSVs have a `DATE_TIME` column plus numeric feature
   columns, already normalized by the preprocessor repository; the phase_3
   samples have 44 feature columns. `use_normalization_json` points at the

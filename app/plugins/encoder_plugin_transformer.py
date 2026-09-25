@@ -1,3 +1,5 @@
+"""Transformer encoder plugin: attention, then two strided Conv1D layers."""
+
 import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
@@ -33,8 +35,11 @@ def positional_encoding(position, d_model):
 
 
 class Plugin:
-    """
-    An encoder plugin using a convolutional neural network (CNN) based on Keras, with dynamically configurable size.
+    """Encoder: positional encoding, attention, strided Conv1D.
+
+    One multi-head self-attention block (residual + layer normalization) over the positionally encoded
+    window, followed by two Conv1D layers of stride 2 that reduce the sequence by four. There is no
+    recurrence and no transformer feed-forward stack beyond those convolutions.
     """
 
     plugin_params = {

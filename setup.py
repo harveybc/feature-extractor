@@ -15,7 +15,6 @@ setup(
             'transformer=app.plugins.encoder_plugin_transformer:Plugin',
             'lstm=app.plugins.encoder_plugin_lstm:Plugin',
             'cnn=app.plugins.encoder_plugin_cnn:Plugin',
-            'cnn_signed=app.plugins.encoder_plugin_cnn_signed:Plugin',  
             'vae=app.plugins.encoder_plugin_vae:Plugin',
             'vae_small=app.plugins.encoder_plugin_vae_small:Plugin',
         ],
@@ -26,7 +25,6 @@ setup(
             'transformer=app.plugins.decoder_plugin_transformer:Plugin',
             'lstm=app.plugins.decoder_plugin_lstm:Plugin',
             'cnn=app.plugins.decoder_plugin_cnn:Plugin',
-            'cnn_signed=app.plugins.decoder_plugin_cnn_signed:Plugin',
             'vae=app.plugins.decoder_plugin_vae:Plugin',
             'vae_small=app.plugins.decoder_plugin_vae_small:Plugin',
         ]

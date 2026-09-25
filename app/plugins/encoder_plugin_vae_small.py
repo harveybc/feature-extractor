@@ -1,3 +1,5 @@
+"""Small CVAE encoder plugin: per-step inference network returning mean and log-variance."""
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Model, load_model, save_model
@@ -28,12 +30,11 @@ def positional_encoding(position, d_model):
     return tf.cast(pos_encoding, dtype=tf.float32)
     
 class Plugin:
-    """
-    Plugin to define and manage a per-step inference network (encoder-like component)
-    for a sequential, conditional generative model (e.g., CVAE for time series).
-    This network takes a window of current inputs (x_window_t), a recurrent context (h_{t-1}),
-    and other conditions (conditions_t) to output parameters for the latent variable z_t.
-    Uses a configurable Conv1D -> BiLSTM architecture.
+    """Per-step CVAE inference network: mean and log-variance.
+
+    The encoder-like half of a sequential conditional generative model for time series: it takes a window of
+    current inputs (x_window_t), a recurrent context (h_{t-1}) and other conditions (conditions_t), and
+    outputs the parameters of the latent variable z_t through a configurable Conv1D -> BiLSTM stack.
     """
 
     plugin_params = {

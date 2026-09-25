@@ -61,8 +61,8 @@ Encoder/decoder plugins are discovered through the entry-point groups
 | `transformer` | [`app/plugins/encoder_plugin_transformer.py`](app/plugins/encoder_plugin_transformer.py) | [`app/plugins/decoder_plugin_transformer.py`](app/plugins/decoder_plugin_transformer.py) | working |
 | `vae` | [`app/plugins/encoder_plugin_vae.py`](app/plugins/encoder_plugin_vae.py) | [`app/plugins/decoder_plugin_vae.py`](app/plugins/decoder_plugin_vae.py) | working (conditional VAE with configurable target features) |
 | `vae_small` | [`app/plugins/encoder_plugin_vae_small.py`](app/plugins/encoder_plugin_vae_small.py) | [`app/plugins/decoder_plugin_vae_small.py`](app/plugins/decoder_plugin_vae_small.py) | working |
-| `rnn` | — | — | **broken**: registered in `setup.py` but the modules do not exist |
-| `cnn_signed` | — | — | **broken**: registered in `setup.py` but the modules do not exist |
+| `rnn` | [`app/plugins/encoder_plugin_rnn.py`](app/plugins/encoder_plugin_rnn.py) | [`app/plugins/decoder_plugin_rnn.py`](app/plugins/decoder_plugin_rnn.py) | working (two recurrent layers, `SimpleRNN` or `GRU` by the `rnn_type` parameter) |
+| `cnn_signed` | — | — | **removed from `setup.py`** (2026-09-25): the modules never existed here and nothing recorded what "signed" meant — see Limitations |
 
 The windowing/decomposition step is loaded from the **external**
 `preprocessor.plugins` entry-point group (default plugin name
@@ -98,8 +98,8 @@ Verified in the maintainer environment (Python 3.12.13, TensorFlow with GPU,
 - `python -c "import app.plugins.encoder_plugin_vae, app.plugins.decoder_plugin_vae, app.plugins.encoder_plugin_cnn"`
   → `fe plugin imports OK`.
 - `python -m app.main --help` → prints the full CLI usage.
-- `python -c "import app.plugins.encoder_plugin_rnn"` →
-  `ModuleNotFoundError` (see Limitations).
+- `python -c "import app.plugins.encoder_plugin_rnn"` → imports (the module was
+  added on 2026-09-25; before that it raised `ModuleNotFoundError`).
 
 ## Quickstart
 
@@ -171,12 +171,30 @@ smoke validation.
 
 ## Limitations
 
-- The `rnn` and `cnn_signed` encoder/decoder entry points in
-  [`setup.py`](setup.py) point at modules that do not exist
-  (`app/plugins/encoder_plugin_rnn.py`, `app/plugins/encoder_plugin_cnn_signed.py`
-  and their decoder counterparts); selecting them fails with
-  `ModuleNotFoundError` (verified). The `*_working.py` variants in
-  [`app/plugins/`](app/plugins) are unregistered spares.
+- The `cnn_signed` encoder/decoder entry points were **removed** from
+  [`setup.py`](setup.py) on 2026-09-25. They pointed at
+  `app/plugins/encoder_plugin_cnn_signed.py` and its decoder counterpart, which
+  are not in the checkout; the versions in git history (deleted in `955a63a`)
+  use the older `configure_size(input_shape, interface_size, num_channels,
+  use_sliding_windows)` signature over a single channel, carry the same
+  copy-pasted CNN docstring as their siblings, and nothing in them or in the
+  history says what "signed" meant. Restoring them would have meant guessing an
+  interface and a semantics, so the declaration was removed instead of being
+  made to point at an invented module. A declared plugin whose module is absent
+  is a wrong option for anything that reads this registry by name (M5PHET's
+  `catalog_extractors()` offered `cnn_signed` with the key as its label).
+- The `rnn` entry points were the other half of that problem and were
+  **implemented** instead: `encoder_plugin_rnn.py` and `decoder_plugin_rnn.py`
+  follow the same interface as the `lstm` pair (`plugin_params`, `set_params`,
+  `configure_size(..., config=...)`, `encode`/`decode`, `save`, `load`), stack
+  two `SimpleRNN` (or `GRU`) layers and reduce the window by four, exactly as
+  the `lstm` encoder does, so the decoder's shape arithmetic matches. The deleted
+  historical `RNNEncoderPlugin` (commit `3ae2332`) was not restored: it exported
+  the wrong class name and the pre-`config` signature. Unit tests:
+  [`tests/unit_tests/test_encoder_plugin_rnn.py`](tests/unit_tests/test_encoder_plugin_rnn.py)
+  (8 passed, CPU, untrained weights — wiring and shapes, not quality).
+- The `*_working.py` variants in [`app/plugins/`](app/plugins) are unregistered
+  spares.
 - Running the pipeline requires an external package that provides the
   `preprocessor.plugins` entry-point group (predictor); the group name is also
   claimed by other repositories in the stack, so co-installations can shadow

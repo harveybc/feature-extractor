@@ -11,10 +11,21 @@ import tensorflow as tf
 class Plugin:
     """
     A CNN-based encoder plugin for feature extraction using Keras.
-    This architecture is adapted from a CNN predictor and outputs a latent vector
-    of dimension equal to the desired interface size.
+
+    Latent layout (declared for FS17, 2026-10-01): the output is TEMPORAL,
+    shape ``(batch, window_size / 4, branch_units)`` -- two Conv1D layers with
+    ``strides=2`` each, ``padding='same'``, no Flatten. It is NOT a pooled
+    "latent vector" and it is NOT on the recipe's 24-step common grid: the grid
+    change is declared as the adapter ``strided_conv1d_x4`` (``window_size/4``
+    steps, e.g. 288 -> 72). That adapter is declared, not yet validated by an
+    FS04 test, so a card using this encoder must state ``ADAPTER_DECLARED`` with
+    its validation pending; the 24-step AE control lives in the predictor's
+    modular engine (lane A), where branches keep every input step.
     """
     plugin_params = {
+        # FS17 declarations: what this encoder emits, read by app.representation_card cards
+        "latent_layout": "temporal",
+        "grid_adapter": "strided_conv1d_x4",
 
         "activation": "tanh",
         'intermediate_layers': 3, 

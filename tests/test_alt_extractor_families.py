@@ -146,3 +146,20 @@ def test_p2c_past_never_overlaps_current():
     assert set(np.unique(lin)) == {0, 1, 2}
     with pytest.raises(ValueError):
         F.sample_p2c_pairs(rng, 1000, T, T - 1, 3, 10)
+
+
+def test_compatible_with_lane_d_interface(mtae, p2c):
+    """Lane D's TemporalBatch feeds these encoders unchanged (skipped until lane D lands)."""
+    U = pytest.importorskip("app.univariate_temporal")
+    assert tuple(U.INPUT_NAMES) == F.ENCODER_INPUTS
+    rng = np.random.default_rng(3)
+    n = T + 40
+    ts = (1_700_000_000 // 3600) * 3600 + 3600 * np.arange(n, dtype=np.int64)
+    x = np.cumsum(rng.normal(size=n)).astype(np.float32)
+    obs = rng.random(n) > 0.1
+    norm = U.Normalization.fit(x, obs, np.arange(n))
+    b = U.make_windows(ts, x, obs, np.arange(T - 1, T - 1 + 8), T, norm)
+    assert b.calendar.shape[2] == C
+    for enc in (mtae[0], p2c[0]):
+        z = F.encode(enc, b.as_inputs())
+        assert z.shape == (8, T, D)

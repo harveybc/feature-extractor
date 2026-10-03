@@ -47,6 +47,7 @@ from app import temporal_extractor_metrics as M
 from app import univariate_temporal as U
 
 BATCH_SCHEMA = "ps2_batch.v1"
+CONTIGUOUS_PRETEXT_FAMILIES = ("past_to_current_siamese",)
 RUN_SCHEMA = "ut_pilot_run.v1"
 
 
@@ -178,9 +179,7 @@ def _family_kwargs(fam: str, a) -> dict:
     if U.FAMILIES[fam].status == U.IMPLEMENTED_LANE_F:
         kw = {"corruption": {"type": "pretext_mask", "ratio": a.pretext_mask_ratio},
               "alt": {"max_lag": a.p2c_max_lag or None, "pairs_per_epoch": a.p2c_pairs_per_epoch}}
-        if fam == "past_to_current_siamese" and (a.max_fit_windows or a.max_val_windows):
-            raise U.ContractError("past_to_current_siamese needs contiguous windows; unset --max_*_windows")
-        return kw
+        return kw  # P2C with --max_*_windows: pretext trains on all consecutive anchors (see run_pilot)
     return {}
 
 
@@ -230,8 +229,9 @@ def run_pilot(a) -> dict:
         ref_lat = {fam: {} for fam in families}
         probe_losses = {}
         for fold in folds:
-            fi = _even_subset(U.fold_anchor_indices(ts, fold.fit), a.max_fit_windows)
-            vi = _even_subset(U.fold_anchor_indices(ts, fold.val), a.max_val_windows)
+            fi_all, vi_all = U.fold_anchor_indices(ts, fold.fit), U.fold_anchor_indices(ts, fold.val)
+            fi = _even_subset(fi_all, a.max_fit_windows)
+            vi = _even_subset(vi_all, a.max_val_windows)
             norm = U.Normalization.fit(x, obs, U.covered_indices(fi, a.window))
             fit_b = U.make_windows(ts, x, obs, fi, a.window, norm, calendar=cal)
             val_b = U.make_windows(ts, x, obs, vi, a.window, norm, calendar=cal)
@@ -243,7 +243,28 @@ def run_pilot(a) -> dict:
             for fam in families:
                 ext = U.make_extractor(fam, cfg, a.seed, learning_rate=a.learning_rate, batch_size=a.batch_size,
                                        **_family_kwargs(fam, a))
-                rep = ext.fit(fit_b, val_b, es)
+                support = None
+                if fam in CONTIGUOUS_PRETEXT_FAMILIES and (fi.size != fi_all.size or vi.size != vi_all.size):
+                    # Lane F (2026-10-03): the past-to-current pretext samples (past, current) pairs from a
+                    # contiguous series, so it trains on ALL consecutive fit/val anchors of the fold; the
+                    # encodings, probes and every metric below use the same subsampled rows as the other
+                    # families. Normalization is the fold's (fit on the subset's covered span).
+                    tr_b = U.make_windows(ts, x, obs, fi_all, a.window, norm, calendar=cal)
+                    va_b = val_b if vi.size == vi_all.size else U.make_windows(ts, x, obs, vi_all, a.window,
+                                                                               norm, calendar=cal)
+                    rep = ext.fit(tr_b, va_b, es)
+                    support = {"pretext_train": "all_consecutive_fold_anchors", "probe_rows": "shared_subset",
+                               "n_pretext_fit_windows": int(fi_all.size), "n_pretext_val_windows": int(vi_all.size),
+                               "pretext_fit_row_ids_sha256": U.row_ids_sha256(tr_b.row_ids)}
+                    del tr_b, va_b
+                else:
+                    rep = ext.fit(fit_b, val_b, es)
+                if fam == "past_to_current_siamese":
+                    lag = int(ext.alt.get("max_lag") or 3 * a.window)
+                    support = dict(support or {"pretext_train": "probe_rows_consecutive"},
+                                   current_window_start_offset_steps=lag,
+                                   note="current windows start max_lag steps after the fold's first fit anchor; "
+                                        "the first max_lag anchors serve only as past windows")
                 t0 = time.perf_counter()
                 z_val = ext.encode(val_b)
                 lat_ms = 1000 * (time.perf_counter() - t0) / max(len(val_b), 1)
@@ -271,7 +292,7 @@ def run_pilot(a) -> dict:
                                "updates": rep.get("updates", 0), "epochs_run": rep.get("epochs_run", 0),
                                "params": int(ext.encoder.count_params()) if ext.encoder is not None else 0,
                                "encode_latency_ms_per_window": lat_ms},
-                      "donor": donor})
+                      "donor": donor, "pretext_support": support})
             if targets:
                 nf = len(fit_b)
                 rows = M.equal_probes(reps, cal_tail, {k: v[np.concatenate([fi, vi])] for k, v in targets.items()},

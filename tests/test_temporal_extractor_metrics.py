@@ -97,3 +97,33 @@ def test_pilot_end_to_end_on_synthetic_ps2_batch(tmp_path):
     json.dump(man, open(bdir / "batch_manifest.json", "w"))
     with pytest.raises(Exception):
         P.main(["--batch_dir", str(bdir), "--out_dir", str(tmp_path / "o2"), "--window", "24"])
+
+
+def test_pilot_p2c_trains_contiguous_but_probes_shared_subset(tmp_path):
+    """Lane F 2026-10-03: with --max_fit_windows the P2C pretext trains on all consecutive anchors,
+    while its encodings/probes use exactly the subsampled rows the other families use."""
+    from app import univariate_temporal_pilot as P
+    bdir = tmp_path / "batch_001"
+    P.write_synthetic_ps2_batch(str(bdir), n=600, features=("feat_a",), seed=0)
+    out = tmp_path / "out"
+    rc = P.main(["--batch_dir", str(bdir), "--out_dir", str(out), "--window", "24", "--latent_dim", "8",
+                 "--filters", "4", "--dilations", "1,2", "--max_epochs", "1", "--patience", "1",
+                 "--max_fit_windows", "20", "--p2c_max_lag", "24", "--p2c_pairs_per_epoch", "16",
+                 "--families", "identity,random,past_to_current_siamese,masked_temporal_ae"])
+    assert rc == 0
+    rows = [json.loads(l) for l in open(out / "results.jsonl")]
+    ff = [r for r in rows if r["kind"] == "fold_family"]
+    for fold in {r["fold_id"] for r in ff}:
+        by = {r["family"]: r for r in ff if r["fold_id"] == fold}
+        assert len({r["train_row_ids_sha256"] for r in by.values()}) == 1  # identical probe rows
+        assert {r["n_fit"] for r in by.values()} == {20}
+        sup = by["past_to_current_siamese"]["pretext_support"]
+        assert sup["pretext_train"] == "all_consecutive_fold_anchors"
+        assert sup["n_pretext_fit_windows"] > 20
+        assert sup["pretext_fit_row_ids_sha256"] != by["identity"]["train_row_ids_sha256"]
+        assert sup["current_window_start_offset_steps"] == 24
+        assert by["past_to_current_siamese"]["fit_report"]["n_train_windows"] == sup["n_pretext_fit_windows"]
+        assert by["masked_temporal_ae"]["pretext_support"] is None
+        assert by["masked_temporal_ae"]["fit_report"]["n_train_windows"] == 20
+    probes = [r for r in rows if r["kind"] == "probe" and r["representation"] == "past_to_current_siamese"]
+    assert probes and all(r["status"] == "MEASURED" for r in probes)

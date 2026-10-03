@@ -91,6 +91,33 @@ def load_train_npz(path: str):
     return x, ids
 
 
+UNIVARIATE_TEMPORAL_KEYS = ("signal", "observed_mask", "delta_time", "calendar")
+
+
+def load_univariate_temporal_npz(path: str):
+    """Typed materialized windows for the univariate temporal extractor.
+
+    Required: signal/observed_mask/delta_time (B,T,1) and calendar (B,T,C) float32,
+    split == 'train'. Optional: row_ids, anchor_ts. Any target-like key is refused:
+    targets never travel with the operational encoder inputs (FS03).
+    Returns app.univariate_temporal.TemporalBatch (validated).
+    """
+    from app import univariate_temporal as U
+    with np.load(path, allow_pickle=False) as z:
+        files = list(z.files)
+        U.check_no_target(files)
+        allowed = set(UNIVARIATE_TEMPORAL_KEYS) | {"row_ids", "anchor_ts", "split"}
+        extra = set(files) - allowed
+        if extra:
+            raise NpzContractError(f"unexpected keys in typed temporal NPZ: {sorted(extra)}")
+        if "split" not in files or str(z["split"]) != "train":
+            raise NpzContractError("typed temporal NPZ must declare split == 'train'")
+        arrays = {k: z[k] for k in UNIVARIATE_TEMPORAL_KEYS if k in files}
+        ids = z["row_ids"] if "row_ids" in files else None
+        ats = z["anchor_ts"] if "anchor_ts" in files else None
+    return U.TemporalBatch.from_inputs(arrays, row_ids=ids, anchor_ts=ats)
+
+
 def _build(steps: int, channels: int, latent_dim: int, filters: int):
     import tensorflow as tf
     L = tf.keras.layers

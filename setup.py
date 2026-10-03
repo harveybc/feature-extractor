@@ -17,6 +17,7 @@ setup(
             'cnn=app.plugins.encoder_plugin_cnn:Plugin',
             'vae=app.plugins.encoder_plugin_vae:Plugin',
             'vae_small=app.plugins.encoder_plugin_vae_small:Plugin',
+            'univariate_temporal=app.plugins.encoder_plugin_univariate_temporal:Plugin',
         ],
         'feature_extractor.decoders': [
             'default=app.plugins.decoder_plugin_ann:Plugin',

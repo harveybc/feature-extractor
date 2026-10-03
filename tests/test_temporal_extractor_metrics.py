@@ -80,14 +80,14 @@ def test_pilot_end_to_end_on_synthetic_ps2_batch(tmp_path):
     out = tmp_path / "out"
     rc = P.main(["--batch_dir", str(bdir), "--out_dir", str(out), "--window", "24", "--latent_dim", "8",
                  "--filters", "4", "--dilations", "1,2", "--max_epochs", "2", "--patience", "1",
-                 "--families", "identity,random,ae,dae", "--features", "feat_a"])
+                 "--families", "identity,random,ae,dae,masked_temporal_ae", "--features", "feat_a"])
     assert rc == 0
     run = json.load(open(out / "run_manifest.json"))
     assert run["batch_manifest_sha256"] and run["peak_rss_bytes"] > 0
     assert run["features"] == ["feat_a"]
     rows = [json.loads(l) for l in open(out / "results.jsonl")]
     fams = {r["family"] for r in rows if r["kind"] == "fold_family"}
-    assert fams == {"identity", "random", "ae", "dae"}
+    assert fams == {"identity", "random", "ae", "dae", "masked_temporal_ae"}
     assert any(r["kind"] == "feature_summary" and "stability" in r for r in rows)
     donors = [p for p in (out / "donors").rglob("donor_manifest.json")]
     assert donors and all(json.load(open(p))["train_scope"]["kind"] == "TRAIN_ONLY" for p in donors)

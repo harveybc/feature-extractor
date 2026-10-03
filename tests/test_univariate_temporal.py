@@ -140,10 +140,41 @@ def test_controls_share_interface_and_shape():
     assert exts["random"].encoder.count_params() == exts["ae"].encoder.count_params()
     assert exts["dae"].corruption == {"type": "gaussian_observed", "sigma": 0.1}
     assert exts["ae"].corruption is None
-    for slot in ("masked_temporal_ae", "past_to_current_siamese"):
-        assert U.FAMILIES[slot].status == "SLOT_RESERVED_FOR_LANE_F_PREP"
-        with pytest.raises(U.SlotNotImplemented):
-            U.make_extractor(slot, _cfg(), seed=0)
+    with pytest.raises(U.ContractError):
+        U.make_extractor("vae_of_the_week", _cfg(), seed=0)
+
+
+LANE_F_TINY = {"d_model": 8, "n_blocks": 1, "n_heads": 2, "max_lag": T, "pairs_per_epoch": 32}
+
+
+@pytest.mark.parametrize("family", ["masked_temporal_ae", "past_to_current_siamese"])
+def test_lane_f_slots_wired_through_the_same_interface(family, tmp_path):
+    """The two reserved slots run lane F's single implementation behind lane D's interface."""
+    assert U.FAMILIES[family].status == U.IMPLEMENTED_LANE_F
+    b, v = _batch(n_windows=40), _batch(n_windows=40, seed=5)
+    ext = U.make_extractor(family, _cfg(), seed=0, alt=LANE_F_TINY)
+    assert sorted(i.name for i in ext.encoder.inputs) == sorted(U.INPUT_NAMES)
+    rep = ext.fit(b, v, U.EarlyStopConfig(max_epochs=2, patience=1))
+    assert rep["restored_best_checkpoint"] and rep["updates"] > 0
+    z = ext.encode(b)
+    U.assert_temporal_output(z, len(b), T)
+    assert ext.reconstruct(b) is None  # NOT_APPLICABLE, not a failure (FS17)
+    p = b.copy_arrays()
+    p.signal[:, 13:, :] += 5.0 * p.observed_mask[:, 13:, :]
+    np.testing.assert_allclose(ext.encode(p)[:, :13], z[:, :13], atol=1e-5)
+    with pytest.raises(U.TargetLeakError):
+        ext.encode_inputs(dict(b.as_inputs(), Y_s=np.zeros((len(b), 6), np.float32)))
+    scope = U.TrainScope("TRAIN_ONLY", "train", "f0", int(b.anchor_ts[0]), int(b.anchor_ts[-1]),
+                         "d" * 64, U.row_ids_sha256(b.row_ids))
+    man = ext.export_donor(str(tmp_path / "d"), scope, feature_id="feat_a")
+    assert man["architecture_id"] == U.LANE_F_ARCHITECTURE_IDS[family]
+    enc2, _ = U.load_donor(str(tmp_path / "d"), "R2")
+    np.testing.assert_allclose(enc2.predict(b.as_inputs(), verbose=0), z, atol=1e-6)
+    enc0, rec0 = U.load_donor(str(tmp_path / "d"), "R0", seed=9)
+    assert rec0["initial_weights_sha256"] != man["weights_sha256"]
+    if family == "past_to_current_siamese":
+        with pytest.raises(U.ContractError):  # subsampled windows are not a contiguous series
+            ext.fit(b.subset(np.arange(0, 40, 2)), v, U.EarlyStopConfig(max_epochs=1, patience=1))
 
 
 # 6. TRAIN-only folds ----------------------------------------------------------

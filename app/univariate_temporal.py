@@ -17,7 +17,11 @@ Families share this interface:
     ae        causal Conv1D stem + residual dilated TCN + per-instant calendar fusion,
               trained with a causal decoder on masked reconstruction
     dae       same, with a declared corruption (gaussian on observed values) at training only
-    masked_temporal_ae, past_to_current_siamese: slots reserved for lane F-prep
+    masked_temporal_ae       lane F clean-room causal masked temporal AE (app.alt_extractor_families)
+    past_to_current_siamese  lane F clean-room past-to-current siamese (app.alt_extractor_families)
+                             needs contiguous TRAIN windows and >= max_lag of history before each one
+
+Interface status: FINAL for lanes E/F as of 2026-10-03 (ut_donor.v1, ps2_batch.v1).
 
 Plain AE caveat recorded in every manifest: with D >= input channels per instant
 there is no per-instant bottleneck, so reconstruction can be identity-like.
@@ -416,17 +420,23 @@ class FamilySpec:
     default_corruption: Optional[dict] = None
 
 
+IMPLEMENTED_LANE_F = "IMPLEMENTED_LANE_F"
 FAMILIES: Dict[str, FamilySpec] = {
     "identity": FamilySpec("identity", False, False, "none (raw control)"),
     "random": FamilySpec("random", False, False, "none (untrained, identical architecture)"),
     "ae": FamilySpec("ae", True, True, "masked causal reconstruction"),
     "dae": FamilySpec("dae", True, True, "masked causal reconstruction under declared corruption",
                       default_corruption={"type": "gaussian_observed", "sigma": 0.1}),
-    "masked_temporal_ae": FamilySpec("masked_temporal_ae", True, True, "masked temporal reconstruction",
-                                     status="SLOT_RESERVED_FOR_LANE_F_PREP"),
-    "past_to_current_siamese": FamilySpec("past_to_current_siamese", True, False, "past-to-current siamese",
-                                          status="SLOT_RESERVED_FOR_LANE_F_PREP"),
+    "masked_temporal_ae": FamilySpec("masked_temporal_ae", True, False,
+                                     "masked causal reconstruction of pretext-masked observed steps (lane F)",
+                                     status=IMPLEMENTED_LANE_F,
+                                     default_corruption={"type": "pretext_mask", "ratio": 0.5}),
+    "past_to_current_siamese": FamilySpec("past_to_current_siamese", True, False,
+                                          "masked current reconstruction attending to a strictly earlier "
+                                          "past window (lane F)", status=IMPLEMENTED_LANE_F,
+                                          default_corruption={"type": "pretext_mask", "ratio": 0.5}),
 }
+RUNNABLE_STATUSES = ("IMPLEMENTED", IMPLEMENTED_LANE_F)
 
 
 @dataclass(frozen=True)
@@ -497,6 +507,9 @@ class UnivariateTemporalExtractor:
             out = self.decoder(self.encoder(enc_in))
             self.training_model = keras.Model(inp, out, name=f"ut_{family}_training")
             self.training_model.compile(optimizer=keras.optimizers.Adam(self.learning_rate), loss="mse")
+
+    def extra_manifest(self) -> dict:
+        return {}
 
     # -- encode
     def encode_inputs(self, d: Dict[str, np.ndarray]) -> np.ndarray:
@@ -583,6 +596,7 @@ class UnivariateTemporalExtractor:
         self.encoder.save(enc_path)
         rep = dict(self.fit_report or {})
         rep.pop("weights_sha256_by_epoch", None)
+        rep.pop("history", None)
         man = {
             "schema": DONOR_SCHEMA, "family": self.family, "architecture_id": self.architecture_id,
             "arch_config": self.cfg.to_dict(), "arch_config_sha256": self.cfg.sha256(),
@@ -600,6 +614,7 @@ class UnivariateTemporalExtractor:
             "encoder_sha256": sha256_file(enc_path), "exported_without_decoder": True,
             "regimes": list(REGIMES), "operational_contract": "OPERATIONAL (inputs known at t; no target)",
         }
+        man.update(self.extra_manifest())
         _atomic_json(os.path.join(out_dir, "donor_manifest.json"), man)
         return man
 
@@ -607,9 +622,87 @@ class UnivariateTemporalExtractor:
 def make_extractor(family: str, cfg: ArchConfig, seed: int, **kw) -> UnivariateTemporalExtractor:
     if family not in FAMILIES:
         raise ContractError(f"unknown family {family!r}; declared: {sorted(FAMILIES)}")
-    if FAMILIES[family].status != "IMPLEMENTED":
+    if FAMILIES[family].status not in RUNNABLE_STATUSES:
         raise SlotNotImplemented(f"{family}: {FAMILIES[family].status}")
+    if FAMILIES[family].status == IMPLEMENTED_LANE_F:
+        return LaneFExtractor(family, cfg, seed, **kw)
     return UnivariateTemporalExtractor(family, cfg, seed, **kw)
+
+
+LANE_F_ARCHITECTURE_IDS = {"masked_temporal_ae": "lane_f_mtae_causal_attn_v1",
+                           "past_to_current_siamese": "lane_f_p2c_causal_attn_v1"}
+LANE_F_DEFAULTS = {"d_model": 32, "n_blocks": 2, "n_heads": 4, "dropout": 0.0,
+                   "max_lag": None, "n_lineage": 3, "pairs_per_epoch": 512}
+
+
+def batch_to_series(batch: TemporalBatch, period_seconds: int = 3600) -> Dict[str, np.ndarray]:
+    """Contiguous (L, ch) arrays from right-edge windows with consecutive anchors (no subsampling)."""
+    if len(batch) > 1 and np.any(np.diff(np.asarray(batch.anchor_ts, np.int64)) != period_seconds):
+        raise ContractError("past_to_current_siamese needs consecutive anchors; do not subsample its windows")
+    out = {}
+    for k, a in batch.as_inputs().items():
+        out[k] = np.concatenate([a[0], a[1:, -1, :]], axis=0) if len(batch) > 1 else a[0]
+    return out
+
+
+class LaneFExtractor(UnivariateTemporalExtractor):
+    """Adapter over app.alt_extractor_families (lane F); one implementation, same interface and donors."""
+
+    def __init__(self, family: str, cfg: ArchConfig, seed: int, learning_rate: float = 1e-3,
+                 batch_size: int = 64, corruption: Optional[dict] = None, alt: Optional[dict] = None,
+                 period_seconds: int = 3600):
+        from app import alt_extractor_families as F
+        self._F = F
+        spec = FAMILIES[family]
+        self.family, self.spec, self.cfg, self.seed = family, spec, cfg, int(seed)
+        self.learning_rate, self.batch_size, self.period_seconds = float(learning_rate), int(batch_size), period_seconds
+        self.corruption = corruption if corruption is not None else spec.default_corruption
+        self.alt = dict(LANE_F_DEFAULTS, **(alt or {}))
+        self.fit_report, self.decoder, self.training_model = None, None, None
+        self.architecture_id, self.latent_dim = LANE_F_ARCHITECTURE_IDS[family], cfg.latent_dim
+        self.enc_cfg = F.EncoderConfig(window=cfg.window, calendar_dims=cfg.calendar_dim, latent_dim=cfg.latent_dim,
+                                       d_model=self.alt["d_model"], n_blocks=self.alt["n_blocks"],
+                                       n_heads=self.alt["n_heads"], kernel_size=cfg.kernel_size,
+                                       dropout=self.alt["dropout"])
+        import keras
+        keras.utils.set_random_seed(self.seed)
+        self.encoder = F.build_causal_encoder(self.enc_cfg)  # untrained until fit
+        assert_temporal_encoder(self.encoder, cfg.window)
+
+    def extra_manifest(self) -> dict:
+        from dataclasses import asdict as _asdict
+        return {"alt_encoder_config": _asdict(self.enc_cfg), "alt_params": self.alt,
+                "implementation": "app.alt_extractor_families (lane F clean-room; not a paper reproduction)",
+                "per_instant_bottleneck": False}
+
+    def reconstruct(self, batch):
+        return None  # pretext reconstruction is defined on masked steps only; reported NOT_APPLICABLE
+
+    def fit(self, train: TemporalBatch, val: TemporalBatch, es: EarlyStopConfig) -> dict:
+        F, ratio = self._F, float(self.corruption["ratio"])
+        t0 = time.perf_counter()
+        common = dict(mask_ratio=ratio, epochs=es.max_epochs, patience=es.patience,
+                      batch_size=self.batch_size, lr=self.learning_rate, seed=self.seed)
+        if self.family == "masked_temporal_ae":
+            enc, trainer, res = F.fit_mtae(self.enc_cfg, train.as_inputs(), val.as_inputs(), **common)
+        else:
+            enc, trainer, res = F.fit_p2c(self.enc_cfg, batch_to_series(train, self.period_seconds),
+                                          batch_to_series(val, self.period_seconds), max_lag=self.alt["max_lag"],
+                                          n_lineage=self.alt["n_lineage"],
+                                          pairs_per_epoch=self.alt["pairs_per_epoch"], **common)
+        if res.best_epoch < 0:
+            raise TrainingDiverged("lane F fit produced no finite validation loss")
+        self.encoder, self.training_model = enc, trainer
+        n = len(res.history)
+        self.fit_report = {
+            "stop_reason": "patience" if n < es.max_epochs else "max_epochs", "epochs_run": n,
+            "best_epoch": res.best_epoch, "best_val_loss": float(res.best_val),
+            "val_loss_history": [h["val"] for h in res.history], "updates": int(res.updates),
+            "fit_wall_seconds": time.perf_counter() - t0, "n_train_windows": len(train),
+            "n_val_windows": len(val), "early_stop": asdict(es), "restored_best_checkpoint": True,
+            "min_delta_applied": False, "monitor": "lane F masked_mse on fixed validation pretext masks",
+        }
+        return self.fit_report
 
 
 _EXPECT_ALIASES = {"window": "window", "calendar_dim": "calendar_dim", "latent_dim": "latent_dim"}
@@ -646,7 +739,11 @@ def load_donor(donor_dir: str, regime: str, seed: Optional[int] = None, expected
     assert_temporal_encoder(enc, man["window"])
     if regime == "R0":
         keras.utils.set_random_seed(int(man["seed"]) + 1 if seed is None else int(seed))
-        enc = build_encoder(ArchConfig.from_dict(man["arch_config"]))
+        if man["architecture_id"] in LANE_F_ARCHITECTURE_IDS.values():
+            from app import alt_extractor_families as F
+            enc = F.build_causal_encoder(F.EncoderConfig(**man["alt_encoder_config"]))
+        else:
+            enc = build_encoder(ArchConfig.from_dict(man["arch_config"]))
         enc.trainable = True
     else:
         enc.trainable = regime == "R2"

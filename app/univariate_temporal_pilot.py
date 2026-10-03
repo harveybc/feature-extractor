@@ -164,6 +164,18 @@ def _even_subset(idx: np.ndarray, cap: int) -> np.ndarray:
     return idx[np.unique(np.linspace(0, idx.size - 1, cap).round().astype(int))]
 
 
+def _family_kwargs(fam: str, a) -> dict:
+    if fam == "dae":
+        return {"corruption": {"type": "gaussian_observed", "sigma": a.dae_sigma}}
+    if U.FAMILIES[fam].status == U.IMPLEMENTED_LANE_F:
+        kw = {"corruption": {"type": "pretext_mask", "ratio": a.pretext_mask_ratio},
+              "alt": {"max_lag": a.p2c_max_lag or None, "pairs_per_epoch": a.p2c_pairs_per_epoch}}
+        if fam == "past_to_current_siamese" and (a.max_fit_windows or a.max_val_windows):
+            raise U.ContractError("past_to_current_siamese needs contiguous windows; unset --max_*_windows")
+        return kw
+    return {}
+
+
 def run_pilot(a) -> dict:
     t_start = time.perf_counter()
     batch = read_ps2_batch(a.batch_dir)  # every digest verified before any fit
@@ -179,7 +191,7 @@ def run_pilot(a) -> dict:
         raise BatchContractError(f"features not in batch: {sorted(unknown)}")
     families = a.families.split(",")
     for fam in families:
-        if fam not in U.FAMILIES or U.FAMILIES[fam].status != "IMPLEMENTED":
+        if fam not in U.FAMILIES or U.FAMILIES[fam].status not in U.RUNNABLE_STATUSES:
             raise U.ContractError(f"family {fam!r} not runnable ({U.FAMILIES.get(fam)})")
     cal = U.calendar_features(ts)
     kc = man.get("known_calendar") or []
@@ -222,8 +234,7 @@ def run_pilot(a) -> dict:
             reps, cal_tail = {}, np.concatenate([fit_b.calendar, val_b.calendar])[:, -keep:, :]
             for fam in families:
                 ext = U.make_extractor(fam, cfg, a.seed, learning_rate=a.learning_rate, batch_size=a.batch_size,
-                                       **({"corruption": {"type": "gaussian_observed", "sigma": a.dae_sigma}}
-                                          if fam == "dae" else {}))
+                                       **_family_kwargs(fam, a))
                 rep = ext.fit(fit_b, val_b, es)
                 t0 = time.perf_counter()
                 z_val = ext.encode(val_b)
@@ -311,6 +322,9 @@ def parse(argv=None):
     p.add_argument("--batch_size", type=int, default=64)
     p.add_argument("--learning_rate", type=float, default=1e-3)
     p.add_argument("--dae_sigma", type=float, default=0.1)
+    p.add_argument("--pretext_mask_ratio", type=float, default=0.5, help="lane F families")
+    p.add_argument("--p2c_max_lag", type=int, default=0, help="0 = 3 * window (lane F default)")
+    p.add_argument("--p2c_pairs_per_epoch", type=int, default=512)
     p.add_argument("--max_fit_windows", type=int, default=0, help="0 = all; else evenly spaced subset")
     p.add_argument("--max_val_windows", type=int, default=0)
     p.add_argument("--max_ref_windows", type=int, default=256)

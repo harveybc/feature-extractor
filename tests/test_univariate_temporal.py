@@ -271,3 +271,29 @@ def test_donor_identity_mismatch_refused(tmp_path):
     with pytest.raises(U.DonorIdentityError):
         U.TrainScope(kind="TRAIN_ONLY", split="validation", fold_id="f0", fit_first_ts=0, fit_last_ts=1,
                      input_sha256="b" * 64, train_row_ids_sha256="x").validate()
+
+
+# 10. economic-calendar channels are refused (plan update 02434903, I11 deferred) --------
+def test_economic_calendar_channels_refused(tmp_path):
+    ts, _, _ = _series(n=50)
+    vals, pub = np.ones(50, np.float32), ts - 1
+    U.known_calendar_columns(ts, {"session_london": (vals, pub), "holiday_us": (vals, pub)})
+    for bad in ("usd_cpi_surprise", "nfp_actual", "event_importance", "fxmacro_consensus", "econ_flag",
+                "causal_dossier_eurusd", "rate_decision"):
+        with pytest.raises(U.EconomicCalendarInputError):
+            U.known_calendar_columns(ts, {bad: (vals, pub)})  # refused even when published at t
+        with pytest.raises(U.EconomicCalendarInputError):
+            U.check_not_economic_series(bad)
+    with pytest.raises(U.EconomicCalendarInputError):
+        U.check_not_economic_series("eurusd_close", source="fxmacrodata")
+    U.check_not_economic_series("eurusd_close", source="price")
+    with pytest.raises(U.EconomicCalendarInputError):  # undeclared extra calendar width
+        _cfg(calendar_dim=8)
+    with pytest.raises(U.EconomicCalendarInputError):
+        _cfg(calendar_dim=7, known_calendar=("us_cpi_surprise",))
+    assert _cfg(calendar_dim=7, known_calendar=("session_ny",)).calendar_dim == 7
+    from app import univariate_temporal_pilot as P
+    bdir = tmp_path / "batch_econ"
+    P.write_synthetic_ps2_batch(str(bdir), n=300, features=("feat_a", "usd_cpi_surprise"), seed=0)
+    with pytest.raises(U.EconomicCalendarInputError):
+        P.read_ps2_batch(str(bdir))

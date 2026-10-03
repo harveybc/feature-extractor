@@ -8,6 +8,12 @@ Operational interface (lane D, canonical selection-first plan 2026-10-03):
     calendar      (B, T, C_known)  sin/cos hour, day-of-week, day-of-year (+ columns published at t)
     latent        (B, T, D)        time axis preserved: no pooling, flatten or striding
 
+Calendar scope (plan update 02434903): `calendar` carries ONLY known time encodings
+(sin/cos hour, day-of-week, day-of-year) plus session/holiday columns published at t.
+Economic-calendar events, surprises, consensus/actual values and causal dossiers are
+never extractor inputs, neither as calendar channels nor as the signal (I11, deferred
+to the end of the programme): they are refused with EconomicCalendarInputError.
+
 The target is never an input of the operational encoder (FS03). It may only
 supervise probes (see temporal_extractor_metrics) or an offline generator.
 
@@ -51,6 +57,11 @@ IDENTITY_ARCHITECTURE_ID = "ut_identity_v1"
 INPUT_NAMES = ("signal", "observed_mask", "delta_time", "calendar")
 REGIMES = ("R0", "R1", "R2")
 CALENDAR_SPEC = ("sin_hour", "cos_hour", "sin_dow", "cos_dow", "sin_doy", "cos_doy")
+KNOWN_CALENDAR_NAME = re.compile(r"^(session|holiday)(_[a-z0-9]+)*$")
+_ECONOMIC_NAME = re.compile(r"(econ|macro|fxmacro|calendar_event|event|surprise|consensus|actual|previous|"
+                            r"revision|importance|release|announcement|cpi|nfp|payroll|gdp|pmi|rate_decision|"
+                            r"causal|dossier)", re.IGNORECASE)
+ECONOMIC_SOURCES = ("economic_calendar", "fxmacrodata", "macro_events", "causal_dossier")
 _TARGET_NAME = re.compile(r"^(y|y_.*|target.*|label.*|future.*)$", re.IGNORECASE)
 
 __all__ = ["row_ids_sha256", "sha256_file"]  # re-exported from the single adapter line
@@ -65,6 +76,10 @@ class TargetLeakError(ContractError):
 
 
 class CalendarLeakError(ContractError):
+    pass
+
+
+class EconomicCalendarInputError(ContractError):
     pass
 
 
@@ -94,6 +109,21 @@ def check_no_target(mapping) -> None:
     for k in mapping:
         if _TARGET_NAME.match(str(k)):
             raise TargetLeakError(f"{k!r} is a target-like name; targets never enter the operational encoder")
+
+
+def check_known_calendar_name(name: str) -> None:
+    """Only session/holiday style columns may extend the time encodings."""
+    if _ECONOMIC_NAME.search(str(name)) or not KNOWN_CALENDAR_NAME.match(str(name)):
+        raise EconomicCalendarInputError(
+            f"calendar column {name!r} refused: calendar is limited to time encodings and session/holiday "
+            f"published at t; economic-calendar events/surprises are not extractor inputs (I11)")
+
+
+def check_not_economic_series(feature_id: str, source: Optional[str] = None) -> None:
+    """A feature fed as `signal` must not be an economic-calendar event/surprise or causal dossier series."""
+    if (source and str(source).lower() in ECONOMIC_SOURCES) or _ECONOMIC_NAME.search(str(feature_id)):
+        raise EconomicCalendarInputError(
+            f"feature {feature_id!r} (source {source!r}) refused: economic-calendar/causal inputs are deferred (I11)")
 
 
 def assert_temporal_output(z, batch: int, window: int) -> None:
@@ -129,6 +159,7 @@ def known_calendar_columns(ts: np.ndarray, columns: Dict[str, Tuple[np.ndarray, 
     ts = np.asarray(ts, dtype=np.int64)
     out = []
     for name in sorted(columns):
+        check_known_calendar_name(name)
         values, published_at = columns[name]
         values = np.asarray(values, dtype=np.float32)
         published_at = np.asarray(published_at, dtype=np.int64)
@@ -307,16 +338,27 @@ class ArchConfig:
     dilations: Tuple[int, ...] = (1, 2, 4, 8, 16, 32)
     decoder_filters: int = 16
     decoder_dilations: Tuple[int, ...] = (1, 2)
+    known_calendar: Tuple[str, ...] = ()
+
+    def __post_init__(self):
+        for n in self.known_calendar:
+            check_known_calendar_name(n)
+        if self.calendar_dim != len(CALENDAR_SPEC) + len(self.known_calendar):
+            raise EconomicCalendarInputError(
+                f"calendar_dim {self.calendar_dim} != {len(CALENDAR_SPEC)} time encodings + "
+                f"{len(self.known_calendar)} declared session/holiday columns; undeclared channels are refused")
 
     def to_dict(self) -> dict:
         d = asdict(self)
         d["dilations"], d["decoder_dilations"] = list(self.dilations), list(self.decoder_dilations)
+        d["known_calendar"] = list(self.known_calendar)
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "ArchConfig":
         d = dict(d)
         d["dilations"], d["decoder_dilations"] = tuple(d["dilations"]), tuple(d["decoder_dilations"])
+        d["known_calendar"] = tuple(d.get("known_calendar", ()))
         return cls(**d)
 
     def sha256(self) -> str:
@@ -603,7 +645,8 @@ class UnivariateTemporalExtractor:
             "receptive_field_steps": self.cfg.receptive_field(),
             "seed": self.seed, "feature_id": feature_id, "window": self.cfg.window,
             "calendar_dim": self.cfg.calendar_dim, "latent_dim": self.cfg.latent_dim,
-            "input_names": list(INPUT_NAMES), "calendar_spec": list(CALENDAR_SPEC),
+            "input_names": list(INPUT_NAMES),
+            "calendar_spec": list(CALENDAR_SPEC) + list(self.cfg.known_calendar),
             "objective": self.spec.objective, "trained": bool(self.spec.trainable and self.fit_report),
             "corruption": self.corruption, "fit_report": rep,
             "per_instant_bottleneck": self.cfg.latent_dim < 3,

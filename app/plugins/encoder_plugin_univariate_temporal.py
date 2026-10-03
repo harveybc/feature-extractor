@@ -11,7 +11,7 @@ from app import univariate_temporal as U
 class Plugin:
     plugin_params = {"family": "ae", "window": 168, "calendar_dim": 6, "latent_dim": 8, "filters": 16,
                      "kernel_size": 3, "dilations": (1, 2, 4, 8, 16, 32), "seed": 0,
-                     "learning_rate": 1e-3, "batch_size": 64}
+                     "learning_rate": 1e-3, "batch_size": 64, "known_calendar": ()}
     plugin_debug_vars = ["family", "window", "latent_dim", "filters", "dilations", "seed"]
 
     def __init__(self):
@@ -31,7 +31,7 @@ class Plugin:
         p = self.params
         return U.ArchConfig(window=p["window"], calendar_dim=p["calendar_dim"], latent_dim=p["latent_dim"],
                             filters=p["filters"], kernel_size=p["kernel_size"], dilations=tuple(p["dilations"]),
-                            decoder_filters=p["filters"])
+                            decoder_filters=p["filters"], known_calendar=tuple(p["known_calendar"]))
 
     def configure_size(self, *args, **kwargs):
         p = self.params

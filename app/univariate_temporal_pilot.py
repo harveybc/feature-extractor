@@ -9,7 +9,8 @@ Consumed batch contract `ps2_batch.v1` (declared by lane D 2026-10-03; lane B pr
          "series":  {"file": "series.npz",  "sha256": "<64 hex>"},
          "targets": {"file": "targets.npz", "sha256": "<64 hex>"} | null,
          "features": ["<feature_id>", ...],          # PS2 survivors + exploratory sample
-         "known_calendar": ["<name>", ...],          # optional; published-at-t columns
+         "feature_sources": {"<feature_id>": "<source family>"},  # optional; economic sources refused
+         "known_calendar": ["session_<x>" | "holiday_<x>", ...],  # optional; published-at-t columns only
          "train_end_ts": <int epoch s>,               # last TRAIN timestamp; nothing later is read
          "folds": [{"fold_id": "f0", "split": "train",
                     "fit": [first_anchor_ts, last_anchor_ts],
@@ -22,6 +23,8 @@ Consumed batch contract `ps2_batch.v1` (declared by lane D 2026-10-03; lane B pr
                    Targets supervise probes only; they are never encoder inputs.
 
 Every digest is verified before any fit; a mismatch refuses the whole batch.
+Economic-calendar events/surprises and causal dossiers are refused as features or calendar
+columns (plan update 02434903, I11 deferred): the calendar is time encodings + session/holiday.
 Rows after train_end_ts are never windowed (only fold anchors are, all inside TRAIN).
 """
 from __future__ import annotations
@@ -64,6 +67,11 @@ def read_ps2_batch(batch_dir: str) -> dict:
     if man.get("schema") != BATCH_SCHEMA:
         raise BatchContractError(f"batch schema {man.get('schema')!r} != {BATCH_SCHEMA}")
     U.check_no_target(man.get("features", []))
+    sources = man.get("feature_sources") or {}
+    for f in man.get("features", []):  # economic-calendar/causal series are not extractor inputs (I11)
+        U.check_not_economic_series(f, sources.get(f))
+    for k in man.get("known_calendar") or []:
+        U.check_known_calendar_name(k)
     out = {"manifest": man, "manifest_sha256": _sha_bytes(raw)}
     for part in ("series", "targets"):
         spec = man.get(part)
@@ -200,7 +208,7 @@ def run_pilot(a) -> dict:
             ts, {k: (s[f"cal__{k}"], s[f"calpub__{k}"]) for k in kc})], axis=1)
     cfg = U.ArchConfig(window=a.window, calendar_dim=cal.shape[1], latent_dim=a.latent_dim, filters=a.filters,
                        kernel_size=a.kernel_size, dilations=tuple(int(d) for d in a.dilations.split(",")),
-                       decoder_filters=a.filters)
+                       decoder_filters=a.filters, known_calendar=tuple(kc))
     es = U.EarlyStopConfig(max_epochs=a.max_epochs, patience=a.patience, min_delta=a.min_delta)
     lags = tuple(int(l) for l in a.probe_lags.split(","))
     keep = max(lags) + 1

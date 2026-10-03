@@ -213,6 +213,37 @@ on GitHub was not checked. No formatter is configured.
 - No credentials belong in configs; `--username`/`--password` exist only for the
   optional remote config/log endpoints.
 
+## Univariate temporal extractor (canonical selection-first plan, lane D)
+
+Interface FINAL for lanes E/F as of 2026-10-03 (`app/univariate_temporal.py`,
+entry point `univariate_temporal`). Inputs `signal`, `observed_mask`, `delta_time`
+(B,T,1) and `calendar` (B,T,C); output latent (B,T,D) with T preserved. The target
+is never an encoder input; it only supervises probes
+(`app/temporal_extractor_metrics.py`). `calendar` is limited to sin/cos hour,
+day-of-week, day-of-year and declared `session_*`/`holiday_*` columns published at
+t; economic-calendar events/surprises and causal dossiers are refused as calendar
+columns or as features (I11, deferred). Families under one interface: `identity`,
+`random`, `ae`, `dae`, and lane F's `masked_temporal_ae`/`past_to_current_siamese`
+(`app/alt_extractor_families.py`). Donors are encoder-only with
+`donor_manifest.json` (`ut_donor.v1`) and load as R0/R1/R2 via `load_donor`, which
+refuses digest/identity mismatches before any fit.
+
+Pilot over one PS2 batch (contract `ps2_batch.v1`, documented in
+`app/univariate_temporal_pilot.py`), CPU form:
+
+```bash
+~/.local/bin/crispdm-run -q -m <1.25 x measured cgroup peak> -t 4h -n <unique-name> -- \
+  env CUDA_VISIBLE_DEVICES= python -m app.univariate_temporal_pilot \
+  --batch_dir <ps2 batch dir> --out_dir <out dir> --window 168 --latent_dim 8 --seed 0 \
+  --families identity,random,ae,dae
+```
+
+Outputs `results.jsonl` (fold_family, probe, probe_delta, feature_summary rows),
+`run_manifest.json` (digests, cost, `cgroup_peak_bytes`) and `donors/`.
+Probe deltas are computed against `identity` and `random` from the same run, so
+always include both controls. Tests: `tests/test_univariate_temporal.py`,
+`tests/test_temporal_extractor_metrics.py`, `tests/test_alt_extractor_families.py`.
+
 ## Do not touch
 
 - `examples/results/` — committed model files (`*.keras`, `*.h5`), metrics and

@@ -1,3 +1,5 @@
+"""CNN encoder plugin: two strided Conv1D layers reduce the window."""
+
 import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input, BatchNormalization
@@ -9,10 +11,10 @@ from tensorflow.keras.regularizers import l2
 import tensorflow as tf
 
 class Plugin:
-    """
-    A CNN-based encoder plugin for feature extraction using Keras.
-    This architecture is adapted from a CNN predictor and outputs a latent vector
-    of dimension equal to the desired interface size.
+    """Encoder of two strided Conv1D layers over the input window.
+
+    Both layers use kernel 3 and stride 2, so the window is reduced by four and the output is a SEQUENCE of
+    `initial_layer_size / layer_size_divisor` channels -- not a flat latent vector of `interface_size`.
     """
     plugin_params = {
 

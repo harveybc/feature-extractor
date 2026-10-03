@@ -1,0 +1,14 @@
+# Reproducible environment for the governed feature-extractor run (GOV-N5), 2026-09-14.
+# python3 -m venv <env> && pip install setuptools wheel && pip install -r requirements-governed.txt && pip install --no-deps <predictor checkout>
+# predictor (non-editable, --no-deps) supplies the preprocessor.plugins entry point stl_preprocessor; tensorflow-cpu replaces tensorflow-gpu.
+h5py==3.14.0
+keras==3.15.1
+keras-multi-head==0.29.0
+matplotlib==3.11.2
+numpy==2.5.3
+pandas==3.0.5
+predictor @ <predictor checkout, non-editable, --no-deps>
+scikit-learn==1.9.1
+scipy==1.18.1
+setuptools==84.0.0
+wheel==0.48.0

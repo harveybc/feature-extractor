@@ -1,3 +1,5 @@
+"""ANN encoder plugin: one Dense branch per input channel, concatenated."""
+
 import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
@@ -12,8 +14,11 @@ from tensorflow.keras.losses import Huber
 from keras.layers import Lambda, Concatenate
 
 class Plugin:
-    """
-    An encoder plugin using a convolutional neural network (CNN) based on Keras, with dynamically configurable size.
+    """Encoder of per-channel Dense branches over the window.
+
+    Each input channel is sliced out, flattened over the window and passed through `intermediate_layers`
+    Dense layers of `initial_layer_size` units; the branches are then concatenated into one tensor. There is
+    no convolution and no recurrence in this plugin.
     """
 
     plugin_params = {

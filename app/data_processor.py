@@ -4,6 +4,7 @@ import time # Added for execution_time
 import tensorflow as tf # Added for tf.print consistency
 from app.autoencoder_manager import AutoencoderManager
 from app.data_handler import load_csv, write_csv
+from app.column_roles import contract_for
 # from app.reconstruction import unwindow_data 
 from app.config_handler import save_debug_info, remote_log, sanitize_dict_for_json
 import os # Add os import for load_and_evaluate_encoder/decoder path checks
@@ -11,6 +12,8 @@ from tensorflow.keras.models import load_model # Changed
 from tensorflow.keras.utils import plot_model # Changed
 import matplotlib.pyplot as plt
 import traceback # Ensure traceback is imported for detailed error printing
+from app.preprocessing_api import align_timestamps
+from app.preprocessing_api import run_preprocessing as call_run_preprocessing
 
 
 # This utility function might still be useful for a preprocessor plugin,
@@ -65,11 +68,12 @@ def calculate_datetime_features(timestamps):
     ], axis=1)
 
 
-def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin):
+def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocessor_plugin,
+                             target_plugin=None):
     start_time = time.time()
-    
+
     tf.print("Loading/processing datasets via PreprocessorPlugin...")
-    datasets = preprocessor_plugin.run_preprocessing(config)
+    datasets = call_run_preprocessing(preprocessor_plugin, config, target_plugin)
     tf.print("PreprocessorPlugin finished.")
 
     x_train_data = datasets.get("x_train") 
@@ -174,7 +178,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
     # Try to get timestamps from datasets, else from config
     timestamps = None
     if 'x_train_dates' in datasets:
-        timestamps = pd.to_datetime(datasets['x_train_dates'])
+        timestamps = pd.to_datetime(
+            align_timestamps(datasets['x_train_dates'], num_train_samples, split='train'))
     elif 'timestamps' in datasets:
         timestamps = pd.to_datetime(datasets['timestamps'])
     elif 'timestamps' in config:
@@ -199,7 +204,8 @@ def run_autoencoder_pipeline(config, encoder_plugin, decoder_plugin, preprocesso
         # --- PATCH: Always compute conditions_t_val from validation timestamps if available ---
         val_timestamps = None
         if 'x_val_dates' in datasets:
-            val_timestamps = pd.to_datetime(datasets['x_val_dates'])
+            val_timestamps = pd.to_datetime(
+                align_timestamps(datasets['x_val_dates'], num_val_samples, split='validation'))
         elif 'val_timestamps' in datasets:
             val_timestamps = pd.to_datetime(datasets['val_timestamps'])
         elif 'val_timestamps' in config:
@@ -703,7 +709,15 @@ def load_and_evaluate_decoder(config):
     if not os.path.exists(z_t_input_file):
         raise FileNotFoundError(f"Input file for z_t samples not found: {z_t_input_file}")
 
-    z_t_df = load_csv(file_path=z_t_input_file, headers=True, force_date=False) 
+    # `force_date=False` was passed to a function that has no such parameter, so this path
+    # raised TypeError before reading a byte (R1). The contract travels instead: these are
+    # latent samples, not the main series, so they carry their own roles under
+    # `column_roles_by_file` keyed by the configuration entry that names the file.
+    z_t_key = ("evaluate_encoder_output_for_decoder" if config.get(
+        "evaluate_encoder_output_for_decoder") else
+        "evaluate_encoder" if config.get("evaluate_encoder") else "x_test_file_for_z_samples")
+    z_t_df = load_csv(file_path=z_t_input_file, headers=True,
+                      config=contract_for(config, z_t_key))
     z_t_data = z_t_df.to_numpy()
 
     num_samples_eval = z_t_data.shape[0]

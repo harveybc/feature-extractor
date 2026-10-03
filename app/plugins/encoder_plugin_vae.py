@@ -1,3 +1,5 @@
+"""`vae` encoder plugin: two strided Conv1D layers; no sampling happens here."""
+
 import numpy as np
 from keras.models import Model, load_model, save_model
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Input ,Dropout
@@ -10,8 +12,11 @@ from keras.layers import BatchNormalization, LeakyReLU, Reshape
 from tensorflow.keras.losses import Huber
 
 class Plugin:
-    """
-    An encoder plugin using a convolutional neural network (CNN) based on Keras, with dynamically configurable size.
+    """Encoder of two strided Conv1D layers, with no sampling step.
+
+    Despite the `vae` name of its entry point, this module builds the same two strided Conv1D layers as the
+    `cnn` encoder and emits them directly: it computes no mean, no log-variance and draws no latent sample.
+    The plugin in this package that does is `encoder_plugin_vae_small`.
     """
 
     plugin_params = {

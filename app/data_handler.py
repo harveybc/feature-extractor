@@ -7,7 +7,8 @@ import pandas as pd
 from typing import Optional
 import sys
 
-def load_csv(file_path: str, headers: bool = False, max_rows: Optional[int] = None) -> pd.DataFrame:
+def load_csv(file_path: str, headers: bool = False, max_rows: Optional[int] = None,
+             config: Optional[dict] = None) -> pd.DataFrame:
     """
     Loads a CSV file with optional row limiting and processes it into a cleaned DataFrame.
 
@@ -57,9 +58,38 @@ def load_csv(file_path: str, headers: bool = False, max_rows: Optional[int] = No
         if not headers:
             data.columns = [f'col_{i}' for i in range(len(data.columns))]
 
+        # 3b) Declared roles, or an explicit migration: never a heuristic selection (R1).
+        # This file is read with dtype=str and every column is then coerced with fillna(0),
+        # so an ISO timestamp taken for a feature became a column of zeros and the run
+        # continued. The structural part of the contract is resolved here, before that
+        # coercion; the numeric part is checked as each declared feature is converted.
+        declared_features = None
+        if config is not None:
+            from app.column_roles import resolve as resolve_roles, ColumnRoleError
+
+            index_name = data.index.name
+            plan = resolve_roles(config, ([index_name] if index_name else []) +
+                                 list(data.columns))
+            if plan.migration is None:
+                keep = [name for name in plan.features if name in data.columns]
+                data = data.loc[:, keep]
+                declared_features = set(keep)
+            config.setdefault("column_roles_applied", {})["input_file"] = plan.as_record()
+
         # 4) Convert all columns to numeric, fill NaN values with 0
         for col in data.columns:
-            data[col] = pd.to_numeric(data[col], errors='coerce').fillna(0)
+            converted = pd.to_numeric(data[col], errors='coerce')
+            if declared_features is not None and col in declared_features:
+                # a value that is present and is not a number is a refusal, not a zero
+                unparsed = converted.isna() & data[col].notna() & (
+                    data[col].astype(str).str.strip() != "")
+                if unparsed.any():
+                    example = data[col][unparsed].iloc[0]
+                    raise ColumnRoleError(
+                        f"declared feature {col!r} carries values that are not numbers, for "
+                        f"example {example!r}. A timestamp or a label cannot be fed to a model "
+                        "as a number; declare it as metadata or convert it on purpose")
+            data[col] = converted.fillna(0)
 
         # 5) Debug information
         print(f"[DEBUG] Loaded CSV '{file_path}' -> shape={data.shape}, index={data.index.dtype}, headers={headers}")

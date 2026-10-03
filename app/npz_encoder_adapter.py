@@ -52,15 +52,20 @@ def sha256_file(path: str) -> str:
 
 
 def row_ids_sha256(row_ids: np.ndarray) -> str:
+    if row_ids.dtype.kind in "US":
+        return hashlib.sha256("\n".join(str(i) for i in row_ids.tolist()).encode("utf-8")).hexdigest()
     return hashlib.sha256(np.ascontiguousarray(row_ids, dtype="<i8").tobytes()).hexdigest()
 
 
 def load_train_npz(path: str):
     """Load and validate. Returns (x float32, row_ids int64)."""
     with np.load(path, allow_pickle=False) as z:
-        if "x" not in z.files:
-            raise NpzContractError("NPZ must contain array 'x'")
-        x = z["x"]
+        key = "x" if "x" in z.files else ("windows" if "windows" in z.files else None)
+        if key is None:
+            raise NpzContractError("NPZ must contain array 'x' (or materialized 'windows')")
+        if "split" in z.files and str(z["split"]) != "train":
+            raise NpzContractError(f"NPZ split must be 'train', got {str(z['split'])!r}")
+        x = z[key]
         ids = z["row_ids"] if "row_ids" in z.files else None
     if x.dtype != np.float32:
         raise NpzContractError(f"x must be float32, got {x.dtype}")
@@ -75,9 +80,12 @@ def load_train_npz(path: str):
     else:
         if ids.ndim != 1 or ids.shape[0] != x.shape[0]:
             raise NpzContractError("row_ids must be 1-D with length == samples")
-        if not np.issubdtype(ids.dtype, np.integer):
-            raise NpzContractError("row_ids must be integer")
-        ids = ids.astype(np.int64)
+        if ids.dtype.kind in "US":
+            ids = ids.astype(str)
+        elif np.issubdtype(ids.dtype, np.integer):
+            ids = ids.astype(np.int64)
+        else:
+            raise NpzContractError("row_ids must be integer or string")
         if len(np.unique(ids)) != len(ids):
             raise NpzContractError("row_ids must be unique")
     return x, ids

@@ -54,3 +54,18 @@ def test_manifest_and_only_supplied_rows(tmp_path, monkeypatch):
     enc = tf.keras.models.load_model(str(tmp_path / "o" / "encoder.keras"))
     assert enc.predict(x, verbose=0).shape == (len(x), 4)
     assert A.row_ids_sha256(ids[:-1]) != m.train_row_ids_sha256
+
+
+def test_materialized_windows_contract_and_split_guard(tmp_path):
+    import numpy as np, pytest
+    from app.npz_encoder_adapter import load_train_npz, NpzContractError
+    x = np.random.RandomState(0).rand(6, 4, 3).astype("float32")
+    ids = np.array([f"r{i}" for i in range(6)])
+    ok = tmp_path / "ok.npz"
+    np.savez(ok, windows=x, row_ids=ids, split=np.array("train"))
+    lx, lid = load_train_npz(str(ok))
+    assert lx.shape == (6, 4, 3) and list(lid) == list(ids)
+    bad = tmp_path / "bad.npz"
+    np.savez(bad, windows=x, row_ids=ids, split=np.array("validation"))
+    with pytest.raises(NpzContractError):
+        load_train_npz(str(bad))

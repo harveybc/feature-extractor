@@ -268,6 +268,8 @@ def run_pilot(a) -> dict:
                     for (tname, h), d in M.probe_deltas(rows, raw="identity", random="random", trained=fam).items():
                         emit(dict(d, kind="probe_delta", feature_id=feat, fold_id=fold.fold_id,
                                   target=tname, horizon_index=h))
+            import keras
+            keras.backend.clear_session()  # bound graph growth across features/folds in one process
         emit({"kind": "feature_summary", "feature_id": feat, "reference_fold": ref_fold.fold_id,
               "stability": {fam: M.stability_across_folds(ref_lat[fam]) for fam in families},
               "probe_loss_across_folds": [

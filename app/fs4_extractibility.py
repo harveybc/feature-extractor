@@ -427,11 +427,17 @@ def reconstruct(training_model, batch: U.TemporalBatch) -> np.ndarray:
 
 def fit_trained(training_model, encoder, decoder, fit_b: U.TemporalBatch, es_b: U.TemporalBatch,
                 hp: Hyper, seed: int, es_hidden: np.ndarray, log=None) -> dict:
-    """TRAIN-only masked reconstruction; early stopping on the purged ES tail; best checkpoint restored."""
-    import keras
+    """Stop on the equal-weight mean of fixed-mask fit and purged-TRAIN tail hidden MSE.
+
+    Equal weighting keeps the larger fit population from drowning out the held-out tail.
+    Tail MSE and its degradation from its own minimum remain visible as an overfit check.
+    """
+    fit_monitor_hidden = hidden_mask(fit_b.observed_mask,
+                                     _seed_from({"seed": seed, "purpose": "fit_monitor_mask"}), hp.hide_fraction)
+    fit_monitor_input = corrupt(fit_b, fit_monitor_hidden)
     es_input = corrupt(es_b, es_hidden)
     best, best_epoch, best_weights, wait = np.inf, -1, None, 0
-    hist, digests, stop = [], [], "max_epochs"
+    fit_hist, es_hist, monitor_hist, digests, stop = [], [], [], [], "max_epochs"
     updates_at_best = 0
     t0 = time.perf_counter()
     for epoch in range(hp.max_epochs):
@@ -440,14 +446,26 @@ def fit_trained(training_model, encoder, decoder, fit_b: U.TemporalBatch, es_b: 
         cin = corrupt(fit_b, h)
         training_model.fit(cin.as_inputs(), fit_b.signal, sample_weight=fit_b.observed_mask[..., 0],
                            batch_size=hp.batch_size, epochs=1, shuffle=True, verbose=0)
-        rec = reconstruct(training_model, es_input)
-        err = (rec[..., 0].astype(np.float64) - es_b.signal[..., 0])[es_hidden]
-        loss = float(np.mean(err ** 2)) if err.size else float("nan")
-        hist.append(loss)
+        fit_rec = reconstruct(training_model, fit_monitor_input)
+        es_rec = reconstruct(training_model, es_input)
+        fit_err = (fit_rec[..., 0].astype(np.float64) - fit_b.signal[..., 0])[fit_monitor_hidden]
+        es_err = (es_rec[..., 0].astype(np.float64) - es_b.signal[..., 0])[es_hidden]
+        fit_loss = float(np.mean(fit_err ** 2)) if fit_err.size else float("nan")
+        es_loss = float(np.mean(es_err ** 2)) if es_err.size else float("nan")
+        if not np.isfinite(fit_loss) or not np.isfinite(es_loss):
+            raise U.TrainingDiverged(f"non-finite FS4 reconstruction monitor at epoch {epoch}: "
+                                     f"fit={fit_loss}, purged_tail={es_loss}")
+        loss = (fit_loss + es_loss) / 2.0
+        if not np.isfinite(loss):
+            raise U.TrainingDiverged(f"non-finite FS4 reconstruction monitor mean at epoch {epoch}")
+        fit_hist.append(fit_loss)
+        es_hist.append(es_loss)
+        monitor_hist.append(loss)
         digests.append(weights_digest([encoder, decoder]))
         if log:
-            log(f"epoch {epoch} es_hidden_mse={loss:.6f} updates={int(training_model.optimizer.iterations.numpy())}")
-        if np.isfinite(loss) and loss < best:
+            log(f"epoch {epoch} fit_hidden_mse={fit_loss:.6f} es_hidden_mse={es_loss:.6f} "
+                f"monitor_hidden_mse={loss:.6f} updates={int(training_model.optimizer.iterations.numpy())}")
+        if loss < best:
             best, best_epoch, wait = loss, epoch, 0
             best_weights = [np.array(w) for w in training_model.get_weights()]
             updates_at_best = int(training_model.optimizer.iterations.numpy())
@@ -457,15 +475,20 @@ def fit_trained(training_model, encoder, decoder, fit_b: U.TemporalBatch, es_b: 
                 stop = "patience"
                 break
     if best_weights is None:
-        raise U.TrainingDiverged("early-stopping loss never finite; no checkpoint to restore")
+        raise U.TrainingDiverged("no FS4 reconstruction checkpoint to restore")
     final_digest = digests[-1]
     training_model.set_weights(best_weights)
     chosen = weights_digest([encoder, decoder])
     if chosen != digests[best_epoch]:
         raise Refusal("CHECKPOINT_RESTORE_MISMATCH")
-    return {"stop_reason": stop, "epochs_run": len(hist), "chosen_epoch": best_epoch,
-            "best_es_hidden_mse": float(best), "es_hidden_mse_history": hist,
+    return {"stop_reason": stop, "epochs_run": len(monitor_hist), "chosen_epoch": best_epoch,
+            "best_monitor_hidden_mse": float(best), "monitor_hidden_mse_history": monitor_hist,
+            "fit_hidden_mse_history": fit_hist, "es_hidden_mse_history": es_hist,
+            "best_es_hidden_mse": es_hist[best_epoch], "min_es_hidden_mse": min(es_hist),
+            "es_degradation_from_min": es_hist[best_epoch] - min(es_hist),
+            "fit_monitor_mask_sha256": mask_sha256(fit_monitor_hidden),
+            "fit_monitor_hidden_points": int(fit_monitor_hidden.sum()), "es_hidden_points": int(es_hidden.sum()),
             "updates": int(training_model.optimizer.iterations.numpy()), "updates_at_chosen": updates_at_best,
             "final_weights_sha256": final_digest, "chosen_weights_sha256": chosen,
             "restored_best_checkpoint": True, "fit_wall_seconds": time.perf_counter() - t0,
-            "monitor": "hidden-point MSE on the purged TRAIN early-stopping tail (fixed mask)"}
+            "monitor": "equal-weight mean of hidden-point MSE on fit TRAIN and purged TRAIN tail (fixed masks)"}

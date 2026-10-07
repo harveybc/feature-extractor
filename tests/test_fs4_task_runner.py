@@ -124,6 +124,11 @@ def test_trained_records_update_counter_and_restored_checkpoint(three_arms):
     assert trn["training"]["es_tail_last_ts"] <= trn["fold"]["fit"][1]
     assert trn["training"]["fit_last_ts"] <= trn["training"]["es_tail_first_ts"] - 168 * 3600  # purged tail
     assert trn["training"]["es_mask_sha256"] != trn["mask_sha256"]
+    assert trn["training"]["fit_monitor_mask_sha256"] != trn["training"]["es_mask_sha256"]
+    assert trn["training"]["best_monitor_hidden_mse"] == pytest.approx(
+        (trn["training"]["fit_hidden_mse_history"][trn["training"]["chosen_epoch"]]
+         + trn["training"]["es_hidden_mse_history"][trn["training"]["chosen_epoch"]]) / 2)
+    assert trn["training"]["es_degradation_from_min"] >= 0
     assert os.path.isfile(trn["artifacts"]["chosen_weights_file"])
     assert trn["architecture"]["latent_shape"] == [6, 8] and trn["architecture"]["target_input"] is False
 

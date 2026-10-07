@@ -270,3 +270,12 @@ def test_typed_refusal_code_is_the_last_stderr_line(corpus, capsys):
     rc, res = run(claim_for("feat_nan", "RAW"), corpus)
     err = capsys.readouterr().err.strip().splitlines()
     assert rc == R.EXIT_REFUSED and err[-1].startswith("NO_TRAIN_OBSERVATIONS ")
+
+
+def test_claim_may_come_from_env_when_stdin_is_empty(corpus, monkeypatch):
+    claim = claim_for("feat_a", "RAW")
+    monkeypatch.setenv("FS4_CLAIM_JSON", json.dumps(claim))
+    out = io.StringIO()
+    argv = ["--input", f"{ROLE}={corpus['path']}", "--corpus-registry", corpus["registry"], *FAST]
+    rc = R.main(argv, stdin=io.StringIO(""), stdout=out)
+    assert rc == 0 and json.loads(out.getvalue())["task_id"] == claim["task_id"]

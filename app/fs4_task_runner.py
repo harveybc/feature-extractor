@@ -1,6 +1,7 @@
 """Phase-4 extractibility task runner (order SATOSHI_FS4_EXECUTION_2026_10_07, step 1).
 
-Contract:  stdin = the controller's claim JSON (tools/fs4_campaign.py claim);
+Contract:  stdin = the controller's claim JSON (tools/fs4_campaign.py claim; also $FS4_CLAIM_JSON or --claim-file,
+           because crispdm-run gives its child /dev/null as stdin);
            stdout = exactly one JSON document;
            stderr = logs.
   exit 0   status COMPLETE, accepted by tools/fs4_campaign.py::_validate_result (mirrored below);
@@ -153,8 +154,32 @@ def _registry(args) -> Optional[dict]:
         return json.load(f)
 
 
-def load_claim(stream) -> dict:
-    claim = json.load(stream)
+def read_claim_text(stream, claim_file: Optional[str] = None) -> str:
+    """Claim JSON from --claim-file, else stdin when it carries data, else $FS4_CLAIM_JSON.
+
+    crispdm-run starts the job with a trailing `&`, so a non-interactive shell hands the job
+    /dev/null as stdin; the environment variable survives the transient scope."""
+    if claim_file:
+        with open(claim_file) as f:
+            return f.read()
+    text = ""
+    try:
+        text = stream.read()
+    except (OSError, ValueError):
+        text = ""
+    if text.strip():
+        return text
+    env = os.environ.get("FS4_CLAIM_JSON", "")
+    if env.strip():
+        return env
+    raise X.Refusal("CLAIM_MISSING", "no claim on stdin, --claim-file or FS4_CLAIM_JSON")
+
+
+def load_claim(stream, claim_file: Optional[str] = None) -> dict:
+    try:
+        claim = json.loads(read_claim_text(stream, claim_file))
+    except json.JSONDecodeError as exc:
+        raise X.Refusal("CLAIM_NOT_JSON", str(exc)) from exc
     for key in ("schema", "population_id", "identity", "feature_id", "fold_id", "arm", "seed", "task_id"):
         if key not in claim:
             raise X.Refusal("CLAIM_MISSING_FIELD", key)
@@ -404,6 +429,7 @@ def parse(argv=None):
                    help="durable local directory: <root>/<task_id>/result.json and chosen weights")
     p.add_argument("--gpu-uuid", default=os.environ.get("FS4_GPU_UUID"),
                    help="physical UUID the TRAINED_ENCODER arm must verify in process")
+    p.add_argument("--claim-file", help="claim JSON file (alternative to stdin / FS4_CLAIM_JSON)")
     p.add_argument("--coverage", metavar="FEATURES_JSON", help='{"EURUSD": [feature_id, ...], ...}: report only')
     p.add_argument("--folds", default=",".join(X.FOLD_YEARS), help="coverage folds")
     p.add_argument("--corpus-registry", help="TESTS ONLY: JSON registry replacing the pinned CORPORA")
@@ -435,7 +461,7 @@ def main(argv=None, stdin=None, stdout=None) -> int:
             out = coverage(feats, inputs, [x for x in args.folds.split(",") if x], hp, _registry(args))
             print(X.canonical(out), file=stdout, flush=True)
             return 0
-        claim = load_claim(stdin)
+        claim = load_claim(stdin, args.claim_file)
     except X.Refusal as exc:
         print(X.canonical({"status": "REFUSED", "code": f"REFUSED_{exc.code}", "reason": str(exc)}), file=stdout, flush=True)
         log(f"REFUSED {exc}")

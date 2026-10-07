@@ -90,13 +90,13 @@ def atomic_json(path: str, obj) -> None:
 def _nvidia_smi_names() -> Dict[str, str]:
     out = subprocess.run(["nvidia-smi", "--query-gpu=uuid,name", "--format=csv,noheader"],
                          capture_output=True, text=True, timeout=30, check=False)
-    if out.returncode:
-        raise X.Refusal("GPU_NOT_VERIFIED", f"nvidia-smi rc={out.returncode}: {out.stderr.strip()[:200]}")
     names = {}
     for line in out.stdout.splitlines():
         if "," in line:
             uuid, name = line.split(",", 1)
             names[uuid.strip()] = name.strip()
+    if not names:
+        raise X.Refusal("GPU_NOT_VERIFIED", f"nvidia-smi rc={out.returncode}: {out.stderr.strip()[:200]}")
     return names
 
 

@@ -3,6 +3,7 @@ import datetime as dt
 import io
 import json
 import os
+from types import SimpleNamespace
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
 import numpy as np
@@ -13,6 +14,18 @@ import pytest
 from app import fs4_extractibility as X
 from app import fs4_task_runner as R
 from app import univariate_temporal as U
+
+
+def test_gpu_listing_keeps_healthy_device_when_sibling_fails(monkeypatch):
+    def partial_listing(*_args, **_kwargs):
+        return SimpleNamespace(returncode=1,
+                               stdout="GPU-b77fc3ad-db77-b648-dc15-ec79b65e2519, NVIDIA GeForce RTX 5070 Ti Laptop GPU\n",
+                               stderr="Unable to determine the device handle for GPU1")
+
+    monkeypatch.setattr(R.subprocess, "run", partial_listing)
+    assert R._nvidia_smi_names() == {
+        "GPU-b77fc3ad-db77-b648-dc15-ec79b65e2519": "NVIDIA GeForce RTX 5070 Ti Laptop GPU"
+    }
 
 IDENTITY = "synthetic-train:v1"
 ROLE = "synthetic_train"

@@ -79,7 +79,8 @@ def test_patience_follows_mean_and_restores_its_checkpoint(monkeypatch):
     assert report["chosen_weights_sha256"] == "2"
     assert report["final_weights_sha256"] == "4"
     assert report["restored_best_checkpoint"] is True
-    assert report["best_es_hidden_mse"] == pytest.approx(5)
+    assert report["best_es_hidden_mse"] == pytest.approx(2)
+    assert report["selected_es_hidden_mse"] == pytest.approx(5)
     assert report["min_es_hidden_mse"] == pytest.approx(2)
     assert report["es_degradation_from_min"] == pytest.approx(3)
     assert report["fit_monitor_hidden_points"] == report["es_hidden_points"] == 1

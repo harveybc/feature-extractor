@@ -180,12 +180,15 @@ def prepare(claim: dict, corpus: X.Corpus, hp: X.Hyper) -> dict:
     U.validate_fold(fold, grid.ts, int(ts_rows[-1]), hp.window)
     fit_o = X.origins(grid, fold.fit, hp)
     score_o = X.origins(grid, fold.val, hp)
+    if score_o.size == 0 or fit_o.size == 0:
+        raise X.Refusal("NO_TRAIN_OBSERVATIONS",
+                        f"{claim['feature_id']} {fold.fold_id}: fit origins {int(fit_o.size)}, scoring origins {int(score_o.size)}")
     if score_o.size < hp.min_scoring_windows:
-        raise X.Refusal("NOT_AVAILABLE_FOR_TRAIN",
+        raise X.Refusal("INSUFFICIENT_TRAIN_SCORING_WINDOWS",
                         f"{claim['feature_id']} {fold.fold_id}: {int(score_o.size)} scoring origins "
                         f"< {hp.min_scoring_windows} (observed TRAIN rows in the validation year)")
     if fit_o.size < hp.min_fit_windows:
-        raise X.Refusal("NOT_AVAILABLE_FOR_TRAIN",
+        raise X.Refusal("INSUFFICIENT_TRAIN_FIT_WINDOWS",
                         f"{claim['feature_id']} {fold.fold_id}: {int(fit_o.size)} fit origins < {hp.min_fit_windows}")
     norm = U.Normalization.fit(grid.x, grid.observed, U.covered_indices(fit_o, hp.window))
     cal = U.calendar_features(grid.ts)
@@ -271,7 +274,7 @@ def run_task(claim: dict, inputs: Dict[str, str], output_root: Optional[str], hp
             core = fit_o[grid.ts[fit_o] <= tail_start - hp.es_purge_hours * 3600]
             core = X.even_subset(core, hp.max_fit_windows)
             if core.size < hp.min_fit_windows:
-                raise X.Refusal("NOT_AVAILABLE_FOR_TRAIN", f"{core.size} fit origins after the purged tail")
+                raise X.Refusal("INSUFFICIENT_TRAIN_FIT_WINDOWS", f"{core.size} fit origins after the purged tail")
             fit_b = U.make_windows(grid.ts, grid.x, grid.observed, core, hp.window, norm, calendar=cal)
             es_b = U.make_windows(grid.ts, grid.x, grid.observed, tail, hp.window, norm, calendar=cal)
             es_hidden = X.hidden_mask(es_b.observed_mask, X._seed_from({**P["identity"], "purpose": "es_mask"}),
@@ -326,11 +329,14 @@ def run_task(claim: dict, inputs: Dict[str, str], output_root: Optional[str], hp
         "corruption": {"type": "hide_observed_points", "fraction": hp.hide_fraction, "derived_from": "feature/fold identity (arm excluded)"},
         "architecture": {"id": X.ARCHITECTURE_ID, "latent_shape": [hp.latent_steps, hp.latent_dim],
                          "calendar_context": list(U.CALENDAR_SPEC), "target_input": False},
-        "hyper": hp.to_dict(), "weights": weights, "training": training_report, "artifacts": artifacts,
+        "hyper": hp.to_dict(), "weights": weights, "artifacts": artifacts,
+        "training": {**(training_report or {"stop_reason": "NOT_APPLICABLE_RAW"}),
+                     "chosen_epoch": weights["chosen_epoch"], "updates": weights["updates"]},
         "device": {"variables": device, "gpu": gpu, "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES")},
-        "cost": {"wall_seconds": time.perf_counter() - t_wall, "cpu_seconds": ru.ru_utime + ru.ru_stime + rc.ru_utime + rc.ru_stime,
-                 "ram_peak_rss_bytes": int(ru.ru_maxrss) * 1024, "cgroup_peak_bytes": _cgroup_peak_bytes(),
-                 "vram_peak_bytes": vram_peak},
+        "cost": {"wall_s": time.perf_counter() - t_wall, "cpu_s": ru.ru_utime + ru.ru_stime + rc.ru_utime + rc.ru_stime,
+                 "peak_ram_bytes": _cgroup_peak_bytes() or int(ru.ru_maxrss) * 1024,
+                 "peak_rss_bytes": int(ru.ru_maxrss) * 1024, "peak_cgroup_bytes": _cgroup_peak_bytes(),
+                 "peak_vram_bytes": vram_peak},
         "code_commit": _git_commit(), "host": platform.node(), "python": platform.python_version(),
     }
     validate_terminal(result, claim)
@@ -373,11 +379,13 @@ def coverage(features: Dict[str, list], inputs: Dict[str, str], folds, hp: X.Hyp
                 try:
                     fold = X.fold_spec(fold_id, ts_rows)
                     n_fit, n_score = int(X.origins(grid, fold.fit, hp).size), int(X.origins(grid, fold.val, hp).size)
-                    state = "AVAILABLE" if (n_fit >= hp.min_fit_windows and n_score >= hp.min_scoring_windows) \
-                        else "NOT_AVAILABLE_FOR_TRAIN"
-                    entry["folds"][fold_id] = {"state": state, "n_fit_origins": n_fit, "n_scoring_rows": n_score}
+                    code = ("NO_TRAIN_OBSERVATIONS" if n_fit == 0 or n_score == 0 else
+                            "INSUFFICIENT_TRAIN_FIT_WINDOWS" if n_fit < hp.min_fit_windows else
+                            "INSUFFICIENT_TRAIN_SCORING_WINDOWS" if n_score < hp.min_scoring_windows else None)
+                    entry["folds"][fold_id] = {"state": "NOT_AVAILABLE_FOR_TRAIN" if code else "AVAILABLE",
+                                               "code": code, "n_fit_origins": n_fit, "n_scoring_rows": n_score}
                 except X.Refusal as exc:
-                    entry["folds"][fold_id] = {"state": "NOT_AVAILABLE_FOR_TRAIN", "reason": str(exc)}
+                    entry["folds"][fold_id] = {"state": "NOT_AVAILABLE_FOR_TRAIN", "code": exc.code, "reason": str(exc)}
                 ok = ok and entry["folds"][fold_id]["state"] == "AVAILABLE"
             entry["state"] = "AVAILABLE" if ok else "NOT_AVAILABLE_FOR_TRAIN"
             counts[entry["state"]] += 1
@@ -429,22 +437,30 @@ def main(argv=None, stdin=None, stdout=None) -> int:
             return 0
         claim = load_claim(stdin)
     except X.Refusal as exc:
-        print(X.canonical({"status": "REFUSED", "reason": str(exc)}), file=stdout, flush=True)
+        print(X.canonical({"status": "REFUSED", "code": f"REFUSED_{exc.code}", "reason": str(exc)}), file=stdout, flush=True)
         log(f"REFUSED {exc}")
+        print(f"REFUSED_{exc.code} {str(exc)[:160]}", file=sys.stderr, flush=True)
         return EXIT_REFUSED
     task_id = claim["task_id"]
     try:
         result = run_task(claim, inputs, args.output_root, hp, _registry(args), args.gpu_uuid, args.allow_cpu_training)
     except X.Refusal as exc:
-        code = exc.code if exc.code in ("NOT_AVAILABLE_FOR_TRAIN", "GPU_NOT_VERIFIED") else "REFUSED"
-        print(X.canonical({"status": code, "task_id": task_id, "arm": claim["arm"], "reason": str(exc)}),
-              file=stdout, flush=True)
-        log(f"{code} {exc}")
-        return EXIT_GPU if exc.code == "GPU_NOT_VERIFIED" else EXIT_REFUSED
+        if X.is_not_available(exc.code):
+            status, declared, rc = "NOT_AVAILABLE_FOR_TRAIN", exc.code, EXIT_REFUSED
+        elif exc.code == "GPU_NOT_VERIFIED":
+            status, declared, rc = "GPU_NOT_VERIFIED", "REFUSED_GPU_NOT_VERIFIED", EXIT_GPU
+        else:
+            status, declared, rc = "REFUSED", f"REFUSED_{exc.code}", EXIT_REFUSED
+        print(X.canonical({"status": status, "code": declared, "task_id": task_id, "arm": claim["arm"],
+                           "reason": str(exc)}), file=stdout, flush=True)
+        log(f"{status} {exc}")
+        print(f"{declared} {str(exc)[:160]}", file=sys.stderr, flush=True)  # last stderr line becomes fail --reason
+        return rc
     except U.ContractError as exc:
-        print(X.canonical({"status": "REFUSED", "task_id": task_id, "reason": f"{type(exc).__name__}: {exc}"}),
-              file=stdout, flush=True)
+        print(X.canonical({"status": "REFUSED", "code": f"REFUSED_{type(exc).__name__}", "task_id": task_id,
+                           "reason": f"{type(exc).__name__}: {exc}"}), file=stdout, flush=True)
         log(f"REFUSED {type(exc).__name__}: {exc}")
+        print(f"REFUSED_{type(exc).__name__} {str(exc)[:160]}", file=sys.stderr, flush=True)
         return EXIT_REFUSED
     print(X.canonical(result), file=stdout, flush=True)
     return 0

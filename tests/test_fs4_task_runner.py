@@ -116,6 +116,9 @@ def test_trained_records_update_counter_and_restored_checkpoint(three_arms):
     results, root = three_arms
     trn = results["TRAINED_ENCODER"]
     assert trn["weights"]["updates"] >= 1 and trn["training"]["restored_best_checkpoint"] is True
+    assert trn["training"]["updates"] == trn["weights"]["updates"] and trn["training"]["chosen_epoch"] >= 0
+    assert {"cpu_s", "wall_s", "peak_ram_bytes", "peak_vram_bytes"} <= set(trn["cost"])
+    assert results["RAW"]["training"]["updates"] == 0 and results["RAW"]["training"]["chosen_epoch"] is None
     assert trn["weights"]["chosen_epoch"] == trn["training"]["chosen_epoch"] >= 0
     assert trn["weights"]["chosen_weights_sha256"] == trn["model_sha256"] != trn["weights"]["initial_weights_sha256"]
     assert trn["training"]["es_tail_last_ts"] <= trn["fold"]["fit"][1]
@@ -206,11 +209,11 @@ def test_restart_adopts_retained_terminal_without_recomputing(corpus, tmp_path):
 # ---------------------------------------------------------------- FS4-06 refusals, never a fake zero
 def test_refusals_are_typed(corpus, tmp_path):
     rc, res = run(claim_for("feat_nan", "RAW"), corpus)
-    assert rc == R.EXIT_REFUSED and res["status"] == "NOT_AVAILABLE_FOR_TRAIN"
+    assert rc == R.EXIT_REFUSED and res["status"] == "NOT_AVAILABLE_FOR_TRAIN" and res["code"] == "NO_TRAIN_OBSERVATIONS"
     rc, res = run(claim_for("feat_nan", "TRAINED_ENCODER"), corpus)
     assert rc == R.EXIT_REFUSED and res["status"] == "NOT_AVAILABLE_FOR_TRAIN" and "metrics" not in res
     rc, res = run(claim_for("not_a_column", "RAW"), corpus)
-    assert rc == R.EXIT_REFUSED and "FEATURE_NOT_IN_CORPUS" in res["reason"]
+    assert rc == R.EXIT_REFUSED and "FEATURE_NOT_IN_CORPUS" in res["reason"] and res["code"] == "REFUSED_FEATURE_NOT_IN_CORPUS"
     rc, res = run(claim_for("Y_s", "RAW"), corpus)
     assert rc == R.EXIT_REFUSED and "target" in res["reason"].lower()
     rc, res = run(claim_for("feat_a", "RAW", fold="inner_2023"), corpus)
@@ -242,7 +245,7 @@ def test_trained_arm_refuses_without_a_physical_gpu_proof(corpus):
             "--min-fit-windows", "64", "--min-scoring-windows", "16"]
     rc = R.main(argv, stdin=io.StringIO(json.dumps(claim_for("feat_a", "TRAINED_ENCODER"))), stdout=out)
     res = json.loads(out.getvalue())
-    assert rc == R.EXIT_GPU and res["status"] == "GPU_NOT_VERIFIED"
+    assert rc == R.EXIT_GPU and res["status"] == "GPU_NOT_VERIFIED" and res["code"] == "REFUSED_GPU_NOT_VERIFIED"
 
 
 # ---------------------------------------------------------------- coverage report
@@ -261,3 +264,9 @@ def test_coverage_reports_every_feature_and_fold(corpus, tmp_path):
     assert syn["per_feature"]["feat_a"]["folds"]["inner_2023"]["state"] == "NOT_AVAILABLE_FOR_TRAIN"
     assert syn["per_feature"]["feat_nan"]["folds"]["inner_2019"]["state"] == "NOT_AVAILABLE_FOR_TRAIN"
     assert rep["populations"]["MARS"]["state"] == "NO_PINNED_CORPUS"
+
+
+def test_typed_refusal_code_is_the_last_stderr_line(corpus, capsys):
+    rc, res = run(claim_for("feat_nan", "RAW"), corpus)
+    err = capsys.readouterr().err.strip().splitlines()
+    assert rc == R.EXIT_REFUSED and err[-1].startswith("NO_TRAIN_OBSERVATIONS ")

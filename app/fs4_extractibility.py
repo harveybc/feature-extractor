@@ -85,8 +85,18 @@ class Hyper:
         return asdict(self)
 
 
+NOT_AVAILABLE_CODES = ("NO_TRAIN_OBSERVATIONS", "INSUFFICIENT_TRAIN_FIT_WINDOWS", "INSUFFICIENT_TRAIN_SCORING_WINDOWS",
+                       "INSUFFICIENT_TRAIN_ES_WINDOWS")
+
+
+def is_not_available(code: str) -> bool:
+    return code in NOT_AVAILABLE_CODES
+
+
 class Refusal(U.ContractError):
-    """Typed refusal; the code is the first token of the message."""
+    """Typed refusal; the code is the first token of the message.
+
+    Declared warehouse codes: NO_TRAIN_OBSERVATIONS | INSUFFICIENT_TRAIN_* | TYPED_REFUSAL[:CODE] | REFUSED_*."""
 
     def __init__(self, code: str, detail: str = ""):
         self.code = code
@@ -245,12 +255,12 @@ def fold_spec(fold_id: str, ts_rows: np.ndarray) -> U.FoldSpec:
     train_end = int(ts_rows[-1])
     in_year = ts_rows[(ts_rows >= _year_start(year)) & (ts_rows < _year_start(year + 1)) & (ts_rows <= train_end)]
     if in_year.size == 0:
-        raise Refusal("NOT_AVAILABLE_FOR_TRAIN", f"{fold_id}: no TRAIN decision rows in {year}")
+        raise Refusal("NO_TRAIN_OBSERVATIONS", f"{fold_id}: no TRAIN decision rows in {year}")
     val = (int(in_year[0]), int(in_year[-1]))
     gap = FOLD_GAP_HOURS * 3600
     fit = (int(ts_rows[0]) + gap, val[0] - gap - GRID_SECONDS)
     if fit[0] > fit[1]:
-        raise Refusal("NOT_AVAILABLE_FOR_TRAIN", f"{fold_id}: fit range empty before {year}")
+        raise Refusal("NO_TRAIN_OBSERVATIONS", f"{fold_id}: fit range empty before {year}")
     return U.FoldSpec(fold_id, "train", fit, val)
 
 

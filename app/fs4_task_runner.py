@@ -185,7 +185,7 @@ def load_claim(stream, claim_file: Optional[str] = None) -> dict:
             raise X.Refusal("CLAIM_MISSING_FIELD", key)
     if claim["schema"] != TASK_SCHEMA:
         raise X.Refusal("CLAIM_SCHEMA", str(claim["schema"]))
-    if claim["arm"] not in X.ARMS:
+    if claim["arm"] not in X.ARMS + X.V2_ARMS:
         raise X.Refusal("CLAIM_ARM", str(claim["arm"]))
     if type(claim["seed"]) is not int:
         raise X.Refusal("CLAIM_SEED", repr(claim["seed"]))
@@ -256,6 +256,9 @@ def run_task(claim: dict, inputs: Dict[str, str], output_root: Optional[str], hp
         f"scoring_rows={len(score)} hidden_points={int(hidden.sum())}")
     naive_scores = X.hidden_scores(score.signal, P["naive"], hidden, P["norm"].std)
     arm = claim["arm"]
+    origin_covering = arm in X.V2_ARMS
+    trained = arm in ("TRAINED_ENCODER", "TRAINED_ENCODER_V2")
+    random_control = arm in ("RANDOM_ENCODER", "RANDOM_ENCODER_V2")
     model_sha, weights, training_report, device, gpu, vram_peak = None, None, None, "cpu", None, None
     artifacts = {}
     if arm == "RAW":
@@ -268,19 +271,20 @@ def run_task(claim: dict, inputs: Dict[str, str], output_root: Optional[str], hp
     else:
         os.environ.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")
         os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
-        if arm == "TRAINED_ENCODER" and not allow_cpu_training:
+        if trained and not allow_cpu_training:
             gpu = verify_gpu(gpu_uuid)
             log(f"GPU verified in process: {gpu}")
         import keras
         import tensorflow as tf
         keras.utils.set_random_seed(claim["seed"])
-        encoder, decoder, training = X.build_models(hp, calendar_dim=P["cal"].shape[1])
+        builder = X.build_origin_covering_models if origin_covering else X.build_models
+        encoder, decoder, training = builder(hp, calendar_dim=P["cal"].shape[1])
         X.seed_weights([encoder, decoder], claim["seed"])
         initial = X.weights_digest([encoder, decoder])
         device = variable_device(encoder)
-        if arm == "TRAINED_ENCODER" and not allow_cpu_training and "GPU:0" not in device:
+        if trained and not allow_cpu_training and "GPU:0" not in device:
             raise X.Refusal("GPU_NOT_VERIFIED", f"model variables live on {device!r}, not on the GPU")
-        if arm == "RANDOM_ENCODER":
+        if random_control:
             updates = int(training.optimizer.iterations.numpy())
             if updates != 0:
                 raise X.Refusal("RANDOM_ENCODER_WAS_UPDATED", str(updates))
@@ -352,7 +356,9 @@ def run_task(claim: dict, inputs: Dict[str, str], output_root: Optional[str], hp
         "normalization": {"mean": P["norm"].mean, "std": P["norm"].std, "n": P["norm"].n, "constant": P["norm"].constant,
                           "fitted_on": "fold fit range only"},
         "corruption": {"type": "hide_observed_points", "fraction": hp.hide_fraction, "derived_from": "feature/fold identity (arm excluded)"},
-        "architecture": {"id": X.ARCHITECTURE_ID, "latent_shape": [hp.latent_steps, hp.latent_dim],
+        "architecture": {"id": X.ARCHITECTURE_ID_V2 if origin_covering else X.ARCHITECTURE_ID,
+                         "latent_shape": [hp.latent_steps, hp.latent_dim],
+                         "last_latent_lag_rows": 0 if origin_covering else 3,
                          "calendar_context": list(U.CALENDAR_SPEC), "target_input": False},
         "hyper": hp.to_dict(), "weights": weights, "artifacts": artifacts,
         "training": {**(training_report or {"stop_reason": "NOT_APPLICABLE_RAW"}),

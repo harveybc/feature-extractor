@@ -104,6 +104,26 @@ def test_three_arms_share_rows_mask_population_and_naive(three_arms):
     assert len({r["model_sha256"] for r in results.values()}) == 3
 
 
+def test_origin_covering_arms_are_versioned_and_paired(corpus, three_arms, tmp_path):
+    old, _ = three_arms
+    results = {}
+    for arm in ("RANDOM_ENCODER_V2", "TRAINED_ENCODER_V2"):
+        claim = claim_for("feat_a", arm)
+        rc, result = run(claim, corpus, output_root=tmp_path)
+        assert rc == 0, result
+        assert result["architecture"]["id"] == X.ARCHITECTURE_ID_V2
+        assert result["rows_sha256"] == old["RAW"]["rows_sha256"]
+        assert result["mask_sha256"] == old["RAW"]["mask_sha256"]
+        assert result["metrics"]["naive_mae"] == old["RAW"]["metrics"]["naive_mae"]
+        R.validate_terminal(result, claim)
+        results[arm] = result
+    assert results["RANDOM_ENCODER_V2"]["weights"]["updates"] == 0
+    assert results["TRAINED_ENCODER_V2"]["weights"]["updates"] > 0
+    assert results["RANDOM_ENCODER_V2"]["weights"]["initial_weights_sha256"] == (
+        results["TRAINED_ENCODER_V2"]["weights"]["initial_weights_sha256"])
+    assert results["TRAINED_ENCODER_V2"]["task_id"] != old["TRAINED_ENCODER"]["task_id"]
+
+
 def test_random_control_runs_no_optimizer_and_shares_initial_weights(three_arms):
     results, _ = three_arms
     rnd, trn = results["RANDOM_ENCODER"], results["TRAINED_ENCODER"]

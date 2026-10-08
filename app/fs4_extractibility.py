@@ -34,6 +34,7 @@ import numpy as np
 from app import univariate_temporal as U
 
 ARMS = ("RAW", "RANDOM_ENCODER", "TRAINED_ENCODER")
+V2_ARMS = ("RANDOM_ENCODER_V2", "TRAINED_ENCODER_V2")
 GRID_SECONDS = 3600
 WINDOW = 24
 FOLD_GAP_HOURS = 720
@@ -41,6 +42,7 @@ FOLD_YEARS = {"inner_2019": 2019, "inner_2020": 2020, "inner_2021": 2021,
               "inner_2022": 2022, "inner_2023": 2023}
 TIMESTAMP_COLUMN = "t_decision_utc"
 ARCHITECTURE_ID = "fs4_causal_conv_24_12_6_v1"
+ARCHITECTURE_ID_V2 = "fs4_causal_conv_24_12_6_oc_v2"
 
 # Pinned governed TRAIN corpora.  identity -> roles -> expected sha256.  Values verified on the
 # coordinator, worker_a and worker_b on 2026-10-07 (identical digests on the three hosts).
@@ -363,8 +365,8 @@ def hidden_scores(x_clean: np.ndarray, x_hat: np.ndarray, hidden: np.ndarray, st
 
 
 # --------------------------------------------------------------------------- architecture
-def build_models(hp: Hyper, calendar_dim: int = len(U.CALENDAR_SPEC)):
-    """(encoder, decoder, training_model). Encoder: causal Conv1D, 24 -> 12 -> 6; decoder symmetric."""
+def _build_models(hp: Hyper, calendar_dim: int, *, origin_covering: bool):
+    """Build the retained even-phase model or a separately trained origin-covering successor."""
     import keras
     L = keras.layers
     if hp.window != 4 * hp.latent_steps:
@@ -378,8 +380,13 @@ def build_models(hp: Hyper, calendar_dim: int = len(U.CALENDAR_SPEC)):
     h = L.Conv1D(F, k, padding="causal", activation="relu", name="stem")(x)
     c = L.Conv1D(F, 1, name="calendar_proj")(inp["calendar"])
     h = L.Conv1D(F, 1, activation="relu", name="fuse")(L.Concatenate(name="fuse_concat")([h, c]))
-    h = L.Conv1D(F, k, padding="causal", strides=2, activation="relu", name="down_24_12")(h)
-    h = L.Conv1D(F, k, padding="causal", strides=2, activation="relu", name="down_12_6")(h)
+    for name, phase_name in (("down_24_12", "phase_pad_24_12"),
+                             ("down_12_6", "phase_pad_12_6")):
+        if origin_covering:
+            h = L.ZeroPadding1D((1, 0), name=phase_name)(h)
+            h = L.Conv1D(F, k, padding="valid", strides=2, activation="relu", name=name)(h)
+        else:
+            h = L.Conv1D(F, k, padding="causal", strides=2, activation="relu", name=name)(h)
     z = L.Conv1D(hp.latent_dim, 1, name="latent")(h)
     encoder = keras.Model(inp, z, name="fs4_encoder")
     if tuple(encoder.output.shape)[1:] != (hp.latent_steps, hp.latent_dim):
@@ -395,6 +402,16 @@ def build_models(hp: Hyper, calendar_dim: int = len(U.CALENDAR_SPEC)):
     training = keras.Model(inp, decoder(encoder(inp)), name="fs4_training")
     training.compile(optimizer=keras.optimizers.Adam(hp.learning_rate), loss="mse")
     return encoder, decoder, training
+
+
+def build_models(hp: Hyper, calendar_dim: int = len(U.CALENDAR_SPEC)):
+    """Retained v1 even-phase model; its last latent step ends at origin-3."""
+    return _build_models(hp, calendar_dim, origin_covering=False)
+
+
+def build_origin_covering_models(hp: Hyper, calendar_dim: int = len(U.CALENDAR_SPEC)):
+    """Versioned model whose last latent step can read the origin observation."""
+    return _build_models(hp, calendar_dim, origin_covering=True)
 
 
 def seed_weights(models: Sequence, seed: int) -> None:
